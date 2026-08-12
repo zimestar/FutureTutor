@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand */
+  --color-navy: #0d1b2a;
+  --color-blue: #2563eb;
+  --color-blue-hover: #1d4ed8;
+  --color-mint: #10b981;
+  --color-off-white: #f8fafc;
+  --color-slate: #64748b;
+
+  /* Neutral scale */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
+  /* System */
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+  --color-info: #38bdf8;
+  --color-info-light: #e0f2fe;
+
+  /* Typography */
+  --font-sans: var(--font-manrope), "Manrope", "Inter", Arial, sans-serif;
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-card-hover: 0 12px 32px rgba(15, 23, 42, 0.1);
+  --shadow-pop: 0 20px 48px rgba(13, 27, 42, 0.16);
+
+  /* Container */
+  --container-page: 1280px;
+
+  --animate-fade-up: fade-up 0.5s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-off-white);
+    color: var(--color-navy);
+  }
+
+  ::selection {
+    background: var(--color-blue);
+    color: white;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}

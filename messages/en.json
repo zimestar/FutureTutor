@@ -1,0 +1,382 @@
+{
+  "site": {
+    "tagline": "Find the right tutor. Learn with confidence.",
+    "description": "FutureTutor connects students and parents with qualified tutors for personalized one-on-one learning, online or in person, across Canada."
+  },
+  "nav": {
+    "findTutor": "Find a Tutor",
+    "subjects": "Subjects",
+    "howItWorks": "How It Works",
+    "forTutors": "For Tutors",
+    "login": "Log In",
+    "becomeATutor": "Become a Tutor"
+  },
+  "header": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français"
+  },
+  "hero": {
+    "eyebrow": "Personalized tutoring",
+    "title": "Find the right tutor. Learn with confidence.",
+    "description": "Connect with tutors who match your subject, level and schedule — online or in person.",
+    "becomeATutor": "Become a Tutor",
+    "visual": {
+      "sessionSubject": "Grade 10 · Mathematics",
+      "sessionWith": "Session with Amara",
+      "booked": "Booked for Thu, 6:00 PM",
+      "verification": "Tutor verification: coming soon"
+    }
+  },
+  "search": {
+    "subjectLabel": "What do you need help with?",
+    "subjectPlaceholder": "Math, English, French, Chemistry...",
+    "levelLabel": "Grade / Level",
+    "levelPlaceholder": "Grade / Level",
+    "modeLabel": "Online or in person",
+    "modePlaceholder": "Online or In Person",
+    "online": "Online",
+    "inPerson": "In Person",
+    "submit": "Search Tutors"
+  },
+  "gradeLevels": {
+    "elementary": "Elementary",
+    "middleSchool": "Middle School",
+    "highSchool": "High School",
+    "cegepCollege": "CEGEP / College",
+    "university": "University",
+    "adultLearner": "Adult Learner"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "French"
+  },
+  "trustStrip": {
+    "personalized": "Personalized one-on-one tutoring",
+    "onlineInPerson": "Online or in-person sessions",
+    "flexible": "Flexible scheduling",
+    "verification": "Tutor verification: coming soon"
+  },
+  "subjects": {
+    "heading": "What do you want to learn?",
+    "subheading": "Browse popular subjects, or search for exactly what you need.",
+    "indexTitle": "Browse subjects",
+    "indexSubtitle": "Find a tutor for exactly what you're studying.",
+    "items": {
+      "math": "Mathematics",
+      "english": "English",
+      "french": "French",
+      "science": "Science",
+      "chemistry": "Chemistry",
+      "physics": "Physics",
+      "biology": "Biology",
+      "computer-science": "Computer Science",
+      "exam-prep": "Exam Preparation",
+      "elementary": "Elementary Support"
+    },
+    "page": {
+      "title": "{subject} Tutors",
+      "metaDescription": "Find {subject} tutors on FutureTutor, online or in person.",
+      "description": "Browse tutors who teach {subject}, online or in person.",
+      "searchAll": "Search All Tutors",
+      "empty": "No example {subject} tutors yet — check back soon as tutors join."
+    }
+  },
+  "howItWorks": {
+    "heading": "How FutureTutor works",
+    "subheading": "Three simple steps to your first session.",
+    "pageHeading": "How FutureTutor works",
+    "pageSubheading": "From telling us what you need to booking your first session — here's the whole path.",
+    "steps": {
+      "step1": {
+        "label": "Step 1",
+        "title": "Tell us what you need",
+        "description": "Select your subject, level and availability so we can point you in the right direction."
+      },
+      "step2": {
+        "label": "Step 2",
+        "title": "Find the right tutor",
+        "description": "Compare tutor profiles, experience, availability and pricing side by side."
+      },
+      "step3": {
+        "label": "Step 3",
+        "title": "Start learning",
+        "description": "Book your session with the tutor you choose and start making progress."
+      }
+    }
+  },
+  "featuredTutors": {
+    "badge": "Example profiles",
+    "heading": "Meet the kind of tutors on FutureTutor",
+    "description": "These sample profiles show how tutor matching will look. Real tutor profiles go live as they join the platform.",
+    "browseAll": "Browse All Tutors",
+    "empty": "Tutor profiles will appear here soon."
+  },
+  "tutorCard": {
+    "reviews": "{count, plural, one {(# review)} other {(# reviews)}}",
+    "viewProfile": "View Profile",
+    "perHour": "CAD/hr",
+    "yearsExperience": "{count}+ yrs experience",
+    "mode": {
+      "online": "Online",
+      "in-person": "In person",
+      "both": "Online & in person"
+    },
+    "badges": {
+      "topTutor": "Top Tutor",
+      "respondsQuickly": "Responds Quickly",
+      "popular": "Popular"
+    }
+  },
+  "demoTutors": {
+    "demo-1": {
+      "headline": "Math & Physics Tutor",
+      "bio": "Engineering grad who makes calculus and mechanics click through worked examples and practice sets."
+    },
+    "demo-2": {
+      "headline": "French Language Tutor",
+      "bio": "Focuses on conversational confidence and grammar fundamentals for young learners."
+    },
+    "demo-3": {
+      "headline": "Chemistry & Biology Tutor",
+      "bio": "Pre-med student tutor who breaks exam-heavy units into clear, testable concepts."
+    },
+    "demo-4": {
+      "headline": "Computer Science Tutor",
+      "bio": "Software developer teaching programming fundamentals, algorithms, and intro CS coursework."
+    }
+  },
+  "benefits": {
+    "heading": "Why FutureTutor",
+    "items": {
+      "target": {
+        "title": "Find the right fit",
+        "description": "Choose tutors based on expertise, availability and how you like to learn."
+      },
+      "route": {
+        "title": "Learn your way",
+        "description": "Online or in person — pick the format that works for your schedule and city."
+      },
+      "calendarClock": {
+        "title": "Flexible scheduling",
+        "description": "Book sessions around school, work and family — not the other way around."
+      },
+      "lineChart": {
+        "title": "Track your progress",
+        "description": "Progress tracking for students and parents is on our roadmap, so growth stays visible over time."
+      }
+    }
+  },
+  "learningModes": {
+    "heading": "Learn online or in person",
+    "subheading": "FutureTutor supports both, so you can choose what fits your life.",
+    "online": {
+      "title": "Online tutoring",
+      "points": [
+        "Learn from anywhere with a stable connection",
+        "Flexible availability across time zones",
+        "Access tutors outside your city"
+      ]
+    },
+    "inPerson": {
+      "title": "In-person tutoring",
+      "points": [
+        "Face-to-face support and hands-on help",
+        "Local tutors who know your curriculum",
+        "A focused, personal learning environment"
+      ]
+    }
+  },
+  "futureVision": {
+    "heading": "Support that grows with you",
+    "description": "FutureTutor is being built to understand each student's goals, progress and learning needs so every session can become more effective over time.",
+    "badge": "Smart learning tools coming soon"
+  },
+  "parentTrust": {
+    "heading": "Built for students. Designed for peace of mind.",
+    "description": "Parents are often the ones choosing a tutor. We're designing FutureTutor so you always know who your child is learning with, what it costs, and how it's going.",
+    "points": {
+      "profiles": "Clear tutor profiles",
+      "pricing": "Transparent pricing",
+      "scheduling": "Easy scheduling",
+      "history": "Session history",
+      "progress": "Progress visibility (coming soon)",
+      "communication": "Safe, in-platform communication"
+    }
+  },
+  "tutorCta": {
+    "heading": "Teach what you know. Help students grow.",
+    "description": "Join FutureTutor and connect with students looking for your expertise.",
+    "cta": "Become a Tutor",
+    "perks": {
+      "schedule": "Choose your own schedule",
+      "reputation": "Build your reputation with reviews",
+      "teach": "Teach online or in person",
+      "manage": "Manage students in one place"
+    }
+  },
+  "faq": {
+    "heading": "Frequently asked questions",
+    "items": {
+      "howItWorks": {
+        "question": "How does FutureTutor work?",
+        "answer": "Tell us what subject and level you need help with, browse tutor profiles that match, and book a session directly with the tutor you choose."
+      },
+      "chooseTutor": {
+        "question": "Can I choose my own tutor?",
+        "answer": "Yes. You review tutor profiles — subjects, experience, availability and pricing — and pick the one that fits before booking."
+      },
+      "onlineInPerson": {
+        "question": "Is tutoring available online and in person?",
+        "answer": "Both. Each tutor sets whether they offer online sessions, in-person sessions, or both, so you can pick what works for you."
+      },
+      "subjectsAvailable": {
+        "question": "What subjects are available?",
+        "answer": "We're launching with core subjects including math, English, French, science, chemistry, physics, biology, computer science and exam preparation, with more added as tutors join."
+      },
+      "tutorReview": {
+        "question": "How are tutors reviewed before joining?",
+        "answer": "Tutor verification is part of our product roadmap. Until it's live, profile details are self-reported by tutors — we'll clearly label verified profiles once that process launches."
+      },
+      "payment": {
+        "question": "How does payment work?",
+        "answer": "Marketplace payments are still in development. We'll share details on pricing, booking and payment flow before the feature goes live."
+      },
+      "becomeTutor": {
+        "question": "Can I become a tutor?",
+        "answer": "Yes. Apply through the Become a Tutor page and tell us your subjects, grade levels and availability to get started."
+      },
+      "availability": {
+        "question": "Where is FutureTutor available?",
+        "answer": "We're launching in Canada with support for English and French, with online tutoring available anywhere and in-person tutoring in select cities as tutors join."
+      }
+    }
+  },
+  "finalCta": {
+    "heading": "Ready to learn with the right support?",
+    "description": "Start your search today, or join as a tutor and start teaching.",
+    "findTutor": "Find a Tutor",
+    "becomeATutor": "Become a Tutor"
+  },
+  "footer": {
+    "description": "A modern tutoring marketplace connecting students and parents with qualified tutors across Canada.",
+    "region": "🇨🇦 Canada",
+    "columns": {
+      "students": "Students",
+      "tutors": "Tutors",
+      "company": "Company",
+      "legal": "Legal"
+    },
+    "links": {
+      "findTutor": "Find a Tutor",
+      "subjects": "Subjects",
+      "howItWorks": "How It Works",
+      "becomeATutor": "Become a Tutor",
+      "tutorResources": "Tutor Resources",
+      "about": "About",
+      "contact": "Contact",
+      "careers": "Careers",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "cookies": "Cookie Policy"
+    },
+    "copyright": "© {year} FutureTutor. All rights reserved.",
+    "tagline": "Made for students, parents and tutors across Canada."
+  },
+  "comingSoon": {
+    "backHome": "Back to Home",
+    "login": {
+      "title": "Login is on the way",
+      "description": "Account access for students, parents and tutors is in development. Check back soon."
+    },
+    "signup": {
+      "title": "Sign up is on the way",
+      "description": "Account creation for students, parents and tutors is in development. Check back soon."
+    },
+    "about": {
+      "title": "Our story is coming soon",
+      "description": "We're putting together the FutureTutor story. In the meantime, our mission is simple: make high-quality personalized academic support easy to access for every student."
+    },
+    "contact": {
+      "title": "Contact is coming soon",
+      "description": "Our support channels are being set up. Contact details will be published here before launch."
+    },
+    "careers": {
+      "title": "No open roles yet",
+      "description": "We're not hiring yet, but we'll post opportunities here as the team grows."
+    },
+    "privacy": {
+      "title": "Privacy Policy is being finalized",
+      "description": "Because FutureTutor may serve minors, we're being careful to get this right. Our full privacy policy will be published here before accounts go live."
+    },
+    "terms": {
+      "title": "Terms of Service is being finalized",
+      "description": "Our full terms of service will be published here before accounts go live."
+    },
+    "cookies": {
+      "title": "Cookie Policy is being finalized",
+      "description": "Our full cookie policy will be published here before accounts go live."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you're looking for doesn't exist or has moved."
+    }
+  },
+  "findTutorsPage": {
+    "metaTitle": "Find a Tutor",
+    "metaDescription": "Search FutureTutor for a tutor by subject, grade level and learning mode.",
+    "heading": "Find a tutor",
+    "subheading": "Search by subject, level and learning mode.",
+    "badge": "Example results — demo data",
+    "resultCount": "{count, plural, one {# result} other {# results}}",
+    "empty": "No example tutors match those filters yet. Try broadening your search."
+  },
+  "tutorProfile": {
+    "demoBadge": "Example profile — demo data",
+    "yearsExperience": "{count}+ years of experience",
+    "requestToBook": "Request to Book",
+    "bookingNote": "Booking opens once accounts launch."
+  },
+  "becomeATutorPage": {
+    "metaTitle": "Become a Tutor",
+    "metaDescription": "Join FutureTutor and connect with students looking for your expertise.",
+    "heading": "Teach what you know. Help students grow.",
+    "subheading": "Join FutureTutor and connect with students looking for your expertise.",
+    "apply": "Apply to Become a Tutor",
+    "note": "Tutor applications open soon — sign up to be notified.",
+    "perks": {
+      "schedule": {
+        "title": "Choose your schedule",
+        "description": "Set your own availability and teach when it works for you."
+      },
+      "reputation": {
+        "title": "Build your reputation",
+        "description": "Grow your profile with reviews as you complete sessions."
+      },
+      "teach": {
+        "title": "Teach your way",
+        "description": "Offer online sessions, in-person sessions, or both."
+      },
+      "manage": {
+        "title": "Manage students in one place",
+        "description": "Keep requests, bookings and messages organized."
+      }
+    }
+  },
+  "metadata": {
+    "login": { "title": "Log In", "description": "Log in to your FutureTutor account." },
+    "signup": { "title": "Sign Up", "description": "Create your FutureTutor account." },
+    "about": { "title": "About", "description": "Learn about FutureTutor's mission to make personalized academic support accessible." },
+    "contact": { "title": "Contact", "description": "Get in touch with the FutureTutor team." },
+    "careers": { "title": "Careers", "description": "Careers at FutureTutor." },
+    "privacy": { "title": "Privacy Policy", "description": "FutureTutor's privacy policy." },
+    "terms": { "title": "Terms of Service", "description": "FutureTutor's terms of service." },
+    "cookies": { "title": "Cookie Policy", "description": "FutureTutor's cookie policy." },
+    "howItWorks": { "title": "How It Works", "description": "See how FutureTutor connects students and parents with the right tutor in three simple steps." },
+    "subjects": { "title": "Subjects", "description": "Browse every subject FutureTutor tutors can help with, from math to exam preparation." }
+  }
+}

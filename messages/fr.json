@@ -1,0 +1,382 @@
+{
+  "site": {
+    "tagline": "Trouvez le bon tuteur. Apprenez en toute confiance.",
+    "description": "FutureTutor met en relation les élèves et les parents avec des tuteurs qualifiés pour un accompagnement personnalisé, en ligne ou en personne, partout au Canada."
+  },
+  "nav": {
+    "findTutor": "Trouver un tuteur",
+    "subjects": "Matières",
+    "howItWorks": "Comment ça marche",
+    "forTutors": "Pour les tuteurs",
+    "login": "Connexion",
+    "becomeATutor": "Devenir tuteur"
+  },
+  "header": {
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "languageSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  },
+  "hero": {
+    "eyebrow": "Tutorat personnalisé",
+    "title": "Trouvez le bon tuteur. Apprenez en toute confiance.",
+    "description": "Trouvez des tuteurs qui correspondent à votre matière, votre niveau et votre horaire — en ligne ou en personne.",
+    "becomeATutor": "Devenir tuteur",
+    "visual": {
+      "sessionSubject": "Secondaire 4 · Mathématiques",
+      "sessionWith": "Séance avec Amara",
+      "booked": "Réservé pour jeu. 18 h",
+      "verification": "Vérification des tuteurs : bientôt"
+    }
+  },
+  "search": {
+    "subjectLabel": "Avec quoi avez-vous besoin d'aide?",
+    "subjectPlaceholder": "Maths, anglais, français, chimie...",
+    "levelLabel": "Niveau scolaire",
+    "levelPlaceholder": "Niveau scolaire",
+    "modeLabel": "En ligne ou en personne",
+    "modePlaceholder": "En ligne ou en personne",
+    "online": "En ligne",
+    "inPerson": "En personne",
+    "submit": "Rechercher"
+  },
+  "gradeLevels": {
+    "elementary": "Primaire",
+    "middleSchool": "1er cycle du secondaire",
+    "highSchool": "2e cycle du secondaire",
+    "cegepCollege": "Cégep / Collégial",
+    "university": "Université",
+    "adultLearner": "Formation aux adultes"
+  },
+  "languages": {
+    "en": "Anglais",
+    "fr": "Français"
+  },
+  "trustStrip": {
+    "personalized": "Tutorat individuel personnalisé",
+    "onlineInPerson": "Séances en ligne ou en personne",
+    "flexible": "Horaire flexible",
+    "verification": "Vérification des tuteurs : bientôt"
+  },
+  "subjects": {
+    "heading": "Qu'aimeriez-vous apprendre?",
+    "subheading": "Parcourez les matières populaires, ou cherchez exactement ce dont vous avez besoin.",
+    "indexTitle": "Parcourir les matières",
+    "indexSubtitle": "Trouvez un tuteur pour exactement ce que vous étudiez.",
+    "items": {
+      "math": "Mathématiques",
+      "english": "Anglais",
+      "french": "Français",
+      "science": "Science",
+      "chemistry": "Chimie",
+      "physics": "Physique",
+      "biology": "Biologie",
+      "computer-science": "Informatique",
+      "exam-prep": "Préparation aux examens",
+      "elementary": "Soutien au primaire"
+    },
+    "page": {
+      "title": "Tuteurs de {subject}",
+      "metaDescription": "Trouvez des tuteurs de {subject} sur FutureTutor, en ligne ou en personne.",
+      "description": "Parcourez les tuteurs qui enseignent {subject}, en ligne ou en personne.",
+      "searchAll": "Rechercher tous les tuteurs",
+      "empty": "Aucun tuteur exemple en {subject} pour l'instant — revenez bientôt."
+    }
+  },
+  "howItWorks": {
+    "heading": "Comment fonctionne FutureTutor",
+    "subheading": "Trois étapes simples jusqu'à votre première séance.",
+    "pageHeading": "Comment fonctionne FutureTutor",
+    "pageSubheading": "De la description de vos besoins jusqu'à la réservation de votre première séance — voici tout le parcours.",
+    "steps": {
+      "step1": {
+        "label": "Étape 1",
+        "title": "Dites-nous ce dont vous avez besoin",
+        "description": "Choisissez votre matière, votre niveau et vos disponibilités pour qu'on puisse bien vous orienter."
+      },
+      "step2": {
+        "label": "Étape 2",
+        "title": "Trouvez le bon tuteur",
+        "description": "Comparez les profils de tuteurs : expérience, disponibilités et tarifs, côte à côte."
+      },
+      "step3": {
+        "label": "Étape 3",
+        "title": "Commencez à apprendre",
+        "description": "Réservez votre séance avec le tuteur choisi et commencez à progresser."
+      }
+    }
+  },
+  "featuredTutors": {
+    "badge": "Profils d'exemple",
+    "heading": "Découvrez le type de tuteurs sur FutureTutor",
+    "description": "Ces profils d'exemple montrent à quoi ressemblera le jumelage de tuteurs. Les vrais profils seront publiés au fur et à mesure que les tuteurs se joignent à la plateforme.",
+    "browseAll": "Voir tous les tuteurs",
+    "empty": "Les profils de tuteurs seront bientôt affichés ici."
+  },
+  "tutorCard": {
+    "reviews": "{count, plural, one {(# avis)} other {(# avis)}}",
+    "viewProfile": "Voir le profil",
+    "perHour": "CAD/h",
+    "yearsExperience": "{count}+ ans d'expérience",
+    "mode": {
+      "online": "En ligne",
+      "in-person": "En personne",
+      "both": "En ligne et en personne"
+    },
+    "badges": {
+      "topTutor": "Meilleur tuteur",
+      "respondsQuickly": "Répond rapidement",
+      "popular": "Populaire"
+    }
+  },
+  "demoTutors": {
+    "demo-1": {
+      "headline": "Tutrice en mathématiques et physique",
+      "bio": "Diplômée en génie qui rend le calcul et la mécanique accessibles grâce à des exemples concrets et des exercices pratiques."
+    },
+    "demo-2": {
+      "headline": "Tuteur de français",
+      "bio": "Se concentre sur la confiance à l'oral et les bases de grammaire pour les jeunes apprenants."
+    },
+    "demo-3": {
+      "headline": "Tutrice en chimie et biologie",
+      "bio": "Étudiante en pré-médecine qui simplifie les unités chargées en concepts clairs et vérifiables."
+    },
+    "demo-4": {
+      "headline": "Tuteur en informatique",
+      "bio": "Développeur logiciel qui enseigne les bases de la programmation, les algorithmes et les cours d'introduction en informatique."
+    }
+  },
+  "benefits": {
+    "heading": "Pourquoi FutureTutor",
+    "items": {
+      "target": {
+        "title": "Trouvez le bon tuteur",
+        "description": "Choisissez un tuteur selon son expertise, ses disponibilités et votre façon d'apprendre."
+      },
+      "route": {
+        "title": "Apprenez à votre façon",
+        "description": "En ligne ou en personne — choisissez le format qui convient à votre horaire et votre ville."
+      },
+      "calendarClock": {
+        "title": "Horaire flexible",
+        "description": "Réservez vos séances autour de l'école, du travail et de la famille — pas l'inverse."
+      },
+      "lineChart": {
+        "title": "Suivez vos progrès",
+        "description": "Le suivi des progrès pour les élèves et les parents est prévu dans notre feuille de route, pour que la progression reste visible dans le temps."
+      }
+    }
+  },
+  "learningModes": {
+    "heading": "Apprenez en ligne ou en personne",
+    "subheading": "FutureTutor offre les deux, pour que vous choisissiez ce qui convient à votre vie.",
+    "online": {
+      "title": "Tutorat en ligne",
+      "points": [
+        "Apprenez de n'importe où avec une connexion stable",
+        "Disponibilités flexibles, peu importe le fuseau horaire",
+        "Accédez à des tuteurs à l'extérieur de votre ville"
+      ]
+    },
+    "inPerson": {
+      "title": "Tutorat en personne",
+      "points": [
+        "Accompagnement direct et concret, en face à face",
+        "Des tuteurs locaux qui connaissent votre programme",
+        "Un environnement d'apprentissage personnalisé et concentré"
+      ]
+    }
+  },
+  "futureVision": {
+    "heading": "Un accompagnement qui évolue avec vous",
+    "description": "FutureTutor est conçu pour comprendre les objectifs, les progrès et les besoins d'apprentissage de chaque élève, afin que chaque séance devienne de plus en plus efficace.",
+    "badge": "Outils d'apprentissage intelligents bientôt disponibles"
+  },
+  "parentTrust": {
+    "heading": "Pensé pour les élèves. Conçu pour la tranquillité d'esprit.",
+    "description": "Ce sont souvent les parents qui choisissent le tuteur. Nous concevons FutureTutor pour que vous sachiez toujours avec qui votre enfant apprend, combien ça coûte, et comment ça se passe.",
+    "points": {
+      "profiles": "Profils de tuteurs clairs",
+      "pricing": "Tarification transparente",
+      "scheduling": "Réservation facile",
+      "history": "Historique des séances",
+      "progress": "Suivi des progrès (bientôt)",
+      "communication": "Communication sécurisée sur la plateforme"
+    }
+  },
+  "tutorCta": {
+    "heading": "Enseignez ce que vous savez. Aidez des élèves à progresser.",
+    "description": "Joignez-vous à FutureTutor et connectez-vous avec des élèves qui recherchent votre expertise.",
+    "cta": "Devenir tuteur",
+    "perks": {
+      "schedule": "Choisissez votre propre horaire",
+      "reputation": "Bâtissez votre réputation grâce aux avis",
+      "teach": "Enseignez en ligne ou en personne",
+      "manage": "Gérez vos élèves au même endroit"
+    }
+  },
+  "faq": {
+    "heading": "Questions fréquentes",
+    "items": {
+      "howItWorks": {
+        "question": "Comment fonctionne FutureTutor?",
+        "answer": "Dites-nous dans quelle matière et à quel niveau vous avez besoin d'aide, parcourez les profils de tuteurs correspondants, et réservez une séance directement avec le tuteur choisi."
+      },
+      "chooseTutor": {
+        "question": "Est-ce que je peux choisir mon tuteur?",
+        "answer": "Oui. Vous consultez les profils des tuteurs — matières, expérience, disponibilités et tarifs — et vous choisissez celui qui vous convient avant de réserver."
+      },
+      "onlineInPerson": {
+        "question": "Le tutorat est-il offert en ligne et en personne?",
+        "answer": "Les deux. Chaque tuteur indique s'il offre des séances en ligne, en personne, ou les deux, pour que vous puissiez choisir ce qui vous convient."
+      },
+      "subjectsAvailable": {
+        "question": "Quelles matières sont offertes?",
+        "answer": "Nous lançons la plateforme avec les matières principales : mathématiques, anglais, français, science, chimie, physique, biologie, informatique et préparation aux examens, avec d'autres matières à venir au fur et à mesure que des tuteurs se joignent."
+      },
+      "tutorReview": {
+        "question": "Comment les tuteurs sont-ils évalués avant de se joindre?",
+        "answer": "La vérification des tuteurs fait partie de notre feuille de route. En attendant, les informations des profils sont déclarées par les tuteurs eux-mêmes — nous indiquerons clairement les profils vérifiés une fois ce processus lancé."
+      },
+      "payment": {
+        "question": "Comment fonctionne le paiement?",
+        "answer": "Le système de paiement de la plateforme est encore en développement. Nous partagerons les détails sur la tarification, la réservation et le paiement avant le lancement de cette fonctionnalité."
+      },
+      "becomeTutor": {
+        "question": "Est-ce que je peux devenir tuteur?",
+        "answer": "Oui. Faites une demande via la page Devenir tuteur et indiquez-nous vos matières, vos niveaux et vos disponibilités pour commencer."
+      },
+      "availability": {
+        "question": "Où FutureTutor est-il offert?",
+        "answer": "Nous lançons la plateforme au Canada avec un support en anglais et en français. Le tutorat en ligne est offert partout, et le tutorat en personne dans certaines villes, au fur et à mesure que des tuteurs se joignent."
+      }
+    }
+  },
+  "finalCta": {
+    "heading": "Prêt à apprendre avec le bon accompagnement?",
+    "description": "Commencez votre recherche dès aujourd'hui, ou joignez-vous à nous comme tuteur et commencez à enseigner.",
+    "findTutor": "Trouver un tuteur",
+    "becomeATutor": "Devenir tuteur"
+  },
+  "footer": {
+    "description": "Une plateforme moderne qui met en relation élèves et parents avec des tuteurs qualifiés partout au Canada.",
+    "region": "🇨🇦 Canada",
+    "columns": {
+      "students": "Élèves",
+      "tutors": "Tuteurs",
+      "company": "Entreprise",
+      "legal": "Mentions légales"
+    },
+    "links": {
+      "findTutor": "Trouver un tuteur",
+      "subjects": "Matières",
+      "howItWorks": "Comment ça marche",
+      "becomeATutor": "Devenir tuteur",
+      "tutorResources": "Ressources pour tuteurs",
+      "about": "À propos",
+      "contact": "Contact",
+      "careers": "Carrières",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "cookies": "Politique de cookies"
+    },
+    "copyright": "© {year} FutureTutor. Tous droits réservés.",
+    "tagline": "Conçu pour les élèves, les parents et les tuteurs partout au Canada."
+  },
+  "comingSoon": {
+    "backHome": "Retour à l'accueil",
+    "login": {
+      "title": "La connexion arrive bientôt",
+      "description": "L'accès aux comptes pour élèves, parents et tuteurs est en développement. Revenez bientôt."
+    },
+    "signup": {
+      "title": "L'inscription arrive bientôt",
+      "description": "La création de compte pour élèves, parents et tuteurs est en développement. Revenez bientôt."
+    },
+    "about": {
+      "title": "Notre histoire arrive bientôt",
+      "description": "Nous préparons l'histoire de FutureTutor. En attendant, notre mission est simple : rendre l'accompagnement scolaire personnalisé accessible à chaque élève."
+    },
+    "contact": {
+      "title": "La page contact arrive bientôt",
+      "description": "Nos canaux de support sont en cours de mise en place. Les coordonnées seront publiées ici avant le lancement."
+    },
+    "careers": {
+      "title": "Aucun poste ouvert pour l'instant",
+      "description": "Nous n'embauchons pas encore, mais nous publierons les opportunités ici à mesure que l'équipe grandit."
+    },
+    "privacy": {
+      "title": "La politique de confidentialité est en finalisation",
+      "description": "Comme FutureTutor pourrait accueillir des mineurs, nous prenons le temps de bien faire les choses. Notre politique complète sera publiée ici avant le lancement des comptes."
+    },
+    "terms": {
+      "title": "Les conditions d'utilisation sont en finalisation",
+      "description": "Nos conditions d'utilisation complètes seront publiées ici avant le lancement des comptes."
+    },
+    "cookies": {
+      "title": "La politique de cookies est en finalisation",
+      "description": "Notre politique de cookies complète sera publiée ici avant le lancement des comptes."
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "description": "La page que vous cherchez n'existe pas ou a été déplacée."
+    }
+  },
+  "findTutorsPage": {
+    "metaTitle": "Trouver un tuteur",
+    "metaDescription": "Cherchez un tuteur sur FutureTutor par matière, niveau scolaire et mode d'apprentissage.",
+    "heading": "Trouver un tuteur",
+    "subheading": "Recherchez par matière, niveau et mode d'apprentissage.",
+    "badge": "Résultats d'exemple — données de démonstration",
+    "resultCount": "{count, plural, one {# résultat} other {# résultats}}",
+    "empty": "Aucun tuteur exemple ne correspond à ces critères. Essayez d'élargir votre recherche."
+  },
+  "tutorProfile": {
+    "demoBadge": "Profil d'exemple — données de démonstration",
+    "yearsExperience": "{count}+ ans d'expérience",
+    "requestToBook": "Demander une réservation",
+    "bookingNote": "La réservation sera possible dès le lancement des comptes."
+  },
+  "becomeATutorPage": {
+    "metaTitle": "Devenir tuteur",
+    "metaDescription": "Joignez-vous à FutureTutor et connectez-vous avec des élèves qui recherchent votre expertise.",
+    "heading": "Enseignez ce que vous savez. Aidez des élèves à progresser.",
+    "subheading": "Joignez-vous à FutureTutor et connectez-vous avec des élèves qui recherchent votre expertise.",
+    "apply": "Faire une demande pour devenir tuteur",
+    "note": "Les demandes de tuteurs ouvrent bientôt — inscrivez-vous pour être averti.",
+    "perks": {
+      "schedule": {
+        "title": "Choisissez votre horaire",
+        "description": "Définissez vos propres disponibilités et enseignez quand ça vous convient."
+      },
+      "reputation": {
+        "title": "Bâtissez votre réputation",
+        "description": "Développez votre profil grâce aux avis au fil de vos séances."
+      },
+      "teach": {
+        "title": "Enseignez à votre façon",
+        "description": "Offrez des séances en ligne, en personne, ou les deux."
+      },
+      "manage": {
+        "title": "Gérez vos élèves au même endroit",
+        "description": "Gardez les demandes, réservations et messages bien organisés."
+      }
+    }
+  },
+  "metadata": {
+    "login": { "title": "Connexion", "description": "Connectez-vous à votre compte FutureTutor." },
+    "signup": { "title": "Inscription", "description": "Créez votre compte FutureTutor." },
+    "about": { "title": "À propos", "description": "Découvrez la mission de FutureTutor : rendre l'accompagnement scolaire personnalisé accessible." },
+    "contact": { "title": "Contact", "description": "Contactez l'équipe FutureTutor." },
+    "careers": { "title": "Carrières", "description": "Les carrières chez FutureTutor." },
+    "privacy": { "title": "Politique de confidentialité", "description": "La politique de confidentialité de FutureTutor." },
+    "terms": { "title": "Conditions d'utilisation", "description": "Les conditions d'utilisation de FutureTutor." },
+    "cookies": { "title": "Politique de cookies", "description": "La politique de cookies de FutureTutor." },
+    "howItWorks": { "title": "Comment ça marche", "description": "Découvrez comment FutureTutor met les élèves et les parents en relation avec le bon tuteur en trois étapes simples." },
+    "subjects": { "title": "Matières", "description": "Parcourez toutes les matières couvertes par les tuteurs FutureTutor, des mathématiques à la préparation aux examens." }
+  }
+}

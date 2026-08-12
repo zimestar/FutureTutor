@@ -1,0 +1,128 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { Menu, X } from "lucide-react";
+import { Link, usePathname } from "@/i18n/navigation";
+import { Logo } from "@/components/marketing/Logo";
+import { Button } from "@/components/ui/Button";
+import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
+import { mainNav } from "@/content/navigation";
+import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
+
+export function Header() {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const t = useTranslations("nav");
+  const tHeader = useTranslations("header");
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-off-white/90 backdrop-blur-sm">
+      <div className="mx-auto flex h-20 w-full max-w-(--container-page) items-center justify-between px-5 md:px-10">
+        <Logo className="h-9" />
+
+        <nav aria-label="Primary" className="hidden lg:block">
+          <ul className="flex items-center gap-8">
+            {mainNav.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "text-sm font-semibold text-neutral-600 transition-colors hover:text-navy",
+                      active && "text-blue"
+                    )}
+                  >
+                    {t(item.key)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="hidden items-center gap-3 lg:flex">
+          <LanguageSwitcher className="mr-1" />
+          <Link
+            href="/login"
+            className="text-sm font-semibold text-neutral-600 transition-colors hover:text-navy"
+          >
+            {t("login")}
+          </Link>
+          <Button href="/become-a-tutor" variant="outline" size="sm">
+            {t("becomeATutor")}
+          </Button>
+          <Button
+            href="/find-tutors"
+            variant="primary"
+            size="sm"
+            onClick={() => trackEvent("find_tutor_clicked", { source: "header" })}
+          >
+            {t("findTutor")}
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-navy lg:hidden"
+          aria-label={open ? tHeader("closeMenu") : tHeader("openMenu")}
+          aria-expanded={open}
+          aria-controls="mobile-nav"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {open && (
+        <nav
+          id="mobile-nav"
+          aria-label="Mobile"
+          className="border-t border-neutral-200 bg-white px-5 py-6 lg:hidden"
+        >
+          <ul className="flex flex-col gap-1">
+            {mainNav.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="flex h-12 items-center text-base font-semibold text-navy"
+                >
+                  {t(item.key)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex h-12 items-center text-base font-semibold text-navy"
+              >
+                {t("login")}
+              </Link>
+            </li>
+          </ul>
+          <div className="mt-4 flex flex-col gap-3">
+            <LanguageSwitcher className="self-start" />
+            <Button href="/become-a-tutor" variant="outline" onClick={() => setOpen(false)}>
+              {t("becomeATutor")}
+            </Button>
+            <Button
+              href="/find-tutors"
+              variant="primary"
+              onClick={() => {
+                setOpen(false);
+                trackEvent("find_tutor_clicked", { source: "header-mobile" });
+              }}
+            >
+              {t("findTutor")}
+            </Button>
+          </div>
+        </nav>
+      )}
+    </header>
+  );
+}
