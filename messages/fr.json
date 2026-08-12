@@ -25,12 +25,7 @@
     "title": "Trouvez le bon tuteur. Apprenez en toute confiance.",
     "description": "Trouvez des tuteurs qui correspondent à votre matière, votre niveau et votre horaire — en ligne ou en personne.",
     "becomeATutor": "Devenir tuteur",
-    "visual": {
-      "sessionSubject": "Secondaire 4 · Mathématiques",
-      "sessionWith": "Séance avec Amara",
-      "booked": "Réservé pour jeu. 18 h",
-      "verification": "Vérification des tuteurs : bientôt"
-    }
+    "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur"
   },
   "search": {
     "subjectLabel": "Avec quoi avez-vous besoin d'aide?",

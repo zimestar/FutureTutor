@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# raw asset drop zone (source files staged before being optimized into public/) — not served, not versioned
+/images/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

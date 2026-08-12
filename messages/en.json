@@ -25,12 +25,7 @@
     "title": "Find the right tutor. Learn with confidence.",
     "description": "Connect with tutors who match your subject, level and schedule — online or in person.",
     "becomeATutor": "Become a Tutor",
-    "visual": {
-      "sessionSubject": "Grade 10 · Mathematics",
-      "sessionWith": "Session with Amara",
-      "booked": "Booked for Thu, 6:00 PM",
-      "verification": "Tutor verification: coming soon"
-    }
+    "imageAlt": "A student smiling during an online tutoring video call with her tutor"
   },
   "search": {
     "subjectLabel": "What do you need help with?",
