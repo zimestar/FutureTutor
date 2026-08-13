@@ -28,3 +28,28 @@ export interface DemoTutor {
   yearsExperience: number;
   badges: TutorBadgeKey[];
 }
+
+/**
+ * What `TutorCard` actually renders — fully resolved display strings, not
+ * translation keys or slugs. Built either from `DemoTutor` + translations
+ * (see `DemoTutorCard.tsx`, homepage only) or from a real `TutorProfile`
+ * query (see `src/lib/tutorCard.ts`).
+ */
+export interface TutorCardData {
+  /** TutorProfile.id for real tutors, DemoTutor.id for demo ones — used as the favorite-toggle key. */
+  id: string;
+  slug: string;
+  firstName: string;
+  headline: string;
+  bio: string;
+  subjectLabels: string[];
+  rating: number;
+  reviewCount: number;
+  hourlyRateCad: number;
+  learningMode: LearningMode;
+  city: string;
+  yearsExperience: number;
+  badges: TutorBadgeKey[];
+  /** Only set for real tutors viewed by a signed-in student. Omitted (no heart button) otherwise. */
+  isFavorited?: boolean;
+}

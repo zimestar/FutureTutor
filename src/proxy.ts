@@ -7,10 +7,17 @@ import { canAccessSection, homePathForRole } from "@/lib/authorization";
 const intlMiddleware = createMiddleware(routing);
 const locales: readonly string[] = routing.locales;
 
+function startsWithSegment(pathname: string, root: string): boolean {
+  return pathname === root || pathname.startsWith(`${root}/`);
+}
+
 function protectedSection(pathname: string): "dashboard" | "tutor" | "admin" | null {
-  if (pathname.startsWith("/dashboard")) return "dashboard";
-  if (pathname.startsWith("/tutor")) return "tutor";
-  if (pathname.startsWith("/admin")) return "admin";
+  // Segment-boundary matches only — a naive `startsWith("/tutor")` would
+  // also match the public `/tutors/[slug]` profile route (plural) and
+  // wrongly gate it as the protected tutor-dashboard section.
+  if (startsWithSegment(pathname, "/dashboard")) return "dashboard";
+  if (startsWithSegment(pathname, "/tutor")) return "tutor";
+  if (startsWithSegment(pathname, "/admin")) return "admin";
   return null;
 }
 

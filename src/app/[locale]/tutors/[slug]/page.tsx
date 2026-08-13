@@ -7,13 +7,25 @@ import { Section } from "@/components/ui/Section";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { FavoriteButton } from "@/components/marketing/FavoriteButton";
 import { formatHourlyRate } from "@/lib/utils";
-import { demoTutors } from "@/content/demoTutors";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getFavoritedTutorIds } from "@/lib/favorites";
+import { dbModeToDisplay } from "@/lib/tutorMode";
 
 type Params = { locale: string; slug: string };
 
-export function generateStaticParams() {
-  return demoTutors.map((t) => ({ slug: t.slug }));
+async function findApprovedTutor(slug: string) {
+  return db.tutorProfile.findFirst({
+    where: { slug, applicationStatus: "APPROVED" },
+    include: {
+      user: { select: { name: true } },
+      subjects: { select: { subject: { select: { slug: true } } } },
+      levels: { select: { academicLevel: { select: { slug: true } } } },
+      languages: { select: { language: true } },
+    },
+  });
 }
 
 export async function generateMetadata({
@@ -21,91 +33,96 @@ export async function generateMetadata({
 }: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { locale, slug } = await params;
-  const tutor = demoTutors.find((t) => t.slug === slug);
+  const { slug } = await params;
+  const tutor = await findApprovedTutor(slug);
   if (!tutor) return {};
 
-  const t = await getTranslations({ locale, namespace: `demoTutors.${tutor.id}` });
-
   return {
-    title: `${tutor.firstName} — ${t("headline")}`,
-    description: t("bio"),
+    title: `${tutor.user.name?.split(" ")[0] ?? ""} — ${tutor.headline ?? ""}`,
+    description: tutor.bio ?? undefined,
   };
 }
 
 export default async function TutorProfilePage({ params }: { params: Promise<Params> }) {
   const { locale, slug } = await params;
-  const tutor = demoTutors.find((t) => t.slug === slug);
+  const tutor = await findApprovedTutor(slug);
   if (!tutor) notFound();
 
   setRequestLocale(locale);
-  const tDemo = await getTranslations({ locale, namespace: `demoTutors.${tutor.id}` });
   const tCard = await getTranslations({ locale, namespace: "tutorCard" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const tLevels = await getTranslations({ locale, namespace: "gradeLevels" });
   const tLanguages = await getTranslations({ locale, namespace: "languages" });
-  const tProfile = await getTranslations({ locale, namespace: "tutorProfile" });
+  const tProfile = await getTranslations({ locale, namespace: "tutorProfilePage" });
+
+  const session = await auth();
+  const favoritedIds = await getFavoritedTutorIds(session);
+  const firstName = tutor.user.name?.split(" ")[0] ?? "";
+  const displayMode = dbModeToDisplay(tutor.learningMode ?? "BOTH");
 
   return (
     <MarketingShell>
       <Section className="bg-off-white">
-        <Badge variant="outline" className="mb-6">
-          {tProfile("demoBadge")}
-        </Badge>
-
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr]">
           <div>
             <div className="flex items-start gap-5">
-              <Avatar name={tutor.firstName} size={80} />
-              <div>
+              <Avatar name={firstName} size={80} />
+              <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-bold text-navy">{tutor.firstName}</h1>
-                  {tutor.badges.map((badge) => (
-                    <Badge key={badge} variant={badge === "topTutor" ? "mint" : "blue"}>
-                      {tCard(`badges.${badge}`)}
-                    </Badge>
-                  ))}
+                  <h1 className="text-3xl font-bold text-navy">{firstName}</h1>
+                  {favoritedIds !== undefined && (
+                    <FavoriteButton tutorProfileId={tutor.id} initialFavorited={favoritedIds.has(tutor.id)} />
+                  )}
                 </div>
-                <p className="mt-1 text-lg font-semibold text-slate">{tDemo("headline")}</p>
-                <div className="mt-2 flex items-center gap-1">
-                  <Star size={16} className="text-warning" fill="currentColor" strokeWidth={0} />
-                  <span className="font-bold text-navy">{tutor.rating.toFixed(1)}</span>
-                  <span className="text-slate">{tCard("reviews", { count: tutor.reviewCount })}</span>
-                </div>
+                <p className="mt-1 text-lg font-semibold text-slate">{tutor.headline}</p>
+                {tutor.reviewCount > 0 && (
+                  <div className="mt-2 flex items-center gap-1">
+                    <Star size={16} className="text-warning" fill="currentColor" strokeWidth={0} />
+                    <span className="font-bold text-navy">{tutor.ratingAverage.toFixed(1)}</span>
+                    <span className="text-slate">{tCard("reviews", { count: tutor.reviewCount })}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate">{tDemo("bio")}</p>
+            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate">{tutor.bio}</p>
 
             <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
                 <Laptop size={18} className="text-blue" aria-hidden="true" />
-                <span className="text-sm font-semibold text-navy">
-                  {tCard(`mode.${tutor.learningMode}`)}
-                </span>
+                <span className="text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</span>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <MapPin size={18} className="text-blue" aria-hidden="true" />
-                <span className="text-sm font-semibold text-navy">{tutor.city}</span>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <Languages size={18} className="text-blue" aria-hidden="true" />
-                <span className="text-sm font-semibold text-navy">
-                  {tutor.languages.map((l) => tLanguages(l)).join(", ")}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <GraduationCap size={18} className="text-blue" aria-hidden="true" />
-                <span className="text-sm font-semibold text-navy">
-                  {tutor.gradeLevels.map((g) => tLevels(g)).join(", ")}
-                </span>
-              </div>
+              {tutor.city && (
+                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <MapPin size={18} className="text-blue" aria-hidden="true" />
+                  <span className="text-sm font-semibold text-navy">
+                    {tutor.city}
+                    {tutor.province ? `, ${tutor.province}` : ""}
+                  </span>
+                </div>
+              )}
+              {tutor.languages.length > 0 && (
+                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <Languages size={18} className="text-blue" aria-hidden="true" />
+                  <span className="text-sm font-semibold text-navy">
+                    {tutor.languages.map((l) => tLanguages(l.language)).join(", ")}
+                  </span>
+                </div>
+              )}
+              {tutor.levels.length > 0 && (
+                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <GraduationCap size={18} className="text-blue" aria-hidden="true" />
+                  <span className="text-sm font-semibold text-navy">
+                    {tutor.levels.map((l) => tLevels(l.academicLevel.slug)).join(", ")}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="mt-8 flex flex-wrap gap-2">
-              {tutor.subjectSlugs.map((slug) => (
-                <Badge key={slug} variant="neutral">
-                  {tSubjects(slug)}
+              {tutor.subjects.map((s) => (
+                <Badge key={s.subject.slug} variant="neutral">
+                  {tSubjects(s.subject.slug)}
                 </Badge>
               ))}
             </div>
@@ -113,11 +130,11 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
 
           <aside className="h-fit rounded-lg border border-neutral-200 bg-white p-6 shadow-card">
             <p className="text-3xl font-extrabold text-navy">
-              {formatHourlyRate(tutor.hourlyRateCad, locale)}
+              {formatHourlyRate(tutor.hourlyRateCents ? tutor.hourlyRateCents / 100 : 0, locale)}
               <span className="text-base font-semibold text-slate"> {tCard("perHour")}</span>
             </p>
             <p className="mt-1 text-sm text-slate">
-              {tProfile("yearsExperience", { count: tutor.yearsExperience })}
+              {tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}
             </p>
             <Button href="/signup" className="mt-6 w-full">
               {tProfile("requestToBook")}

@@ -194,6 +194,7 @@ model TutorProfile {
   hourlyRateCents        Int?
   currency               String                 @default("CAD")
   applicationStatus      TutorApplicationStatus @default(DRAFT)
+  learningMode           TutoringMode?
   city                   String?
   province               String?
   travelRadiusKm         Int?

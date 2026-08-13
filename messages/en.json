@@ -127,7 +127,9 @@
       "topTutor": "Top Tutor",
       "respondsQuickly": "Responds Quickly",
       "popular": "Popular"
-    }
+    },
+    "addFavorite": "Save to favorites",
+    "removeFavorite": "Remove from favorites"
   },
   "demoTutors": {
     "demo-1": {
@@ -328,15 +330,37 @@
     "metaDescription": "Search FutureTutor for a tutor by subject, grade level and learning mode.",
     "heading": "Find a tutor",
     "subheading": "Search by subject, level and learning mode.",
-    "badge": "Example results — demo data",
     "resultCount": "{count, plural, one {# result} other {# results}}",
-    "empty": "No example tutors match those filters yet. Try broadening your search."
+    "newMarketplaceBadge": "New marketplace",
+    "emptyFiltered": "No tutors match those filters yet. Try broadening your search.",
+    "emptyNoTutorsYet": "We're just getting started — no tutors have joined yet. Check back soon, or apply to become one of our first tutors."
   },
-  "tutorProfile": {
-    "demoBadge": "Example profile — demo data",
+  "tutorProfilePage": {
     "yearsExperience": "{count}+ years of experience",
     "requestToBook": "Request to Book",
     "bookingNote": "Booking opens once accounts launch."
+  },
+  "tutorProfileForm": {
+    "title": "Your tutor profile",
+    "subtitle": "This is what students will see once your application is approved.",
+    "headlineLabel": "Professional headline",
+    "bioLabel": "About you",
+    "subjectsLabel": "Subjects you teach",
+    "levelsLabel": "Grade levels you teach",
+    "languagesLabel": "Languages you teach in",
+    "modeLabel": "Online or in person",
+    "rateLabel": "Hourly rate (CAD)",
+    "experienceLabel": "Years of experience",
+    "cityLabel": "City",
+    "provinceLabel": "Province",
+    "saveDraft": "Save",
+    "submitForReview": "Submit for Review",
+    "saved": "Saved.",
+    "errors": {
+      "notATutor": "Only tutor accounts can edit a tutor profile.",
+      "invalidInput": "Please check your information — some fields are missing or too short.",
+      "alreadySubmitted": "Your profile has already been submitted and can no longer be edited here."
+    }
   },
   "becomeATutorPage": {
     "metaTitle": "Become a Tutor",
@@ -412,20 +436,33 @@
   "dashboard": {
     "logOut": "Log Out",
     "nav": {
-      "overview": "Overview"
+      "overview": "Overview",
+      "profile": "Profile",
+      "favorites": "Favorites",
+      "tutors": "Tutors"
     },
     "student": {
       "welcome": "Welcome, {name}",
       "description": "This is your student dashboard. Booking, messaging and progress tracking are on the way.",
       "noBookingsTitle": "No bookings yet",
       "noBookingsDescription": "Once you book a session with a tutor, it will show up here.",
-      "findTutorCta": "Find a Tutor"
+      "findTutorCta": "Find a Tutor",
+      "favorites": {
+        "title": "Your favorite tutors",
+        "description": "Tutors you've saved for later.",
+        "empty": "You haven't saved any tutors yet.",
+        "findTutorCta": "Find a Tutor"
+      }
     },
     "tutor": {
       "welcome": "Welcome, {name}",
-      "description": "This is your tutor dashboard. Profile setup, availability and bookings are on the way.",
+      "description": "This is your tutor dashboard. Availability and bookings are on the way.",
       "profileIncompleteTitle": "Finish setting up your profile",
-      "profileIncompleteDescription": "Tutor onboarding (subjects, rates, availability) is coming soon — your account has been created and is ready for it.",
+      "profileIncompleteDescription": "Add your subjects, rate and bio so you can submit your application for review.",
+      "profileCompleteTitle": "Your profile is set up",
+      "profileCompleteDescription": "You can keep editing your profile details here at any time.",
+      "completeProfileCta": "Complete Your Profile",
+      "editProfileCta": "Edit Profile",
       "applicationStatus": {
         "DRAFT": "Draft",
         "SUBMITTED": "Submitted",
@@ -443,6 +480,17 @@
         "totalTutors": "Tutor Profiles",
         "pendingApplications": "Pending Applications"
       }
+    }
+  },
+  "admin": {
+    "tutors": {
+      "title": "Tutor applications",
+      "description": "Review and approve tutor applications before they become publicly searchable.",
+      "filterPending": "Pending",
+      "filterAll": "All",
+      "empty": "No tutor applications to show.",
+      "approve": "Approve",
+      "reject": "Reject"
     }
   }
 }

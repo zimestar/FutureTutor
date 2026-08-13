@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { Section } from "@/components/ui/Section";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { TutorCard } from "@/components/marketing/TutorCard";
+import { DemoTutorCard } from "@/components/marketing/DemoTutorCard";
 import { demoTutors } from "@/content/demoTutors";
 import type { DemoTutor } from "@/types/tutor";
 
@@ -27,7 +27,7 @@ export function FeaturedTutors({ tutors = demoTutors }: { tutors?: DemoTutor[] }
       {tutors.length > 0 ? (
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {tutors.map((tutor) => (
-            <TutorCard key={tutor.id} tutor={tutor} />
+            <DemoTutorCard key={tutor.id} tutor={tutor} />
           ))}
         </div>
       ) : (

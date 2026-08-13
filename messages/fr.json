@@ -127,7 +127,9 @@
       "topTutor": "Meilleur tuteur",
       "respondsQuickly": "Répond rapidement",
       "popular": "Populaire"
-    }
+    },
+    "addFavorite": "Ajouter aux favoris",
+    "removeFavorite": "Retirer des favoris"
   },
   "demoTutors": {
     "demo-1": {
@@ -328,15 +330,37 @@
     "metaDescription": "Cherchez un tuteur sur FutureTutor par matière, niveau scolaire et mode d'apprentissage.",
     "heading": "Trouver un tuteur",
     "subheading": "Recherchez par matière, niveau et mode d'apprentissage.",
-    "badge": "Résultats d'exemple — données de démonstration",
     "resultCount": "{count, plural, one {# résultat} other {# résultats}}",
-    "empty": "Aucun tuteur exemple ne correspond à ces critères. Essayez d'élargir votre recherche."
+    "newMarketplaceBadge": "Nouvelle plateforme",
+    "emptyFiltered": "Aucun tuteur ne correspond à ces critères. Essayez d'élargir votre recherche.",
+    "emptyNoTutorsYet": "On démarre tout juste — aucun tuteur ne s'est encore joint. Revenez bientôt, ou faites une demande pour devenir l'un de nos premiers tuteurs."
   },
-  "tutorProfile": {
-    "demoBadge": "Profil d'exemple — données de démonstration",
+  "tutorProfilePage": {
     "yearsExperience": "{count}+ ans d'expérience",
     "requestToBook": "Demander une réservation",
     "bookingNote": "La réservation sera possible dès le lancement des comptes."
+  },
+  "tutorProfileForm": {
+    "title": "Votre profil de tuteur",
+    "subtitle": "Voici ce que les élèves verront une fois votre demande approuvée.",
+    "headlineLabel": "Titre professionnel",
+    "bioLabel": "À propos de vous",
+    "subjectsLabel": "Matières que vous enseignez",
+    "levelsLabel": "Niveaux scolaires enseignés",
+    "languagesLabel": "Langues d'enseignement",
+    "modeLabel": "En ligne ou en personne",
+    "rateLabel": "Tarif horaire (CAD)",
+    "experienceLabel": "Années d'expérience",
+    "cityLabel": "Ville",
+    "provinceLabel": "Province",
+    "saveDraft": "Enregistrer",
+    "submitForReview": "Soumettre pour révision",
+    "saved": "Enregistré.",
+    "errors": {
+      "notATutor": "Seuls les comptes tuteurs peuvent modifier un profil de tuteur.",
+      "invalidInput": "Veuillez vérifier vos informations — certains champs sont manquants ou trop courts.",
+      "alreadySubmitted": "Votre profil a déjà été soumis et ne peut plus être modifié ici."
+    }
   },
   "becomeATutorPage": {
     "metaTitle": "Devenir tuteur",
@@ -412,20 +436,33 @@
   "dashboard": {
     "logOut": "Déconnexion",
     "nav": {
-      "overview": "Aperçu"
+      "overview": "Aperçu",
+      "profile": "Profil",
+      "favorites": "Favoris",
+      "tutors": "Tuteurs"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
       "description": "Voici votre tableau de bord élève. La réservation, la messagerie et le suivi des progrès arrivent bientôt.",
       "noBookingsTitle": "Aucune réservation pour l'instant",
       "noBookingsDescription": "Dès que vous réservez une séance avec un tuteur, elle apparaîtra ici.",
-      "findTutorCta": "Trouver un tuteur"
+      "findTutorCta": "Trouver un tuteur",
+      "favorites": {
+        "title": "Vos tuteurs favoris",
+        "description": "Les tuteurs que vous avez sauvegardés.",
+        "empty": "Vous n'avez pas encore sauvegardé de tuteur.",
+        "findTutorCta": "Trouver un tuteur"
+      }
     },
     "tutor": {
       "welcome": "Bienvenue, {name}",
-      "description": "Voici votre tableau de bord tuteur. La configuration du profil, les disponibilités et les réservations arrivent bientôt.",
+      "description": "Voici votre tableau de bord tuteur. Les disponibilités et les réservations arrivent bientôt.",
       "profileIncompleteTitle": "Terminez la configuration de votre profil",
-      "profileIncompleteDescription": "L'inscription des tuteurs (matières, tarifs, disponibilités) arrive bientôt — votre compte est créé et prêt.",
+      "profileIncompleteDescription": "Ajoutez vos matières, votre tarif et votre bio pour pouvoir soumettre votre demande à la révision.",
+      "profileCompleteTitle": "Votre profil est configuré",
+      "profileCompleteDescription": "Vous pouvez modifier les détails de votre profil ici en tout temps.",
+      "completeProfileCta": "Compléter votre profil",
+      "editProfileCta": "Modifier le profil",
       "applicationStatus": {
         "DRAFT": "Brouillon",
         "SUBMITTED": "Soumise",
@@ -443,6 +480,17 @@
         "totalTutors": "Profils de tuteurs",
         "pendingApplications": "Demandes en attente"
       }
+    }
+  },
+  "admin": {
+    "tutors": {
+      "title": "Demandes de tuteurs",
+      "description": "Examinez et approuvez les demandes de tuteurs avant qu'ils deviennent visibles dans les recherches publiques.",
+      "filterPending": "En attente",
+      "filterAll": "Toutes",
+      "empty": "Aucune demande de tuteur à afficher.",
+      "approve": "Approuver",
+      "reject": "Refuser"
     }
   }
 }

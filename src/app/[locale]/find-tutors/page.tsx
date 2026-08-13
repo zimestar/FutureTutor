@@ -5,7 +5,12 @@ import { Section } from "@/components/ui/Section";
 import { Badge } from "@/components/ui/Badge";
 import { TutorSearch } from "@/components/marketing/TutorSearch";
 import { TutorCard } from "@/components/marketing/TutorCard";
-import { demoTutors } from "@/content/demoTutors";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { subjects } from "@/content/subjects";
+import { getFavoritedTutorIds } from "@/lib/favorites";
+import { tutorProfileToCardData } from "@/lib/tutorCard";
+import { displayModeToDb } from "@/lib/tutorMode";
 import type { GradeLevelKey, LearningMode } from "@/types/tutor";
 
 const gradeLevelKeys: GradeLevelKey[] = [
@@ -45,23 +50,32 @@ export default async function FindTutorsPage({
   const tLevels = await getTranslations({ locale, namespace: "gradeLevels" });
   const tSearch = await getTranslations({ locale, namespace: "search" });
 
-  const levelKey = gradeLevelKeys.includes(level as GradeLevelKey)
-    ? (level as GradeLevelKey)
+  const levelKey = gradeLevelKeys.includes(level as GradeLevelKey) ? (level as GradeLevelKey) : undefined;
+  const modeKey = mode === "online" || mode === "in-person" ? (mode as LearningMode) : undefined;
+
+  const matchedSubjectSlugs = subject
+    ? subjects.filter((s) => tSubjects(s.slug).toLowerCase().includes(subject.toLowerCase())).map((s) => s.slug)
     : undefined;
 
-  const results = demoTutors.filter((tutor) => {
-    const matchesSubject = subject
-      ? tutor.subjectSlugs.some((slug) =>
-          tSubjects(slug).toLowerCase().includes(subject.toLowerCase())
-        )
-      : true;
-    const matchesLevel = levelKey ? tutor.gradeLevels.includes(levelKey) : true;
-    const matchesMode = mode
-      ? tutor.learningMode === (mode as LearningMode) || tutor.learningMode === "both"
-      : true;
-    return matchesSubject && matchesLevel && matchesMode;
-  });
+  const session = await auth();
+  const [tutorProfiles, favoritedIds] = await Promise.all([
+    db.tutorProfile.findMany({
+      where: {
+        applicationStatus: "APPROVED",
+        ...(matchedSubjectSlugs ? { subjects: { some: { subject: { slug: { in: matchedSubjectSlugs } } } } } : {}),
+        ...(levelKey ? { levels: { some: { academicLevel: { slug: levelKey } } } } : {}),
+        ...(modeKey ? { OR: [{ learningMode: displayModeToDb(modeKey) }, { learningMode: "BOTH" }] } : {}),
+      },
+      include: {
+        user: { select: { name: true } },
+        subjects: { select: { subject: { select: { slug: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    getFavoritedTutorIds(session),
+  ]);
 
+  const results = tutorProfiles.map((tutor) => tutorProfileToCardData(tutor, tSubjects, favoritedIds));
   const hasFilters = Boolean(subject || level || mode);
 
   return (
@@ -80,7 +94,6 @@ export default async function FindTutorsPage({
 
       <Section className="bg-off-white">
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Badge variant="outline">{t("badge")}</Badge>
           {hasFilters && (
             <p className="text-sm text-slate">
               {t("resultCount", { count: results.length })}
@@ -99,7 +112,10 @@ export default async function FindTutorsPage({
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-10 text-center text-slate">
-            {t("empty")}
+            <Badge variant="outline" className="mb-3">
+              {t("newMarketplaceBadge")}
+            </Badge>
+            <p>{hasFilters ? t("emptyFiltered") : t("emptyNoTutorsYet")}</p>
           </div>
         )}
       </Section>

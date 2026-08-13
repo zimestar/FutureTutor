@@ -4,14 +4,13 @@ import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { FavoriteButton } from "@/components/marketing/FavoriteButton";
 import { formatHourlyRate } from "@/lib/utils";
-import type { DemoTutor } from "@/types/tutor";
+import type { TutorCardData } from "@/types/tutor";
 
-export function TutorCard({ tutor }: { tutor: DemoTutor }) {
+export function TutorCard({ tutor }: { tutor: TutorCardData }) {
   const locale = useLocale();
   const t = useTranslations("tutorCard");
-  const tSubjects = useTranslations("subjects.items");
-  const tDemo = useTranslations(`demoTutors.${tutor.id}`);
 
   return (
     <Card className="flex h-full flex-col p-5 hover:shadow-card-hover">
@@ -19,13 +18,18 @@ export function TutorCard({ tutor }: { tutor: DemoTutor }) {
         <Avatar name={tutor.firstName} size={56} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-lg font-bold text-navy">{tutor.firstName}</h3>
-          <p className="text-sm font-semibold text-slate">{tDemo("headline")}</p>
-          <div className="mt-1 flex items-center gap-1 text-sm">
-            <Star size={14} className="text-warning" fill="currentColor" strokeWidth={0} />
-            <span className="font-bold text-navy">{tutor.rating.toFixed(1)}</span>
-            <span className="text-slate">{t("reviews", { count: tutor.reviewCount })}</span>
-          </div>
+          <p className="text-sm font-semibold text-slate">{tutor.headline}</p>
+          {tutor.reviewCount > 0 && (
+            <div className="mt-1 flex items-center gap-1 text-sm">
+              <Star size={14} className="text-warning" fill="currentColor" strokeWidth={0} />
+              <span className="font-bold text-navy">{tutor.rating.toFixed(1)}</span>
+              <span className="text-slate">{t("reviews", { count: tutor.reviewCount })}</span>
+            </div>
+          )}
         </div>
+        {tutor.isFavorited !== undefined && (
+          <FavoriteButton tutorProfileId={tutor.id} initialFavorited={tutor.isFavorited} />
+        )}
       </div>
 
       {tutor.badges.length > 0 && (
@@ -38,12 +42,12 @@ export function TutorCard({ tutor }: { tutor: DemoTutor }) {
         </div>
       )}
 
-      <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-neutral-600">{tDemo("bio")}</p>
+      <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-neutral-600">{tutor.bio}</p>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
-        {tutor.subjectSlugs.map((slug) => (
-          <Badge key={slug} variant="neutral">
-            {tSubjects(slug)}
+        {tutor.subjectLabels.map((label) => (
+          <Badge key={label} variant="neutral">
+            {label}
           </Badge>
         ))}
       </div>
@@ -53,10 +57,12 @@ export function TutorCard({ tutor }: { tutor: DemoTutor }) {
           <Laptop size={14} aria-hidden="true" />
           {t(`mode.${tutor.learningMode}`)}
         </span>
-        <span className="flex items-center gap-1">
-          <MapPin size={14} aria-hidden="true" />
-          {tutor.city}
-        </span>
+        {tutor.city && (
+          <span className="flex items-center gap-1">
+            <MapPin size={14} aria-hidden="true" />
+            {tutor.city}
+          </span>
+        )}
         <span>{t("yearsExperience", { count: tutor.yearsExperience })}</span>
       </div>
 

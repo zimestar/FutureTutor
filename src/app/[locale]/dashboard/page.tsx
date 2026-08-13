@@ -23,7 +23,13 @@ export default async function StudentDashboardPage({
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
 
   return (
-    <DashboardShell navItems={[{ label: tNav("overview"), href: "/dashboard" }]} userName={user.name ?? ""}>
+    <DashboardShell
+      navItems={[
+        { label: tNav("overview"), href: "/dashboard" },
+        { label: tNav("favorites"), href: "/dashboard/favorites" },
+      ]}
+      userName={user.name ?? ""}
+    >
       <h1 className="text-2xl font-bold text-navy">{t("welcome", { name: user.name?.split(" ")[0] ?? "" })}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

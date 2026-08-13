@@ -6,16 +6,15 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { TutorCard } from "@/components/marketing/TutorCard";
 import { subjects } from "@/content/subjects";
-import { demoTutors } from "@/content/demoTutors";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getFavoritedTutorIds } from "@/lib/favorites";
+import { tutorProfileToCardData } from "@/lib/tutorCard";
 
 type Params = { locale: string; subject: string };
 
 function getSubject(slug: string) {
   return subjects.find((s) => s.slug === slug);
-}
-
-export function generateStaticParams() {
-  return subjects.map((s) => ({ subject: s.slug }));
 }
 
 export async function generateMetadata({
@@ -43,9 +42,26 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
 
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "subjects" });
+  const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const label = t(`items.${slug}`);
 
-  const matches = demoTutors.filter((tutor) => tutor.subjectSlugs.includes(slug));
+  const session = await auth();
+  const [tutorProfiles, favoritedIds] = await Promise.all([
+    db.tutorProfile.findMany({
+      where: {
+        applicationStatus: "APPROVED",
+        subjects: { some: { subject: { slug } } },
+      },
+      include: {
+        user: { select: { name: true } },
+        subjects: { select: { subject: { select: { slug: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    getFavoritedTutorIds(session),
+  ]);
+
+  const matches = tutorProfiles.map((tutor) => tutorProfileToCardData(tutor, tSubjects, favoritedIds));
 
   return (
     <MarketingShell>
