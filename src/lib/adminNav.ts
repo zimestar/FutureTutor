@@ -1,0 +1,9 @@
+import type { DashboardNavItem } from "@/components/dashboard/DashboardShell";
+
+export function adminNavItems(tNav: (key: string) => string): DashboardNavItem[] {
+  return [
+    { label: tNav("overview"), href: "/admin" },
+    { label: tNav("tutors"), href: "/admin/tutors" },
+    { label: tNav("pricing"), href: "/admin/pricing" },
+  ];
+}

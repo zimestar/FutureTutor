@@ -26,7 +26,6 @@ export interface TutorProfileFormValues {
   subjectSlugs: string[];
   levelSlugs: string[];
   languages: string[];
-  hourlyRateCad: number | "";
   yearsExperience: number | "";
   city: string;
   province: string;
@@ -164,22 +163,9 @@ export function TutorProfileForm({
         </div>
       </div>
 
+      <p className="rounded-md bg-blue/5 px-4 py-3 text-sm text-slate">{t("pricingNote")}</p>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="hourlyRateCad" className="mb-1.5 block text-sm font-semibold text-navy">
-            {t("rateLabel")}
-          </label>
-          <Input
-            id="hourlyRateCad"
-            name="hourlyRateCad"
-            type="number"
-            min={1}
-            max={500}
-            step="0.01"
-            defaultValue={values.hourlyRateCad}
-            required
-          />
-        </div>
         <div>
           <label htmlFor="yearsExperience" className="mb-1.5 block text-sm font-semibold text-navy">
             {t("experienceLabel")}

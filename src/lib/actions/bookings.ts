@@ -7,6 +7,21 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
+import {
+  validateAndConsumeCustomerPriceQuote,
+  QuoteNotFoundError,
+  QuoteNotOwnedError,
+  QuoteExpiredError,
+  QuoteAlreadyConsumedError,
+  QuoteNotActiveError,
+  QuoteContextMismatchError,
+} from "@/services/customerPricing";
+import {
+  validateAndConsumeTutorPayoutQuote,
+  TutorPayoutQuoteNotFoundError,
+  TutorPayoutQuoteExpiredError,
+  TutorPayoutQuoteNotActiveError,
+} from "@/services/tutorPayout";
 
 export type BookingActionState = { error?: string; success?: boolean } | undefined;
 
@@ -36,6 +51,10 @@ export async function createBookingAction(
   if (!parsed.success) return { error: t("invalidInput") };
   const { tutorProfileId, subjectId, academicLevelId: levelId, startAt } = parsed.data;
 
+  const customerPriceQuoteId = String(formData.get("customerPriceQuoteId") ?? "");
+  const tutorPayoutQuoteId = String(formData.get("tutorPayoutQuoteId") ?? "");
+  if (!customerPriceQuoteId || !tutorPayoutQuoteId) return { error: t("pricingUnavailable") };
+
   const [studentProfile, tutorProfile] = await Promise.all([
     db.studentProfile.findUnique({ where: { userId: session.user.id } }),
     db.tutorProfile.findUnique({ where: { id: tutorProfileId } }),
@@ -51,6 +70,7 @@ export async function createBookingAction(
   if (!isValidSlot) return { error: t("slotTaken") };
 
   const endAt = new Date(startAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
+  const mode = tutorProfile.learningMode ?? "BOTH";
 
   try {
     await db.$transaction(
@@ -59,6 +79,22 @@ export async function createBookingAction(
           where: { tutorProfileId, startAt, status: { in: [...ACTIVE_BOOKING_STATUSES] } },
         });
         if (conflict) throw new SlotTakenError();
+
+        const customerQuote = await validateAndConsumeCustomerPriceQuote(tx, customerPriceQuoteId, session.user.id, {
+          subjectId,
+          academicLevelId: levelId,
+          tutoringMode: mode,
+          durationMinutes: SESSION_DURATION_MINUTES,
+          requestedStartAt: startAt,
+        });
+        const payoutQuote = await validateAndConsumeTutorPayoutQuote(
+          tx,
+          tutorPayoutQuoteId,
+          tutorProfileId,
+          customerPriceQuoteId
+        );
+
+        const grossSpreadCents = customerQuote.subtotalCents - payoutQuote.totalPayoutCents;
 
         const booking = await tx.booking.create({
           data: {
@@ -69,11 +105,22 @@ export async function createBookingAction(
             startAt,
             endAt,
             timezone,
-            mode: tutorProfile.learningMode ?? "BOTH",
-            hourlyRateCentsSnapshot: tutorProfile.hourlyRateCents ?? 0,
+            mode,
             platformFeeCentsSnapshot: 0,
-            totalCents: tutorProfile.hourlyRateCents ?? 0,
+            totalCents: customerQuote.totalCents,
             status: "CONFIRMED",
+            customerPriceQuoteId: customerQuote.id,
+            tutorPayoutQuoteId: payoutQuote.id,
+            customerBasePriceCents: customerQuote.basePriceCents,
+            customerAdjustmentCents: customerQuote.adjustmentsTotalCents,
+            customerSubtotalCents: customerQuote.subtotalCents,
+            taxCents: customerQuote.taxCents,
+            tutorPayoutBaseCents: payoutQuote.basePayoutCents,
+            tutorPayoutAdjustmentCents: payoutQuote.adjustmentsTotalCents,
+            tutorPayoutCents: payoutQuote.totalPayoutCents,
+            grossSpreadCents,
+            customerPricingVersion: customerQuote.pricingVersion,
+            tutorPayoutVersion: payoutQuote.payoutVersion,
           },
         });
         await tx.bookingStatusHistory.create({
@@ -85,6 +132,19 @@ export async function createBookingAction(
     );
   } catch (error) {
     if (error instanceof SlotTakenError) return { error: t("slotTaken") };
+    if (
+      error instanceof QuoteNotFoundError ||
+      error instanceof QuoteNotOwnedError ||
+      error instanceof QuoteExpiredError ||
+      error instanceof QuoteAlreadyConsumedError ||
+      error instanceof QuoteNotActiveError ||
+      error instanceof QuoteContextMismatchError ||
+      error instanceof TutorPayoutQuoteNotFoundError ||
+      error instanceof TutorPayoutQuoteExpiredError ||
+      error instanceof TutorPayoutQuoteNotActiveError
+    ) {
+      return { error: t("pricingUnavailable") };
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return { error: t("slotTaken") };
     }

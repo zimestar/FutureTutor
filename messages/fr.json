@@ -116,7 +116,8 @@
   "tutorCard": {
     "reviews": "{count, plural, one {(# avis)} other {(# avis)}}",
     "viewProfile": "Voir le profil",
-    "perHour": "CAD/h",
+    "priceFrom": "À partir de",
+    "pricingCalculatedPerSession": "Prix calculé par séance",
     "yearsExperience": "{count}+ ans d'expérience",
     "mode": {
       "online": "En ligne",
@@ -338,7 +339,8 @@
   "tutorProfilePage": {
     "yearsExperience": "{count}+ ans d'expérience",
     "requestToBook": "Demander une réservation",
-    "bookingNote": "La réservation sera possible dès le lancement des comptes."
+    "bookingNote": "La réservation sera possible dès le lancement des comptes.",
+    "pricingNote": "FutureTutor calcule le prix de la séance selon la matière, le niveau et l'horaire — vous le verrez avant de confirmer."
   },
   "tutorProfileForm": {
     "title": "Votre profil de tuteur",
@@ -349,7 +351,7 @@
     "levelsLabel": "Niveaux scolaires enseignés",
     "languagesLabel": "Langues d'enseignement",
     "modeLabel": "En ligne ou en personne",
-    "rateLabel": "Tarif horaire (CAD)",
+    "pricingNote": "FutureTutor détermine le prix des séances et votre rémunération selon la demande — vous verrez votre gain exact avant d'accepter toute réservation.",
     "experienceLabel": "Années d'expérience",
     "cityLabel": "Ville",
     "provinceLabel": "Province",
@@ -444,7 +446,8 @@
       "bookings": "Réservations",
       "documents": "Documents",
       "training": "Formation",
-      "exam": "Examen"
+      "exam": "Examen",
+      "pricing": "Tarification"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -539,6 +542,13 @@
     },
     "tutorDetail": {
       "validationVersion": "Validation v{version}",
+      "payoutTierLabel": "Palier de rémunération",
+      "payoutTiers": {
+        "NEW": "Nouveau",
+        "VERIFIED": "Vérifié",
+        "SENIOR": "Senior",
+        "ELITE": "Élite"
+      },
       "startDocumentReview": "Commencer la révision des documents",
       "requireInterview": "Passer à l'étape entrevue",
       "requireInterviewGateHint": "Nécessite au moins un relevé de notes, diplôme ou grade approuvé.",
@@ -638,6 +648,18 @@
     "success": "Votre séance est réservée!",
     "viewBookings": "Voir vos réservations",
     "signInToBook": "Connectez-vous comme élève pour réserver une séance.",
+    "calculatingPrice": "Calcul du prix…",
+    "sessionPrice": "Séance",
+    "tax": "Taxe",
+    "total": "Total",
+    "adjustmentReasons": {
+      "urgencyShortNotice": "Réservation à court préavis",
+      "urgencyUrgent": "Réservation urgente",
+      "lowSupply": "Forte demande pour cette matière",
+      "travel": "Déplacement",
+      "tutorUrgencyBonus": "Prime pour séance urgente",
+      "travelCompensation": "Compensation de déplacement"
+    },
     "status": {
       "DRAFT": "Brouillon",
       "PENDING_PAYMENT": "Paiement en attente",
@@ -655,7 +677,8 @@
       "slotTaken": "Ce créneau vient d'être pris — veuillez en choisir un autre.",
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "notFound": "Cette réservation est introuvable.",
-      "notYours": "Vous ne pouvez pas gérer cette réservation."
+      "notYours": "Vous ne pouvez pas gérer cette réservation.",
+      "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière."
     }
   },
   "tutorEducationForm": {

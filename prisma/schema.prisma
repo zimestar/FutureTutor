@@ -50,6 +50,7 @@ model User {
   notificationPreference NotificationPreference?
   auditLogs              AuditLog[]                @relation("AuditActor")
   bookingStatusChanges   BookingStatusHistory[]    @relation("BookingStatusChangedBy")
+  createdPriceQuotes     CustomerPriceQuote[]
 
   @@index([role])
 }
@@ -121,6 +122,7 @@ model StudentProfile {
   favorites           TutorFavorite[]
   bookings            Booking[]
   reviews             Review[]
+  priceQuotes         CustomerPriceQuote[]
 }
 
 model ParentProfile {
@@ -191,6 +193,16 @@ enum StripeConnectStatus {
   DISABLED
 }
 
+// Placeholder tier names (Phase E) — never shown publicly. A simple, explicit,
+// admin-set field, not derived from TutorScore/session history/public rating —
+// there isn't enough marketplace history yet to justify an automated tier.
+enum TutorTier {
+  NEW
+  VERIFIED
+  SENIOR
+  ELITE
+}
+
 model TutorProfile {
   id                     String                 @id @default(cuid())
   userId                 String                 @unique
@@ -210,6 +222,8 @@ model TutorProfile {
   /// simplified process (historical, not retroactively changed); 2 = approved
   /// under the full Tutor Validation Depth pipeline.
   validationVersion      Int?
+  // Phase E — simple explicit payout tier, see TutorTier enum comment.
+  payoutTier             TutorTier              @default(NEW)
   learningMode           TutoringMode?
   city                   String?
   province               String?
@@ -243,6 +257,7 @@ model TutorProfile {
   favoritedBy            TutorFavorite[]
   reviews                Review[]
   payouts                TutorPayout[]
+  payoutQuotes           TutorPayoutQuote[]
 
   @@index([applicationStatus])
   @@index([city, province])
@@ -601,10 +616,14 @@ model Subject {
   isActive  Boolean @default(true)
   sortOrder Int     @default(0)
 
-  tutorSubjects TutorSubject[]
-  learningGoals LearningGoal[]
-  bookings      Booking[]
-  tutorExams    TutorExam[]
+  tutorSubjects   TutorSubject[]
+  learningGoals   LearningGoal[]
+  bookings        Booking[]
+  tutorExams      TutorExam[]
+  basePriceRules  CustomerBasePriceRule[]
+  basePayoutRules TutorBasePayoutRule[]
+  priceQuotes     CustomerPriceQuote[]
+  payoutQuotes    TutorPayoutQuote[]
 }
 
 model AcademicLevel {
@@ -615,6 +634,10 @@ model AcademicLevel {
   tutorLevels     TutorLevel[]
   studentProfiles StudentProfile[]
   bookings        Booking[]
+  basePriceRules  CustomerBasePriceRule[]
+  basePayoutRules TutorBasePayoutRule[]
+  priceQuotes     CustomerPriceQuote[]
+  payoutQuotes    TutorPayoutQuote[]
 }
 
 model TutorFavorite {
@@ -656,7 +679,11 @@ model Booking {
   timezone                 String
   mode                     TutoringMode
   locationNote             String?
-  hourlyRateCentsSnapshot  Int
+  /// @deprecated Legacy Phase C snapshot of the tutor's own rate. Nullable
+  /// since Phase E — existing rows keep their historical value untouched;
+  /// new bookings no longer populate it (see customerBasePriceCents etc.
+  /// below, sourced from CustomerPriceQuote/TutorPayoutQuote instead).
+  hourlyRateCentsSnapshot  Int?
   platformFeeCentsSnapshot Int
   currency                 String        @default("CAD")
   totalCents               Int
@@ -668,15 +695,32 @@ model Booking {
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @updatedAt
 
-  studentProfile StudentProfile         @relation(fields: [studentProfileId], references: [id])
-  tutorProfile   TutorProfile           @relation(fields: [tutorProfileId], references: [id])
-  subject        Subject                @relation(fields: [subjectId], references: [id])
-  academicLevel  AcademicLevel?         @relation(fields: [academicLevelId], references: [id])
-  statusHistory  BookingStatusHistory[]
-  session        Session_?
-  payment        Payment?
-  review         Review?
-  conversation   Conversation?
+  // --- Phase E financial snapshot (nullable — legacy Phase C bookings have
+  // none of these; every new booking sets them from the consumed quotes) ---
+  customerPriceQuoteId       String?
+  tutorPayoutQuoteId         String?
+  customerBasePriceCents     Int?
+  customerAdjustmentCents    Int?
+  customerSubtotalCents      Int?
+  taxCents                   Int?
+  tutorPayoutBaseCents       Int?
+  tutorPayoutAdjustmentCents Int?
+  tutorPayoutCents           Int?
+  grossSpreadCents           Int?
+  customerPricingVersion     String?
+  tutorPayoutVersion         String?
+
+  studentProfile     StudentProfile         @relation(fields: [studentProfileId], references: [id])
+  tutorProfile       TutorProfile           @relation(fields: [tutorProfileId], references: [id])
+  subject            Subject                @relation(fields: [subjectId], references: [id])
+  academicLevel      AcademicLevel?         @relation(fields: [academicLevelId], references: [id])
+  customerPriceQuote CustomerPriceQuote?    @relation(fields: [customerPriceQuoteId], references: [id])
+  tutorPayoutQuote   TutorPayoutQuote?      @relation(fields: [tutorPayoutQuoteId], references: [id])
+  statusHistory      BookingStatusHistory[]
+  session            Session_?
+  payment            Payment?
+  review             Review?
+  conversation       Conversation?
 
   @@index([studentProfileId])
   @@index([tutorProfileId])
@@ -725,7 +769,182 @@ model Session_ {
 }
 
 // ---------------------------------------------------------------------------
-// Finance (Phase D)
+// Pricing & Payouts (Phase E — Customer Price Engine + Tutor Payout Engine).
+// Two independent, versioned, auditable financial engines: one decides what
+// the customer pays, one decides what the tutor earns. Never a fixed
+// percentage of each other — see src/services/customerPricing.ts and
+// src/services/tutorPayout.ts for the calculation order.
+// ---------------------------------------------------------------------------
+
+model CustomerBasePriceRule {
+  id                  String    @id @default(cuid())
+  // null = wildcard, used for rule-priority fallback resolution.
+  subjectId           String?
+  academicLevelId     String?
+  baseDurationMinutes Int
+  basePriceCents      Int
+  currency            String    @default("CAD")
+  effectiveFrom       DateTime  @default(now())
+  effectiveUntil      DateTime?
+  isActive            Boolean   @default(true)
+  pricingVersion      String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  subject       Subject?             @relation(fields: [subjectId], references: [id])
+  academicLevel AcademicLevel?       @relation(fields: [academicLevelId], references: [id])
+  quotes        CustomerPriceQuote[]
+
+  @@index([subjectId, academicLevelId, isActive])
+}
+
+model TutorBasePayoutRule {
+  id                  String    @id @default(cuid())
+  tutorTier           TutorTier
+  subjectId           String?
+  academicLevelId     String?
+  baseDurationMinutes Int
+  payoutCents         Int
+  currency            String    @default("CAD")
+  isActive            Boolean   @default(true)
+  effectiveFrom       DateTime  @default(now())
+  effectiveUntil      DateTime?
+  payoutVersion       String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  subject       Subject?           @relation(fields: [subjectId], references: [id])
+  academicLevel AcademicLevel?     @relation(fields: [academicLevelId], references: [id])
+  quotes        TutorPayoutQuote[]
+
+  @@index([tutorTier, subjectId, academicLevelId, isActive])
+}
+
+// Single-row (singleton) typed settings — a handful of scalar tuning knobs,
+// deliberately not a generic key-value/JSON config table (that pattern is
+// reserved for CustomerBasePriceRule/TutorBasePayoutRule's real relational
+// rules). Mutated in place; configVersion is what lets a quote record which
+// settings state produced it.
+model MarketplacePricingSettings {
+  id                               String   @id @default(cuid())
+  quoteTtlMinutes                  Int      @default(15)
+  urgencyShortNoticeThresholdHours Int      @default(48)
+  urgencyShortNoticeAmountCents    Int      @default(300)
+  urgencyUrgentThresholdHours      Int      @default(24)
+  urgencyUrgentAmountCents         Int      @default(600)
+  lowSupplyThresholdCount          Int      @default(2)
+  lowSupplyAmountCents             Int      @default(400)
+  tutorUrgencyBonusCents           Int      @default(400)
+  minimumGrossSpreadCents          Int      @default(0)
+  configVersion                    String   @default("MARKETPLACE_SETTINGS_V1")
+  updatedAt                        DateTime @updatedAt
+  updatedByUserId                  String?
+}
+
+enum CustomerQuoteStatus {
+  ACTIVE
+  EXPIRED
+  CONSUMED
+  CANCELLED
+}
+
+model CustomerPriceQuote {
+  id                       String              @id @default(cuid())
+  // The authenticated actor who requested the quote (may be a parent booking
+  // for a child later) — distinct from studentProfileId, the beneficiary.
+  createdByUserId          String
+  studentProfileId         String
+  subjectId                String
+  academicLevelId          String?
+  tutoringMode             TutoringMode
+  durationMinutes          Int
+  requestedStartAt         DateTime
+  currency                 String              @default("CAD")
+  basePriceCents           Int
+  basePriceRuleId          String
+  basePriceRuleVersion     String
+  adjustmentsTotalCents    Int
+  subtotalCents            Int
+  taxCents                 Int
+  taxConfigured            Boolean             @default(false)
+  totalCents               Int
+  pricingVersion           String
+  marketplaceConfigVersion String
+  contextHash              String
+  breakdown                Json
+  contextSnapshot          Json
+  status                   CustomerQuoteStatus @default(ACTIVE)
+  createdAt                DateTime            @default(now())
+  expiresAt                DateTime
+  consumedAt               DateTime?
+  cancelledAt              DateTime?
+
+  createdByUser  User                  @relation(fields: [createdByUserId], references: [id])
+  studentProfile StudentProfile        @relation(fields: [studentProfileId], references: [id])
+  subject        Subject               @relation(fields: [subjectId], references: [id])
+  academicLevel  AcademicLevel?        @relation(fields: [academicLevelId], references: [id])
+  basePriceRule  CustomerBasePriceRule @relation(fields: [basePriceRuleId], references: [id])
+  payoutQuotes   TutorPayoutQuote[]
+  bookings       Booking[]
+
+  @@index([createdByUserId, status])
+  @@index([studentProfileId, status])
+  @@index([expiresAt])
+}
+
+enum TutorPayoutQuoteStatus {
+  ACTIVE
+  EXPIRED
+  ACCEPTED
+  CONSUMED
+  DECLINED
+  SUPERSEDED
+  CANCELLED
+}
+
+model TutorPayoutQuote {
+  id                       String                 @id @default(cuid())
+  tutorProfileId           String
+  customerPriceQuoteId     String
+  subjectId                String
+  academicLevelId          String?
+  tutoringMode             TutoringMode
+  durationMinutes          Int
+  requestedStartAt         DateTime
+  currency                 String                 @default("CAD")
+  basePayoutCents          Int
+  basePayoutRuleId         String
+  basePayoutRuleVersion    String
+  tutorTierAtCalculation   TutorTier
+  adjustmentsTotalCents    Int
+  totalPayoutCents         Int
+  payoutVersion            String
+  marketplaceConfigVersion String
+  breakdown                Json
+  status                   TutorPayoutQuoteStatus @default(ACTIVE)
+  createdAt                DateTime               @default(now())
+  expiresAt                DateTime
+  acceptedAt               DateTime?
+  consumedAt               DateTime?
+  declinedAt               DateTime?
+  cancelledAt              DateTime?
+
+  tutorProfile       TutorProfile        @relation(fields: [tutorProfileId], references: [id])
+  customerPriceQuote CustomerPriceQuote  @relation(fields: [customerPriceQuoteId], references: [id])
+  subject            Subject             @relation(fields: [subjectId], references: [id])
+  academicLevel      AcademicLevel?      @relation(fields: [academicLevelId], references: [id])
+  basePayoutRule     TutorBasePayoutRule @relation(fields: [basePayoutRuleId], references: [id])
+  bookings           Booking[]
+
+  @@index([tutorProfileId, status])
+  @@index([customerPriceQuoteId])
+}
+
+// ---------------------------------------------------------------------------
+// Stripe payment capture & payout transfer (future phase, not yet built —
+// this session's real Phase E built the pre-payment pricing/payout *quote*
+// engine below; these models are the later money-movement layer that will
+// consume CustomerPriceQuote.totalCents / Booking.tutorPayoutCents).
 // ---------------------------------------------------------------------------
 
 enum PaymentStatus {
@@ -794,7 +1013,7 @@ model StripeCustomer {
 }
 
 // ---------------------------------------------------------------------------
-// Messaging (Phase E)
+// Messaging (future phase, not yet built)
 // ---------------------------------------------------------------------------
 
 enum MessageType {
@@ -841,7 +1060,7 @@ model Message {
 }
 
 // ---------------------------------------------------------------------------
-// Reviews (Phase F)
+// Reviews (future phase, not yet built)
 // ---------------------------------------------------------------------------
 
 enum ReviewStatus {
@@ -868,7 +1087,7 @@ model Review {
 }
 
 // ---------------------------------------------------------------------------
-// Notifications (Phase E)
+// Notifications (future phase, not yet built)
 // ---------------------------------------------------------------------------
 
 enum NotificationChannel {

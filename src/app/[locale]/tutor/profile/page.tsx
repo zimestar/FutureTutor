@@ -55,7 +55,6 @@ export default async function TutorProfilePage({
             subjectSlugs: tutorProfile.subjects.map((s) => s.subject.slug),
             levelSlugs: tutorProfile.levels.map((l) => l.academicLevel.slug),
             languages: tutorProfile.languages.map((l) => l.language),
-            hourlyRateCad: tutorProfile.hourlyRateCents ? tutorProfile.hourlyRateCents / 100 : "",
             yearsExperience: tutorProfile.yearsExperience ?? "",
             city: tutorProfile.city ?? "",
             province: tutorProfile.province ?? "",

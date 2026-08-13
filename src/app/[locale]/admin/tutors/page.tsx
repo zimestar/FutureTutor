@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
+import { adminNavItems } from "@/lib/adminNav";
 
 const PENDING_STATUSES: TutorApplicationStatus[] = [
   "SUBMITTED",
@@ -55,13 +56,7 @@ export default async function AdminTutorsPage({
   });
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/admin" },
-        { label: tNav("tutors"), href: "/admin/tutors" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>

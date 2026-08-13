@@ -184,6 +184,48 @@ async function main() {
     });
     console.log("Seeded PLATFORM tutor exam.");
   }
+
+  // --- Phase E: Customer Price Engine + Tutor Payout Engine. All cents
+  // amounts below are DEV/DEMO configuration only — not FutureTutor's real
+  // business pricing, which hasn't been decided. ---
+
+  const existingSettings = await prisma.marketplacePricingSettings.findFirst();
+  if (!existingSettings) {
+    await prisma.marketplacePricingSettings.create({ data: {} }); // all columns have DEV-labeled schema defaults
+    console.log("Seeded MarketplacePricingSettings (DEV defaults).");
+  }
+
+  const CUSTOMER_PRICING_VERSION = "CUSTOMER_PRICING_V1";
+  const TUTOR_PAYOUT_VERSION = "TUTOR_PAYOUT_V1";
+
+  const existingPriceRules = await prisma.customerBasePriceRule.count();
+  if (existingPriceRules === 0) {
+    await prisma.customerBasePriceRule.createMany({
+      data: [
+        // Platform-wide fallback — used when no subject/level-specific rule matches.
+        { subjectId: null, academicLevelId: null, baseDurationMinutes: 60, basePriceCents: 4500, pricingVersion: CUSTOMER_PRICING_VERSION },
+        { subjectId: mathId.id, academicLevelId: null, baseDurationMinutes: 60, basePriceCents: 4200, pricingVersion: CUSTOMER_PRICING_VERSION },
+        { subjectId: physicsId.id, academicLevelId: null, baseDurationMinutes: 60, basePriceCents: 4800, pricingVersion: CUSTOMER_PRICING_VERSION },
+      ],
+    });
+    console.log("Seeded 3 CustomerBasePriceRule rows (DEV defaults).");
+  }
+
+  const existingPayoutRules = await prisma.tutorBasePayoutRule.count();
+  if (existingPayoutRules === 0) {
+    await prisma.tutorBasePayoutRule.createMany({
+      data: [
+        // Platform-wide fallback per tier.
+        { tutorTier: "NEW", subjectId: null, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 3000, payoutVersion: TUTOR_PAYOUT_VERSION },
+        { tutorTier: "VERIFIED", subjectId: null, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 3400, payoutVersion: TUTOR_PAYOUT_VERSION },
+        { tutorTier: "SENIOR", subjectId: null, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 3800, payoutVersion: TUTOR_PAYOUT_VERSION },
+        { tutorTier: "ELITE", subjectId: null, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 4200, payoutVersion: TUTOR_PAYOUT_VERSION },
+        { tutorTier: "NEW", subjectId: mathId.id, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 2800, payoutVersion: TUTOR_PAYOUT_VERSION },
+        { tutorTier: "NEW", subjectId: physicsId.id, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 3200, payoutVersion: TUTOR_PAYOUT_VERSION },
+      ],
+    });
+    console.log("Seeded 6 TutorBasePayoutRule rows (DEV defaults).");
+  }
 }
 
 main()

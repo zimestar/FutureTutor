@@ -29,7 +29,6 @@ async function applyTutorProfileFields(tutorProfileId: string, data: TutorProfil
       data: {
         headline: data.headline,
         bio: data.bio,
-        hourlyRateCents: Math.round(data.hourlyRateCad * 100),
         yearsExperience: data.yearsExperience,
         city: data.city,
         province: data.province,
@@ -71,7 +70,6 @@ export async function updateTutorProfileAction(
     subjectSlugs: formData.getAll("subjectSlugs"),
     levelSlugs: formData.getAll("levelSlugs"),
     languages: formData.getAll("languages"),
-    hourlyRateCad: formData.get("hourlyRateCad"),
     yearsExperience: formData.get("yearsExperience"),
     city: formData.get("city"),
     province: formData.get("province"),

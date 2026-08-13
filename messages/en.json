@@ -116,7 +116,8 @@
   "tutorCard": {
     "reviews": "{count, plural, one {(# review)} other {(# reviews)}}",
     "viewProfile": "View Profile",
-    "perHour": "CAD/hr",
+    "priceFrom": "From",
+    "pricingCalculatedPerSession": "Pricing calculated per session",
     "yearsExperience": "{count}+ yrs experience",
     "mode": {
       "online": "Online",
@@ -338,7 +339,8 @@
   "tutorProfilePage": {
     "yearsExperience": "{count}+ years of experience",
     "requestToBook": "Request to Book",
-    "bookingNote": "Booking opens once accounts launch."
+    "bookingNote": "Booking opens once accounts launch.",
+    "pricingNote": "FutureTutor calculates the session price based on subject, level and timing — you'll see it before confirming."
   },
   "tutorProfileForm": {
     "title": "Your tutor profile",
@@ -349,7 +351,7 @@
     "levelsLabel": "Grade levels you teach",
     "languagesLabel": "Languages you teach in",
     "modeLabel": "Online or in person",
-    "rateLabel": "Hourly rate (CAD)",
+    "pricingNote": "FutureTutor determines session pricing and your earnings based on the assignment — you'll see your exact payout before accepting any booking.",
     "experienceLabel": "Years of experience",
     "cityLabel": "City",
     "provinceLabel": "Province",
@@ -444,7 +446,8 @@
       "bookings": "Bookings",
       "documents": "Documents",
       "training": "Training",
-      "exam": "Exam"
+      "exam": "Exam",
+      "pricing": "Pricing"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -539,6 +542,13 @@
     },
     "tutorDetail": {
       "validationVersion": "Validation v{version}",
+      "payoutTierLabel": "Payout tier",
+      "payoutTiers": {
+        "NEW": "New",
+        "VERIFIED": "Verified",
+        "SENIOR": "Senior",
+        "ELITE": "Elite"
+      },
       "startDocumentReview": "Start document review",
       "requireInterview": "Move to interview stage",
       "requireInterviewGateHint": "Needs at least one approved transcript, diploma, or degree document.",
@@ -638,6 +648,18 @@
     "success": "Your session is booked!",
     "viewBookings": "View your bookings",
     "signInToBook": "Sign in as a student to book a session.",
+    "calculatingPrice": "Calculating price…",
+    "sessionPrice": "Session",
+    "tax": "Tax",
+    "total": "Total",
+    "adjustmentReasons": {
+      "urgencyShortNotice": "Short-notice booking",
+      "urgencyUrgent": "Urgent booking",
+      "lowSupply": "High demand for this subject",
+      "travel": "Travel",
+      "tutorUrgencyBonus": "Urgent session bonus",
+      "travelCompensation": "Travel compensation"
+    },
     "status": {
       "DRAFT": "Draft",
       "PENDING_PAYMENT": "Pending Payment",
@@ -655,7 +677,8 @@
       "slotTaken": "That slot was just taken — please pick another time.",
       "generic": "Something went wrong. Please try again.",
       "notFound": "This booking could not be found.",
-      "notYours": "You can't manage this booking."
+      "notYours": "You can't manage this booking.",
+      "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject."
     }
   },
   "tutorEducationForm": {

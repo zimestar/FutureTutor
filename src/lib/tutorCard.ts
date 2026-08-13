@@ -8,7 +8,6 @@ interface TutorProfileForCard {
   bio: string | null;
   ratingAverage: number;
   reviewCount: number;
-  hourlyRateCents: number | null;
   learningMode: "ONLINE" | "IN_PERSON" | "BOTH" | null;
   city: string | null;
   yearsExperience: number | null;
@@ -16,11 +15,18 @@ interface TutorProfileForCard {
   subjects: { subject: { slug: string } }[];
 }
 
-/** Real, DB-backed tutor -> the shape `TutorCard` renders. No badges yet — there's no real criteria (reviews, response time) to award them. */
+/**
+ * Real, DB-backed tutor -> the shape `TutorCard` renders. No badges yet —
+ * there's no real criteria (reviews, response time) to award them.
+ * `priceFromCents` is optional and only ever supplied by a caller that has
+ * computed a real Customer Price Engine estimate for a known subject/level
+ * context (see `/find-tutors`) — this function never invents one.
+ */
 export function tutorProfileToCardData(
   tutor: TutorProfileForCard,
   translateSubject: (slug: string) => string,
-  favoritedIds?: Set<string>
+  favoritedIds?: Set<string>,
+  priceFromCents?: number | null
 ): TutorCardData {
   return {
     id: tutor.id,
@@ -31,7 +37,7 @@ export function tutorProfileToCardData(
     subjectLabels: tutor.subjects.map((s) => translateSubject(s.subject.slug)),
     rating: tutor.ratingAverage,
     reviewCount: tutor.reviewCount,
-    hourlyRateCad: tutor.hourlyRateCents ? tutor.hourlyRateCents / 100 : 0,
+    priceFromCents,
     learningMode: dbModeToDisplay(tutor.learningMode ?? "BOTH"),
     city: tutor.city ?? "",
     yearsExperience: tutor.yearsExperience ?? 0,

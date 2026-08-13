@@ -11,6 +11,7 @@ import type { TutorCardData } from "@/types/tutor";
 export function TutorCard({ tutor }: { tutor: TutorCardData }) {
   const locale = useLocale();
   const t = useTranslations("tutorCard");
+  const priceFromCad = tutor.priceFromCents != null ? tutor.priceFromCents / 100 : null;
 
   return (
     <Card className="flex h-full flex-col p-5 hover:shadow-card-hover">
@@ -67,10 +68,13 @@ export function TutorCard({ tutor }: { tutor: TutorCardData }) {
       </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-neutral-200 pt-4">
-        <p className="text-lg font-extrabold text-navy">
-          {formatHourlyRate(tutor.hourlyRateCad, locale)}
-          <span className="text-sm font-semibold text-slate"> {t("perHour")}</span>
-        </p>
+        {priceFromCad != null ? (
+          <p className="text-lg font-extrabold text-navy">
+            {t("priceFrom")} {formatHourlyRate(priceFromCad, locale)}
+          </p>
+        ) : (
+          <p className="text-sm font-semibold text-slate">{t("pricingCalculatedPerSession")}</p>
+        )}
         <Link
           href={`/tutors/${tutor.slug}`}
           className="text-sm font-bold text-blue hover:text-blue-hover"

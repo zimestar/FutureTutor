@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { InterviewRubricForm } from "@/components/dashboard/InterviewRubricForm";
+import { TutorPayoutTierSelect } from "@/components/dashboard/TutorPayoutTierSelect";
 import {
   hasApprovedEducationDocument,
   interviewIsFullyScored,
@@ -27,6 +28,7 @@ import { verifyEducationAction, verifyCertificationAction } from "@/lib/actions/
 import { scheduleInterviewAction } from "@/lib/actions/tutorInterview";
 import { requireTrainingAction } from "@/lib/actions/tutorTraining";
 import { requireExamAction } from "@/lib/actions/tutorExam";
+import { adminNavItems } from "@/lib/adminNav";
 
 export default async function AdminTutorDetailPage({
   params,
@@ -79,10 +81,7 @@ export default async function AdminTutorDetailPage({
 
   return (
     <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/admin" },
-        { label: tNav("tutors"), href: "/admin/tutors" },
-      ]}
+      navItems={adminNavItems(tNav)}
       userName={user.name ?? ""}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -93,6 +92,18 @@ export default async function AdminTutorDetailPage({
         )}
       </div>
       <p className="mt-1 text-sm text-slate">{tutor.user.email}</p>
+
+      <TutorPayoutTierSelect
+        tutorProfileId={tutor.id}
+        currentTier={tutor.payoutTier}
+        label={t("payoutTierLabel")}
+        tierLabels={{
+          NEW: t("payoutTiers.NEW"),
+          VERIFIED: t("payoutTiers.VERIFIED"),
+          SENIOR: t("payoutTiers.SENIOR"),
+          ELITE: t("payoutTiers.ELITE"),
+        }}
+      />
 
       {/* --- Stage actions --- */}
       <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-5">

@@ -4,6 +4,7 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Link } from "@/i18n/navigation";
+import { adminNavItems } from "@/lib/adminNav";
 
 export default async function AdminDashboardPage({
   params,
@@ -36,13 +37,7 @@ export default async function AdminDashboardPage({
   ];
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/admin" },
-        { label: tNav("tutors"), href: "/admin/tutors" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

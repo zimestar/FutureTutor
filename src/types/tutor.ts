@@ -22,7 +22,6 @@ export interface DemoTutor {
   languages: LanguageKey[];
   rating: number;
   reviewCount: number;
-  hourlyRateCad: number;
   learningMode: LearningMode;
   city: string;
   yearsExperience: number;
@@ -45,7 +44,14 @@ export interface TutorCardData {
   subjectLabels: string[];
   rating: number;
   reviewCount: number;
-  hourlyRateCad: number;
+  /**
+   * FutureTutor calculates customer pricing — tutors no longer set a
+   * displayable rate (Phase E). Only set when a real subject/level context
+   * lets `/find-tutors` compute an honest "from $X" estimate; omitted
+   * (neutral "pricing calculated per session" copy) otherwise. Never a
+   * fabricated/guessed number.
+   */
+  priceFromCents?: number | null;
   learningMode: LearningMode;
   city: string;
   yearsExperience: number;

@@ -9,7 +9,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { FavoriteButton } from "@/components/marketing/FavoriteButton";
 import { BookingWidget } from "@/components/marketing/BookingWidget";
-import { formatHourlyRate } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFavoritedTutorIds } from "@/lib/favorites";
@@ -141,10 +140,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
           </div>
 
           <aside className="h-fit rounded-lg border border-neutral-200 bg-white p-6 shadow-card">
-            <p className="text-3xl font-extrabold text-navy">
-              {formatHourlyRate(tutor.hourlyRateCents ? tutor.hourlyRateCents / 100 : 0, locale)}
-              <span className="text-base font-semibold text-slate"> {tCard("perHour")}</span>
-            </p>
+            <p className="text-sm font-semibold text-slate">{tProfile("pricingNote")}</p>
             <p className="mt-1 text-sm text-slate">
               {tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}
             </p>

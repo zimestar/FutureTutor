@@ -11,7 +11,16 @@ import { subjects } from "@/content/subjects";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { displayModeToDb } from "@/lib/tutorMode";
+import { calculateCustomerPrice, PricingRuleNotFoundError } from "@/services/customerPricing";
 import type { GradeLevelKey, LearningMode } from "@/types/tutor";
+
+/** A representative near-future reference time for a price preview — never
+ *  "right now," which would let the urgency adjustment skew a general
+ *  search-page estimate. Module-level so the impure Date.now() call isn't
+ *  inline in the page component's own render path. */
+function representativePreviewStartAt(): Date {
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+}
 
 const gradeLevelKeys: GradeLevelKey[] = [
   "elementary",
@@ -75,7 +84,34 @@ export default async function FindTutorsPage({
     getFavoritedTutorIds(session),
   ]);
 
-  const results = tutorProfiles.map((tutor) => tutorProfileToCardData(tutor, tSubjects, favoritedIds));
+  // A price preview is only honest when exactly one subject is unambiguously
+  // selected — the fuzzy text search above can match several subjects, and
+  // "from $X" across a mixed set would misrepresent which subject it's for.
+  let previewPriceCents: number | null = null;
+  if (matchedSubjectSlugs?.length === 1) {
+    const matchedSubject = await db.subject.findUnique({ where: { slug: matchedSubjectSlugs[0] } });
+    const matchedLevel = levelKey ? await db.academicLevel.findUnique({ where: { slug: levelKey } }) : null;
+    if (matchedSubject) {
+      try {
+        const preview = await calculateCustomerPrice({
+          subjectId: matchedSubject.id,
+          academicLevelId: matchedLevel?.id ?? null,
+          tutoringMode: modeKey ? displayModeToDb(modeKey) : "ONLINE",
+          durationMinutes: 60,
+          requestedStartAt: representativePreviewStartAt(),
+        });
+        previewPriceCents = preview.totalCents;
+      } catch (error) {
+        if (!(error instanceof PricingRuleNotFoundError)) throw error;
+        // No configured rule for this subject/level yet — show no price
+        // rather than guessing one.
+      }
+    }
+  }
+
+  const results = tutorProfiles.map((tutor) =>
+    tutorProfileToCardData(tutor, tSubjects, favoritedIds, previewPriceCents)
+  );
   const hasFilters = Boolean(subject || level || mode);
 
   return (

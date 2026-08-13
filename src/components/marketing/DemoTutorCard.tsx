@@ -16,7 +16,6 @@ export function DemoTutorCard({ tutor }: { tutor: DemoTutor }) {
     subjectLabels: tutor.subjectSlugs.map((slug) => tSubjects(slug)),
     rating: tutor.rating,
     reviewCount: tutor.reviewCount,
-    hourlyRateCad: tutor.hourlyRateCad,
     learningMode: tutor.learningMode,
     city: tutor.city,
     yearsExperience: tutor.yearsExperience,
