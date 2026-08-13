@@ -439,7 +439,9 @@
       "overview": "Aperçu",
       "profile": "Profil",
       "favorites": "Favoris",
-      "tutors": "Tuteurs"
+      "tutors": "Tuteurs",
+      "availability": "Disponibilités",
+      "bookings": "Réservations"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -452,6 +454,17 @@
         "description": "Les tuteurs que vous avez sauvegardés.",
         "empty": "Vous n'avez pas encore sauvegardé de tuteur.",
         "findTutorCta": "Trouver un tuteur"
+      },
+      "bookings": {
+        "title": "Vos réservations",
+        "description": "Les séances que vous avez réservées avec des tuteurs.",
+        "upcomingTitle": "Séances à venir",
+        "pastTitle": "Séances passées",
+        "empty": "Vous n'avez pas encore réservé de séance.",
+        "findTutorCta": "Trouver un tuteur",
+        "withTutor": "avec {name}",
+        "cancelCta": "Annuler la séance",
+        "cancelling": "Annulation…"
       }
     },
     "tutor": {
@@ -470,6 +483,16 @@
         "APPROVED": "Approuvée",
         "REJECTED": "Refusée",
         "SUSPENDED": "Suspendue"
+      },
+      "bookings": {
+        "title": "Vos réservations",
+        "description": "Les séances que des élèves ont réservées avec vous.",
+        "upcomingTitle": "Séances à venir",
+        "pastTitle": "Séances passées",
+        "empty": "Personne n'a encore réservé de séance avec vous.",
+        "withStudent": "avec {name}",
+        "cancelCta": "Annuler la séance",
+        "cancelling": "Annulation…"
       }
     },
     "admin": {
@@ -491,6 +514,68 @@
       "empty": "Aucune demande de tuteur à afficher.",
       "approve": "Approuver",
       "reject": "Refuser"
+    }
+  },
+  "tutorAvailability": {
+    "title": "Disponibilités",
+    "subtitle": "Définissez les jours et heures où vous êtes disponible pour des séances. Les élèves ne peuvent réserver que dans ces plages.",
+    "timezoneLabel": "Fuseau horaire",
+    "timezones": {
+      "America/St_Johns": "Heure de Terre-Neuve (St. John's)",
+      "America/Halifax": "Heure de l'Atlantique (Halifax)",
+      "America/Toronto": "Heure de l'Est (Toronto)",
+      "America/Winnipeg": "Heure du Centre (Winnipeg)",
+      "America/Edmonton": "Heure des Rocheuses (Edmonton)",
+      "America/Vancouver": "Heure du Pacifique (Vancouver)"
+    },
+    "days": {
+      "sunday": "Dimanche",
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi"
+    },
+    "to": "à",
+    "save": "Enregistrer les disponibilités",
+    "saved": "Vos disponibilités ont été enregistrées.",
+    "errors": {
+      "notATutor": "Seuls les tuteurs peuvent définir leurs disponibilités.",
+      "invalidInput": "Veuillez vérifier vos horaires — l'heure de fin doit suivre l'heure de début pour chaque jour activé."
+    }
+  },
+  "booking": {
+    "widgetTitle": "Réserver une séance",
+    "noAvailability": "Ce tuteur n'a pas encore défini ses disponibilités.",
+    "selectDay": "Choisissez un jour",
+    "selectTime": "Choisissez une heure",
+    "subjectLabel": "Matière",
+    "levelLabel": "Niveau (optionnel)",
+    "anyLevel": "Tous les niveaux",
+    "confirmCta": "Confirmer la réservation",
+    "confirming": "Réservation…",
+    "success": "Votre séance est réservée!",
+    "viewBookings": "Voir vos réservations",
+    "signInToBook": "Connectez-vous comme élève pour réserver une séance.",
+    "status": {
+      "DRAFT": "Brouillon",
+      "PENDING_PAYMENT": "Paiement en attente",
+      "CONFIRMED": "Confirmée",
+      "DECLINED": "Refusée",
+      "CANCELLED": "Annulée",
+      "COMPLETED": "Terminée",
+      "NO_SHOW": "Absence",
+      "REFUNDED": "Remboursée",
+      "RESCHEDULED": "Reportée"
+    },
+    "errors": {
+      "notAStudent": "Seuls les élèves peuvent réserver des séances.",
+      "invalidInput": "Veuillez choisir une matière et un créneau horaire.",
+      "slotTaken": "Ce créneau vient d'être pris — veuillez en choisir un autre.",
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "notFound": "Cette réservation est introuvable.",
+      "notYours": "Vous ne pouvez pas gérer cette réservation."
     }
   }
 }

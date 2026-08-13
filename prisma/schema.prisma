@@ -443,6 +443,7 @@ model Booking {
   @@index([tutorProfileId])
   @@index([startAt])
   @@index([status])
+  @@index([tutorProfileId, startAt])
 }
 
 model BookingStatusHistory {

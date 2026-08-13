@@ -27,6 +27,7 @@ export default async function StudentDashboardPage({
       navItems={[
         { label: tNav("overview"), href: "/dashboard" },
         { label: tNav("favorites"), href: "/dashboard/favorites" },
+        { label: tNav("bookings"), href: "/dashboard/bookings" },
       ]}
       userName={user.name ?? ""}
     >

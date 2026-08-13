@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { FavoriteButton } from "@/components/marketing/FavoriteButton";
+import { BookingWidget } from "@/components/marketing/BookingWidget";
 import { formatHourlyRate } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { dbModeToDisplay } from "@/lib/tutorMode";
+import { getAvailableSlots } from "@/lib/availability";
 
 type Params = { locale: string; slug: string };
 
@@ -21,8 +23,8 @@ async function findApprovedTutor(slug: string) {
     where: { slug, applicationStatus: "APPROVED" },
     include: {
       user: { select: { name: true } },
-      subjects: { select: { subject: { select: { slug: true } } } },
-      levels: { select: { academicLevel: { select: { slug: true } } } },
+      subjects: { select: { subject: { select: { id: true, slug: true } } } },
+      levels: { select: { academicLevel: { select: { id: true, slug: true } } } },
       languages: { select: { language: true } },
     },
   });
@@ -54,11 +56,21 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
   const tLevels = await getTranslations({ locale, namespace: "gradeLevels" });
   const tLanguages = await getTranslations({ locale, namespace: "languages" });
   const tProfile = await getTranslations({ locale, namespace: "tutorProfilePage" });
+  const tBooking = await getTranslations({ locale, namespace: "booking" });
 
   const session = await auth();
   const favoritedIds = await getFavoritedTutorIds(session);
   const firstName = tutor.user.name?.split(" ")[0] ?? "";
   const displayMode = dbModeToDisplay(tutor.learningMode ?? "BOTH");
+
+  const isStudent = session?.user?.role === "STUDENT";
+  const { timezone, days } = isStudent
+    ? await getAvailableSlots(tutor.id)
+    : { timezone: null, days: [] };
+  const serializedDays = days.map((day) => ({
+    date: day.date,
+    slots: day.slots.map((slot) => ({ startAt: slot.startAt.toISOString(), endAt: slot.endAt.toISOString() })),
+  }));
 
   return (
     <MarketingShell>
@@ -136,10 +148,26 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
             <p className="mt-1 text-sm text-slate">
               {tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}
             </p>
-            <Button href="/signup" className="mt-6 w-full">
-              {tProfile("requestToBook")}
-            </Button>
-            <p className="mt-3 text-center text-xs text-slate">{tProfile("bookingNote")}</p>
+            {isStudent ? (
+              timezone ? (
+                <BookingWidget
+                  tutorProfileId={tutor.id}
+                  timezone={timezone}
+                  days={serializedDays}
+                  subjects={tutor.subjects.map((s) => ({ id: s.subject.id, label: tSubjects(s.subject.slug) }))}
+                  levels={tutor.levels.map((l) => ({ id: l.academicLevel.id, label: tLevels(l.academicLevel.slug) }))}
+                />
+              ) : (
+                <p className="mt-6 text-sm text-slate">{tBooking("noAvailability")}</p>
+              )
+            ) : (
+              <>
+                <Button href="/signup" className="mt-6 w-full">
+                  {tProfile("requestToBook")}
+                </Button>
+                <p className="mt-3 text-center text-xs text-slate">{tProfile("bookingNote")}</p>
+              </>
+            )}
           </aside>
         </div>
       </Section>

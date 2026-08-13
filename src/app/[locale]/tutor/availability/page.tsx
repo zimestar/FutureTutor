@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import { TutorProfileForm } from "@/components/dashboard/TutorProfileForm";
+import { TutorAvailabilityForm } from "@/components/dashboard/TutorAvailabilityForm";
+import { TIMEZONE_OPTIONS } from "@/schemas/tutorAvailability";
 
-export default async function TutorProfilePage({
+export default async function TutorAvailabilityPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -20,22 +21,28 @@ export default async function TutorProfilePage({
     return;
   }
 
-  const t = await getTranslations({ locale, namespace: "tutorProfileForm" });
+  const t = await getTranslations({ locale, namespace: "tutorAvailability" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
 
-  const tutorProfile = await db.tutorProfile.findUnique({
-    where: { userId: user.id },
-    include: {
-      subjects: { select: { subject: { select: { slug: true } } } },
-      levels: { select: { academicLevel: { select: { slug: true } } } },
-      languages: { select: { language: true } },
-    },
-  });
-
+  const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
   if (!tutorProfile) {
     redirect({ href: "/tutor/dashboard", locale });
     return;
   }
+
+  const existing = await db.tutorAvailability.findMany({
+    where: { tutorProfileId: tutorProfile.id },
+    orderBy: { dayOfWeek: "asc" },
+  });
+  const byDay = new Map(existing.map((row) => [row.dayOfWeek, row]));
+
+  const values = {
+    timezone: (existing[0]?.timezone ?? "America/Toronto") as (typeof TIMEZONE_OPTIONS)[number],
+    days: Array.from({ length: 7 }, (_, i) => {
+      const row = byDay.get(i);
+      return { enabled: !!row, startTime: row?.startTime ?? "09:00", endTime: row?.endTime ?? "17:00" };
+    }),
+  };
 
   return (
     <DashboardShell
@@ -51,21 +58,7 @@ export default async function TutorProfilePage({
       <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
 
       <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
-        <TutorProfileForm
-          applicationStatus={tutorProfile.applicationStatus}
-          values={{
-            headline: tutorProfile.headline ?? "",
-            bio: tutorProfile.bio ?? "",
-            subjectSlugs: tutorProfile.subjects.map((s) => s.subject.slug),
-            levelSlugs: tutorProfile.levels.map((l) => l.academicLevel.slug),
-            languages: tutorProfile.languages.map((l) => l.language),
-            hourlyRateCad: tutorProfile.hourlyRateCents ? tutorProfile.hourlyRateCents / 100 : "",
-            yearsExperience: tutorProfile.yearsExperience ?? "",
-            city: tutorProfile.city ?? "",
-            province: tutorProfile.province ?? "",
-            learningMode: tutorProfile.learningMode ?? "",
-          }}
-        />
+        <TutorAvailabilityForm values={values} />
       </div>
     </DashboardShell>
   );

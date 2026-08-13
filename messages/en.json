@@ -439,7 +439,9 @@
       "overview": "Overview",
       "profile": "Profile",
       "favorites": "Favorites",
-      "tutors": "Tutors"
+      "tutors": "Tutors",
+      "availability": "Availability",
+      "bookings": "Bookings"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -452,6 +454,17 @@
         "description": "Tutors you've saved for later.",
         "empty": "You haven't saved any tutors yet.",
         "findTutorCta": "Find a Tutor"
+      },
+      "bookings": {
+        "title": "Your bookings",
+        "description": "Sessions you've booked with tutors.",
+        "upcomingTitle": "Upcoming sessions",
+        "pastTitle": "Past sessions",
+        "empty": "You haven't booked any sessions yet.",
+        "findTutorCta": "Find a Tutor",
+        "withTutor": "with {name}",
+        "cancelCta": "Cancel session",
+        "cancelling": "Cancelling…"
       }
     },
     "tutor": {
@@ -470,6 +483,16 @@
         "APPROVED": "Approved",
         "REJECTED": "Rejected",
         "SUSPENDED": "Suspended"
+      },
+      "bookings": {
+        "title": "Your bookings",
+        "description": "Sessions students have booked with you.",
+        "upcomingTitle": "Upcoming sessions",
+        "pastTitle": "Past sessions",
+        "empty": "No one has booked a session with you yet.",
+        "withStudent": "with {name}",
+        "cancelCta": "Cancel session",
+        "cancelling": "Cancelling…"
       }
     },
     "admin": {
@@ -491,6 +514,68 @@
       "empty": "No tutor applications to show.",
       "approve": "Approve",
       "reject": "Reject"
+    }
+  },
+  "tutorAvailability": {
+    "title": "Availability",
+    "subtitle": "Set the days and hours you're open for sessions. Students can only book within these windows.",
+    "timezoneLabel": "Timezone",
+    "timezones": {
+      "America/St_Johns": "Newfoundland Time (St. John's)",
+      "America/Halifax": "Atlantic Time (Halifax)",
+      "America/Toronto": "Eastern Time (Toronto)",
+      "America/Winnipeg": "Central Time (Winnipeg)",
+      "America/Edmonton": "Mountain Time (Edmonton)",
+      "America/Vancouver": "Pacific Time (Vancouver)"
+    },
+    "days": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    },
+    "to": "to",
+    "save": "Save Availability",
+    "saved": "Your availability has been saved.",
+    "errors": {
+      "notATutor": "Only tutors can set availability.",
+      "invalidInput": "Please check your hours — the end time must be after the start time on each enabled day."
+    }
+  },
+  "booking": {
+    "widgetTitle": "Book a session",
+    "noAvailability": "This tutor hasn't set their availability yet.",
+    "selectDay": "Choose a day",
+    "selectTime": "Choose a time",
+    "subjectLabel": "Subject",
+    "levelLabel": "Level (optional)",
+    "anyLevel": "Any level",
+    "confirmCta": "Confirm Booking",
+    "confirming": "Booking…",
+    "success": "Your session is booked!",
+    "viewBookings": "View your bookings",
+    "signInToBook": "Sign in as a student to book a session.",
+    "status": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending Payment",
+      "CONFIRMED": "Confirmed",
+      "DECLINED": "Declined",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed",
+      "NO_SHOW": "No-Show",
+      "REFUNDED": "Refunded",
+      "RESCHEDULED": "Rescheduled"
+    },
+    "errors": {
+      "notAStudent": "Only students can book sessions.",
+      "invalidInput": "Please choose a subject and a time slot.",
+      "slotTaken": "That slot was just taken — please pick another time.",
+      "generic": "Something went wrong. Please try again.",
+      "notFound": "This booking could not be found.",
+      "notYours": "You can't manage this booking."
     }
   }
 }

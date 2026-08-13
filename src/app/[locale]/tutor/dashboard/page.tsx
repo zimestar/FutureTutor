@@ -38,6 +38,8 @@ export default async function TutorDashboardPage({
       navItems={[
         { label: tNav("overview"), href: "/tutor/dashboard" },
         { label: tNav("profile"), href: "/tutor/profile" },
+        { label: tNav("availability"), href: "/tutor/availability" },
+        { label: tNav("bookings"), href: "/tutor/bookings" },
       ]}
       userName={user.name ?? ""}
     >
