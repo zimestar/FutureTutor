@@ -441,7 +441,10 @@
       "favorites": "Favorites",
       "tutors": "Tutors",
       "availability": "Availability",
-      "bookings": "Bookings"
+      "bookings": "Bookings",
+      "documents": "Documents",
+      "training": "Training",
+      "exam": "Exam"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -480,9 +483,27 @@
         "DRAFT": "Draft",
         "SUBMITTED": "Submitted",
         "UNDER_REVIEW": "Under Review",
+        "INTERVIEW_REQUIRED": "Interview Stage",
+        "INTERVIEW_COMPLETED": "Interview Completed",
+        "TRAINING_REQUIRED": "Training Stage",
+        "TRAINING_COMPLETED": "Training Completed",
+        "EXAM_REQUIRED": "Exam Stage",
+        "EXAM_COMPLETED": "Exam Completed",
+        "FINAL_REVIEW": "Final Review",
         "APPROVED": "Approved",
         "REJECTED": "Rejected",
         "SUSPENDED": "Suspended"
+      },
+      "lifecycle": {
+        "title": "Application progress",
+        "steps": {
+          "profile": "Profile",
+          "documents": "Documents",
+          "interview": "Interview",
+          "training": "Training",
+          "exam": "Exam",
+          "approved": "Approved"
+        }
       },
       "bookings": {
         "title": "Your bookings",
@@ -513,7 +534,66 @@
       "filterAll": "All",
       "empty": "No tutor applications to show.",
       "approve": "Approve",
-      "reject": "Reject"
+      "reject": "Reject",
+      "viewApplication": "View application"
+    },
+    "tutorDetail": {
+      "validationVersion": "Validation v{version}",
+      "startDocumentReview": "Start document review",
+      "requireInterview": "Move to interview stage",
+      "requireInterviewGateHint": "Needs at least one approved transcript, diploma, or degree document.",
+      "requireTraining": "Move to training stage",
+      "requireExam": "Move to exam stage",
+      "sendToFinalReview": "Send to final review",
+      "approveTutor": "Approve tutor",
+      "rejectTutor": "Reject application",
+      "reasonPlaceholder": "Reason",
+      "confirmReject": "Confirm rejection",
+      "suspendTutor": "Suspend tutor",
+      "confirmSuspend": "Confirm suspension",
+      "reactivateTutor": "Reactivate tutor",
+      "educationTitle": "Education",
+      "noEducation": "No education records submitted yet.",
+      "certificationsTitle": "Certifications",
+      "noCertifications": "No certifications submitted yet.",
+      "verificationStatus": {
+        "UNVERIFIED": "Unverified",
+        "VERIFIED": "Verified"
+      },
+      "selectDocument": "Select a supporting document",
+      "relevantToSubjects": "Relevant to subjects taught",
+      "verify": "Verify",
+      "documentsTitle": "Documents",
+      "noDocuments": "No documents uploaded yet.",
+      "approveDocument": "Approve",
+      "rejectDocument": "Reject",
+      "interviewTitle": "Interview",
+      "scheduleInterview": "Schedule",
+      "interviewNotYet": "Not at the interview stage yet.",
+      "interview": {
+        "criteria": {
+          "COMMUNICATION": "Communication",
+          "PEDAGOGY": "Pedagogy",
+          "PROFESSIONALISM": "Professionalism",
+          "SUBJECT_CONFIDENCE": "Subject Confidence",
+          "STUDENT_INTERACTION": "Student Interaction",
+          "MOTIVATION_ALIGNMENT": "Motivation & Values Alignment"
+        },
+        "selectScore": "Score (1-5)",
+        "notesPlaceholder": "Notes (optional)",
+        "saving": "Saving…",
+        "saveRubric": "Save rubric"
+      },
+      "trainingTitle": "Training",
+      "examTitle": "Exam attempts",
+      "noExamAttempts": "No exam attempts yet.",
+      "attemptNumber": "Attempt #{number}",
+      "completed": "Completed",
+      "notCompleted": "Not completed",
+      "passed": "Passed",
+      "failed": "Failed",
+      "scoreTitle": "Initial score",
+      "confidence": "Confidence: {level}"
     }
   },
   "tutorAvailability": {
@@ -576,6 +656,81 @@
       "generic": "Something went wrong. Please try again.",
       "notFound": "This booking could not be found.",
       "notYours": "You can't manage this booking."
+    }
+  },
+  "tutorEducationForm": {
+    "educationLabel": "Education",
+    "institutionPlaceholder": "Institution",
+    "degreePlaceholder": "Degree",
+    "fieldOfStudyPlaceholder": "Field of study",
+    "startYearPlaceholder": "Start year",
+    "endYearPlaceholder": "End year",
+    "removeRow": "Remove",
+    "addEducation": "+ Add education",
+    "certificationsLabel": "Certifications",
+    "certNamePlaceholder": "Certification name",
+    "issuerPlaceholder": "Issuer",
+    "issueYearPlaceholder": "Issue year",
+    "credentialUrlPlaceholder": "Credential URL",
+    "addCertification": "+ Add certification",
+    "save": "Save",
+    "saved": "Saved.",
+    "errors": {
+      "notATutor": "Only tutors can edit this.",
+      "invalidInput": "Please check your entries and try again."
+    }
+  },
+  "tutorDocuments": {
+    "title": "Documents",
+    "subtitle": "Upload transcripts, diplomas, or certificates to support your application. These are private and only visible to you and FutureTutor admins.",
+    "uploadSuccess": "Document uploaded — it's now pending review.",
+    "typeLabel": "Document type",
+    "types": {
+      "TRANSCRIPT": "Transcript",
+      "DIPLOMA": "Diploma",
+      "DEGREE": "Degree",
+      "CERTIFICATE": "Certificate",
+      "ENROLLMENT_PROOF": "Proof of Enrollment",
+      "OTHER": "Other"
+    },
+    "fileLabel": "File",
+    "uploading": "Uploading…",
+    "upload": "Upload",
+    "uploadHint": "PDF, JPG, or PNG, up to 10 MB.",
+    "status": {
+      "UPLOADED": "Uploaded",
+      "PENDING_REVIEW": "Pending Review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "REPLACEMENT_REQUIRED": "Replacement Requested"
+    },
+    "errors": {
+      "notATutor": "Only tutors can upload documents.",
+      "invalidInput": "Please choose a document type and a file.",
+      "tooManyDocuments": "You've reached the maximum number of documents.",
+      "fileTooLarge": "File is too large (10 MB maximum).",
+      "unsupportedFileType": "Only PDF, JPG, and PNG files are accepted."
+    }
+  },
+  "tutorTraining": {
+    "title": "Training",
+    "subtitle": "Complete the required training modules to move forward in your application.",
+    "empty": "No training modules yet.",
+    "duration": "{minutes} min",
+    "completed": "Completed",
+    "acknowledge": "I have read and understood this",
+    "acknowledging": "Saving…"
+  },
+  "tutorExam": {
+    "title": "Platform Exam",
+    "subtitle": "Answer every question, then submit. You'll see your result immediately.",
+    "previousAttempts": "You've attempted this exam {count} time(s) before.",
+    "submitting": "Submitting…",
+    "submit": "Submit Exam",
+    "passed": "You passed with a score of {score}%.",
+    "failed": "You scored {score}%, which doesn't meet the passing threshold. You can try again.",
+    "errors": {
+      "notATutor": "Only tutors can take this exam."
     }
   }
 }

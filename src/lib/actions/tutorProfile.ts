@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tutorProfileSchema, type TutorProfileInput } from "@/schemas/tutorProfile";
+import { submitApplication } from "@/services/tutorApplicationWorkflow";
 
 export type TutorProfileActionState = { error?: string; success?: boolean } | undefined;
 
@@ -81,10 +82,11 @@ export async function updateTutorProfileAction(
   await applyTutorProfileFields(tutorProfile.id, parsed.data);
 
   if (intent === "submit") {
-    await db.tutorProfile.update({
-      where: { id: tutorProfile.id },
-      data: { applicationStatus: "SUBMITTED" },
-    });
+    try {
+      await submitApplication(tutorProfile.id, tutorProfile.userId);
+    } catch {
+      return { error: t("invalidInput") };
+    }
     revalidatePath("/tutor/dashboard");
   }
 

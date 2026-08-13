@@ -3,11 +3,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import { TutorAvailabilityForm } from "@/components/dashboard/TutorAvailabilityForm";
-import { TIMEZONE_OPTIONS } from "@/schemas/tutorAvailability";
+import { TutorExamForm } from "@/components/dashboard/TutorExamForm";
+import { PLATFORM_EXAM_QUESTIONS } from "@/lib/exam/examQuestions";
 import { tutorNavItems } from "@/lib/tutorNav";
 
-export default async function TutorAvailabilityPage({
+export default async function TutorExamPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -22,7 +22,7 @@ export default async function TutorAvailabilityPage({
     return;
   }
 
-  const t = await getTranslations({ locale, namespace: "tutorAvailability" });
+  const t = await getTranslations({ locale, namespace: "tutorExam" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
 
   const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
@@ -31,27 +31,18 @@ export default async function TutorAvailabilityPage({
     return;
   }
 
-  const existing = await db.tutorAvailability.findMany({
-    where: { tutorProfileId: tutorProfile.id },
-    orderBy: { dayOfWeek: "asc" },
-  });
-  const byDay = new Map(existing.map((row) => [row.dayOfWeek, row]));
-
-  const values = {
-    timezone: (existing[0]?.timezone ?? "America/Toronto") as (typeof TIMEZONE_OPTIONS)[number],
-    days: Array.from({ length: 7 }, (_, i) => {
-      const row = byDay.get(i);
-      return { enabled: !!row, startTime: row?.startTime ?? "09:00", endTime: row?.endTime ?? "17:00" };
-    }),
-  };
+  const previousAttempts = await db.tutorExamAttempt.count({ where: { tutorProfileId: tutorProfile.id } });
 
   return (
     <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+      {previousAttempts > 0 && (
+        <p className="mt-2 text-sm text-slate">{t("previousAttempts", { count: previousAttempts })}</p>
+      )}
 
-      <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
-        <TutorAvailabilityForm values={values} />
+      <div className="mt-8 max-w-2xl">
+        <TutorExamForm questions={PLATFORM_EXAM_QUESTIONS} />
       </div>
     </DashboardShell>
   );

@@ -45,3 +45,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# tutor verification documents (private, local-disk dev stub — see src/lib/storage.ts)
+/storage/

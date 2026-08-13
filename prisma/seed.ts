@@ -115,6 +115,10 @@ async function main() {
       province: "ON",
       learningMode: "BOTH",
       applicationStatus: "APPROVED",
+      // Approved under the old, simpler pre-Phase-D process — real (dev)
+      // migration data also backfills this for any row already APPROVED,
+      // this is just here so `seed.ts` stays self-documenting.
+      validationVersion: 1,
     },
   });
   await prisma.tutorSubject.createMany({
@@ -136,6 +140,50 @@ async function main() {
     skipDuplicates: true,
   });
   console.log(`Seeded TUTOR (pre-approved): ${tutorEmail} / ${tutorPassword}`);
+
+  // --- Phase D: Tutor Validation Depth — required training modules + the
+  // single seeded platform exam. Content lives here (not an authoring UI)
+  // per the deliberate scope simplification in the Phase D plan. ---
+
+  const TRAINING_MODULES = [
+    {
+      slug: "platform-basics",
+      title: "Platform Basics",
+      description:
+        "How FutureTutor works: booking, messaging, scheduling, and what's expected of you as a tutor on the platform.",
+      sortOrder: 0,
+    },
+    {
+      slug: "child-safety-communication",
+      title: "Child Safety & Communication",
+      description:
+        "Guidelines for tutoring minors: keeping communication on-platform, appropriate boundaries, and how to report a safety concern.",
+      sortOrder: 1,
+    },
+    {
+      slug: "session-conduct-cancellation",
+      title: "Session Conduct & Cancellation Policy",
+      description:
+        "Punctuality, preparation, FutureTutor's cancellation policy, and how the end-of-session completion code works.",
+      sortOrder: 2,
+    },
+  ];
+  for (const module_ of TRAINING_MODULES) {
+    await prisma.trainingModule.upsert({
+      where: { slug: module_.slug },
+      update: { title: module_.title, description: module_.description, sortOrder: module_.sortOrder },
+      create: { ...module_, isRequired: true, isActive: true },
+    });
+  }
+  console.log(`Seeded ${TRAINING_MODULES.length} required training modules.`);
+
+  const existingPlatformExam = await prisma.tutorExam.findFirst({ where: { type: "PLATFORM" } });
+  if (!existingPlatformExam) {
+    await prisma.tutorExam.create({
+      data: { type: "PLATFORM", title: "FutureTutor Platform Exam", passingScore: 80 },
+    });
+    console.log("Seeded PLATFORM tutor exam.");
+  }
 }
 
 main()

@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { CancelBookingButton } from "@/components/dashboard/CancelBookingButton";
 import { Badge } from "@/components/ui/Badge";
 import { formatBookingTime } from "@/lib/utils";
+import { tutorNavItems } from "@/lib/tutorNav";
 
 export default async function TutorBookingsPage({
   params,
@@ -50,15 +51,7 @@ export default async function TutorBookingsPage({
   ];
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/tutor/dashboard" },
-        { label: tNav("profile"), href: "/tutor/profile" },
-        { label: tNav("availability"), href: "/tutor/availability" },
-        { label: tNav("bookings"), href: "/tutor/bookings" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

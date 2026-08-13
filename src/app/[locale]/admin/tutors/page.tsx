@@ -5,10 +5,20 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { approveTutorAction, rejectTutorAction } from "@/lib/actions/adminTutors";
+import { Link } from "@/i18n/navigation";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
 
-const PENDING_STATUSES: TutorApplicationStatus[] = ["SUBMITTED", "UNDER_REVIEW"];
+const PENDING_STATUSES: TutorApplicationStatus[] = [
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "INTERVIEW_REQUIRED",
+  "INTERVIEW_COMPLETED",
+  "TRAINING_REQUIRED",
+  "TRAINING_COMPLETED",
+  "EXAM_REQUIRED",
+  "EXAM_COMPLETED",
+  "FINAL_REVIEW",
+];
 
 export default async function AdminTutorsPage({
   params,
@@ -74,9 +84,10 @@ export default async function AdminTutorsPage({
       ) : (
         <div className="mt-8 flex flex-col gap-4">
           {tutors.map((tutor) => (
-            <div
+            <Link
               key={tutor.id}
-              className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+              href={`/admin/tutors/${tutor.id}`}
+              className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-colors hover:border-blue/40 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -97,22 +108,8 @@ export default async function AdminTutorsPage({
                   </div>
                 )}
               </div>
-
-              {(tutor.applicationStatus === "SUBMITTED" || tutor.applicationStatus === "UNDER_REVIEW") && (
-                <div className="flex shrink-0 gap-2">
-                  <form action={rejectTutorAction.bind(null, tutor.id)}>
-                    <Button type="submit" variant="outline" size="sm">
-                      {t("reject")}
-                    </Button>
-                  </form>
-                  <form action={approveTutorAction.bind(null, tutor.id)}>
-                    <Button type="submit" size="sm">
-                      {t("approve")}
-                    </Button>
-                  </form>
-                </div>
-              )}
-            </div>
+              <span className="shrink-0 text-sm font-semibold text-blue">{t("viewApplication")} →</span>
+            </Link>
           ))}
         </div>
       )}

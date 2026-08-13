@@ -171,6 +171,13 @@ enum TutorApplicationStatus {
   DRAFT
   SUBMITTED
   UNDER_REVIEW
+  INTERVIEW_REQUIRED
+  INTERVIEW_COMPLETED
+  TRAINING_REQUIRED
+  TRAINING_COMPLETED
+  EXAM_REQUIRED
+  EXAM_COMPLETED
+  FINAL_REVIEW
   APPROVED
   REJECTED
   SUSPENDED
@@ -191,9 +198,18 @@ model TutorProfile {
   headline               String?
   bio                    String?                @db.Text
   yearsExperience        Int?
+  /// @deprecated Kept only for Phase C booking-flow compatibility. FutureTutor's
+  /// business model does not let tutors set the customer price — a dedicated
+  /// Customer Price Engine / Tutor Payout Engine replaces this field in the
+  /// phase immediately after Tutor Validation Depth. Do not build new features
+  /// that treat this as a quality/tier signal or a permanent tutor capability.
   hourlyRateCents        Int?
   currency               String                 @default("CAD")
   applicationStatus      TutorApplicationStatus @default(DRAFT)
+  /// null = not yet approved under either process; 1 = approved under the old
+  /// simplified process (historical, not retroactively changed); 2 = approved
+  /// under the full Tutor Validation Depth pipeline.
+  validationVersion      Int?
   learningMode           TutoringMode?
   city                   String?
   province               String?
@@ -217,6 +233,12 @@ model TutorProfile {
   availabilityExceptions TutorAvailabilityException[]
   verifications          TutorVerification[]
   media                  TutorMedia[]
+  documents              TutorDocument[]
+  interviews             TutorInterview[]
+  trainingProgress       TutorTrainingProgress[]
+  examAttempts           TutorExamAttempt[]
+  scores                 TutorScore[]
+  scoreSnapshots         TutorScoreSnapshot[]
   bookings               Booking[]
   favoritedBy            TutorFavorite[]
   reviews                Review[]
@@ -259,27 +281,43 @@ model TutorLanguage {
   @@unique([tutorProfileId, language])
 }
 
-model TutorEducation {
-  id             String  @id @default(cuid())
-  tutorProfileId String
-  institution    String
-  degree         String?
-  fieldOfStudy   String?
-  startYear      Int?
-  endYear        Int?
+enum QualificationVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+}
 
-  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+model TutorEducation {
+  id                   String                          @id @default(cuid())
+  tutorProfileId       String
+  institution          String
+  degree               String?
+  fieldOfStudy         String?
+  startYear            Int?
+  endYear              Int?
+  verificationStatus   QualificationVerificationStatus @default(UNVERIFIED)
+  verifiedByDocumentId String?
+  // Admin judgment made on the qualification record itself (at verification
+  // time, against a supporting document) — not derived from document count
+  // or any automated field-of-study text matching. See TutorScoring service.
+  isRelevantToSubjects Boolean?
+
+  tutorProfile      TutorProfile   @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  verifyingDocument TutorDocument? @relation(fields: [verifiedByDocumentId], references: [id])
 }
 
 model TutorCertification {
-  id             String  @id @default(cuid())
-  tutorProfileId String
-  name           String
-  issuer         String?
-  issueYear      Int?
-  credentialUrl  String?
+  id                   String                          @id @default(cuid())
+  tutorProfileId       String
+  name                 String
+  issuer               String?
+  issueYear            Int?
+  credentialUrl        String?
+  verificationStatus   QualificationVerificationStatus @default(UNVERIFIED)
+  verifiedByDocumentId String?
+  isRelevantToSubjects Boolean?
 
-  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  tutorProfile      TutorProfile   @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  verifyingDocument TutorDocument? @relation(fields: [verifiedByDocumentId], references: [id])
 }
 
 model TutorAvailability {
@@ -351,6 +389,206 @@ model TutorMedia {
 }
 
 // ---------------------------------------------------------------------------
+// Tutor Validation Depth (Phase D). TutorDocument is private evidence that
+// *verifies* a TutorEducation/TutorCertification row — the scoring service
+// reads verified qualification records, never document counts. All status
+// transitions on TutorProfile.applicationStatus flow exclusively through
+// src/services/tutorApplicationWorkflow.ts.
+// ---------------------------------------------------------------------------
+
+enum TutorDocumentType {
+  TRANSCRIPT
+  DIPLOMA
+  DEGREE
+  CERTIFICATE
+  ENROLLMENT_PROOF
+  OTHER
+}
+
+enum TutorDocumentStatus {
+  UPLOADED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  REPLACEMENT_REQUIRED
+}
+
+model TutorDocument {
+  id               String              @id @default(cuid())
+  tutorProfileId   String
+  type             TutorDocumentType
+  // Server-generated (crypto.randomUUID()) — never derived from user input,
+  // which eliminates path-traversal by construction.
+  storageKey       String              @unique
+  originalFileName String
+  mimeType         String
+  sizeBytes        Int
+  status           TutorDocumentStatus @default(UPLOADED)
+  uploadedAt       DateTime            @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  rejectionReason  String?
+  adminNotes       String?
+
+  tutorProfile           TutorProfile         @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  verifiedEducations     TutorEducation[]
+  verifiedCertifications TutorCertification[]
+
+  @@index([tutorProfileId, status])
+}
+
+enum TutorInterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model TutorInterview {
+  id                String               @id @default(cuid())
+  tutorProfileId    String
+  scheduledAt       DateTime?
+  completedAt       DateTime?
+  interviewerUserId String?
+  status            TutorInterviewStatus @default(SCHEDULED)
+  overallNotes      String?              @db.Text
+
+  tutorProfile TutorProfile               @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  evaluations  TutorInterviewEvaluation[]
+
+  @@index([tutorProfileId, status])
+}
+
+enum TutorInterviewCriterion {
+  COMMUNICATION
+  PEDAGOGY
+  PROFESSIONALISM
+  SUBJECT_CONFIDENCE
+  STUDENT_INTERACTION
+  MOTIVATION_ALIGNMENT
+}
+
+model TutorInterviewEvaluation {
+  id               String                  @id @default(cuid())
+  tutorInterviewId String
+  criterion        TutorInterviewCriterion
+  score            Int // 1-5
+  notes            String?
+
+  tutorInterview TutorInterview @relation(fields: [tutorInterviewId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorInterviewId, criterion])
+}
+
+model TrainingModule {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  description     String   @db.Text
+  // Video-ready even though this phase's completion mechanic is a simple
+  // acknowledgment — no player is built this phase.
+  videoUrl        String?
+  videoAssetKey   String?
+  durationMinutes Int?
+  sortOrder       Int      @default(0)
+  isRequired      Boolean  @default(true)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  progress TutorTrainingProgress[]
+}
+
+model TutorTrainingProgress {
+  id               String    @id @default(cuid())
+  tutorProfileId   String
+  trainingModuleId String
+  startedAt        DateTime?
+  completedAt      DateTime?
+  progressPercent  Int       @default(0)
+
+  tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  trainingModule TrainingModule @relation(fields: [trainingModuleId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, trainingModuleId])
+}
+
+enum TutorExamType {
+  PLATFORM
+  SUBJECT
+}
+
+model TutorExam {
+  id           String        @id @default(cuid())
+  type         TutorExamType
+  subjectId    String?
+  title        String
+  passingScore Int // 0-100
+
+  subject  Subject?           @relation(fields: [subjectId], references: [id])
+  attempts TutorExamAttempt[]
+}
+
+model TutorExamAttempt {
+  id             String    @id @default(cuid())
+  tutorProfileId String
+  tutorExamId    String
+  attemptNumber  Int
+  score          Int // 0-100
+  passed         Boolean
+  startedAt      DateTime
+  submittedAt    DateTime?
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  tutorExam    TutorExam    @relation(fields: [tutorExamId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, tutorExamId, attemptNumber])
+}
+
+enum TutorScoreConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model TutorScore {
+  id             String               @id @default(cuid())
+  tutorProfileId String
+  // Non-null, normalized — never relies on Postgres's NULL-is-distinct
+  // unique semantics. Only "OVERALL"/"OVERALL" is written this phase; the
+  // shape supports e.g. "SUBJECT"/"math" or "SUBJECT_LEVEL"/"math:highSchool"
+  // later without a migration.
+  scopeType      String               @default("OVERALL")
+  scopeKey       String               @default("OVERALL")
+  score          Int // 0-100, private — never shown alongside the public rating
+  confidence     TutorScoreConfidence
+  scoreVersion   String // e.g. "INITIAL_V1"
+  breakdown      Json
+  calculatedAt   DateTime             @default(now())
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, scopeType, scopeKey])
+}
+
+model TutorScoreSnapshot {
+  id             String               @id @default(cuid())
+  tutorProfileId String
+  scopeType      String               @default("OVERALL")
+  scopeKey       String               @default("OVERALL")
+  score          Int
+  confidence     TutorScoreConfidence
+  scoreVersion   String
+  breakdown      Json
+  calculatedAt   DateTime
+  createdAt      DateTime             @default(now())
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tutorProfileId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
 // Marketplace (Phase A: Subject/AcademicLevel seeded from existing
 // content/subjects.ts slugs, replacing the static fixture; TutorFavorite
 // starts getting used in Phase B).
@@ -366,6 +604,7 @@ model Subject {
   tutorSubjects TutorSubject[]
   learningGoals LearningGoal[]
   bookings      Booking[]
+  tutorExams    TutorExam[]
 }
 
 model AcademicLevel {

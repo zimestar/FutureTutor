@@ -441,7 +441,10 @@
       "favorites": "Favoris",
       "tutors": "Tuteurs",
       "availability": "Disponibilités",
-      "bookings": "Réservations"
+      "bookings": "Réservations",
+      "documents": "Documents",
+      "training": "Formation",
+      "exam": "Examen"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -480,9 +483,27 @@
         "DRAFT": "Brouillon",
         "SUBMITTED": "Soumise",
         "UNDER_REVIEW": "En révision",
+        "INTERVIEW_REQUIRED": "Étape entrevue",
+        "INTERVIEW_COMPLETED": "Entrevue complétée",
+        "TRAINING_REQUIRED": "Étape formation",
+        "TRAINING_COMPLETED": "Formation complétée",
+        "EXAM_REQUIRED": "Étape examen",
+        "EXAM_COMPLETED": "Examen complété",
+        "FINAL_REVIEW": "Révision finale",
         "APPROVED": "Approuvée",
         "REJECTED": "Refusée",
         "SUSPENDED": "Suspendue"
+      },
+      "lifecycle": {
+        "title": "Progression de la demande",
+        "steps": {
+          "profile": "Profil",
+          "documents": "Documents",
+          "interview": "Entrevue",
+          "training": "Formation",
+          "exam": "Examen",
+          "approved": "Approuvé"
+        }
       },
       "bookings": {
         "title": "Vos réservations",
@@ -513,7 +534,66 @@
       "filterAll": "Toutes",
       "empty": "Aucune demande de tuteur à afficher.",
       "approve": "Approuver",
-      "reject": "Refuser"
+      "reject": "Refuser",
+      "viewApplication": "Voir la demande"
+    },
+    "tutorDetail": {
+      "validationVersion": "Validation v{version}",
+      "startDocumentReview": "Commencer la révision des documents",
+      "requireInterview": "Passer à l'étape entrevue",
+      "requireInterviewGateHint": "Nécessite au moins un relevé de notes, diplôme ou grade approuvé.",
+      "requireTraining": "Passer à l'étape formation",
+      "requireExam": "Passer à l'étape examen",
+      "sendToFinalReview": "Envoyer en révision finale",
+      "approveTutor": "Approuver le tuteur",
+      "rejectTutor": "Refuser la demande",
+      "reasonPlaceholder": "Motif",
+      "confirmReject": "Confirmer le refus",
+      "suspendTutor": "Suspendre le tuteur",
+      "confirmSuspend": "Confirmer la suspension",
+      "reactivateTutor": "Réactiver le tuteur",
+      "educationTitle": "Formation académique",
+      "noEducation": "Aucun antécédent scolaire soumis pour l'instant.",
+      "certificationsTitle": "Certifications",
+      "noCertifications": "Aucune certification soumise pour l'instant.",
+      "verificationStatus": {
+        "UNVERIFIED": "Non vérifié",
+        "VERIFIED": "Vérifié"
+      },
+      "selectDocument": "Sélectionner un document justificatif",
+      "relevantToSubjects": "Pertinent aux matières enseignées",
+      "verify": "Vérifier",
+      "documentsTitle": "Documents",
+      "noDocuments": "Aucun document téléversé pour l'instant.",
+      "approveDocument": "Approuver",
+      "rejectDocument": "Refuser",
+      "interviewTitle": "Entrevue",
+      "scheduleInterview": "Planifier",
+      "interviewNotYet": "Pas encore à l'étape entrevue.",
+      "interview": {
+        "criteria": {
+          "COMMUNICATION": "Communication",
+          "PEDAGOGY": "Pédagogie",
+          "PROFESSIONALISM": "Professionnalisme",
+          "SUBJECT_CONFIDENCE": "Maîtrise de la matière",
+          "STUDENT_INTERACTION": "Interaction avec les élèves",
+          "MOTIVATION_ALIGNMENT": "Motivation et adéquation aux valeurs"
+        },
+        "selectScore": "Note (1-5)",
+        "notesPlaceholder": "Notes (optionnel)",
+        "saving": "Enregistrement…",
+        "saveRubric": "Enregistrer la grille"
+      },
+      "trainingTitle": "Formation",
+      "examTitle": "Tentatives d'examen",
+      "noExamAttempts": "Aucune tentative d'examen pour l'instant.",
+      "attemptNumber": "Tentative n° {number}",
+      "completed": "Complété",
+      "notCompleted": "Non complété",
+      "passed": "Réussi",
+      "failed": "Échoué",
+      "scoreTitle": "Score initial",
+      "confidence": "Confiance : {level}"
     }
   },
   "tutorAvailability": {
@@ -576,6 +656,81 @@
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "notFound": "Cette réservation est introuvable.",
       "notYours": "Vous ne pouvez pas gérer cette réservation."
+    }
+  },
+  "tutorEducationForm": {
+    "educationLabel": "Formation académique",
+    "institutionPlaceholder": "Établissement",
+    "degreePlaceholder": "Diplôme",
+    "fieldOfStudyPlaceholder": "Domaine d'études",
+    "startYearPlaceholder": "Année de début",
+    "endYearPlaceholder": "Année de fin",
+    "removeRow": "Retirer",
+    "addEducation": "+ Ajouter une formation",
+    "certificationsLabel": "Certifications",
+    "certNamePlaceholder": "Nom de la certification",
+    "issuerPlaceholder": "Émetteur",
+    "issueYearPlaceholder": "Année d'obtention",
+    "credentialUrlPlaceholder": "URL du certificat",
+    "addCertification": "+ Ajouter une certification",
+    "save": "Enregistrer",
+    "saved": "Enregistré.",
+    "errors": {
+      "notATutor": "Seuls les tuteurs peuvent modifier ceci.",
+      "invalidInput": "Veuillez vérifier vos entrées et réessayer."
+    }
+  },
+  "tutorDocuments": {
+    "title": "Documents",
+    "subtitle": "Téléversez vos relevés de notes, diplômes ou certificats pour appuyer votre demande. Ces documents sont privés et visibles uniquement par vous et les administrateurs FutureTutor.",
+    "uploadSuccess": "Document téléversé — en attente de révision.",
+    "typeLabel": "Type de document",
+    "types": {
+      "TRANSCRIPT": "Relevé de notes",
+      "DIPLOMA": "Diplôme",
+      "DEGREE": "Grade",
+      "CERTIFICATE": "Certificat",
+      "ENROLLMENT_PROOF": "Preuve d'inscription",
+      "OTHER": "Autre"
+    },
+    "fileLabel": "Fichier",
+    "uploading": "Téléversement…",
+    "upload": "Téléverser",
+    "uploadHint": "PDF, JPG ou PNG, jusqu'à 10 Mo.",
+    "status": {
+      "UPLOADED": "Téléversé",
+      "PENDING_REVIEW": "En attente de révision",
+      "APPROVED": "Approuvé",
+      "REJECTED": "Refusé",
+      "REPLACEMENT_REQUIRED": "Remplacement demandé"
+    },
+    "errors": {
+      "notATutor": "Seuls les tuteurs peuvent téléverser des documents.",
+      "invalidInput": "Veuillez choisir un type de document et un fichier.",
+      "tooManyDocuments": "Vous avez atteint le nombre maximum de documents.",
+      "fileTooLarge": "Le fichier est trop volumineux (10 Mo maximum).",
+      "unsupportedFileType": "Seuls les fichiers PDF, JPG et PNG sont acceptés."
+    }
+  },
+  "tutorTraining": {
+    "title": "Formation",
+    "subtitle": "Complétez les modules de formation requis pour avancer dans votre demande.",
+    "empty": "Aucun module de formation pour l'instant.",
+    "duration": "{minutes} min",
+    "completed": "Complété",
+    "acknowledge": "J'ai lu et compris",
+    "acknowledging": "Enregistrement…"
+  },
+  "tutorExam": {
+    "title": "Examen de la plateforme",
+    "subtitle": "Répondez à chaque question, puis soumettez. Vous verrez votre résultat immédiatement.",
+    "previousAttempts": "Vous avez déjà tenté cet examen {count} fois.",
+    "submitting": "Soumission…",
+    "submit": "Soumettre l'examen",
+    "passed": "Vous avez réussi avec un score de {score} %.",
+    "failed": "Vous avez obtenu {score} %, ce qui n'atteint pas le seuil de réussite. Vous pouvez réessayer.",
+    "errors": {
+      "notATutor": "Seuls les tuteurs peuvent passer cet examen."
     }
   }
 }

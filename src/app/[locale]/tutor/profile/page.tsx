@@ -4,6 +4,8 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorProfileForm } from "@/components/dashboard/TutorProfileForm";
+import { TutorEducationForm } from "@/components/dashboard/TutorEducationForm";
+import { tutorNavItems } from "@/lib/tutorNav";
 
 export default async function TutorProfilePage({
   params,
@@ -29,6 +31,8 @@ export default async function TutorProfilePage({
       subjects: { select: { subject: { select: { slug: true } } } },
       levels: { select: { academicLevel: { select: { slug: true } } } },
       languages: { select: { language: true } },
+      education: true,
+      certifications: true,
     },
   });
 
@@ -38,15 +42,7 @@ export default async function TutorProfilePage({
   }
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/tutor/dashboard" },
-        { label: tNav("profile"), href: "/tutor/profile" },
-        { label: tNav("availability"), href: "/tutor/availability" },
-        { label: tNav("bookings"), href: "/tutor/bookings" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
 
@@ -65,6 +61,24 @@ export default async function TutorProfilePage({
             province: tutorProfile.province ?? "",
             learningMode: tutorProfile.learningMode ?? "",
           }}
+        />
+      </div>
+
+      <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
+        <TutorEducationForm
+          initialEducation={tutorProfile.education.map((e) => ({
+            institution: e.institution,
+            degree: e.degree ?? "",
+            fieldOfStudy: e.fieldOfStudy ?? "",
+            startYear: e.startYear?.toString() ?? "",
+            endYear: e.endYear?.toString() ?? "",
+          }))}
+          initialCertifications={tutorProfile.certifications.map((c) => ({
+            name: c.name,
+            issuer: c.issuer ?? "",
+            issueYear: c.issueYear?.toString() ?? "",
+            credentialUrl: c.credentialUrl ?? "",
+          }))}
         />
       </div>
     </DashboardShell>
