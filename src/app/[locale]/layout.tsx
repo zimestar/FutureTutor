@@ -5,6 +5,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { site } from "@/content/site";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -99,7 +100,9 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={`${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-off-white text-navy font-sans">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

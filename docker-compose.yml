@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: futuretutor
+      POSTGRES_PASSWORD: futuretutor_dev
+      POSTGRES_DB: futuretutor
+    ports:
+      # host 5433 → container 5432. 5432 is taken by another project's
+      # container (talentlink-db) on this machine; do not reuse it.
+      - "5433:5432"
+    volumes:
+      - futuretutor_pgdata:/var/lib/postgresql/data
+
+volumes:
+  futuretutor_pgdata:

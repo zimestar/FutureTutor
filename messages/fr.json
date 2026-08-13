@@ -9,7 +9,9 @@
     "howItWorks": "Comment ça marche",
     "forTutors": "Pour les tuteurs",
     "login": "Connexion",
-    "becomeATutor": "Devenir tuteur"
+    "becomeATutor": "Devenir tuteur",
+    "dashboard": "Tableau de bord",
+    "logOut": "Déconnexion"
   },
   "header": {
     "openMenu": "Ouvrir le menu",
@@ -373,5 +375,74 @@
     "cookies": { "title": "Politique de cookies", "description": "La politique de cookies de FutureTutor." },
     "howItWorks": { "title": "Comment ça marche", "description": "Découvrez comment FutureTutor met les élèves et les parents en relation avec le bon tuteur en trois étapes simples." },
     "subjects": { "title": "Matières", "description": "Parcourez toutes les matières couvertes par les tuteurs FutureTutor, des mathématiques à la préparation aux examens." }
+  },
+  "auth": {
+    "login": {
+      "title": "Content de vous revoir",
+      "subtitle": "Connectez-vous à votre compte FutureTutor.",
+      "emailLabel": "Courriel",
+      "passwordLabel": "Mot de passe",
+      "submit": "Connexion",
+      "submitting": "Connexion en cours...",
+      "noAccount": "Vous n'avez pas de compte?",
+      "signupLink": "Inscrivez-vous"
+    },
+    "signup": {
+      "title": "Créez votre compte",
+      "subtitle": "Joignez-vous à FutureTutor comme élève ou comme tuteur.",
+      "roleLabel": "Je suis...",
+      "roleStudent": "Élève / Parent",
+      "roleTutor": "Tuteur",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "emailLabel": "Courriel",
+      "passwordLabel": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères.",
+      "submit": "Créer le compte",
+      "submitting": "Création du compte...",
+      "haveAccount": "Vous avez déjà un compte?",
+      "loginLink": "Connexion"
+    },
+    "errors": {
+      "invalidInput": "Veuillez vérifier vos informations et réessayer.",
+      "emailTaken": "Un compte existe déjà avec ce courriel.",
+      "invalidCredentials": "Courriel ou mot de passe incorrect."
+    }
+  },
+  "dashboard": {
+    "logOut": "Déconnexion",
+    "nav": {
+      "overview": "Aperçu"
+    },
+    "student": {
+      "welcome": "Bienvenue, {name}",
+      "description": "Voici votre tableau de bord élève. La réservation, la messagerie et le suivi des progrès arrivent bientôt.",
+      "noBookingsTitle": "Aucune réservation pour l'instant",
+      "noBookingsDescription": "Dès que vous réservez une séance avec un tuteur, elle apparaîtra ici.",
+      "findTutorCta": "Trouver un tuteur"
+    },
+    "tutor": {
+      "welcome": "Bienvenue, {name}",
+      "description": "Voici votre tableau de bord tuteur. La configuration du profil, les disponibilités et les réservations arrivent bientôt.",
+      "profileIncompleteTitle": "Terminez la configuration de votre profil",
+      "profileIncompleteDescription": "L'inscription des tuteurs (matières, tarifs, disponibilités) arrive bientôt — votre compte est créé et prêt.",
+      "applicationStatus": {
+        "DRAFT": "Brouillon",
+        "SUBMITTED": "Soumise",
+        "UNDER_REVIEW": "En révision",
+        "APPROVED": "Approuvée",
+        "REJECTED": "Refusée",
+        "SUSPENDED": "Suspendue"
+      }
+    },
+    "admin": {
+      "title": "Aperçu administrateur",
+      "description": "Chiffres de la plateforme, en direct depuis la base de données.",
+      "stats": {
+        "totalUsers": "Utilisateurs au total",
+        "totalTutors": "Profils de tuteurs",
+        "pendingApplications": "Demandes en attente"
+      }
+    }
   }
 }

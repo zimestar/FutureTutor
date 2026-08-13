@@ -9,7 +9,9 @@
     "howItWorks": "How It Works",
     "forTutors": "For Tutors",
     "login": "Log In",
-    "becomeATutor": "Become a Tutor"
+    "becomeATutor": "Become a Tutor",
+    "dashboard": "Dashboard",
+    "logOut": "Log Out"
   },
   "header": {
     "openMenu": "Open menu",
@@ -373,5 +375,74 @@
     "cookies": { "title": "Cookie Policy", "description": "FutureTutor's cookie policy." },
     "howItWorks": { "title": "How It Works", "description": "See how FutureTutor connects students and parents with the right tutor in three simple steps." },
     "subjects": { "title": "Subjects", "description": "Browse every subject FutureTutor tutors can help with, from math to exam preparation." }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in to your FutureTutor account.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Log In",
+      "submitting": "Logging in...",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Join FutureTutor as a student or a tutor.",
+      "roleLabel": "I am a...",
+      "roleStudent": "Student / Parent",
+      "roleTutor": "Tutor",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "passwordHint": "At least 8 characters.",
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in"
+    },
+    "errors": {
+      "invalidInput": "Please check your information and try again.",
+      "emailTaken": "An account with this email already exists.",
+      "invalidCredentials": "Incorrect email or password."
+    }
+  },
+  "dashboard": {
+    "logOut": "Log Out",
+    "nav": {
+      "overview": "Overview"
+    },
+    "student": {
+      "welcome": "Welcome, {name}",
+      "description": "This is your student dashboard. Booking, messaging and progress tracking are on the way.",
+      "noBookingsTitle": "No bookings yet",
+      "noBookingsDescription": "Once you book a session with a tutor, it will show up here.",
+      "findTutorCta": "Find a Tutor"
+    },
+    "tutor": {
+      "welcome": "Welcome, {name}",
+      "description": "This is your tutor dashboard. Profile setup, availability and bookings are on the way.",
+      "profileIncompleteTitle": "Finish setting up your profile",
+      "profileIncompleteDescription": "Tutor onboarding (subjects, rates, availability) is coming soon — your account has been created and is ready for it.",
+      "applicationStatus": {
+        "DRAFT": "Draft",
+        "SUBMITTED": "Submitted",
+        "UNDER_REVIEW": "Under Review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "SUSPENDED": "Suspended"
+      }
+    },
+    "admin": {
+      "title": "Admin Overview",
+      "description": "Marketplace-wide numbers, pulled live from the database.",
+      "stats": {
+        "totalUsers": "Total Users",
+        "totalTutors": "Tutor Profiles",
+        "pendingApplications": "Pending Applications"
+      }
+    }
   }
 }

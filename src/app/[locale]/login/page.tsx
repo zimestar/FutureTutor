@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
-import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { LoginForm } from "@/components/marketing/LoginForm";
+import { Section } from "@/components/ui/Section";
 
 export async function generateMetadata({
   params,
@@ -20,11 +21,19 @@ export default async function LoginPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "comingSoon.login" });
+  const t = await getTranslations({ locale, namespace: "auth.login" });
 
   return (
     <MarketingShell>
-      <ComingSoon title={t("title")} description={t("description")} />
+      <Section className="bg-off-white">
+        <div className="mx-auto w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-8 shadow-card">
+          <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+          <p className="mt-1 text-sm text-slate">{t("subtitle")}</p>
+          <div className="mt-6">
+            <LoginForm />
+          </div>
+        </div>
+      </Section>
     </MarketingShell>
   );
 }

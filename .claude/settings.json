@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next-auth/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/zod/package.json'\\).version\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\evodi\\\\Desktop\\\\FutureTutor\\\\src\\\\app\\\\api\\\\auth\\\\[...nextauth]\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\evodi\\Desktop\\FutureTutor\\src\\app\\api\\auth"
+    ]
+  }
+}

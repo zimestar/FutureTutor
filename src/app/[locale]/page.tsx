@@ -24,8 +24,10 @@ export default async function Home({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: "site" });
-  const tFaq = await getTranslations({ locale, namespace: "faq" });
+  const [t, tFaq] = await Promise.all([
+    getTranslations({ locale, namespace: "site" }),
+    getTranslations({ locale, namespace: "faq" }),
+  ]);
 
   const faqJsonLd = {
     "@context": "https://schema.org",

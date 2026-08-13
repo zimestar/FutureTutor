@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Logo } from "@/components/marketing/Logo";
@@ -10,12 +11,19 @@ import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { mainNav } from "@/content/navigation";
 import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
+import { signOutAction } from "@/lib/actions/auth";
+import { homePathForRole } from "@/lib/authorization";
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations("nav");
   const tHeader = useTranslations("header");
+  // Session is fetched client-side (rather than via a server-fetched prop)
+  // so pages using <Header> keep their static prerendering — see
+  // SessionProvider in the root layout.
+  const { data: session } = useSession();
+  const user = session?.user;
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-off-white/90 backdrop-blur-sm">
@@ -46,23 +54,38 @@ export function Header() {
 
         <div className="hidden items-center gap-3 lg:flex">
           <LanguageSwitcher className="mr-1" />
-          <Link
-            href="/login"
-            className="text-sm font-semibold text-neutral-600 transition-colors hover:text-navy"
-          >
-            {t("login")}
-          </Link>
-          <Button href="/become-a-tutor" variant="outline" size="sm">
-            {t("becomeATutor")}
-          </Button>
-          <Button
-            href="/find-tutors"
-            variant="primary"
-            size="sm"
-            onClick={() => trackEvent("find_tutor_clicked", { source: "header" })}
-          >
-            {t("findTutor")}
-          </Button>
+          {user ? (
+            <>
+              <Button href={homePathForRole(user.role)} variant="outline" size="sm">
+                {t("dashboard")}
+              </Button>
+              <form action={signOutAction}>
+                <Button type="submit" variant="primary" size="sm">
+                  {t("logOut")}
+                </Button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-neutral-600 transition-colors hover:text-navy"
+              >
+                {t("login")}
+              </Link>
+              <Button href="/become-a-tutor" variant="outline" size="sm">
+                {t("becomeATutor")}
+              </Button>
+              <Button
+                href="/find-tutors"
+                variant="primary"
+                size="sm"
+                onClick={() => trackEvent("find_tutor_clicked", { source: "header" })}
+              >
+                {t("findTutor")}
+              </Button>
+            </>
+          )}
         </div>
 
         <button
@@ -95,31 +118,48 @@ export function Header() {
                 </Link>
               </li>
             ))}
-            <li>
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="flex h-12 items-center text-base font-semibold text-navy"
-              >
-                {t("login")}
-              </Link>
-            </li>
+            {!user && (
+              <li>
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="flex h-12 items-center text-base font-semibold text-navy"
+                >
+                  {t("login")}
+                </Link>
+              </li>
+            )}
           </ul>
           <div className="mt-4 flex flex-col gap-3">
             <LanguageSwitcher className="self-start" />
-            <Button href="/become-a-tutor" variant="outline" onClick={() => setOpen(false)}>
-              {t("becomeATutor")}
-            </Button>
-            <Button
-              href="/find-tutors"
-              variant="primary"
-              onClick={() => {
-                setOpen(false);
-                trackEvent("find_tutor_clicked", { source: "header-mobile" });
-              }}
-            >
-              {t("findTutor")}
-            </Button>
+            {user ? (
+              <>
+                <Button href={homePathForRole(user.role)} variant="outline" onClick={() => setOpen(false)}>
+                  {t("dashboard")}
+                </Button>
+                <form action={signOutAction}>
+                  <Button type="submit" variant="primary" className="w-full">
+                    {t("logOut")}
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Button href="/become-a-tutor" variant="outline" onClick={() => setOpen(false)}>
+                  {t("becomeATutor")}
+                </Button>
+                <Button
+                  href="/find-tutors"
+                  variant="primary"
+                  onClick={() => {
+                    setOpen(false);
+                    trackEvent("find_tutor_clicked", { source: "header-mobile" });
+                  }}
+                >
+                  {t("findTutor")}
+                </Button>
+              </>
+            )}
           </div>
         </nav>
       )}

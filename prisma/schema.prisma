@@ -1,0 +1,684 @@
+// FutureTutor marketplace schema.
+// Grouped by domain; see /prisma/README.md is skipped in favor of inline
+// comments — each model notes the phase that actually uses it so an empty
+// table isn't mistaken for a bug.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Phase A). Standard Account/Session/VerificationToken shape matches
+// what @auth/prisma-adapter expects, so adding Google/Apple OAuth later is
+// additive, not a rework — even though Phase A's Credentials-only auth uses
+// JWT sessions and doesn't touch these adapter tables yet.
+// ---------------------------------------------------------------------------
+
+enum Role {
+  STUDENT
+  PARENT
+  TUTOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deactivatedAt DateTime?
+
+  accounts               Account[]
+  sessions               Session[]
+  studentProfile         StudentProfile?
+  parentProfile          ParentProfile?
+  tutorProfile           TutorProfile?
+  sentMessages           Message[]                 @relation("MessageSender")
+  conversations          ConversationParticipant[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
+  auditLogs              AuditLog[]                @relation("AuditActor")
+  bookingStatusChanges   BookingStatusHistory[]    @relation("BookingStatusChangedBy")
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Student / Parent (Phase A creates the tables + registration rows;
+// StudentProfile fields and LearningGoal get filled in via onboarding UI
+// in Phase B).
+// ---------------------------------------------------------------------------
+
+enum TutoringMode {
+  ONLINE
+  IN_PERSON
+  BOTH
+}
+
+model StudentProfile {
+  id                String       @id @default(cuid())
+  userId            String       @unique
+  firstName         String
+  lastName          String
+  preferredLanguage String       @default("en")
+  province          String?
+  city              String?
+  academicLevelId   String?
+  tutoringMode      TutoringMode @default(BOTH)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user                User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  academicLevel       AcademicLevel?              @relation(fields: [academicLevelId], references: [id])
+  parentRelationships ParentStudentRelationship[]
+  learningGoals       LearningGoal[]
+  favorites           TutorFavorite[]
+  bookings            Booking[]
+  reviews             Review[]
+}
+
+model ParentProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  firstName         String
+  lastName          String
+  preferredLanguage String   @default("en")
+  province          String?
+  city              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user                 User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentRelationships ParentStudentRelationship[]
+}
+
+model ParentStudentRelationship {
+  id               String   @id @default(cuid())
+  parentProfileId  String
+  studentProfileId String
+  relationshipType String   @default("PARENT")
+  createdAt        DateTime @default(now())
+
+  parentProfile  ParentProfile  @relation(fields: [parentProfileId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([parentProfileId, studentProfileId])
+}
+
+model LearningGoal {
+  id               String   @id @default(cuid())
+  studentProfileId String
+  subjectId        String?
+  description      String
+  createdAt        DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  subject        Subject?       @relation(fields: [subjectId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Tutor (Phase A creates the table + registration row; everything else
+// filled in during Phase B onboarding).
+// ---------------------------------------------------------------------------
+
+enum TutorApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum StripeConnectStatus {
+  NOT_STARTED
+  PENDING
+  RESTRICTED
+  ACTIVE
+  DISABLED
+}
+
+model TutorProfile {
+  id                     String                 @id @default(cuid())
+  userId                 String                 @unique
+  slug                   String                 @unique
+  headline               String?
+  bio                    String?                @db.Text
+  yearsExperience        Int?
+  hourlyRateCents        Int?
+  currency               String                 @default("CAD")
+  applicationStatus      TutorApplicationStatus @default(DRAFT)
+  city                   String?
+  province               String?
+  travelRadiusKm         Int?
+  latitude               Float?
+  longitude              Float?
+  ratingAverage          Float                  @default(0)
+  reviewCount            Int                    @default(0)
+  stripeConnectAccountId String?
+  stripeConnectStatus    StripeConnectStatus    @default(NOT_STARTED)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects               TutorSubject[]
+  levels                 TutorLevel[]
+  languages              TutorLanguage[]
+  education              TutorEducation[]
+  certifications         TutorCertification[]
+  availability           TutorAvailability[]
+  availabilityExceptions TutorAvailabilityException[]
+  verifications          TutorVerification[]
+  media                  TutorMedia[]
+  bookings               Booking[]
+  favoritedBy            TutorFavorite[]
+  reviews                Review[]
+  payouts                TutorPayout[]
+
+  @@index([applicationStatus])
+  @@index([city, province])
+}
+
+model TutorSubject {
+  id             String @id @default(cuid())
+  tutorProfileId String
+  subjectId      String
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  subject      Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, subjectId])
+  @@index([subjectId])
+}
+
+model TutorLevel {
+  id              String @id @default(cuid())
+  tutorProfileId  String
+  academicLevelId String
+
+  tutorProfile  TutorProfile  @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  academicLevel AcademicLevel @relation(fields: [academicLevelId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, academicLevelId])
+}
+
+model TutorLanguage {
+  id             String @id @default(cuid())
+  tutorProfileId String
+  language       String // ISO code: "en" | "fr" | ...
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorProfileId, language])
+}
+
+model TutorEducation {
+  id             String  @id @default(cuid())
+  tutorProfileId String
+  institution    String
+  degree         String?
+  fieldOfStudy   String?
+  startYear      Int?
+  endYear        Int?
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+}
+
+model TutorCertification {
+  id             String  @id @default(cuid())
+  tutorProfileId String
+  name           String
+  issuer         String?
+  issueYear      Int?
+  credentialUrl  String?
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+}
+
+model TutorAvailability {
+  id             String       @id @default(cuid())
+  tutorProfileId String
+  dayOfWeek      Int // 0 = Sunday .. 6 = Saturday
+  startTime      String // "HH:mm"
+  endTime        String // "HH:mm"
+  timezone       String // IANA, e.g. "America/Toronto"
+  mode           TutoringMode @default(BOTH)
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tutorProfileId, dayOfWeek])
+}
+
+model TutorAvailabilityException {
+  id             String   @id @default(cuid())
+  tutorProfileId String
+  date           DateTime
+  isAvailable    Boolean
+  startTime      String?
+  endTime        String?
+  reason         String?
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tutorProfileId, date])
+}
+
+enum VerificationType {
+  IDENTITY
+  EDUCATION
+  CERTIFICATION
+  BACKGROUND_CHECK
+  MANUAL_ADMIN_REVIEW
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+model TutorVerification {
+  id             String             @id @default(cuid())
+  tutorProfileId String
+  type           VerificationType
+  status         VerificationStatus @default(PENDING)
+  provider       String?
+  reference      String?
+  submittedAt    DateTime?
+  verifiedAt     DateTime?
+  expiresAt      DateTime?
+  notes          String?
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+}
+
+model TutorMedia {
+  id             String   @id @default(cuid())
+  tutorProfileId String
+  type           String // "PHOTO" | "DOCUMENT"
+  url            String
+  createdAt      DateTime @default(now())
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace (Phase A: Subject/AcademicLevel seeded from existing
+// content/subjects.ts slugs, replacing the static fixture; TutorFavorite
+// starts getting used in Phase B).
+// ---------------------------------------------------------------------------
+
+model Subject {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  category  String?
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  tutorSubjects TutorSubject[]
+  learningGoals LearningGoal[]
+  bookings      Booking[]
+}
+
+model AcademicLevel {
+  id        String @id @default(cuid())
+  slug      String @unique
+  sortOrder Int    @default(0)
+
+  tutorLevels     TutorLevel[]
+  studentProfiles StudentProfile[]
+  bookings        Booking[]
+}
+
+model TutorFavorite {
+  id               String   @id @default(cuid())
+  studentProfileId String
+  tutorProfileId   String
+  createdAt        DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, tutorProfileId])
+}
+
+// ---------------------------------------------------------------------------
+// Bookings (Phase C)
+// ---------------------------------------------------------------------------
+
+enum BookingStatus {
+  DRAFT
+  PENDING_PAYMENT
+  CONFIRMED
+  DECLINED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  REFUNDED
+  RESCHEDULED
+}
+
+model Booking {
+  id                       String        @id @default(cuid())
+  studentProfileId         String
+  tutorProfileId           String
+  subjectId                String
+  academicLevelId          String?
+  startAt                  DateTime
+  endAt                    DateTime
+  timezone                 String
+  mode                     TutoringMode
+  locationNote             String?
+  hourlyRateCentsSnapshot  Int
+  platformFeeCentsSnapshot Int
+  currency                 String        @default("CAD")
+  totalCents               Int
+  status                   BookingStatus @default(DRAFT)
+  notes                    String?
+  cancelledByUserId        String?
+  cancelledAt              DateTime?
+  cancellationReason       String?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  studentProfile StudentProfile         @relation(fields: [studentProfileId], references: [id])
+  tutorProfile   TutorProfile           @relation(fields: [tutorProfileId], references: [id])
+  subject        Subject                @relation(fields: [subjectId], references: [id])
+  academicLevel  AcademicLevel?         @relation(fields: [academicLevelId], references: [id])
+  statusHistory  BookingStatusHistory[]
+  session        Session_?
+  payment        Payment?
+  review         Review?
+  conversation   Conversation?
+
+  @@index([studentProfileId])
+  @@index([tutorProfileId])
+  @@index([startAt])
+  @@index([status])
+}
+
+model BookingStatusHistory {
+  id              String         @id @default(cuid())
+  bookingId       String
+  fromStatus      BookingStatus?
+  toStatus        BookingStatus
+  changedByUserId String?
+  reason          String?
+  createdAt       DateTime       @default(now())
+
+  booking       Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  changedByUser User?   @relation("BookingStatusChangedBy", fields: [changedByUserId], references: [id])
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+// Named Session_ to avoid clashing with NextAuth's own `Session` model above
+// — this one is the tutoring event, not an auth session.
+model Session_ {
+  id                String        @id @default(cuid())
+  bookingId         String        @unique
+  startedAt         DateTime?
+  endedAt           DateTime?
+  status            SessionStatus @default(SCHEDULED)
+  tutorAttendance   Boolean?
+  studentAttendance Boolean?
+  onlineMeetingUrl  String?
+  notes             String?       @db.Text
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("Session_tutoring")
+}
+
+// ---------------------------------------------------------------------------
+// Finance (Phase D)
+// ---------------------------------------------------------------------------
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  bookingId             String        @unique
+  stripePaymentIntentId String?       @unique
+  amountCents           Int
+  platformFeeCents      Int
+  tutorPayoutCents      Int
+  currency              String        @default("CAD")
+  status                PaymentStatus @default(PENDING)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  refunds Refund[]
+}
+
+enum PayoutStatus {
+  PENDING
+  IN_TRANSIT
+  PAID
+  FAILED
+}
+
+model TutorPayout {
+  id               String       @id @default(cuid())
+  tutorProfileId   String
+  amountCents      Int
+  currency         String       @default("CAD")
+  status           PayoutStatus @default(PENDING)
+  stripeTransferId String?
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  paidAt           DateTime?
+  createdAt        DateTime     @default(now())
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id])
+}
+
+model Refund {
+  id             String   @id @default(cuid())
+  paymentId      String
+  amountCents    Int
+  reason         String?
+  status         String   @default("PENDING")
+  stripeRefundId String?
+  createdAt      DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model StripeCustomer {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  stripeCustomerId String   @unique
+  createdAt        DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Messaging (Phase E)
+// ---------------------------------------------------------------------------
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  bookingId String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking      Booking?                  @relation(fields: [bookingId], references: [id])
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String      @db.Text
+  type           MessageType @default(TEXT)
+  sentAt         DateTime    @default(now())
+  readAt         DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+}
+
+// ---------------------------------------------------------------------------
+// Reviews (Phase F)
+// ---------------------------------------------------------------------------
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+}
+
+model Review {
+  id               String       @id @default(cuid())
+  bookingId        String       @unique
+  studentProfileId String
+  tutorProfileId   String
+  rating           Int
+  comment          String?      @db.Text
+  status           ReviewStatus @default(PUBLISHED)
+  createdAt        DateTime     @default(now())
+
+  booking        Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id])
+  tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id])
+
+  @@index([tutorProfileId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (Phase E)
+// ---------------------------------------------------------------------------
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  channel   NotificationChannel @default(IN_APP)
+  readAt    DateTime?
+  metadata  Json?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model NotificationPreference {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  emailEnabled Boolean @default(true)
+  inAppEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Admin (Phase A: table exists and is written to for role-sensitive auth
+// events; real moderation actions start writing to it in Phase G).
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
