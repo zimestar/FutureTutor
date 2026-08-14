@@ -52,6 +52,7 @@ model User {
   bookingStatusChanges    BookingStatusHistory[]    @relation("BookingStatusChangedBy")
   createdPriceQuotes      CustomerPriceQuote[]
   createdTutoringRequests TutoringRequest[]
+  payments                Payment[]
 
   @@index([role])
 }
@@ -258,9 +259,10 @@ model TutorProfile {
   bookings               Booking[]
   favoritedBy            TutorFavorite[]
   reviews                Review[]
-  payouts                TutorPayout[]
   payoutQuotes           TutorPayoutQuote[]
   invitations            TutorInvitation[]
+  earnings               TutorEarning[]
+  transfers              TutorTransfer[]
 
   @@index([applicationStatus])
   @@index([city, province])
@@ -742,6 +744,8 @@ model Booking {
   statusHistory      BookingStatusHistory[]
   session            Session_?
   payment            Payment?
+  earning            TutorEarning?
+  refunds            Refund[]
   review             Review?
   conversation       Conversation?
 
@@ -922,6 +926,7 @@ model CustomerPriceQuote {
   payoutQuotes     TutorPayoutQuote[]
   bookings         Booking[]
   tutoringRequests TutoringRequest[]
+  payment          Payment?
 
   @@index([createdByUserId, status])
   @@index([studentProfileId, status])
@@ -994,11 +999,25 @@ enum TutoringRequestStatus {
   PRICED
   CONFIRMED
   MATCHING
+  // Phase G — a tutor has locally claimed the win (Step A: invitation
+  // ACCEPTED, competing invitations SUPERSEDED, a PENDING_PAYMENT Booking
+  // reserved) but Stripe capture has not yet resolved. Sits between
+  // MATCHING and BOOKED.
+  PAYMENT_PENDING
   BOOKED
   CANCELLED
   EXPIRED
   NO_TUTOR_FOUND
+  // Genuine unexpected server error during acceptance — unchanged from
+  // Phase F, still distinct from PAYMENT_FAILED below (a specific,
+  // well-understood outcome, not a catch-all).
   FAILED
+  // Phase G — reached only from PAYMENT_PENDING when capture definitively
+  // fails (see convergeToCaptureFailed in src/services/payments.ts). A
+  // request-level outcome, not a candidate-level one — the customer's
+  // payment is the blocker, not this tutor's availability, so dispatch
+  // does not continue to another candidate.
+  PAYMENT_FAILED
 }
 
 model TutoringRequest {
@@ -1122,68 +1141,247 @@ model TutorRankingSettings {
 }
 
 // ---------------------------------------------------------------------------
-// Stripe payment capture & payout transfer (future phase, not yet built —
-// this session's real Phase E built the pre-payment pricing/payout *quote*
-// engine below; these models are the later money-movement layer that will
-// consume CustomerPriceQuote.totalCents / Booking.tutorPayoutCents).
+// Payments, Stripe Connect & marketplace financial lifecycle (Phase G).
+//
+// One principle governs every external Stripe call anywhere in this domain:
+// create a durable local row *before* calling Stripe (Step A, pure DB
+// write), call Stripe outside any transaction using an idempotency key
+// derived from that row's own id (Step B), then converge local state to
+// Stripe's authoritative result via an idempotent function safe to call
+// from the synchronous caller, the matching webhook, or the reconciliation
+// sweep, in any order, any number of times (Step C). See
+// src/services/payments.ts, src/services/tutorTransfers.ts.
+//
+// Ids for rows created in Step A are generated in application code
+// (crypto.randomUUID()) rather than left to Prisma's DB-side @default —
+// the id must exist before the Stripe call it anchors. @default(cuid())
+// stays as a fallback for callers that don't need to pre-know the id.
+//
+// A Payment is one logical payment obligation for one CustomerPriceQuote,
+// normally backed by one Stripe PaymentIntent for its entire lifecycle
+// (Stripe supports multiple confirmation attempts against the same PI).
+// PaymentAttempt records each confirmation try; in the rare case a PI
+// becomes unusable and must be replaced, Payment.stripePaymentIntentId is
+// updated to the new one while each PaymentAttempt.stripePaymentIntentId
+// preserves which PI it was actually made against — every PI that has ever
+// represented a Payment stays traceable via
+// resolvePaymentFromStripePaymentIntent (src/services/payments.ts), never
+// via a direct Payment.stripePaymentIntentId query alone.
+//
+// TutorEarning ("FutureTutor owes this tutor $X for this booking") is
+// deliberately independent of Stripe Connect readiness — eligibility
+// (PENDING_ELIGIBLE -> ELIGIBLE) depends only on eligibleAt and the booking
+// not having been voided. TutorTransfer ("FutureTutor moved that $X from
+// the platform's Stripe balance to the tutor's connected account balance")
+// is a separate, later step that additionally requires payout readiness.
+// TutorTransfer never represents Stripe's own subsequent payout from the
+// connected account to the tutor's bank — that stays entirely on Stripe's
+// side (Connect Express Dashboard), out of scope.
 // ---------------------------------------------------------------------------
 
 enum PaymentStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-  REFUNDED
+  PENDING // PaymentIntent creation started (Step A committed), not yet confirmed
+  REQUIRES_ACTION // 3DS or similar customer action needed
+  AUTHORIZED // manual-capture PI confirmed, funds held, not yet captured
+  CAPTURED // funds captured — the only status that may cause a Booking to exist
+  CAPTURE_FAILED
+  FAILED // authorization/confirmation failed
+  CANCELLED // PI cancelled before capture (e.g. matching produced no tutor)
   PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum PaymentDisputeStatus {
+  OPEN
+  WON
+  LOST
 }
 
 model Payment {
-  id                    String        @id @default(cuid())
-  bookingId             String        @unique
-  stripePaymentIntentId String?       @unique
-  amountCents           Int
-  platformFeeCents      Int
-  tutorPayoutCents      Int
-  currency              String        @default("CAD")
-  status                PaymentStatus @default(PENDING)
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id                         String                @id @default(cuid())
+  // The one anchor that exists in both direct booking and Quick Match at
+  // authorization time — a quote is consumed exactly once, so this is
+  // naturally the right uniqueness key for "one payment obligation."
+  customerPriceQuoteId       String                @unique
+  // Null until Step A of the booking flow (reserveBookingPendingPayment)
+  // creates the PENDING_PAYMENT Booking and links this Payment to it.
+  bookingId                  String?               @unique
+  // The authenticated actor who paid — distinct from the beneficiary
+  // student, mirroring CustomerPriceQuote.createdByUserId's reasoning.
+  payerUserId                String
+  amountCents                Int
+  currency                   String                @default("CAD")
+  status                     PaymentStatus         @default(PENDING)
+  stripePaymentIntentId      String?               @unique
+  // Populated once available (from the succeeded PI's charge) — used for
+  // source_transaction on tutor transfers, Stripe fee reconciliation, and
+  // refund/dispute traceability. Historical provider identifiers, never
+  // derived from current configuration.
+  stripeChargeId             String?
+  stripeBalanceTransactionId String?
+  stripeCustomerId           String?
+  // Never fabricated from a hard-coded percentage — populated only once
+  // Stripe's own Balance Transaction data is available.
+  stripeFeeCents             Int?
+  disputeStatus              PaymentDisputeStatus?
+  authorizedAt               DateTime?
+  capturedAt                 DateTime?
+  failedAt                   DateTime?
+  cancelledAt                DateTime?
+  refundedAmountCents        Int                   @default(0)
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
 
-  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  refunds Refund[]
+  customerPriceQuote CustomerPriceQuote @relation(fields: [customerPriceQuoteId], references: [id])
+  booking            Booking?           @relation(fields: [bookingId], references: [id])
+  payerUser          User               @relation(fields: [payerUserId], references: [id])
+  attempts           PaymentAttempt[]
+  refunds            Refund[]
+
+  @@index([status])
 }
 
-enum PayoutStatus {
+// Append-only, mirrors TutorExamAttempt's exact established pattern
+// (Phase D) — one row per confirmation try against a Payment's PaymentIntent.
+model PaymentAttempt {
+  id                    String   @id @default(cuid())
+  paymentId             String
+  attemptNumber         Int
+  // The PI this specific attempt was actually made against — normally
+  // identical to Payment.stripePaymentIntentId; differs only in the rare
+  // PI-replacement case (see the domain comment above).
+  stripePaymentIntentId String
+  status                String
+  failureCode           String?
+  failureMessage        String?
+  createdAt             DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, attemptNumber])
+}
+
+enum RefundStatus {
   PENDING
-  IN_TRANSIT
-  PAID
+  SUCCEEDED
   FAILED
 }
 
-model TutorPayout {
-  id               String       @id @default(cuid())
-  tutorProfileId   String
-  amountCents      Int
-  currency         String       @default("CAD")
-  status           PayoutStatus @default(PENDING)
-  stripeTransferId String?
-  periodStart      DateTime?
-  periodEnd        DateTime?
-  paidAt           DateTime?
-  createdAt        DateTime     @default(now())
-
-  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id])
-}
-
 model Refund {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   paymentId      String
+  bookingId      String
   amountCents    Int
+  currency       String       @default("CAD")
   reason         String?
-  status         String   @default("PENDING")
-  stripeRefundId String?
-  createdAt      DateTime @default(now())
+  status         RefundStatus @default(PENDING)
+  stripeRefundId String?      @unique
+  actorUserId    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+enum TutorEarningStatus {
+  PENDING_ELIGIBLE
+  ELIGIBLE
+  TRANSFERRED
+  CANCELLED
+}
+
+model TutorEarning {
+  id             String             @id @default(cuid())
+  bookingId      String             @unique
+  tutorProfileId String
+  amountCents    Int
+  currency       String             @default("CAD")
+  status         TutorEarningStatus @default(PENDING_ELIGIBLE)
+  // [YOUR IDEA — RECOMMENDED PAYOUT TIMING] booking.endAt + 24h — a
+  // temporary rule pending the future Session Completion phase. Never
+  // gated on Stripe Connect readiness (see the domain comment above).
+  eligibleAt     DateTime
+  transferredAt  DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime           @default(now())
+
+  booking      Booking        @relation(fields: [bookingId], references: [id])
+  tutorProfile TutorProfile   @relation(fields: [tutorProfileId], references: [id])
+  transfer     TutorTransfer?
+
+  @@index([tutorProfileId, status])
+  @@index([status, eligibleAt])
+}
+
+enum TutorTransferStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model TutorTransfer {
+  id                  String              @id @default(cuid())
+  tutorEarningId      String              @unique
+  tutorProfileId      String
+  amountCents         Int
+  currency            String              @default("CAD")
+  status              TutorTransferStatus @default(PENDING)
+  // A COMPLETED transfer that is later reversed stays COMPLETED — reversal
+  // is tracked via reversedAmountCents + TutorTransferReversal, never by
+  // overloading status: FAILED (that means the transfer attempt itself
+  // never succeeded, a categorically different fact).
+  reversedAmountCents Int                 @default(0)
+  stripeTransferId    String?             @unique
+  initiatedAt         DateTime?
+  completedAt         DateTime?
+  failedAt            DateTime?
+  failureReason       String?
+  createdAt           DateTime            @default(now())
+
+  tutorEarning TutorEarning            @relation(fields: [tutorEarningId], references: [id])
+  tutorProfile TutorProfile            @relation(fields: [tutorProfileId], references: [id])
+  reversals    TutorTransferReversal[]
+
+  @@index([tutorProfileId, status])
+}
+
+// Full or partial, single or repeated reversal of a completed transfer.
+// Building this model does not imply FutureTutor automatically reverses
+// anything — see the Phase G plan's still-open product decision on when a
+// reversal is triggered. This only ensures the schema can represent one.
+model TutorTransferReversal {
+  id               String   @id @default(cuid())
+  tutorTransferId  String
+  amountCents      Int
+  stripeReversalId String?  @unique
+  reason           String?
+  createdAt        DateTime @default(now())
+
+  tutorTransfer TutorTransfer @relation(fields: [tutorTransferId], references: [id])
+}
+
+enum StripeWebhookProcessingStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+// Explicit atomic processing claim (RECEIVED/FAILED -> PROCESSING via a
+// guarded updateMany), not just downstream-row guards — protects
+// secondary effects (notifications, audit rows) that aren't covered by any
+// unique constraint on the target row. See src/app/api/webhooks/stripe.
+model StripeWebhookEvent {
+  id               String                        @id @default(cuid())
+  stripeEventId    String                        @unique
+  type             String
+  processingStatus StripeWebhookProcessingStatus @default(RECEIVED)
+  attemptCount     Int                           @default(0)
+  lastAttemptAt    DateTime?
+  processedAt      DateTime?
+  error            String?
+  createdAt        DateTime                      @default(now())
 }
 
 model StripeCustomer {

@@ -1,8 +1,6 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
-import { validateAndConsumeCustomerPriceQuote } from "@/services/customerPricing";
-import { validateAndConsumeTutorPayoutQuote } from "@/services/tutorPayout";
 
 export const ACTIVE_BOOKING_STATUSES = ["DRAFT", "PENDING_PAYMENT", "CONFIRMED"] as const;
 
@@ -10,12 +8,12 @@ export class SlotTakenError extends Error {}
 
 /**
  * True interval-overlap conflict check: existing.startAt < newEnd AND
- * existing.endAt > newStart. Replaces the previous exact-startAt-equality
- * check (safe only by accident, since every session used to be a fixed 60
- * minutes) — Quick Match's variable-duration TutoringRequest.durationMinutes
- * would have silently slipped past that check. Shared by both direct
- * booking and Quick Match so there is exactly one definition of "conflict,"
- * not two.
+ * existing.endAt > newStart. PENDING_PAYMENT is included in
+ * ACTIVE_BOOKING_STATUSES deliberately (Phase G) — a durable slot
+ * reservation blocks a second overlapping reservation attempt for the same
+ * tutor the same way a CONFIRMED booking already does, closing the race
+ * before it would ever reach Stripe. Shared by both direct booking and
+ * Quick Match so there is exactly one definition of "conflict," not two.
  */
 export async function hasOverlappingActiveBooking(
   tx: Prisma.TransactionClient,
@@ -43,7 +41,7 @@ export interface BookingLocationSnapshot {
   postalCode?: string | null;
 }
 
-export interface CreateBookingFromQuotesInput {
+export interface ReserveBookingPendingPaymentInput {
   studentProfileId: string;
   tutorProfileId: string;
   subjectId: string;
@@ -52,9 +50,14 @@ export interface CreateBookingFromQuotesInput {
   endAt: Date;
   timezone: string;
   mode: TutoringMode;
-  // The authenticated actor — used both as the quote-ownership check and as
-  // the BookingStatusHistory "changed by" actor.
-  createdByUserId: string;
+  // The already-authorized Payment (Payment.status === AUTHORIZED) this
+  // reservation is being made against — linked here, consumed later in
+  // src/services/payments.ts's convergeToCaptured once capture succeeds.
+  paymentId: string;
+  // Read for their already-locked/accepted values but NOT consumed here —
+  // consumption happens only in convergeToCaptured, once payment capture
+  // has actually been confirmed by Stripe (see the Payment model's schema
+  // domain comment for the full Step A/B/C rationale).
   customerPriceQuoteId: string;
   tutorPayoutQuoteId: string;
   // Set only by Quick Match; direct/Browse-Tutors bookings leave this null.
@@ -66,37 +69,27 @@ export interface CreateBookingFromQuotesInput {
 }
 
 /**
- * The single authoritative "consume both quotes + create Booking +
- * BookingStatusHistory + Session_" core, called from inside a Serializable
- * transaction by both direct booking (createBookingAction) and Quick Match
- * (acceptTutorInvitationAction) — see each call site for its own
- * slot-conflict / eligibility / concurrency guards, which run around this
- * function, not inside it.
+ * Step A of the payment-aware booking flow (see the Payment model's schema
+ * domain comment) — the single authoritative "reserve the tutor slot"
+ * core, called from inside a Serializable transaction by both direct
+ * booking (createBookingAction) and Quick Match (acceptTutorInvitationAction)
+ * before Stripe is ever called. No external network call happens inside
+ * this function or its caller's transaction. Creates a PENDING_PAYMENT
+ * Booking — quotes stay LOCKED/ACCEPTED, not yet consumed; Session_ is not
+ * created yet either, since it represents a real scheduled session and this
+ * reservation might still fail to reach CONFIRMED (see
+ * src/services/payments.ts's convergeToCaptured / convergeToCaptureFailed
+ * for the two possible resolutions).
  */
-export async function createBookingFromQuotes(tx: Prisma.TransactionClient, input: CreateBookingFromQuotesInput) {
+export async function reserveBookingPendingPayment(
+  tx: Prisma.TransactionClient,
+  input: ReserveBookingPendingPaymentInput
+) {
   const conflict = await hasOverlappingActiveBooking(tx, input.tutorProfileId, input.startAt, input.endAt);
   if (conflict) throw new SlotTakenError();
 
-  const durationMinutes = Math.round((input.endAt.getTime() - input.startAt.getTime()) / 60000);
-
-  const customerQuote = await validateAndConsumeCustomerPriceQuote(
-    tx,
-    input.customerPriceQuoteId,
-    input.createdByUserId,
-    {
-      subjectId: input.subjectId,
-      academicLevelId: input.academicLevelId,
-      tutoringMode: input.mode,
-      durationMinutes,
-      requestedStartAt: input.startAt,
-    }
-  );
-  const payoutQuote = await validateAndConsumeTutorPayoutQuote(
-    tx,
-    input.tutorPayoutQuoteId,
-    input.tutorProfileId,
-    input.customerPriceQuoteId
-  );
+  const customerQuote = await tx.customerPriceQuote.findUniqueOrThrow({ where: { id: input.customerPriceQuoteId } });
+  const payoutQuote = await tx.tutorPayoutQuote.findUniqueOrThrow({ where: { id: input.tutorPayoutQuoteId } });
 
   const grossSpreadCents = customerQuote.subtotalCents - payoutQuote.totalPayoutCents;
 
@@ -112,7 +105,7 @@ export async function createBookingFromQuotes(tx: Prisma.TransactionClient, inpu
       mode: input.mode,
       platformFeeCentsSnapshot: 0,
       totalCents: customerQuote.totalCents,
-      status: "CONFIRMED",
+      status: "PENDING_PAYMENT",
       customerPriceQuoteId: customerQuote.id,
       tutorPayoutQuoteId: payoutQuote.id,
       customerBasePriceCents: customerQuote.basePriceCents,
@@ -133,10 +126,18 @@ export async function createBookingFromQuotes(tx: Prisma.TransactionClient, inpu
       bookingPostalCode: input.location?.postalCode ?? null,
     },
   });
-  await tx.bookingStatusHistory.create({
-    data: { bookingId: booking.id, toStatus: "CONFIRMED", changedByUserId: input.createdByUserId },
-  });
-  await tx.session_.create({ data: { bookingId: booking.id, status: "SCHEDULED" } });
 
-  return { booking, customerQuote, payoutQuote };
+  await tx.bookingStatusHistory.create({
+    data: { bookingId: booking.id, toStatus: "PENDING_PAYMENT" },
+  });
+
+  // Guarded — only links if this Payment hasn't already been linked to a
+  // different booking (shouldn't happen given Payment.bookingId's own
+  // uniqueness, but the guard costs nothing and documents the invariant).
+  await tx.payment.updateMany({
+    where: { id: input.paymentId, bookingId: null },
+    data: { bookingId: booking.id },
+  });
+
+  return booking;
 }

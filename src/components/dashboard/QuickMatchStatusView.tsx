@@ -13,18 +13,20 @@ export function QuickMatchStatusView({
   dispatchRound,
 }: {
   tutoringRequestId: string;
-  status: "MATCHING" | "BOOKED" | "NO_TUTOR_FOUND" | "CANCELLED" | "EXPIRED" | "FAILED";
+  status: "MATCHING" | "PAYMENT_PENDING" | "BOOKED" | "NO_TUTOR_FOUND" | "CANCELLED" | "EXPIRED" | "FAILED" | "PAYMENT_FAILED";
   dispatchRound: number;
 }) {
   const t = useTranslations("quickMatch");
   const router = useRouter();
   const [cancelState, cancelAction, cancelPending] = useActionState(cancelTutoringRequestAction, undefined);
 
+  const isLive = status === "MATCHING" || status === "PAYMENT_PENDING";
+
   useEffect(() => {
-    if (status !== "MATCHING") return;
+    if (!isLive) return;
     const interval = setInterval(() => router.refresh(), REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [status, router]);
+  }, [isLive, router]);
 
   return (
     <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6" data-testid="quick-match-status">

@@ -6,5 +6,6 @@ export function adminNavItems(tNav: (key: string) => string): DashboardNavItem[]
     { label: tNav("tutors"), href: "/admin/tutors" },
     { label: tNav("pricing"), href: "/admin/pricing" },
     { label: tNav("quickMatch"), href: "/admin/quick-match" },
+    { label: tNav("payments"), href: "/admin/payments" },
   ];
 }

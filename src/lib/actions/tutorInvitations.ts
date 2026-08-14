@@ -7,9 +7,11 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
+import { paymentsAreLive } from "@/lib/paymentMode";
 import { respondTutorInvitationSchema, declineTutorInvitationSchema } from "@/schemas/tutoringRequest";
 import { isTutorEligibleForRequest } from "@/services/tutorEligibility";
-import { createBookingFromQuotes, SlotTakenError } from "@/services/bookingCreation";
+import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
+import { captureAuthorizedPayment, convergeToCaptured } from "@/services/payments";
 import {
   acceptTutorPayoutQuote,
   cancelTutorPayoutQuote,
@@ -18,14 +20,6 @@ import {
   TutorPayoutQuoteNotActiveError,
   TutorPayoutQuoteAlreadyAcceptedError,
 } from "@/services/tutorPayout";
-import {
-  QuoteNotFoundError,
-  QuoteNotOwnedError,
-  QuoteExpiredError,
-  QuoteAlreadyConsumedError,
-  QuoteNotActiveError,
-  QuoteContextMismatchError,
-} from "@/services/customerPricing";
 import { advanceDispatch } from "@/services/quickMatchDispatch";
 
 export type InvitationActionState = { error?: string; success?: boolean } | undefined;
@@ -33,21 +27,24 @@ export type InvitationActionState = { error?: string; success?: boolean } | unde
 class InvitationNotPendingError extends Error {}
 class InvitationExpiredError extends Error {}
 class TutorNotEligibleError extends Error {}
+class PaymentNotReadyError extends Error {}
 
 /**
- * §7b's full revalidation list, run inside one Serializable transaction:
- * (1) request still MATCHING, (2) invitation still PENDING, (3) not
- * expired, (4) payout quote in the legal state, (5)/(6) tutor still passes
- * every eligibility check, (7) no overlapping active Booking for this tutor
- * — the genuinely new check this round (§7a/§7c), enforced by
- * createBookingFromQuotes' own hasOverlappingActiveBooking call, which is
- * the same interval-overlap logic isTutorEligibleForRequest's availability
- * check already uses, so a stale-availability race is caught twice.
+ * Step A (Serializable, no Stripe call) — full revalidation, then an
+ * atomic claim (MATCHING -> PAYMENT_PENDING) that prevents a second tutor
+ * from winning the same request during a parallel round, then a
+ * PENDING_PAYMENT reservation (see reserveBookingPendingPayment). Step B
+ * (Stripe capture) and Step C (convergence) run afterward, outside this
+ * transaction — see the Payment model's schema domain comment for the
+ * full Step A/B/C rationale and why an external call must never be inside
+ * a database transaction.
  *
- * A SlotTakenError here is a candidate-level failure (§7c), not a
- * request-level one: the transaction rolls back, this specific invitation
- * and its payout quote are terminated, and dispatch continues to the next
- * candidate/round for the *request* — it does not become FAILED.
+ * A SlotTakenError/eligibility failure here is a candidate-level failure:
+ * the transaction rolls back (undoing the claim too), and dispatch
+ * continues to the next candidate/round for the *request* — it does not
+ * become FAILED. A payment failure discovered afterward, in contrast, is a
+ * request-level outcome (PAYMENT_FAILED) — the blocker is the customer's
+ * card, not this tutor's availability, so dispatch does not continue.
  */
 export async function acceptTutorInvitationAction(
   _prevState: InvitationActionState,
@@ -71,8 +68,10 @@ export async function acceptTutorInvitationAction(
     select: { tutoringRequestId: true },
   });
 
+  let claimed: { bookingId: string; paymentId: string } | null = null;
+
   try {
-    await db.$transaction(
+    claimed = await db.$transaction(
       async (tx) => {
         const invitation = await tx.tutorInvitation.findUnique({ where: { id: parsed.data.tutorInvitationId } });
         if (!invitation || invitation.tutorProfileId !== tutorProfile.id || invitation.status !== "PENDING") {
@@ -96,13 +95,25 @@ export async function acceptTutorInvitationAction(
         });
         if (!stillEligible) throw new TutorNotEligibleError();
 
+        const payment = await tx.payment.findUnique({ where: { customerPriceQuoteId: request.customerPriceQuoteId } });
+        if (!payment) throw new PaymentNotReadyError();
+
+        // Atomic claim — prevents a second tutor from winning the same
+        // request during a parallel round (§7 scenario 1 of the Phase F
+        // plan, unchanged mechanism, now guarding the payment-aware flow).
+        const claimResult = await tx.tutoringRequest.updateMany({
+          where: { id: request.id, status: "MATCHING" },
+          data: { status: "PAYMENT_PENDING" },
+        });
+        if (claimResult.count === 0) throw new InvitationNotPendingError();
+
         await acceptTutorPayoutQuote(tx, invitation.tutorPayoutQuoteId, tutorProfile.id);
 
         const endAt = new Date(request.requestedStartAt.getTime() + request.durationMinutes * 60 * 1000);
         const availabilityRow = await tx.tutorAvailability.findFirst({ where: { tutorProfileId: tutorProfile.id } });
         const timezone = availabilityRow?.timezone ?? "UTC";
 
-        const { booking } = await createBookingFromQuotes(tx, {
+        const booking = await reserveBookingPendingPayment(tx, {
           studentProfileId: request.studentProfileId,
           tutorProfileId: tutorProfile.id,
           subjectId: request.subjectId,
@@ -111,7 +122,7 @@ export async function acceptTutorInvitationAction(
           endAt,
           timezone,
           mode: request.tutoringMode,
-          createdByUserId: request.createdByUserId,
+          paymentId: payment.id,
           customerPriceQuoteId: request.customerPriceQuoteId,
           tutorPayoutQuoteId: invitation.tutorPayoutQuoteId,
           tutoringRequestId: request.id,
@@ -153,14 +164,6 @@ export async function acceptTutorInvitationAction(
           }
         }
 
-        // Guarded — a concurrent accept for the same request (parallel
-        // round) may have already flipped this to BOOKED; only one write
-        // actually lands (§7 scenario 1).
-        await tx.tutoringRequest.updateMany({
-          where: { id: request.id, status: "MATCHING" },
-          data: { status: "BOOKED", bookedAt: new Date() },
-        });
-
         await writeAuditLog(
           {
             actorUserId: session.user.id,
@@ -171,24 +174,8 @@ export async function acceptTutorInvitationAction(
           },
           tx
         );
-        await writeAuditLog(
-          {
-            actorUserId: session.user.id,
-            action: "quickmatch.booking.created",
-            entityType: "Booking",
-            entityId: booking.id,
-            metadata: { tutoringRequestId: request.id },
-          },
-          tx
-        );
 
-        await notifyUser(tx, {
-          userId: request.createdByUserId,
-          type: "quickmatch.request.booked",
-          title: "Tutor found!",
-          body: "A tutor has accepted your request and your session is booked.",
-          metadata: { tutoringRequestId: request.id, bookingId: booking.id },
-        });
+        return { bookingId: booking.id, paymentId: payment.id };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );
@@ -198,32 +185,42 @@ export async function acceptTutorInvitationAction(
       error instanceof InvitationNotPendingError ||
       error instanceof InvitationExpiredError ||
       error instanceof TutorNotEligibleError ||
+      error instanceof PaymentNotReadyError ||
       error instanceof TutorPayoutQuoteNotFoundError ||
       error instanceof TutorPayoutQuoteExpiredError ||
       error instanceof TutorPayoutQuoteNotActiveError ||
       error instanceof TutorPayoutQuoteAlreadyAcceptedError
     ) {
-      // Candidate-level failure (§7c) — the request itself is not FAILED;
-      // dispatch simply continues to the next candidate/round. Safe to call
-      // even if another path already advanced this request (advanceDispatch
-      // is a self-guarding no-op in that case).
+      // Candidate-level failure — the request itself is not FAILED;
+      // dispatch simply continues to the next candidate/round (the
+      // transaction rollback already undid the PAYMENT_PENDING claim).
+      // Safe to call even if another path already advanced this request.
       if (preflight?.tutoringRequestId) await advanceDispatch(preflight.tutoringRequestId);
       return { error: t("invitationNoLongerAvailable") };
-    }
-    if (
-      error instanceof QuoteNotFoundError ||
-      error instanceof QuoteNotOwnedError ||
-      error instanceof QuoteExpiredError ||
-      error instanceof QuoteAlreadyConsumedError ||
-      error instanceof QuoteNotActiveError ||
-      error instanceof QuoteContextMismatchError
-    ) {
-      return { error: t("pricingUnavailable") };
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return { error: t("invitationNoLongerAvailable") };
     }
     return { error: t("generic") };
+  }
+
+  // Step B/C — outside the claim transaction. Never a candidate-level
+  // failure from here on: a capture failure is a request-level outcome
+  // (PAYMENT_FAILED), handled entirely inside convergeToCaptureFailed —
+  // dispatch does not continue to another tutor (Phase G plan §12).
+  try {
+    if (paymentsAreLive()) {
+      await captureAuthorizedPayment(claimed.paymentId);
+    } else {
+      await convergeToCaptured(claimed.paymentId);
+    }
+  } catch {
+    return { error: t("generic") };
+  }
+
+  const finalBooking = await db.booking.findUnique({ where: { id: claimed.bookingId }, select: { status: true } });
+  if (finalBooking?.status !== "CONFIRMED") {
+    return { error: t("paymentFailed") };
   }
 
   revalidatePath("/tutor/quick-match");

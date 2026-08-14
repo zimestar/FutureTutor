@@ -6,8 +6,17 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
+import { paymentsAreLive } from "@/lib/paymentMode";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
-import { createBookingFromQuotes, SlotTakenError } from "@/services/bookingCreation";
+import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
+import {
+  preparePaymentForQuote,
+  getOrCreatePaymentForQuote,
+  verifyAndAuthorizePaymentIntent,
+  captureAuthorizedPayment,
+  convergeToCaptured,
+  PaymentIntentVerificationError,
+} from "@/services/payments";
 import {
   QuoteNotFoundError,
   QuoteNotOwnedError,
@@ -21,6 +30,7 @@ import {
   TutorPayoutQuoteExpiredError,
   TutorPayoutQuoteNotActiveError,
 } from "@/services/tutorPayout";
+import { cancelBookingWithRefund } from "@/services/cancellationPolicy";
 
 export type BookingActionState = { error?: string; success?: boolean } | undefined;
 
@@ -50,6 +60,9 @@ export async function createBookingAction(
   const customerPriceQuoteId = String(formData.get("customerPriceQuoteId") ?? "");
   const tutorPayoutQuoteId = String(formData.get("tutorPayoutQuoteId") ?? "");
   if (!customerPriceQuoteId || !tutorPayoutQuoteId) return { error: t("pricingUnavailable") };
+  const stripePaymentIntentId = formData.get("stripePaymentIntentId")
+    ? String(formData.get("stripePaymentIntentId"))
+    : null;
 
   const [studentProfile, tutorProfile] = await Promise.all([
     db.studentProfile.findUnique({ where: { userId: session.user.id } }),
@@ -68,10 +81,37 @@ export async function createBookingAction(
   const endAt = new Date(startAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
   const mode = tutorProfile.learningMode ?? "BOTH";
 
+  // Payment preparation happens outside any DB transaction — see the
+  // Payment model's schema domain comment for why an external call must
+  // never be wrapped in a transaction. In live mode the client already
+  // authorized this PaymentIntent via the Payment Element before
+  // submitting; here the server independently verifies it (never trusts
+  // the client's word alone).
+  let paymentId: string;
   try {
+    if (paymentsAreLive()) {
+      if (!stripePaymentIntentId) return { error: t("pricingUnavailable") };
+      const payment = await getOrCreatePaymentForQuote(customerPriceQuoteId, session.user.id);
+      await verifyAndAuthorizePaymentIntent({
+        paymentId: payment.id,
+        stripePaymentIntentId,
+        expectedPayerUserId: session.user.id,
+      });
+      paymentId = payment.id;
+    } else {
+      const payment = await preparePaymentForQuote(customerPriceQuoteId, session.user.id);
+      paymentId = payment.id;
+    }
+  } catch (error) {
+    if (error instanceof PaymentIntentVerificationError) return { error: t("pricingUnavailable") };
+    return { error: t("generic") };
+  }
+
+  try {
+    // Step A — reserve the slot, no Stripe call inside this transaction.
     await db.$transaction(
       async (tx) => {
-        await createBookingFromQuotes(tx, {
+        await reserveBookingPendingPayment(tx, {
           studentProfileId: studentProfile.id,
           tutorProfileId,
           subjectId,
@@ -80,7 +120,7 @@ export async function createBookingAction(
           endAt,
           timezone,
           mode,
-          createdByUserId: session.user.id,
+          paymentId,
           customerPriceQuoteId,
           tutorPayoutQuoteId,
         });
@@ -89,6 +129,21 @@ export async function createBookingAction(
     );
   } catch (error) {
     if (error instanceof SlotTakenError) return { error: t("slotTaken") };
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+      return { error: t("slotTaken") };
+    }
+    return { error: t("generic") };
+  }
+
+  // Step B/C — capture (live) or converge directly (dev bypass, already
+  // CAPTURED — see preparePaymentForQuote).
+  try {
+    if (paymentsAreLive()) {
+      await captureAuthorizedPayment(paymentId);
+    } else {
+      await convergeToCaptured(paymentId);
+    }
+  } catch (error) {
     if (
       error instanceof QuoteNotFoundError ||
       error instanceof QuoteNotOwnedError ||
@@ -102,10 +157,12 @@ export async function createBookingAction(
     ) {
       return { error: t("pricingUnavailable") };
     }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
-      return { error: t("slotTaken") };
-    }
     return { error: t("generic") };
+  }
+
+  const finalPayment = await db.payment.findUnique({ where: { id: paymentId } });
+  if (finalPayment?.status !== "CAPTURED") {
+    return { error: t("pricingUnavailable") };
   }
 
   revalidatePath("/dashboard/bookings");
@@ -136,19 +193,11 @@ export async function cancelBookingAction(
   const isAdmin = session.user.role === "SUPER_ADMIN";
   if (!isOwner && !isAdmin) return { error: t("notYours") };
 
-  await db.$transaction([
-    db.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: "CANCELLED",
-        cancelledByUserId: session.user.id,
-        cancelledAt: new Date(),
-      },
-    }),
-    db.bookingStatusHistory.create({
-      data: { bookingId: booking.id, fromStatus: booking.status, toStatus: "CANCELLED", changedByUserId: session.user.id },
-    }),
-  ]);
+  try {
+    await cancelBookingWithRefund(booking.id, session.user.id);
+  } catch {
+    return { error: t("generic") };
+  }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/tutor/bookings");

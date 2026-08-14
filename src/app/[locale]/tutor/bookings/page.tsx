@@ -36,6 +36,7 @@ export default async function TutorBookingsPage({
         include: {
           studentProfile: { select: { firstName: true, lastName: true } },
           subject: { select: { slug: true } },
+          earning: { select: { status: true, amountCents: true, currency: true } },
         },
         orderBy: { startAt: "asc" },
       })
@@ -80,6 +81,15 @@ export default async function TutorBookingsPage({
                         <p className="mt-1 text-sm text-slate">
                           {formatBookingTime(booking.startAt, booking.timezone, locale)}
                         </p>
+                        {booking.earning && (
+                          <p className="mt-1 text-xs font-semibold text-slate" data-testid="earning-status">
+                            Earning: {(booking.earning.amountCents / 100).toFixed(2)} {booking.earning.currency} —{" "}
+                            {booking.earning.status}
+                          </p>
+                        )}
+                        {booking.status === "PENDING_PAYMENT" && (
+                          <p className="mt-1 text-xs font-semibold text-slate">Payment processing…</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>

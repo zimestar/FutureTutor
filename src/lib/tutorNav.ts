@@ -10,5 +10,6 @@ export function tutorNavItems(tNav: (key: string) => string): DashboardNavItem[]
     { label: tNav("availability"), href: "/tutor/availability" },
     { label: tNav("quickMatch"), href: "/tutor/quick-match" },
     { label: tNav("bookings"), href: "/tutor/bookings" },
+    { label: tNav("payouts"), href: "/tutor/payouts" },
   ];
 }

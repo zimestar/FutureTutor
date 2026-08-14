@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { Select } from "@/components/ui/Input";
 import { createBookingAction } from "@/lib/actions/bookings";
 import { createPriceQuoteAction, type PriceQuoteResult } from "@/lib/actions/pricing";
+import { preparePaymentForBookingQuoteAction, type PreparePaymentState } from "@/lib/actions/payments";
+import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
 
 export interface BookingWidgetDaySlot {
   date: string;
@@ -23,12 +25,16 @@ export function BookingWidget({
   days,
   subjects,
   levels,
+  paymentsLive,
+  stripePublishableKey,
 }: {
   tutorProfileId: string;
   timezone: string;
   days: BookingWidgetDaySlot[];
   subjects: BookingWidgetOption[];
   levels: BookingWidgetOption[];
+  paymentsLive: boolean;
+  stripePublishableKey: string | null;
 }) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -44,6 +50,16 @@ export function BookingWidget({
   const [quotePending, startQuoteTransition] = useTransition();
   const quoteKey = selectedSlot && subjectId ? `${selectedSlot}|${subjectId}|${academicLevelId}` : null;
   const quote = quoteState && quoteState.key === quoteKey ? quoteState.result : null;
+
+  // Payment preparation — only meaningful in live mode, and only once a
+  // real quote exists. Keyed the same way as the quote itself so changing
+  // the selection invalidates a stale client secret/authorization.
+  const [paymentState, setPaymentState] = useState<{ key: string; result: PreparePaymentState } | null>(null);
+  const [preparingPayment, startPreparingPayment] = useTransition();
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<{ key: string; id: string } | null>(null);
+  const payment = paymentState && paymentState.key === quoteKey ? paymentState.result : null;
+  const authorizedPiId =
+    stripePaymentIntentId && stripePaymentIntentId.key === quoteKey ? stripePaymentIntentId.id : null;
 
   const dayFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }),
@@ -81,6 +97,20 @@ export function BookingWidget({
     };
   }, [quoteKey, selectedSlot, subjectId, academicLevelId, tutorProfileId]);
 
+  // In live mode, once a real quote exists, prepare (or reuse) the Payment
+  // + PaymentIntent for it so the card form can render.
+  useEffect(() => {
+    if (!paymentsLive || !quoteKey || !quote?.success) return;
+    let cancelled = false;
+    startPreparingPayment(async () => {
+      const result = await preparePaymentForBookingQuoteAction(quote.customerPriceQuoteId);
+      if (!cancelled) setPaymentState({ key: quoteKey, result });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentsLive, quoteKey, quote]);
+
   if (state?.success) {
     return (
       <div className="mt-6 rounded-md bg-success-light px-4 py-3 text-sm font-semibold text-success">
@@ -96,12 +126,15 @@ export function BookingWidget({
     return <p className="mt-6 text-sm text-slate">{t("noAvailability")}</p>;
   }
 
+  const readyToSubmit = quote?.success && (!paymentsLive || authorizedPiId);
+
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
       <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
       <input type="hidden" name="startAt" value={selectedSlot} />
       <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
       <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
+      {authorizedPiId && <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />}
 
       {state?.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
@@ -230,14 +263,36 @@ export function BookingWidget({
         </div>
       )}
 
-      <button
-        type="submit"
-        data-testid="confirm-booking"
-        disabled={pending || quotePending || !quote?.success}
-        className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {pending ? t("confirming") : t("confirmCta")}
-      </button>
+      {paymentsLive && quote?.success && !authorizedPiId && (
+        <div>
+          {preparingPayment && <p className="text-sm text-slate">{t("calculatingPrice")}</p>}
+          {!preparingPayment && payment && !payment.success && (
+            <p role="alert" className="text-sm font-semibold text-error">
+              {payment.error}
+            </p>
+          )}
+          {!preparingPayment && payment?.success && payment.clientSecret && stripePublishableKey && (
+            <StripePaymentForm
+              clientSecret={payment.clientSecret}
+              publishableKey={stripePublishableKey}
+              onAuthorized={(id) => quoteKey && setStripePaymentIntentId({ key: quoteKey, id })}
+              submitLabel={t("confirmCta")}
+              pendingLabel={t("confirming")}
+            />
+          )}
+        </div>
+      )}
+
+      {(!paymentsLive || authorizedPiId) && (
+        <button
+          type="submit"
+          data-testid="confirm-booking"
+          disabled={pending || quotePending || !readyToSubmit}
+          className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? t("confirming") : t("confirmCta")}
+        </button>
+      )}
     </form>
   );
 }

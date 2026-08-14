@@ -7,6 +7,7 @@ import { QuickMatchRequestForm } from "@/components/dashboard/QuickMatchRequestF
 import { QuickMatchPriceReview } from "@/components/dashboard/QuickMatchPriceReview";
 import { QuickMatchStatusView } from "@/components/dashboard/QuickMatchStatusView";
 import { expireStaleInvitationsAndAdvance } from "@/services/quickMatchDispatch";
+import { paymentsAreLive } from "@/lib/paymentMode";
 
 export default async function StudentQuickMatchPage({
   params,
@@ -72,22 +73,24 @@ export default async function StudentQuickMatchPage({
           taxCents={latestRequest.customerPriceQuote.taxCents}
           totalCents={latestRequest.customerPriceQuote.totalCents}
           currency={latestRequest.customerPriceQuote.currency}
+          paymentsLive={paymentsAreLive()}
+          stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
         />
       )}
 
-      {latestRequest?.status === "MATCHING" && (
+      {(latestRequest?.status === "MATCHING" ||
+        latestRequest?.status === "PAYMENT_PENDING" ||
+        latestRequest?.status === "BOOKED" ||
+        latestRequest?.status === "PAYMENT_FAILED") && (
         <QuickMatchStatusView
           tutoringRequestId={latestRequest.id}
-          status="MATCHING"
+          status={latestRequest.status}
           dispatchRound={latestRequest.dispatchRound}
         />
       )}
 
-      {latestRequest?.status === "BOOKED" && (
-        <QuickMatchStatusView tutoringRequestId={latestRequest.id} status="BOOKED" dispatchRound={latestRequest.dispatchRound} />
-      )}
-
-      {(!latestRequest || !["PRICED", "MATCHING", "BOOKED"].includes(latestRequest.status)) && (
+      {(!latestRequest ||
+        !["PRICED", "MATCHING", "PAYMENT_PENDING", "BOOKED", "PAYMENT_FAILED"].includes(latestRequest.status)) && (
         <>
           {latestRequest?.status === "NO_TUTOR_FOUND" && (
             <p className="mt-6 rounded-md bg-off-white px-4 py-3 text-sm text-slate" data-testid="no-tutor-found-banner">

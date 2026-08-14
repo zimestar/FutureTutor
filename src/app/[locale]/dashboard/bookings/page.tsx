@@ -36,6 +36,7 @@ export default async function StudentBookingsPage({
         include: {
           tutorProfile: { select: { user: { select: { name: true } } } },
           subject: { select: { slug: true } },
+          payment: { select: { status: true, refundedAmountCents: true, currency: true } },
         },
         orderBy: { startAt: "asc" },
       })
@@ -91,6 +92,14 @@ export default async function StudentBookingsPage({
                         <p className="mt-1 text-sm text-slate">
                           {formatBookingTime(booking.startAt, booking.timezone, locale)}
                         </p>
+                        {booking.payment && booking.payment.refundedAmountCents > 0 && (
+                          <p className="mt-1 text-xs font-semibold text-slate" data-testid="refund-note">
+                            Refunded {(booking.payment.refundedAmountCents / 100).toFixed(2)} {booking.payment.currency}
+                          </p>
+                        )}
+                        {booking.status === "PENDING_PAYMENT" && (
+                          <p className="mt-1 text-xs font-semibold text-slate">Payment processing…</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>

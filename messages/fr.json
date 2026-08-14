@@ -448,7 +448,9 @@
       "training": "Formation",
       "exam": "Examen",
       "pricing": "Tarification",
-      "quickMatch": "Jumelage rapide"
+      "quickMatch": "Jumelage rapide",
+      "payouts": "Paiements",
+      "payments": "Paiements des clients"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -716,6 +718,7 @@
       "total": "Total",
       "confirming": "Confirmation…",
       "confirmCta": "Confirmer et chercher un tuteur",
+      "enterPaymentCta": "Entrer les informations de paiement",
       "cancelCta": "Annuler"
     },
     "status": {
@@ -723,9 +726,17 @@
         "title": "Recherche de votre tuteur…",
         "description": "Nous contactons des tuteurs disponibles (tour {round}). Cette page se met à jour automatiquement."
       },
+      "PAYMENT_PENDING": {
+        "title": "Confirmation de votre séance…",
+        "description": "Un tuteur a accepté votre demande — nous finalisons votre paiement. Cela ne prend qu'un instant."
+      },
       "BOOKED": {
         "title": "Tuteur trouvé!",
         "description": "Un tuteur a accepté votre demande — consultez vos réservations pour les détails."
+      },
+      "PAYMENT_FAILED": {
+        "title": "Le paiement n'a pas pu être complété",
+        "description": "Nous n'avons pas pu compléter votre paiement, donc cette demande n'a pas pu être confirmée. Veuillez mettre à jour votre méthode de paiement et faire une nouvelle demande."
       },
       "NO_TUTOR_FOUND": {
         "title": "Aucun tuteur disponible",
@@ -771,7 +782,39 @@
       "invalidState": "Cette demande ne peut plus être modifiée.",
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
       "invitationNoLongerAvailable": "Cette demande n'est plus disponible — elle a peut-être expiré ou été prise par un autre tuteur.",
+      "paymentFailed": "Cette séance n'a pas pu être confirmée car le paiement n'a pas pu être complété.",
       "generic": "Une erreur est survenue. Veuillez réessayer."
+    }
+  },
+  "tutorPayouts": {
+    "title": "Paiements",
+    "description": "Configurez Stripe pour recevoir le paiement de vos séances et suivez vos gains.",
+    "stripeStatusTitle": "État du compte de paiement",
+    "stripeStatus": {
+      "NOT_STARTED": "Non commencé",
+      "PENDING": "Configuration en cours",
+      "RESTRICTED": "Action requise",
+      "ACTIVE": "Prêt à recevoir des paiements",
+      "DISABLED": "Désactivé"
+    },
+    "setUpPayoutsCta": "Configurer les paiements",
+    "continueSetupCta": "Continuer la configuration",
+    "onboardingError": "Nous n'avons pas pu démarrer la configuration Stripe — veuillez réessayer.",
+    "devModeNotice": "Les paiements fonctionnent en mode développement — aucun compte Stripe réel n'est encore requis.",
+    "earningsTitle": "Vos gains",
+    "earningsEmpty": "Vous n'avez encore rien gagné.",
+    "earningStatus": {
+      "PENDING_ELIGIBLE": "En attente",
+      "ELIGIBLE": "Prêt — complétez la configuration des paiements pour recevoir les fonds",
+      "TRANSFERRED": "Payé",
+      "CANCELLED": "Annulé"
+    },
+    "transfersTitle": "Historique des transferts",
+    "transfersEmpty": "Aucun transfert pour le moment.",
+    "transferStatus": {
+      "PENDING": "En attente",
+      "COMPLETED": "Complété",
+      "FAILED": "Échoué"
     }
   },
   "tutorEducationForm": {

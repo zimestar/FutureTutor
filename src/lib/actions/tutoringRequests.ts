@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
+import { paymentsAreLive } from "@/lib/paymentMode";
 import {
   createTutoringRequestSchema,
   confirmTutoringRequestSchema,
@@ -17,6 +18,13 @@ import {
   cancelActiveCustomerPriceQuote,
   PricingRuleNotFoundError,
 } from "@/services/customerPricing";
+import {
+  preparePaymentForQuote,
+  getOrCreatePaymentForQuote,
+  ensureStripePaymentIntent,
+  verifyAndAuthorizePaymentIntent,
+  PaymentIntentVerificationError,
+} from "@/services/payments";
 import { advanceDispatch, closeTutoringRequest } from "@/services/quickMatchDispatch";
 
 export type CreateTutoringRequestState =
@@ -123,6 +131,38 @@ export async function createTutoringRequestAction(
   }
 }
 
+export type PreparePaymentState =
+  | { success: true; paymentId: string; clientSecret: string | null; live: boolean }
+  | { success: false; error: string };
+
+/** Called once the price is shown, before the student clicks confirm — in
+ * live mode this is what lets the client render the Payment Element; in
+ * dev/test mode (PAYMENT_MODE=disabled_dev) it's a no-op preparation step
+ * with nothing for the UI to render. Never wraps the Stripe call in a
+ * transaction — see the Payment model's schema domain comment. */
+export async function preparePaymentForRequestAction(tutoringRequestId: string): Promise<PreparePaymentState> {
+  const t = await getTranslations("quickMatch.errors");
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") return { success: false, error: t("notAStudent") };
+
+  const request = await db.tutoringRequest.findUnique({ where: { id: tutoringRequestId } });
+  if (!request || !request.customerPriceQuoteId) return { success: false, error: t("notFound") };
+  if (request.createdByUserId !== session.user.id) return { success: false, error: t("notYours") };
+  if (request.status !== "PRICED") return { success: false, error: t("invalidState") };
+
+  try {
+    if (paymentsAreLive()) {
+      const payment = await getOrCreatePaymentForQuote(request.customerPriceQuoteId, session.user.id);
+      const { clientSecret } = await ensureStripePaymentIntent(payment.id);
+      return { success: true, paymentId: payment.id, clientSecret, live: true };
+    }
+    const payment = await preparePaymentForQuote(request.customerPriceQuoteId, session.user.id);
+    return { success: true, paymentId: payment.id, clientSecret: null, live: false };
+  } catch {
+    return { success: false, error: t("pricingUnavailable") };
+  }
+}
+
 export type TutoringRequestActionState = { error?: string; success?: boolean } | undefined;
 
 export async function confirmTutoringRequestAction(
@@ -139,12 +179,35 @@ export async function confirmTutoringRequestAction(
   });
   if (!parsed.success) return { error: t("invalidInput") };
   const { tutoringRequestId, customerPriceQuoteId } = parsed.data;
+  const stripePaymentIntentId = formData.get("stripePaymentIntentId")
+    ? String(formData.get("stripePaymentIntentId"))
+    : null;
 
   const request = await db.tutoringRequest.findUnique({ where: { id: tutoringRequestId } });
   if (!request) return { error: t("notFound") };
   if (request.createdByUserId !== session.user.id) return { error: t("notYours") };
   if (request.status !== "PRICED") return { error: t("invalidState") };
   if (request.customerPriceQuoteId !== customerPriceQuoteId) return { error: t("invalidInput") };
+
+  // Server-side authorization verification — never trusts a client-side
+  // stripe.confirmPayment() resolution alone (Phase G plan §12/Correction
+  // 8). A plain Stripe read, before any transaction opens.
+  try {
+    if (paymentsAreLive()) {
+      if (!stripePaymentIntentId) return { error: t("pricingUnavailable") };
+      const payment = await getOrCreatePaymentForQuote(customerPriceQuoteId, session.user.id);
+      await verifyAndAuthorizePaymentIntent({
+        paymentId: payment.id,
+        stripePaymentIntentId,
+        expectedPayerUserId: session.user.id,
+      });
+    } else {
+      await preparePaymentForQuote(customerPriceQuoteId, session.user.id);
+    }
+  } catch (error) {
+    if (error instanceof PaymentIntentVerificationError) return { error: t("pricingUnavailable") };
+    return { error: t("generic") };
+  }
 
   try {
     await db.$transaction(

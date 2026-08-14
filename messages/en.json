@@ -448,7 +448,9 @@
       "training": "Training",
       "exam": "Exam",
       "pricing": "Pricing",
-      "quickMatch": "Quick Match"
+      "quickMatch": "Quick Match",
+      "payouts": "Payouts",
+      "payments": "Payments"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -716,6 +718,7 @@
       "total": "Total",
       "confirming": "Confirming…",
       "confirmCta": "Confirm & find a tutor",
+      "enterPaymentCta": "Enter payment details",
       "cancelCta": "Cancel"
     },
     "status": {
@@ -723,9 +726,17 @@
         "title": "Looking for your tutor…",
         "description": "We're reaching out to available tutors (round {round}). This page updates automatically."
       },
+      "PAYMENT_PENDING": {
+        "title": "Confirming your session…",
+        "description": "A tutor accepted your request — we're finalizing your payment now. This only takes a moment."
+      },
       "BOOKED": {
         "title": "Tutor found!",
         "description": "A tutor accepted your request — check your bookings for the details."
+      },
+      "PAYMENT_FAILED": {
+        "title": "Payment could not be completed",
+        "description": "We couldn't complete your payment, so this request could not be confirmed. Please update your payment method and try a new request."
       },
       "NO_TUTOR_FOUND": {
         "title": "No tutor was available",
@@ -771,7 +782,39 @@
       "invalidState": "This request can no longer be changed.",
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
       "invitationNoLongerAvailable": "This request is no longer available — it may have expired or been taken by another tutor.",
+      "paymentFailed": "This session could not be confirmed because the payment could not be completed.",
       "generic": "Something went wrong. Please try again."
+    }
+  },
+  "tutorPayouts": {
+    "title": "Payouts",
+    "description": "Set up Stripe to receive payment for your sessions, and track what you've earned.",
+    "stripeStatusTitle": "Payout account status",
+    "stripeStatus": {
+      "NOT_STARTED": "Not started",
+      "PENDING": "Setup in progress",
+      "RESTRICTED": "Action needed",
+      "ACTIVE": "Ready to receive payouts",
+      "DISABLED": "Disabled"
+    },
+    "setUpPayoutsCta": "Set up payouts",
+    "continueSetupCta": "Continue setup",
+    "onboardingError": "We couldn't start Stripe onboarding — please try again.",
+    "devModeNotice": "Payments are running in development mode — no real Stripe account is required yet.",
+    "earningsTitle": "Your earnings",
+    "earningsEmpty": "You haven't earned anything yet.",
+    "earningStatus": {
+      "PENDING_ELIGIBLE": "Pending",
+      "ELIGIBLE": "Ready — complete payout setup to receive funds",
+      "TRANSFERRED": "Paid",
+      "CANCELLED": "Cancelled"
+    },
+    "transfersTitle": "Transfer history",
+    "transfersEmpty": "No transfers yet.",
+    "transferStatus": {
+      "PENDING": "Pending",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed"
     }
   },
   "tutorEducationForm": {

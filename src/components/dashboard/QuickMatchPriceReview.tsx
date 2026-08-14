@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { confirmTutoringRequestAction, cancelTutoringRequestAction } from "@/lib/actions/tutoringRequests";
+import { confirmTutoringRequestAction, cancelTutoringRequestAction, preparePaymentForRequestAction } from "@/lib/actions/tutoringRequests";
+import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
 
 export function QuickMatchPriceReview({
   tutoringRequestId,
@@ -12,6 +13,8 @@ export function QuickMatchPriceReview({
   taxCents,
   totalCents,
   currency,
+  paymentsLive,
+  stripePublishableKey,
 }: {
   tutoringRequestId: string;
   customerPriceQuoteId: string;
@@ -20,14 +23,37 @@ export function QuickMatchPriceReview({
   taxCents: number;
   totalCents: number;
   currency: string;
+  paymentsLive: boolean;
+  stripePublishableKey: string | null;
 }) {
   const t = useTranslations("quickMatch");
   const locale = useLocale();
   const [confirmState, confirmAction, confirmPending] = useActionState(confirmTutoringRequestAction, undefined);
   const [cancelState, cancelActionFn, cancelPending] = useActionState(cancelTutoringRequestAction, undefined);
 
+  // Only meaningful in live mode — dev mode never needs a client secret at
+  // all (preparePaymentForRequestAction still runs server-side, but there's
+  // nothing for the UI to render).
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [preparing, startPreparing] = useTransition();
+
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency });
   const formatCents = (cents: number) => currencyFormatter.format(cents / 100);
+
+  const needsPaymentSetup = paymentsLive && !clientSecret && !prepareError;
+
+  const handleStartPayment = () => {
+    startPreparing(async () => {
+      const result = await preparePaymentForRequestAction(tutoringRequestId);
+      if (result.success) {
+        setClientSecret(result.clientSecret);
+      } else {
+        setPrepareError(result.error);
+      }
+    });
+  };
 
   return (
     <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6" data-testid="quick-match-price-review">
@@ -67,32 +93,60 @@ export function QuickMatchPriceReview({
           {cancelState.error}
         </p>
       )}
+      {prepareError && (
+        <p role="alert" className="mt-3 rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
+          {prepareError}
+        </p>
+      )}
 
-      <div className="mt-5 flex gap-3">
-        <form action={confirmAction} className="flex-1">
-          <input type="hidden" name="tutoringRequestId" value={tutoringRequestId} />
-          <input type="hidden" name="customerPriceQuoteId" value={customerPriceQuoteId} />
-          <button
-            type="submit"
-            data-testid="confirm-quick-match"
-            disabled={confirmPending || cancelPending}
-            className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {confirmPending ? t("review.confirming") : t("review.confirmCta")}
-          </button>
-        </form>
-        <form action={cancelActionFn}>
-          <input type="hidden" name="tutoringRequestId" value={tutoringRequestId} />
-          <button
-            type="submit"
-            data-testid="cancel-quick-match"
-            disabled={confirmPending || cancelPending}
-            className="h-12 rounded-md border border-neutral-300 px-5 text-[15px] font-semibold text-slate transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t("review.cancelCta")}
-          </button>
-        </form>
-      </div>
+      {needsPaymentSetup ? (
+        <button
+          type="button"
+          data-testid="start-payment"
+          onClick={handleStartPayment}
+          disabled={preparing}
+          className="mt-5 h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {preparing ? t("review.confirming") : t("review.enterPaymentCta")}
+        </button>
+      ) : paymentsLive && clientSecret && stripePublishableKey && !stripePaymentIntentId ? (
+        <div className="mt-5">
+          <StripePaymentForm
+            clientSecret={clientSecret}
+            publishableKey={stripePublishableKey}
+            onAuthorized={setStripePaymentIntentId}
+            submitLabel={t("review.confirmCta")}
+            pendingLabel={t("review.confirming")}
+          />
+        </div>
+      ) : (
+        <div className="mt-5 flex gap-3">
+          <form action={confirmAction} className="flex-1">
+            <input type="hidden" name="tutoringRequestId" value={tutoringRequestId} />
+            <input type="hidden" name="customerPriceQuoteId" value={customerPriceQuoteId} />
+            {stripePaymentIntentId && <input type="hidden" name="stripePaymentIntentId" value={stripePaymentIntentId} />}
+            <button
+              type="submit"
+              data-testid="confirm-quick-match"
+              disabled={confirmPending || cancelPending}
+              className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {confirmPending ? t("review.confirming") : t("review.confirmCta")}
+            </button>
+          </form>
+          <form action={cancelActionFn}>
+            <input type="hidden" name="tutoringRequestId" value={tutoringRequestId} />
+            <button
+              type="submit"
+              data-testid="cancel-quick-match"
+              disabled={confirmPending || cancelPending}
+              className="h-12 rounded-md border border-neutral-300 px-5 text-[15px] font-semibold text-slate transition-colors hover:border-error hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t("review.cancelCta")}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
