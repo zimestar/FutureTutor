@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import {
   createTutoringRequestSchema,
   confirmTutoringRequestSchema,
@@ -132,7 +132,7 @@ export async function createTutoringRequestAction(
 }
 
 export type PreparePaymentState =
-  | { success: true; paymentId: string; clientSecret: string | null; live: boolean }
+  | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
   | { success: false; error: string };
 
 /** Called once the price is shown, before the student clicks confirm — in
@@ -151,13 +151,13 @@ export async function preparePaymentForRequestAction(tutoringRequestId: string):
   if (request.status !== "PRICED") return { success: false, error: t("invalidState") };
 
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       const payment = await getOrCreatePaymentForQuote(request.customerPriceQuoteId, session.user.id);
       const { clientSecret } = await ensureStripePaymentIntent(payment.id);
-      return { success: true, paymentId: payment.id, clientSecret, live: true };
+      return { success: true, paymentId: payment.id, clientSecret, usesStripe: true };
     }
     const payment = await preparePaymentForQuote(request.customerPriceQuoteId, session.user.id);
-    return { success: true, paymentId: payment.id, clientSecret: null, live: false };
+    return { success: true, paymentId: payment.id, clientSecret: null, usesStripe: false };
   } catch {
     return { success: false, error: t("pricingUnavailable") };
   }
@@ -193,7 +193,7 @@ export async function confirmTutoringRequestAction(
   // stripe.confirmPayment() resolution alone (Phase G plan §12/Correction
   // 8). A plain Stripe read, before any transaction opens.
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       if (!stripePaymentIntentId) return { error: t("pricingUnavailable") };
       const payment = await getOrCreatePaymentForQuote(customerPriceQuoteId, session.user.id);
       await verifyAndAuthorizePaymentIntent({

@@ -13,7 +13,7 @@ export function QuickMatchPriceReview({
   taxCents,
   totalCents,
   currency,
-  paymentsLive,
+  useStripe,
   stripePublishableKey,
 }: {
   tutoringRequestId: string;
@@ -23,7 +23,7 @@ export function QuickMatchPriceReview({
   taxCents: number;
   totalCents: number;
   currency: string;
-  paymentsLive: boolean;
+  useStripe: boolean;
   stripePublishableKey: string | null;
 }) {
   const t = useTranslations("quickMatch");
@@ -42,7 +42,7 @@ export function QuickMatchPriceReview({
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency });
   const formatCents = (cents: number) => currencyFormatter.format(cents / 100);
 
-  const needsPaymentSetup = paymentsLive && !clientSecret && !prepareError;
+  const needsPaymentSetup = useStripe && !clientSecret && !prepareError;
 
   const handleStartPayment = () => {
     startPreparing(async () => {
@@ -109,7 +109,7 @@ export function QuickMatchPriceReview({
         >
           {preparing ? t("review.confirming") : t("review.enterPaymentCta")}
         </button>
-      ) : paymentsLive && clientSecret && stripePublishableKey && !stripePaymentIntentId ? (
+      ) : useStripe && clientSecret && stripePublishableKey && !stripePaymentIntentId ? (
         <div className="mt-5">
           <StripePaymentForm
             clientSecret={clientSecret}

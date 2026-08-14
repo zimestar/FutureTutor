@@ -3,11 +3,11 @@
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import { preparePaymentForQuote, getOrCreatePaymentForQuote, ensureStripePaymentIntent } from "@/services/payments";
 
 export type PreparePaymentState =
-  | { success: true; paymentId: string; clientSecret: string | null; live: boolean }
+  | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
   | { success: false; error: string };
 
 /** Direct booking's equivalent of tutoringRequests.ts's
@@ -24,13 +24,13 @@ export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: 
   if (quote.status !== "ACTIVE") return { success: false, error: t("pricingUnavailable") };
 
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       const payment = await getOrCreatePaymentForQuote(customerPriceQuoteId, session.user.id);
       const { clientSecret } = await ensureStripePaymentIntent(payment.id);
-      return { success: true, paymentId: payment.id, clientSecret, live: true };
+      return { success: true, paymentId: payment.id, clientSecret, usesStripe: true };
     }
     const payment = await preparePaymentForQuote(customerPriceQuoteId, session.user.id);
-    return { success: true, paymentId: payment.id, clientSecret: null, live: false };
+    return { success: true, paymentId: payment.id, clientSecret: null, usesStripe: false };
   } catch {
     return { success: false, error: t("pricingUnavailable") };
   }

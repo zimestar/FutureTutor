@@ -7,7 +7,7 @@ import { QuickMatchRequestForm } from "@/components/dashboard/QuickMatchRequestF
 import { QuickMatchPriceReview } from "@/components/dashboard/QuickMatchPriceReview";
 import { QuickMatchStatusView } from "@/components/dashboard/QuickMatchStatusView";
 import { expireStaleInvitationsAndAdvance } from "@/services/quickMatchDispatch";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 
 export default async function StudentQuickMatchPage({
   params,
@@ -73,7 +73,7 @@ export default async function StudentQuickMatchPage({
           taxCents={latestRequest.customerPriceQuote.taxCents}
           totalCents={latestRequest.customerPriceQuote.totalCents}
           currency={latestRequest.customerPriceQuote.currency}
-          paymentsLive={paymentsAreLive()}
+          useStripe={paymentsUseStripe()}
           stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
         />
       )}

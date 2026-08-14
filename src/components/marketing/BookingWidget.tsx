@@ -25,7 +25,7 @@ export function BookingWidget({
   days,
   subjects,
   levels,
-  paymentsLive,
+  useStripe,
   stripePublishableKey,
 }: {
   tutorProfileId: string;
@@ -33,7 +33,7 @@ export function BookingWidget({
   days: BookingWidgetDaySlot[];
   subjects: BookingWidgetOption[];
   levels: BookingWidgetOption[];
-  paymentsLive: boolean;
+  useStripe: boolean;
   stripePublishableKey: string | null;
 }) {
   const t = useTranslations("booking");
@@ -100,7 +100,7 @@ export function BookingWidget({
   // In live mode, once a real quote exists, prepare (or reuse) the Payment
   // + PaymentIntent for it so the card form can render.
   useEffect(() => {
-    if (!paymentsLive || !quoteKey || !quote?.success) return;
+    if (!useStripe || !quoteKey || !quote?.success) return;
     let cancelled = false;
     startPreparingPayment(async () => {
       const result = await preparePaymentForBookingQuoteAction(quote.customerPriceQuoteId);
@@ -109,7 +109,7 @@ export function BookingWidget({
     return () => {
       cancelled = true;
     };
-  }, [paymentsLive, quoteKey, quote]);
+  }, [useStripe, quoteKey, quote]);
 
   if (state?.success) {
     return (
@@ -126,7 +126,7 @@ export function BookingWidget({
     return <p className="mt-6 text-sm text-slate">{t("noAvailability")}</p>;
   }
 
-  const readyToSubmit = quote?.success && (!paymentsLive || authorizedPiId);
+  const readyToSubmit = quote?.success && (!useStripe || authorizedPiId);
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
@@ -263,7 +263,7 @@ export function BookingWidget({
         </div>
       )}
 
-      {paymentsLive && quote?.success && !authorizedPiId && (
+      {useStripe && quote?.success && !authorizedPiId && (
         <div>
           {preparingPayment && <p className="text-sm text-slate">{t("calculatingPrice")}</p>}
           {!preparingPayment && payment && !payment.success && (
@@ -283,7 +283,7 @@ export function BookingWidget({
         </div>
       )}
 
-      {(!paymentsLive || authorizedPiId) && (
+      {(!useStripe || authorizedPiId) && (
         <button
           type="submit"
           data-testid="confirm-booking"

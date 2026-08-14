@@ -1,5 +1,6 @@
 import "server-only";
 import Stripe from "stripe";
+import { getValidatedPaymentMode } from "@/lib/paymentMode";
 
 let cachedClient: Stripe | null = null;
 
@@ -9,17 +10,28 @@ let cachedClient: Stripe | null = null;
  * and every Phase F/G quote/booking service, so an accidental client import
  * fails at build time, not silently in production.
  *
- * Throws if STRIPE_SECRET_KEY is unset. Every call site must first check
- * `paymentsAreLive()` (src/lib/paymentMode.ts) — this function is never
- * reached at all while PAYMENT_MODE=disabled_dev, so a missing key in that
- * mode is expected and harmless, not a bug to work around here.
+ * Every call site must first check `paymentsUseStripe()`
+ * (src/lib/paymentMode.ts) — this is defense-in-depth for a call site that
+ * skips that check: getValidatedPaymentMode() re-validates the full
+ * mode/credential configuration (throwing PaymentModeConfigurationError on
+ * any mismatch, e.g. a live key present while PAYMENT_MODE=stripe_test) and
+ * this function additionally refuses to construct a client at all while
+ * disabled_dev is active.
  */
 export function getStripeClient(): Stripe {
   if (cachedClient) return cachedClient;
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY is not configured — payments are not available in this environment.");
+
+  const mode = getValidatedPaymentMode();
+  if (mode === "disabled_dev") {
+    throw new Error(
+      "getStripeClient() was called while payments are disabled (PAYMENT_MODE=disabled_dev) — " +
+        "every call site must check paymentsUseStripe() before reaching here."
+    );
   }
+
+  // Already validated by getValidatedPaymentMode() above — re-read here
+  // only to construct the client, not to re-check its shape.
+  const secretKey = process.env.STRIPE_SECRET_KEY!;
   cachedClient = new Stripe(secretKey);
   return cachedClient;
 }

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import { respondTutorInvitationSchema, declineTutorInvitationSchema } from "@/schemas/tutoringRequest";
 import { isTutorEligibleForRequest } from "@/services/tutorEligibility";
 import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
@@ -209,7 +209,7 @@ export async function acceptTutorInvitationAction(
   // (PAYMENT_FAILED), handled entirely inside convergeToCaptureFailed —
   // dispatch does not continue to another tutor (Phase G plan §12).
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       await captureAuthorizedPayment(claimed.paymentId);
     } else {
       await convergeToCaptured(claimed.paymentId);

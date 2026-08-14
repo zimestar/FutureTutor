@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode, BookingStatus } from "@/generated/prisma/enums";
 import { getStripeClient } from "@/lib/stripe";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import {
   validateAndConsumeCustomerPriceQuote,
   cancelLockedCustomerPriceQuote,
@@ -60,7 +60,7 @@ export async function getOrCreatePaymentForQuote(quoteId: string, payerUserId: s
  * completely unmodified regardless of mode; convergeToCaptured never
  * touches Stripe itself, so a pre-CAPTURED row flows through it as a
  * same-shaped no-op on its own first guard. This function must never run
- * when paymentsAreLive() — callers branch on that before reaching here;
+ * when paymentsUseStripe() — callers branch on that before reaching here;
  * this is not itself the fail-closed guard (see src/lib/paymentMode.ts).
  */
 async function createDevBypassCapturedPayment(quoteId: string, payerUserId: string) {
@@ -91,7 +91,7 @@ async function createDevBypassCapturedPayment(quoteId: string, payerUserId: stri
 /** The one entry point booking flows call to get a payment ready — branches
  * on PAYMENT_MODE so callers never need their own live/dev conditional. */
 export async function preparePaymentForQuote(quoteId: string, payerUserId: string) {
-  return paymentsAreLive()
+  return paymentsUseStripe()
     ? getOrCreatePaymentForQuote(quoteId, payerUserId)
     : createDevBypassCapturedPayment(quoteId, payerUserId);
 }
@@ -508,7 +508,7 @@ export async function createRefund(params: {
   // to refund there either. Mirrors that same bypass shape: skip Step B
   // entirely, converge local state directly.
   let stripeRefundId: string;
-  if (!paymentsAreLive()) {
+  if (!paymentsUseStripe()) {
     stripeRefundId = `dev-bypass-${refund.id}`;
   } else {
     if (!payment.stripePaymentIntentId) {

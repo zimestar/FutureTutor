@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
 import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
 import {
@@ -89,7 +89,7 @@ export async function createBookingAction(
   // the client's word alone).
   let paymentId: string;
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       if (!stripePaymentIntentId) return { error: t("pricingUnavailable") };
       const payment = await getOrCreatePaymentForQuote(customerPriceQuoteId, session.user.id);
       await verifyAndAuthorizePaymentIntent({
@@ -138,7 +138,7 @@ export async function createBookingAction(
   // Step B/C — capture (live) or converge directly (dev bypass, already
   // CAPTURED — see preparePaymentForQuote).
   try {
-    if (paymentsAreLive()) {
+    if (paymentsUseStripe()) {
       await captureAuthorizedPayment(paymentId);
     } else {
       await convergeToCaptured(paymentId);

@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
 import { resolveCaptureOutcomeAndConverge, cancelAuthorizedPayment } from "@/services/payments";
@@ -90,7 +90,7 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   }
   if (transfer.status === "COMPLETED") return;
 
-  if (!paymentsAreLive()) {
+  if (!paymentsUseStripe()) {
     // Dev/test bypass — no Stripe call, mirrors preparePaymentForQuote's
     // own dev-bypass shape.
     await finalizeTransfer(transfer.id, `dev-bypass-${transfer.id}`);
@@ -159,7 +159,7 @@ export async function processEligibleTransfers(): Promise<{ markedEligible: numb
  * since no live metadata-search integration is built this phase.
  */
 export async function reconcileStuckPayments(): Promise<void> {
-  if (!paymentsAreLive()) return;
+  if (!paymentsUseStripe()) return;
   const threshold = new Date(Date.now() - STUCK_PAYMENT_THRESHOLD_MS);
 
   const stuckAuthorized = await db.payment.findMany({

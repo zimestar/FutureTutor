@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { startStripeOnboardingAction } from "@/lib/actions/stripeConnect";
 import { syncTutorConnectStatusFromStripe } from "@/services/stripeConnect";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 
 const STATUS_BADGE: Record<string, "mint" | "outline" | "blue" | "neutral"> = {
   NOT_STARTED: "outline",
@@ -43,7 +43,7 @@ export default async function TutorPayoutsPage({
 
   // Returning from Stripe onboarding — re-sync status from Stripe before
   // rendering, rather than waiting for the next account.updated webhook.
-  if (tutorProfile?.stripeConnectAccountId && onboarding === "return" && paymentsAreLive()) {
+  if (tutorProfile?.stripeConnectAccountId && onboarding === "return" && paymentsUseStripe()) {
     await syncTutorConnectStatusFromStripe(tutorProfile.id).catch(() => {});
     tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
   }
@@ -94,7 +94,7 @@ export default async function TutorPayoutsPage({
           )}
         </div>
         {onboarding === "error" && <p className="mt-3 text-sm font-semibold text-error">{t("onboardingError")}</p>}
-        {!paymentsAreLive() && <p className="mt-3 text-sm text-slate">{t("devModeNotice")}</p>}
+        {!paymentsUseStripe() && <p className="mt-3 text-sm text-slate">{t("devModeNotice")}</p>}
       </section>
 
       <section className="mt-8">

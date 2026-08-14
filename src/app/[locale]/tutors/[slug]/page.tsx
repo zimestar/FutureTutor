@@ -14,7 +14,7 @@ import { db } from "@/lib/db";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { dbModeToDisplay } from "@/lib/tutorMode";
 import { getAvailableSlots } from "@/lib/availability";
-import { paymentsAreLive } from "@/lib/paymentMode";
+import { paymentsUseStripe } from "@/lib/paymentMode";
 
 type Params = { locale: string; slug: string };
 
@@ -153,7 +153,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                   days={serializedDays}
                   subjects={tutor.subjects.map((s) => ({ id: s.subject.id, label: tSubjects(s.subject.slug) }))}
                   levels={tutor.levels.map((l) => ({ id: l.academicLevel.id, label: tLevels(l.academicLevel.slug) }))}
-                  paymentsLive={paymentsAreLive()}
+                  useStripe={paymentsUseStripe()}
                   stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
                 />
               ) : (
