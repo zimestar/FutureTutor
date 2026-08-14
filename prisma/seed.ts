@@ -226,6 +226,16 @@ async function main() {
     });
     console.log("Seeded 6 TutorBasePayoutRule rows (DEV defaults).");
   }
+
+  // --- Phase F: Quick Match & Tutor Dispatch. Dispatch/ranking numbers below
+  // are DEV/DEMO defaults only — see the Phase F plan's "remaining product
+  // decisions" for what still needs product sign-off. ---
+
+  const existingRankingSettings = await prisma.tutorRankingSettings.findFirst();
+  if (!existingRankingSettings) {
+    await prisma.tutorRankingSettings.create({ data: {} }); // all columns have DEV-labeled schema defaults
+    console.log("Seeded TutorRankingSettings (DEV defaults).");
+  }
 }
 
 main()

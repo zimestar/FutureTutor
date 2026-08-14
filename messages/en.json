@@ -447,7 +447,8 @@
       "documents": "Documents",
       "training": "Training",
       "exam": "Exam",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "quickMatch": "Quick Match"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -679,6 +680,98 @@
       "notFound": "This booking could not be found.",
       "notYours": "You can't manage this booking.",
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject."
+    }
+  },
+  "quickMatch": {
+    "title": "Quick Match",
+    "description": "Tell us what you need and we'll find and dispatch the best available tutor automatically.",
+    "form": {
+      "subjectLabel": "Subject",
+      "levelLabel": "Level (optional)",
+      "anyLevel": "Any level",
+      "modeLabel": "Format",
+      "modeOnline": "Online",
+      "modeInPerson": "In person",
+      "modeBoth": "Either",
+      "durationLabel": "Session length",
+      "durationOption": "{minutes} minutes",
+      "startAtLabel": "When",
+      "addressTitle": "Where the session will take place",
+      "addressLine1Placeholder": "Street address",
+      "addressLine2Placeholder": "Apartment, unit, etc. (optional)",
+      "cityPlaceholder": "City",
+      "provincePlaceholder": "Province",
+      "postalCodePlaceholder": "Postal code",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Anything a tutor should know before accepting",
+      "submitting": "Getting your price…",
+      "submitCta": "Get a price"
+    },
+    "review": {
+      "title": "Confirm your request",
+      "description": "This price is locked once you confirm — it won't change while we find you a tutor.",
+      "basePrice": "Session price",
+      "adjustments": "Adjustments",
+      "tax": "Tax",
+      "total": "Total",
+      "confirming": "Confirming…",
+      "confirmCta": "Confirm & find a tutor",
+      "cancelCta": "Cancel"
+    },
+    "status": {
+      "MATCHING": {
+        "title": "Looking for your tutor…",
+        "description": "We're reaching out to available tutors (round {round}). This page updates automatically."
+      },
+      "BOOKED": {
+        "title": "Tutor found!",
+        "description": "A tutor accepted your request — check your bookings for the details."
+      },
+      "NO_TUTOR_FOUND": {
+        "title": "No tutor was available",
+        "description": "We couldn't find an available tutor for this request. You can try again or browse tutors directly."
+      },
+      "CANCELLED": {
+        "title": "Request cancelled",
+        "description": "This request was cancelled."
+      },
+      "EXPIRED": {
+        "title": "Request expired",
+        "description": "This request expired before it was confirmed."
+      },
+      "FAILED": {
+        "title": "Something went wrong",
+        "description": "We hit an unexpected error matching this request. Please try again."
+      },
+      "cancelCta": "Cancel request",
+      "cancelling": "Cancelling…"
+    },
+    "mode": {
+      "ONLINE": "Online",
+      "IN_PERSON": "In person",
+      "BOTH": "Either"
+    },
+    "tutorInvitation": {
+      "pageTitle": "Quick Match requests",
+      "pageDescription": "Requests dispatched to you. Accept quickly — these expire if you don't respond in time.",
+      "empty": "No pending requests right now.",
+      "anyLevel": "Any level",
+      "duration": "{minutes} min",
+      "acceptCta": "Accept",
+      "accepting": "Accepting…",
+      "declineCta": "Decline",
+      "declining": "Declining…"
+    },
+    "errors": {
+      "notAStudent": "Only students can request a tutor.",
+      "notATutor": "Only tutors can respond to requests.",
+      "invalidInput": "Please check your request and try again.",
+      "notFound": "This request could not be found.",
+      "notYours": "You can't manage this request.",
+      "invalidState": "This request can no longer be changed.",
+      "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
+      "invitationNoLongerAvailable": "This request is no longer available — it may have expired or been taken by another tutor.",
+      "generic": "Something went wrong. Please try again."
     }
   },
   "tutorEducationForm": {

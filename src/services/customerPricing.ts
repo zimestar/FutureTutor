@@ -18,6 +18,7 @@ export class QuoteExpiredError extends Error {}
 export class QuoteAlreadyConsumedError extends Error {}
 export class QuoteNotActiveError extends Error {}
 export class QuoteContextMismatchError extends Error {}
+export class QuoteAlreadyLockedError extends Error {}
 
 /** What the pure calculation actually needs — no identity fields, since a
  *  non-persisted preview (e.g. a `/find-tutors` "from $X" estimate) has no
@@ -235,9 +236,16 @@ export async function createCustomerPriceQuote(context: CustomerPricingContext) 
 }
 
 /**
- * Called from *inside* the booking-creation transaction (see bookings.ts) —
- * takes that transaction's client rather than opening its own, so quote
- * consumption and Booking creation are atomic together.
+ * Called from *inside* the booking-creation transaction (see
+ * bookingCreation.ts) — takes that transaction's client rather than opening
+ * its own, so quote consumption and Booking creation are atomic together.
+ *
+ * Handles both quote-lifecycle shapes: direct booking's ACTIVE -> CONSUMED
+ * (expiresAt still governs validity) and Quick Match's LOCKED -> CONSUMED
+ * (expiresAt is never consulted once LOCKED — see the CustomerQuoteStatus.
+ * LOCKED schema comment; only the caller's own TutoringRequest-status guard
+ * governs validity at that point). One function, not two, so there is a
+ * single authoritative consumption code path either way.
  */
 export async function validateAndConsumeCustomerPriceQuote(
   tx: Prisma.TransactionClient,
@@ -250,8 +258,12 @@ export async function validateAndConsumeCustomerPriceQuote(
   if (quote.createdByUserId !== userId) throw new QuoteNotOwnedError();
   if (quote.status === "CONSUMED") throw new QuoteAlreadyConsumedError();
   if (quote.status === "CANCELLED") throw new QuoteNotActiveError();
-  if (quote.status === "EXPIRED" || quote.expiresAt < new Date()) throw new QuoteExpiredError();
-  if (quote.status !== "ACTIVE") throw new QuoteNotActiveError();
+  if (quote.status === "EXPIRED") throw new QuoteExpiredError();
+  if (quote.status === "ACTIVE") {
+    if (quote.expiresAt < new Date()) throw new QuoteExpiredError();
+  } else if (quote.status !== "LOCKED") {
+    throw new QuoteNotActiveError();
+  }
 
   const expectedHash = computeContextHash(expectedContext);
   if (expectedHash !== quote.contextHash) throw new QuoteContextMismatchError();
@@ -262,4 +274,63 @@ export async function validateAndConsumeCustomerPriceQuote(
   });
 
   return quote;
+}
+
+/**
+ * Quick Match only — moves ACTIVE -> LOCKED at the moment a student confirms
+ * a TutoringRequest, before matching begins. From this point the quote's
+ * values are immutable and expiresAt is retired (see the schema comment);
+ * only the parent TutoringRequest's own lifecycle governs whether this quote
+ * may still reach CONSUMED (booked) or CANCELLED (matching ended without a
+ * booking). Called inside the same transaction that transitions the request
+ * PRICED -> CONFIRMED.
+ */
+export async function lockCustomerPriceQuote(
+  tx: Prisma.TransactionClient,
+  quoteId: string,
+  userId: string,
+  expectedContext: QuoteContextFingerprint
+) {
+  const quote = await tx.customerPriceQuote.findUnique({ where: { id: quoteId } });
+  if (!quote) throw new QuoteNotFoundError();
+  if (quote.createdByUserId !== userId) throw new QuoteNotOwnedError();
+  if (quote.status === "LOCKED" || quote.status === "CONSUMED") throw new QuoteAlreadyLockedError();
+  if (quote.status === "CANCELLED") throw new QuoteNotActiveError();
+  if (quote.status === "EXPIRED" || quote.expiresAt < new Date()) throw new QuoteExpiredError();
+  if (quote.status !== "ACTIVE") throw new QuoteNotActiveError();
+
+  const expectedHash = computeContextHash(expectedContext);
+  if (expectedHash !== quote.contextHash) throw new QuoteContextMismatchError();
+
+  return tx.customerPriceQuote.update({
+    where: { id: quoteId },
+    data: { status: "LOCKED", lockedAt: new Date() },
+  });
+}
+
+/**
+ * Quick Match only — the losing/failed-match side of the LOCKED quote
+ * lifecycle: matching ended (NO_TUTOR_FOUND, student cancellation, or a
+ * dispatch failure) without ever producing a Booking. Only transitions a
+ * still-LOCKED quote — a concurrently-CONSUMED quote (a tutor accepted just
+ * before this ran) is left untouched by the updateMany's WHERE guard, so
+ * this can never overwrite a real booking's financial snapshot.
+ */
+export async function cancelLockedCustomerPriceQuote(tx: Prisma.TransactionClient, quoteId: string) {
+  await tx.customerPriceQuote.updateMany({
+    where: { id: quoteId, status: "LOCKED" },
+    data: { status: "CANCELLED", cancelledAt: new Date() },
+  });
+}
+
+/**
+ * Quick Match only — a student abandons/cancels a TutoringRequest before
+ * ever confirming it (still ACTIVE, never LOCKED). Same idempotent-guard
+ * shape as cancelLockedCustomerPriceQuote, just for the earlier state.
+ */
+export async function cancelActiveCustomerPriceQuote(tx: Prisma.TransactionClient, quoteId: string) {
+  await tx.customerPriceQuote.updateMany({
+    where: { id: quoteId, status: "ACTIVE" },
+    data: { status: "CANCELLED", cancelledAt: new Date() },
+  });
 }

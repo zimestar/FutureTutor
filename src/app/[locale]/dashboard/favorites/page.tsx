@@ -51,6 +51,7 @@ export default async function FavoritesPage({
       navItems={[
         { label: tNav("overview"), href: "/dashboard" },
         { label: tNav("favorites"), href: "/dashboard/favorites" },
+        { label: tNav("quickMatch"), href: "/dashboard/quick-match" },
         { label: tNav("bookings"), href: "/dashboard/bookings" },
       ]}
       userName={user.name ?? ""}

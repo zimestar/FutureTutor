@@ -447,7 +447,8 @@
       "documents": "Documents",
       "training": "Formation",
       "exam": "Examen",
-      "pricing": "Tarification"
+      "pricing": "Tarification",
+      "quickMatch": "Jumelage rapide"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -679,6 +680,98 @@
       "notFound": "Cette réservation est introuvable.",
       "notYours": "Vous ne pouvez pas gérer cette réservation.",
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière."
+    }
+  },
+  "quickMatch": {
+    "title": "Jumelage rapide",
+    "description": "Dites-nous ce dont vous avez besoin et nous trouverons et enverrons automatiquement le meilleur tuteur disponible.",
+    "form": {
+      "subjectLabel": "Matière",
+      "levelLabel": "Niveau (optionnel)",
+      "anyLevel": "Tous les niveaux",
+      "modeLabel": "Format",
+      "modeOnline": "En ligne",
+      "modeInPerson": "En personne",
+      "modeBoth": "Les deux",
+      "durationLabel": "Durée de la séance",
+      "durationOption": "{minutes} minutes",
+      "startAtLabel": "Quand",
+      "addressTitle": "Où la séance aura lieu",
+      "addressLine1Placeholder": "Adresse",
+      "addressLine2Placeholder": "Appartement, unité, etc. (optionnel)",
+      "cityPlaceholder": "Ville",
+      "provincePlaceholder": "Province",
+      "postalCodePlaceholder": "Code postal",
+      "notesLabel": "Notes (optionnel)",
+      "notesPlaceholder": "Tout ce qu'un tuteur devrait savoir avant d'accepter",
+      "submitting": "Calcul du prix…",
+      "submitCta": "Obtenir un prix"
+    },
+    "review": {
+      "title": "Confirmez votre demande",
+      "description": "Ce prix est fixé une fois confirmé — il ne changera pas pendant que nous cherchons un tuteur.",
+      "basePrice": "Prix de la séance",
+      "adjustments": "Ajustements",
+      "tax": "Taxe",
+      "total": "Total",
+      "confirming": "Confirmation…",
+      "confirmCta": "Confirmer et chercher un tuteur",
+      "cancelCta": "Annuler"
+    },
+    "status": {
+      "MATCHING": {
+        "title": "Recherche de votre tuteur…",
+        "description": "Nous contactons des tuteurs disponibles (tour {round}). Cette page se met à jour automatiquement."
+      },
+      "BOOKED": {
+        "title": "Tuteur trouvé!",
+        "description": "Un tuteur a accepté votre demande — consultez vos réservations pour les détails."
+      },
+      "NO_TUTOR_FOUND": {
+        "title": "Aucun tuteur disponible",
+        "description": "Nous n'avons pas trouvé de tuteur disponible pour cette demande. Vous pouvez réessayer ou parcourir les tuteurs directement."
+      },
+      "CANCELLED": {
+        "title": "Demande annulée",
+        "description": "Cette demande a été annulée."
+      },
+      "EXPIRED": {
+        "title": "Demande expirée",
+        "description": "Cette demande a expiré avant d'être confirmée."
+      },
+      "FAILED": {
+        "title": "Un problème est survenu",
+        "description": "Une erreur inattendue est survenue lors du jumelage. Veuillez réessayer."
+      },
+      "cancelCta": "Annuler la demande",
+      "cancelling": "Annulation…"
+    },
+    "mode": {
+      "ONLINE": "En ligne",
+      "IN_PERSON": "En personne",
+      "BOTH": "Les deux"
+    },
+    "tutorInvitation": {
+      "pageTitle": "Demandes de jumelage rapide",
+      "pageDescription": "Demandes qui vous ont été envoyées. Acceptez rapidement — elles expirent si vous ne répondez pas à temps.",
+      "empty": "Aucune demande en attente pour le moment.",
+      "anyLevel": "Tous les niveaux",
+      "duration": "{minutes} min",
+      "acceptCta": "Accepter",
+      "accepting": "Acceptation…",
+      "declineCta": "Refuser",
+      "declining": "Refus…"
+    },
+    "errors": {
+      "notAStudent": "Seuls les élèves peuvent demander un tuteur.",
+      "notATutor": "Seuls les tuteurs peuvent répondre aux demandes.",
+      "invalidInput": "Veuillez vérifier votre demande et réessayer.",
+      "notFound": "Cette demande est introuvable.",
+      "notYours": "Vous ne pouvez pas gérer cette demande.",
+      "invalidState": "Cette demande ne peut plus être modifiée.",
+      "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
+      "invitationNoLongerAvailable": "Cette demande n'est plus disponible — elle a peut-être expiré ou été prise par un autre tuteur.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },
   "tutorEducationForm": {

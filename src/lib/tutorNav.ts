@@ -8,6 +8,7 @@ export function tutorNavItems(tNav: (key: string) => string): DashboardNavItem[]
     { label: tNav("training"), href: "/tutor/training" },
     { label: tNav("exam"), href: "/tutor/exam" },
     { label: tNav("availability"), href: "/tutor/availability" },
+    { label: tNav("quickMatch"), href: "/tutor/quick-match" },
     { label: tNav("bookings"), href: "/tutor/bookings" },
   ];
 }

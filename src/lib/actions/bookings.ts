@@ -7,8 +7,8 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
+import { createBookingFromQuotes, SlotTakenError } from "@/services/bookingCreation";
 import {
-  validateAndConsumeCustomerPriceQuote,
   QuoteNotFoundError,
   QuoteNotOwnedError,
   QuoteExpiredError,
@@ -17,7 +17,6 @@ import {
   QuoteContextMismatchError,
 } from "@/services/customerPricing";
 import {
-  validateAndConsumeTutorPayoutQuote,
   TutorPayoutQuoteNotFoundError,
   TutorPayoutQuoteExpiredError,
   TutorPayoutQuoteNotActiveError,
@@ -25,10 +24,7 @@ import {
 
 export type BookingActionState = { error?: string; success?: boolean } | undefined;
 
-const ACTIVE_BOOKING_STATUSES = ["DRAFT", "PENDING_PAYMENT", "CONFIRMED"] as const;
 const SESSION_DURATION_MINUTES = 60;
-
-class SlotTakenError extends Error {}
 
 export async function createBookingAction(
   _prevState: BookingActionState,
@@ -75,58 +71,19 @@ export async function createBookingAction(
   try {
     await db.$transaction(
       async (tx) => {
-        const conflict = await tx.booking.findFirst({
-          where: { tutorProfileId, startAt, status: { in: [...ACTIVE_BOOKING_STATUSES] } },
-        });
-        if (conflict) throw new SlotTakenError();
-
-        const customerQuote = await validateAndConsumeCustomerPriceQuote(tx, customerPriceQuoteId, session.user.id, {
+        await createBookingFromQuotes(tx, {
+          studentProfileId: studentProfile.id,
+          tutorProfileId,
           subjectId,
           academicLevelId: levelId,
-          tutoringMode: mode,
-          durationMinutes: SESSION_DURATION_MINUTES,
-          requestedStartAt: startAt,
-        });
-        const payoutQuote = await validateAndConsumeTutorPayoutQuote(
-          tx,
+          startAt,
+          endAt,
+          timezone,
+          mode,
+          createdByUserId: session.user.id,
+          customerPriceQuoteId,
           tutorPayoutQuoteId,
-          tutorProfileId,
-          customerPriceQuoteId
-        );
-
-        const grossSpreadCents = customerQuote.subtotalCents - payoutQuote.totalPayoutCents;
-
-        const booking = await tx.booking.create({
-          data: {
-            studentProfileId: studentProfile.id,
-            tutorProfileId,
-            subjectId,
-            academicLevelId: levelId,
-            startAt,
-            endAt,
-            timezone,
-            mode,
-            platformFeeCentsSnapshot: 0,
-            totalCents: customerQuote.totalCents,
-            status: "CONFIRMED",
-            customerPriceQuoteId: customerQuote.id,
-            tutorPayoutQuoteId: payoutQuote.id,
-            customerBasePriceCents: customerQuote.basePriceCents,
-            customerAdjustmentCents: customerQuote.adjustmentsTotalCents,
-            customerSubtotalCents: customerQuote.subtotalCents,
-            taxCents: customerQuote.taxCents,
-            tutorPayoutBaseCents: payoutQuote.basePayoutCents,
-            tutorPayoutAdjustmentCents: payoutQuote.adjustmentsTotalCents,
-            tutorPayoutCents: payoutQuote.totalPayoutCents,
-            grossSpreadCents,
-            customerPricingVersion: customerQuote.pricingVersion,
-            tutorPayoutVersion: payoutQuote.payoutVersion,
-          },
         });
-        await tx.bookingStatusHistory.create({
-          data: { bookingId: booking.id, toStatus: "CONFIRMED", changedByUserId: session.user.id },
-        });
-        await tx.session_.create({ data: { bookingId: booking.id, status: "SCHEDULED" } });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     );

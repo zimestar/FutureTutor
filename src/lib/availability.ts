@@ -1,5 +1,6 @@
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { db } from "@/lib/db";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 export interface AvailableSlot {
   startAt: Date;
@@ -22,10 +23,12 @@ const ACTIVE_BOOKING_STATUSES = ["DRAFT", "PENDING_PAYMENT", "CONFIRMED"] as con
 /**
  * Computes bookable slots for a tutor over the next `days` days, from their
  * recurring weekly `TutorAvailability` minus already-booked times. All
- * wall-clock math happens in the tutor's own timezone (read via UTC getters
- * on `toZonedTime`'s result — see date-fns-tz's docs; this is the one
- * reliable way to read "local time in zone X" regardless of what timezone
- * the Node process itself is running in) and is converted to real UTC
+ * wall-clock math happens in the tutor's own timezone (read via *local*
+ * getters — `.getHours()`, `.getDay()`, etc — on `toZonedTime`'s result;
+ * confirmed empirically that date-fns-tz v3's `toZonedTime` only reads back
+ * correctly through local getters, not UTC getters, when the Node process's
+ * own timezone isn't UTC — the UTC-getter approach silently produces wrong
+ * wall-clock values on any non-UTC host) and is converted to real UTC
  * instants via `fromZonedTime` before being compared against bookings.
  */
 export async function getAvailableSlots(
@@ -42,9 +45,9 @@ export async function getAvailableSlots(
   const minStart = new Date(now.getTime() + minNoticeHours * 60 * 60 * 1000);
   const zonedNow = toZonedTime(now, timezone);
   const todayUtcMidnight = Date.UTC(
-    zonedNow.getUTCFullYear(),
-    zonedNow.getUTCMonth(),
-    zonedNow.getUTCDate()
+    zonedNow.getFullYear(),
+    zonedNow.getMonth(),
+    zonedNow.getDate()
   );
 
   const rangeStart = fromZonedTime(new Date(todayUtcMidnight), timezone);
@@ -94,6 +97,47 @@ export async function getAvailableSlots(
   }
 
   return { timezone, days: result };
+}
+
+/**
+ * Point-check version of getAvailableSlots' per-slot logic — "is this tutor
+ * free at this exact instant for this exact duration," rather than building
+ * a 14-day list. Same day-of-week/timezone/conflict-check reasoning, reused
+ * for Quick Match's eligibility check (src/services/tutorEligibility.ts) and
+ * its accept-time re-validation, instead of duplicated.
+ */
+export async function isTutorFreeAt(
+  tutorProfileId: string,
+  startAt: Date,
+  durationMinutes: number,
+  client: Prisma.TransactionClient | PrismaClient = db
+): Promise<boolean> {
+  const availability = await client.tutorAvailability.findMany({ where: { tutorProfileId } });
+  if (availability.length === 0) return false;
+
+  const timezone = availability[0].timezone;
+  const zonedStart = toZonedTime(startAt, timezone);
+  const dayOfWeek = zonedStart.getDay();
+  const window = availability.find((a) => a.dayOfWeek === dayOfWeek);
+  if (!window) return false;
+
+  const startMinutes = zonedStart.getHours() * 60 + zonedStart.getMinutes();
+  const endMinutes = startMinutes + durationMinutes;
+  if (startMinutes < toMinutes(window.startTime) || endMinutes > toMinutes(window.endTime)) {
+    return false;
+  }
+
+  const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
+  const conflict = await client.booking.findFirst({
+    where: {
+      tutorProfileId,
+      status: { in: [...ACTIVE_BOOKING_STATUSES] },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+    },
+    select: { id: true },
+  });
+  return conflict == null;
 }
 
 function toMinutes(hhmm: string): number {

@@ -39,18 +39,19 @@ model User {
   updatedAt     DateTime  @updatedAt
   deactivatedAt DateTime?
 
-  accounts               Account[]
-  sessions               Session[]
-  studentProfile         StudentProfile?
-  parentProfile          ParentProfile?
-  tutorProfile           TutorProfile?
-  sentMessages           Message[]                 @relation("MessageSender")
-  conversations          ConversationParticipant[]
-  notifications          Notification[]
-  notificationPreference NotificationPreference?
-  auditLogs              AuditLog[]                @relation("AuditActor")
-  bookingStatusChanges   BookingStatusHistory[]    @relation("BookingStatusChangedBy")
-  createdPriceQuotes     CustomerPriceQuote[]
+  accounts                Account[]
+  sessions                Session[]
+  studentProfile          StudentProfile?
+  parentProfile           ParentProfile?
+  tutorProfile            TutorProfile?
+  sentMessages            Message[]                 @relation("MessageSender")
+  conversations           ConversationParticipant[]
+  notifications           Notification[]
+  notificationPreference  NotificationPreference?
+  auditLogs               AuditLog[]                @relation("AuditActor")
+  bookingStatusChanges    BookingStatusHistory[]    @relation("BookingStatusChangedBy")
+  createdPriceQuotes      CustomerPriceQuote[]
+  createdTutoringRequests TutoringRequest[]
 
   @@index([role])
 }
@@ -123,6 +124,7 @@ model StudentProfile {
   bookings            Booking[]
   reviews             Review[]
   priceQuotes         CustomerPriceQuote[]
+  tutoringRequests    TutoringRequest[]
 }
 
 model ParentProfile {
@@ -258,6 +260,7 @@ model TutorProfile {
   reviews                Review[]
   payouts                TutorPayout[]
   payoutQuotes           TutorPayoutQuote[]
+  invitations            TutorInvitation[]
 
   @@index([applicationStatus])
   @@index([city, province])
@@ -616,14 +619,15 @@ model Subject {
   isActive  Boolean @default(true)
   sortOrder Int     @default(0)
 
-  tutorSubjects   TutorSubject[]
-  learningGoals   LearningGoal[]
-  bookings        Booking[]
-  tutorExams      TutorExam[]
-  basePriceRules  CustomerBasePriceRule[]
-  basePayoutRules TutorBasePayoutRule[]
-  priceQuotes     CustomerPriceQuote[]
-  payoutQuotes    TutorPayoutQuote[]
+  tutorSubjects    TutorSubject[]
+  learningGoals    LearningGoal[]
+  bookings         Booking[]
+  tutorExams       TutorExam[]
+  basePriceRules   CustomerBasePriceRule[]
+  basePayoutRules  TutorBasePayoutRule[]
+  priceQuotes      CustomerPriceQuote[]
+  payoutQuotes     TutorPayoutQuote[]
+  tutoringRequests TutoringRequest[]
 }
 
 model AcademicLevel {
@@ -631,13 +635,14 @@ model AcademicLevel {
   slug      String @unique
   sortOrder Int    @default(0)
 
-  tutorLevels     TutorLevel[]
-  studentProfiles StudentProfile[]
-  bookings        Booking[]
-  basePriceRules  CustomerBasePriceRule[]
-  basePayoutRules TutorBasePayoutRule[]
-  priceQuotes     CustomerPriceQuote[]
-  payoutQuotes    TutorPayoutQuote[]
+  tutorLevels      TutorLevel[]
+  studentProfiles  StudentProfile[]
+  bookings         Booking[]
+  basePriceRules   CustomerBasePriceRule[]
+  basePayoutRules  TutorBasePayoutRule[]
+  priceQuotes      CustomerPriceQuote[]
+  payoutQuotes     TutorPayoutQuote[]
+  tutoringRequests TutoringRequest[]
 }
 
 model TutorFavorite {
@@ -710,12 +715,30 @@ model Booking {
   customerPricingVersion     String?
   tutorPayoutVersion         String?
 
+  // --- Phase F (Quick Match) — nullable, direct/Browse-Tutors bookings
+  // (Phase C/E) leave all six of these null; only Quick Match bookings
+  // populate them. tutoringRequestId traces a booking back to the request
+  // that produced it. The five location fields are an authoritative
+  // snapshot, independent of any later change to the source TutoringRequest
+  // — the same "snapshot, don't reference-and-hope" principle Phase E
+  // already used for pricing. locationNote (above) stays a separate,
+  // free-text supplementary field (e.g. "buzz #402"), not the authoritative
+  // address.
+  tutoringRequestId   String?
+  bookingAddressLine1 String?
+  bookingAddressLine2 String?
+  bookingCity         String?
+  bookingProvince     String?
+  bookingPostalCode   String?
+
   studentProfile     StudentProfile         @relation(fields: [studentProfileId], references: [id])
   tutorProfile       TutorProfile           @relation(fields: [tutorProfileId], references: [id])
   subject            Subject                @relation(fields: [subjectId], references: [id])
   academicLevel      AcademicLevel?         @relation(fields: [academicLevelId], references: [id])
   customerPriceQuote CustomerPriceQuote?    @relation(fields: [customerPriceQuoteId], references: [id])
   tutorPayoutQuote   TutorPayoutQuote?      @relation(fields: [tutorPayoutQuoteId], references: [id])
+  tutoringRequest    TutoringRequest?       @relation(fields: [tutoringRequestId], references: [id])
+  winningInvitation  TutorInvitation?
   statusHistory      BookingStatusHistory[]
   session            Session_?
   payment            Payment?
@@ -727,6 +750,7 @@ model Booking {
   @@index([startAt])
   @@index([status])
   @@index([tutorProfileId, startAt])
+  @@index([tutoringRequestId])
 }
 
 model BookingStatusHistory {
@@ -843,6 +867,13 @@ model MarketplacePricingSettings {
 
 enum CustomerQuoteStatus {
   ACTIVE
+  // Phase F (Quick Match) — the student has confirmed this exact price for a
+  // TutoringRequest; it is now immutable and never recalculated. expiresAt is
+  // no longer checked once LOCKED — only the parent TutoringRequest's own
+  // lifecycle governs whether this quote may still reach CONSUMED. Direct
+  // booking (Phase C/E) never passes through this state (ACTIVE -> CONSUMED
+  // directly), since it has no confirm-then-match gap for LOCKED to bridge.
+  LOCKED
   EXPIRED
   CONSUMED
   CANCELLED
@@ -876,16 +907,21 @@ model CustomerPriceQuote {
   status                   CustomerQuoteStatus @default(ACTIVE)
   createdAt                DateTime            @default(now())
   expiresAt                DateTime
+  // Phase F — set once, when status moves ACTIVE -> LOCKED (the student
+  // confirmed a TutoringRequest). expiresAt is never consulted again after
+  // this is set; see the CustomerQuoteStatus.LOCKED comment above.
+  lockedAt                 DateTime?
   consumedAt               DateTime?
   cancelledAt              DateTime?
 
-  createdByUser  User                  @relation(fields: [createdByUserId], references: [id])
-  studentProfile StudentProfile        @relation(fields: [studentProfileId], references: [id])
-  subject        Subject               @relation(fields: [subjectId], references: [id])
-  academicLevel  AcademicLevel?        @relation(fields: [academicLevelId], references: [id])
-  basePriceRule  CustomerBasePriceRule @relation(fields: [basePriceRuleId], references: [id])
-  payoutQuotes   TutorPayoutQuote[]
-  bookings       Booking[]
+  createdByUser    User                  @relation(fields: [createdByUserId], references: [id])
+  studentProfile   StudentProfile        @relation(fields: [studentProfileId], references: [id])
+  subject          Subject               @relation(fields: [subjectId], references: [id])
+  academicLevel    AcademicLevel?        @relation(fields: [academicLevelId], references: [id])
+  basePriceRule    CustomerBasePriceRule @relation(fields: [basePriceRuleId], references: [id])
+  payoutQuotes     TutorPayoutQuote[]
+  bookings         Booking[]
+  tutoringRequests TutoringRequest[]
 
   @@index([createdByUserId, status])
   @@index([studentProfileId, status])
@@ -935,9 +971,154 @@ model TutorPayoutQuote {
   academicLevel      AcademicLevel?      @relation(fields: [academicLevelId], references: [id])
   basePayoutRule     TutorBasePayoutRule @relation(fields: [basePayoutRuleId], references: [id])
   bookings           Booking[]
+  invitations        TutorInvitation[]
 
   @@index([tutorProfileId, status])
   @@index([customerPriceQuoteId])
+}
+
+// ---------------------------------------------------------------------------
+// Quick Match & Tutor Dispatch (Phase F). Orchestration layer on top of the
+// Customer Price Engine / Tutor Payout Engine above — a TutoringRequest's
+// price is locked (CustomerPriceQuote LOCKED) at confirmation, before
+// matching starts, so a multi-round dispatch process can never change what
+// the student was told they'd pay. A TutorInvitation is both the per-tutor
+// dispatch attempt and its own audit record (rankScore/rankBreakdown) — no
+// separate MatchingAttempt/DispatchAttempt table exists. Direct booking
+// (Phase C/E, "Browse Tutors") is untouched by any of this; both flows share
+// one booking-creation core (see src/services/bookingCreation.ts).
+// ---------------------------------------------------------------------------
+
+enum TutoringRequestStatus {
+  DRAFT
+  PRICED
+  CONFIRMED
+  MATCHING
+  BOOKED
+  CANCELLED
+  EXPIRED
+  NO_TUTOR_FOUND
+  FAILED
+}
+
+model TutoringRequest {
+  id               String       @id @default(cuid())
+  createdByUserId  String
+  studentProfileId String
+  subjectId        String
+  academicLevelId  String?
+  tutoringMode     TutoringMode
+  durationMinutes  Int
+  requestedStartAt DateTime
+  // Request location (private, full precision) — required by
+  // src/schemas/tutoringRequest.ts whenever tutoringMode !== ONLINE;
+  // addressLine1/addressLine2/postalCode stay null for ONLINE requests.
+  // Never copied onto TutorInvitation — see TutorInvitation's own comment.
+  addressLine1     String?
+  addressLine2     String?
+  city             String?
+  province         String?
+  postalCode       String?
+  notes            String?
+  currency         String       @default("CAD")
+
+  // Locked price snapshot — filled in when the linked CustomerPriceQuote
+  // moves ACTIVE -> LOCKED (PRICED -> CONFIRMED). Null before then.
+  customerPriceQuoteId  String?
+  basePriceCents        Int?
+  adjustmentsTotalCents Int?
+  taxCents              Int?
+  totalCents            Int?
+  pricingVersion        String?
+
+  status        TutoringRequestStatus @default(DRAFT)
+  dispatchRound Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  confirmedAt   DateTime?
+  bookedAt      DateTime?
+  cancelledAt   DateTime?
+
+  createdByUser      User                @relation(fields: [createdByUserId], references: [id])
+  studentProfile     StudentProfile      @relation(fields: [studentProfileId], references: [id])
+  subject            Subject             @relation(fields: [subjectId], references: [id])
+  academicLevel      AcademicLevel?      @relation(fields: [academicLevelId], references: [id])
+  customerPriceQuote CustomerPriceQuote? @relation(fields: [customerPriceQuoteId], references: [id])
+  invitations        TutorInvitation[]
+  bookings           Booking[]
+
+  @@index([createdByUserId, status])
+  @@index([studentProfileId, status])
+  @@index([status])
+}
+
+enum TutorInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+  SUPERSEDED
+}
+
+model TutorInvitation {
+  id                 String                @id @default(cuid())
+  tutoringRequestId  String
+  tutorProfileId     String
+  tutorPayoutQuoteId String?
+  dispatchRound      Int
+  isParallelRound    Boolean               @default(false)
+  status             TutorInvitationStatus @default(PENDING)
+  // Snapshot of the ranking decision that produced this dispatch — every
+  // invitation is independently explainable after the fact. Deliberately
+  // does NOT carry the request's address (see TutoringRequest.addressLine1
+  // comment) — a candidate tutor's invitation-list query projects only the
+  // limited "dispatch location" (city/province/postal prefix) by joining
+  // through tutoringRequestId, never selecting the full address columns.
+  rankScore          Float
+  rankBreakdown      Json
+  rankingVersion     String
+  createdAt          DateTime              @default(now())
+  expiresAt          DateTime
+  respondedAt        DateTime?
+  declineReason      String?
+  bookingId          String?               @unique
+
+  tutoringRequest  TutoringRequest   @relation(fields: [tutoringRequestId], references: [id])
+  tutorProfile     TutorProfile      @relation(fields: [tutorProfileId], references: [id])
+  tutorPayoutQuote TutorPayoutQuote? @relation(fields: [tutorPayoutQuoteId], references: [id])
+  booking          Booking?          @relation(fields: [bookingId], references: [id])
+
+  @@unique([tutoringRequestId, tutorProfileId, dispatchRound])
+  @@index([tutoringRequestId, status])
+  @@index([tutorProfileId, status])
+  @@index([expiresAt])
+}
+
+// Single-row (singleton) typed settings for the dispatch loop and ranking
+// formula, mirroring MarketplacePricingSettings' exact pattern — a handful
+// of scalar tuning knobs, admin-editable without a migration.
+model TutorRankingSettings {
+  id String @id @default(cuid())
+
+  // Dispatch (see quickMatchDispatch.ts) — sequentialInvitationCount +
+  // parallelBatchSize must be <= maxDispatchAttempts (checked at read time,
+  // not just at seed time, so the two can never silently drift apart).
+  responseWindowMinutes     Int @default(10)
+  sequentialInvitationCount Int @default(2)
+  parallelBatchSize         Int @default(3)
+  maxDispatchAttempts       Int @default(5)
+
+  // Ranking formula weights (see tutorRanking.ts) — must sum to 1.0.
+  tutorScoreWeight                 Float @default(0.50)
+  bookingReliabilityWeight         Float @default(0.25)
+  invitationResponsivenessWeight   Float @default(0.15)
+  tutorTierWeight                  Float @default(0.10)
+  minInvitationsForReliabilityData Int   @default(5)
+
+  rankingVersion  String   @default("QUICK_MATCH_RANKING_V1")
+  updatedAt       DateTime @updatedAt
+  updatedByUserId String?
 }
 
 // ---------------------------------------------------------------------------
