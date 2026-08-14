@@ -5,7 +5,7 @@ import { getStripeClient } from "@/lib/stripe";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
-import { resolveCaptureOutcomeAndConverge, cancelAuthorizedPayment } from "@/services/payments";
+import { resolveCaptureOutcomeAndConverge, cancelAuthorizedPayment, reconcileStripeFinancialDetails } from "@/services/payments";
 
 const STUCK_PAYMENT_THRESHOLD_MS = 30 * 60 * 1000; // [YOUR IDEA — INITIAL DEFAULT], §7/§19 of the Phase G plan
 
@@ -73,6 +73,29 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   });
   if (earning.status !== "ELIGIBLE") return;
   if (earning.tutorProfile.stripeConnectStatus !== "ACTIVE" || !earning.tutorProfile.stripeConnectAccountId) return;
+
+  if (paymentsUseStripe()) {
+    // Separate charges and transfers attributes the transfer back to its
+    // originating charge via source_transaction — resolve/backfill
+    // Payment.stripeChargeId first (Phase G.1) rather than silently create
+    // a transfer without that linkage. If it still can't be resolved,
+    // defer entirely (no TutorTransfer row created/advanced this sweep) —
+    // the earning stays ELIGIBLE, nothing is lost, and the next sweep
+    // retries. Applies uniformly whether a TutorTransfer row already
+    // exists (PENDING from a prior sweep) or not.
+    const bookingForCharge = await db.booking.findUnique({
+      where: { id: earning.bookingId },
+      select: { payment: { select: { id: true, stripeChargeId: true } } },
+    });
+    if (bookingForCharge?.payment && !bookingForCharge.payment.stripeChargeId) {
+      await reconcileStripeFinancialDetails(bookingForCharge.payment.id).catch(() => {});
+      const refreshed = await db.booking.findUnique({
+        where: { id: earning.bookingId },
+        select: { payment: { select: { stripeChargeId: true } } },
+      });
+      if (!refreshed?.payment?.stripeChargeId) return; // still unresolved — defer, retried next sweep
+    }
+  }
 
   let transfer = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earningId } });
   if (!transfer) {
@@ -193,5 +216,17 @@ export async function reconcileStuckPayments(): Promise<void> {
       entityId: payment.id,
       metadata: { customerPriceQuoteId: payment.customerPriceQuoteId },
     });
+  }
+
+  // Phase G.1 — backfill Stripe charge/fee linkage for captured Payments
+  // where it wasn't available synchronously at capture time (see
+  // reconcileStripeFinancialDetails's own doc comment).
+  const capturedMissingChargeDetails = await db.payment.findMany({
+    where: { status: "CAPTURED", stripeChargeId: null, stripePaymentIntentId: { not: null } },
+    select: { id: true },
+    take: 50,
+  });
+  for (const payment of capturedMissingChargeDetails) {
+    await reconcileStripeFinancialDetails(payment.id).catch(() => {});
   }
 }

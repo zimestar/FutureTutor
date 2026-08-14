@@ -19,6 +19,114 @@ export class PaymentIntentVerificationError extends Error {}
 export class PaymentNotAuthorizedError extends Error {}
 
 // ---------------------------------------------------------------------------
+// PaymentAttempt — append-only audit trail, one row per confirmation try
+// (see the schema's own domain comment). Two callers: the success path
+// (verifyAndAuthorizePaymentIntent, below) and the failure path
+// (payment_intent.payment_failed in stripeWebhooks.ts). Never affects
+// Payment.status, which remains the sole authority for payment lifecycle
+// state — this is audit/history only, and a failure to record one must
+// never surface as a failure of the primary operation.
+// ---------------------------------------------------------------------------
+
+interface RecordPaymentAttemptParams {
+  paymentId: string;
+  stripePaymentIntentId: string;
+  status: string;
+  failureCode?: string | null;
+  failureMessage?: string | null;
+  // Set only for webhook-sourced (failure) attempts — this Stripe event id
+  // is what makes a redelivered payment_intent.payment_failed event a safe
+  // no-op instead of a duplicate row, via the unique constraint below. Left
+  // null for the synchronous, non-webhook success path.
+  sourceStripeEventId?: string | null;
+}
+
+/**
+ * Concurrency-safe attemptNumber assignment — same established pattern as
+ * TutorExamAttempt (Phase D): compute (max existing + 1) inside a
+ * Serializable transaction, with the [paymentId, attemptNumber] unique
+ * constraint as the hard backstop, retried on conflict. The
+ * sourceStripeEventId unique constraint is checked first and short-circuits
+ * to a no-op — a genuine webhook replay of the same event must not create a
+ * second row, while a genuinely new decline (its own distinct Stripe event
+ * id) is not deduplicated away by this check.
+ */
+const RECORD_ATTEMPT_MAX_RETRIES = 12;
+
+async function recordPaymentAttempt(params: RecordPaymentAttemptParams): Promise<void> {
+  for (let attempt = 0; attempt < RECORD_ATTEMPT_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      // Small jittered backoff — real contention on one Payment's attempt
+      // sequence is normally 1-2 concurrent writers (a webhook retry racing
+      // a synchronous verify call), but this keeps a burst of many
+      // concurrent writers from repeatedly colliding on the same retry tick.
+      await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * 40 * attempt));
+    }
+    try {
+      await db.$transaction(
+        async (tx) => {
+          if (params.sourceStripeEventId) {
+            const existing = await tx.paymentAttempt.findUnique({
+              where: { sourceStripeEventId: params.sourceStripeEventId },
+            });
+            if (existing) return; // same logical attempt already recorded — no-op
+          }
+
+          const agg = await tx.paymentAttempt.aggregate({
+            where: { paymentId: params.paymentId },
+            _max: { attemptNumber: true },
+          });
+          const attemptNumber = (agg._max.attemptNumber ?? 0) + 1;
+
+          await tx.paymentAttempt.create({
+            data: {
+              paymentId: params.paymentId,
+              attemptNumber,
+              stripePaymentIntentId: params.stripePaymentIntentId,
+              status: params.status,
+              failureCode: params.failureCode ?? null,
+              failureMessage: params.failureMessage ?? null,
+              sourceStripeEventId: params.sourceStripeEventId ?? null,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+      return;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          const target = Array.isArray(error.meta?.target) ? (error.meta.target as string[]) : [];
+          if (params.sourceStripeEventId && target.includes("sourceStripeEventId")) {
+            return; // lost the race to another delivery of the same event — no-op
+          }
+          continue; // [paymentId, attemptNumber] race — retry with a fresh max read
+        }
+        if (error.code === "P2034") {
+          continue; // serialization conflict — retry
+        }
+      }
+      throw error;
+    }
+  }
+  throw new Error(
+    `recordPaymentAttempt: exceeded retry budget (${RECORD_ATTEMPT_MAX_RETRIES}) for payment ${params.paymentId}`
+  );
+}
+
+/** Never lets an audit-trail failure surface as a failure of the primary
+ * operation that called it — logs and swallows instead. Exported for
+ * stripeWebhooks.ts's payment_intent.payment_failed handler; internal
+ * callers within this file use it directly too. */
+export async function recordPaymentAttemptBestEffort(params: RecordPaymentAttemptParams): Promise<void> {
+  try {
+    await recordPaymentAttempt(params);
+  } catch (error) {
+    console.error("recordPaymentAttempt failed (non-fatal, audit trail only)", params.paymentId, error);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // PaymentIntent creation — Step A (durable local row) / Step B (Stripe call,
 // outside any transaction) / Step C (guarded persist). Every subsequent
 // operation in this file follows the same shape — see the schema's own
@@ -171,10 +279,23 @@ export async function verifyAndAuthorizePaymentIntent(params: {
     throw new PaymentIntentVerificationError(`PaymentIntent is not authorized (status: ${pi.status})`);
   }
 
-  await db.payment.updateMany({
+  const updated = await db.payment.updateMany({
     where: { id: payment.id, status: { in: ["PENDING", "REQUIRES_ACTION"] } },
     data: { status: "AUTHORIZED", authorizedAt: new Date() },
   });
+
+  // Only record an attempt when this call actually performed the
+  // PENDING/REQUIRES_ACTION -> AUTHORIZED transition — a redundant call for
+  // an already-AUTHORIZED Payment (e.g. a retried Server Action) is the same
+  // logical attempt being re-verified, not a new one. The status transition
+  // itself is unaffected either way; this is purely additive audit logging.
+  if (updated.count === 1) {
+    await recordPaymentAttemptBestEffort({
+      paymentId: payment.id,
+      stripePaymentIntentId: params.stripePaymentIntentId,
+      status: "AUTHORIZED",
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -301,8 +422,187 @@ async function consumeTutorPayoutQuoteForConvergence(tx: Prisma.TransactionClien
   }
 }
 
+const CONVERGENCE_MAX_RETRIES = 6;
+
+/**
+ * Wraps a Serializable convergence transaction with bounded retry on a
+ * genuine Postgres write conflict (P2034) — expected contention, not a
+ * product failure, when two independent triggers (a webhook and a
+ * synchronous caller, say) converge the same Payment/Booking concurrently.
+ * Each retry opens a brand-new transaction via `fn`, so it always re-reads
+ * fresh state rather than replaying stale in-memory values — if the
+ * competing writer already finished, the retried attempt's own guards
+ * (state re-checks already present in every convergence function) make it
+ * a clean no-op rather than a duplicate mutation. Only P2034 is retried;
+ * every other error is rethrown immediately. Exhausting the budget throws
+ * a real error rather than silently swallowing a convergence failure —
+ * the caller's own error handling (or the reconciliation sweep) is
+ * expected to notice and retry later.
+ */
+async function withSerializableRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < CONVERGENCE_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 15 + Math.random() * 50 * attempt));
+    }
+    try {
+      return await fn();
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(
+    `Convergence transaction exceeded retry budget (${CONVERGENCE_MAX_RETRIES}) due to repeated serialization conflicts`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stripe financial linkage (Phase G.1) — Payment.stripeChargeId /
+// stripeBalanceTransactionId / stripeFeeCents. Charge linkage is resolved
+// opportunistically alongside capture convergence (Stripe read, outside any
+// transaction — never blocks the critical CAPTURED/CONFIRMED path); the fee
+// itself is genuinely asynchronous for some payment methods/settlement
+// paths, so it's treated as optional at capture time and backfilled later
+// via reconcileStripeFinancialDetails() (the reconciliation sweep) or the
+// charge.updated webhook. Never estimated — always Stripe's own
+// BalanceTransaction.fee, or left null.
+// ---------------------------------------------------------------------------
+
+interface ResolvedChargeDetails {
+  stripeChargeId: string;
+  stripeBalanceTransactionId: string | null;
+  stripeFeeCents: number | null;
+}
+
+/** Plain Stripe read, no side effects — safe to call outside a transaction
+ * and safe to fail (returns null on any error, including "not available
+ * yet"), since fee/charge linkage is opportunistic. */
+async function resolveChargeAndFeeDetailsForPayment(paymentId: string): Promise<ResolvedChargeDetails | null> {
+  const payment = await db.payment.findUnique({ where: { id: paymentId }, select: { stripePaymentIntentId: true } });
+  if (!payment?.stripePaymentIntentId) return null;
+
+  const stripe = getStripeClient();
+  let pi: Stripe.PaymentIntent;
+  try {
+    pi = await stripe.paymentIntents.retrieve(payment.stripePaymentIntentId, {
+      expand: ["latest_charge.balance_transaction"],
+    });
+  } catch {
+    return null;
+  }
+
+  const charge = pi.latest_charge;
+  if (!charge || typeof charge === "string") return null; // not yet available
+
+  const balanceTransaction = charge.balance_transaction;
+  if (!balanceTransaction || typeof balanceTransaction === "string") {
+    // Charge is known, but its BalanceTransaction isn't attached yet — a
+    // real, documented possibility depending on payment method/settlement
+    // timing. Report the charge id now; fee fields stay null for later.
+    return { stripeChargeId: charge.id, stripeBalanceTransactionId: null, stripeFeeCents: null };
+  }
+
+  return {
+    stripeChargeId: charge.id,
+    stripeBalanceTransactionId: balanceTransaction.id,
+    stripeFeeCents: balanceTransaction.fee,
+  };
+}
+
+/**
+ * Idempotent, concurrency-safe application of resolved charge/fee details.
+ * Same identifier already stored -> no-op. A DIFFERENT, conflicting
+ * identifier already stored -> never silently overwritten; flagged via
+ * AuditLog for manual investigation instead. Safe to call from multiple
+ * racing triggers (capture convergence, webhook, reconciliation sweep) —
+ * each checks the row's current state fresh before writing.
+ */
+async function applyChargeDetailsIfMissing(
+  tx: Prisma.TransactionClient,
+  paymentId: string,
+  details: ResolvedChargeDetails | null
+): Promise<void> {
+  if (!details) return;
+  const payment = await tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+
+  if (!payment.stripeChargeId) {
+    await tx.payment.updateMany({
+      where: { id: paymentId, stripeChargeId: null },
+      data: { stripeChargeId: details.stripeChargeId },
+    });
+  } else if (payment.stripeChargeId !== details.stripeChargeId) {
+    await writeAuditLog(
+      {
+        actorUserId: null,
+        action: "payment.charge_id_conflict",
+        entityType: "Payment",
+        entityId: paymentId,
+        metadata: { existing: payment.stripeChargeId, incoming: details.stripeChargeId },
+      },
+      tx
+    );
+    return; // charge identity itself is in question — don't touch fee fields either
+  }
+
+  if (details.stripeBalanceTransactionId == null || details.stripeFeeCents == null) return;
+
+  if (!payment.stripeBalanceTransactionId) {
+    await tx.payment.updateMany({
+      where: { id: paymentId, stripeBalanceTransactionId: null },
+      data: { stripeBalanceTransactionId: details.stripeBalanceTransactionId, stripeFeeCents: details.stripeFeeCents },
+    });
+  } else if (payment.stripeBalanceTransactionId !== details.stripeBalanceTransactionId) {
+    await writeAuditLog(
+      {
+        actorUserId: null,
+        action: "payment.balance_transaction_conflict",
+        entityType: "Payment",
+        entityId: paymentId,
+        metadata: { existing: payment.stripeBalanceTransactionId, incoming: details.stripeBalanceTransactionId },
+      },
+      tx
+    );
+  }
+  // else: already matches -> idempotent no-op
+}
+
+/**
+ * Reconciliation entry point — resolves charge/fee linkage for a CAPTURED
+ * (or later-refunded) Payment, and applies it via applyChargeDetailsIfMissing's
+ * own idempotent/conflict-aware guards. Deliberately does NOT short-circuit
+ * on "already fully enriched": that would skip the one place drift/
+ * corruption between the stored identifier and Stripe's current authoritative
+ * answer could ever be caught. Callers that only want to filter for missing
+ * data (the reconciliation sweep's bulk query, the charge.updated handler's
+ * own pre-check) already do that filtering themselves before invoking this —
+ * this function's own job is "resolve from Stripe and apply safely," full
+ * stop, so a corrupted/conflicting stored value is never silently trusted
+ * just because a value already exists.
+ */
+export async function reconcileStripeFinancialDetails(paymentId: string): Promise<void> {
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: paymentId } });
+  if (!["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(payment.status)) return;
+
+  const details = await resolveChargeAndFeeDetailsForPayment(paymentId);
+  if (!details) return;
+
+  await withSerializableRetry(() =>
+    db.$transaction((tx) => applyChargeDetailsIfMissing(tx, paymentId, details), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    })
+  );
+}
+
 export async function convergeToCaptured(paymentId: string): Promise<void> {
-  await db.$transaction(
+  // Best-effort, outside any transaction — never blocks the critical
+  // CAPTURED/CONFIRMED convergence below if this fails or the data isn't
+  // available yet (see the module comment above).
+  const chargeDetails = await resolveChargeAndFeeDetailsForPayment(paymentId).catch(() => null);
+
+  await withSerializableRetry(() =>
+  db.$transaction(
     async (tx) => {
       const payment = await tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
 
@@ -312,6 +612,8 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
           data: { status: "CAPTURED", capturedAt: new Date() },
         });
       }
+
+      await applyChargeDetailsIfMissing(tx, paymentId, chargeDetails);
 
       if (!payment.bookingId) return; // booking-flow Step A hasn't run yet
 
@@ -386,11 +688,13 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
       }
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
   );
 }
 
 export async function convergeToCaptureFailed(paymentId: string): Promise<void> {
-  await db.$transaction(
+  await withSerializableRetry(() =>
+  db.$transaction(
     async (tx) => {
       const payment = await tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
 
@@ -452,6 +756,7 @@ export async function convergeToCaptureFailed(paymentId: string): Promise<void> 
       });
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
   );
 }
 

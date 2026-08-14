@@ -1185,7 +1185,16 @@ enum PaymentStatus {
   AUTHORIZED // manual-capture PI confirmed, funds held, not yet captured
   CAPTURED // funds captured — the only status that may cause a Booking to exist
   CAPTURE_FAILED
-  FAILED // authorization/confirmation failed
+  // (Phase G.1 correction) A single declined/failed confirmation ATTEMPT
+  // does not put the whole payment obligation here — Stripe supports
+  // multiple attempts against the same PI (see the domain comment above),
+  // so an ordinary decline keeps Payment at PENDING/REQUIRES_ACTION and is
+  // recorded instead as a PaymentAttempt row. No current code path writes
+  // this value; kept for pre-existing historical rows and reserved for a
+  // future genuinely-terminal authorization-phase failure, if one is ever
+  // identified — see CAPTURE_FAILED/CANCELLED for the terminal failures
+  // that already exist.
+  FAILED
   CANCELLED // PI cancelled before capture (e.g. matching produced no tutor)
   PARTIALLY_REFUNDED
   REFUNDED
@@ -1243,6 +1252,17 @@ model Payment {
 
 // Append-only, mirrors TutorExamAttempt's exact established pattern
 // (Phase D) — one row per confirmation try against a Payment's PaymentIntent.
+// (Phase G.1) Two recording paths write here, both via the shared
+// recordPaymentAttempt() helper in src/services/payments.ts:
+//  - success: verifyAndAuthorizePaymentIntent(), a synchronous, non-webhook
+//    call — sourceStripeEventId stays null; idempotency comes from only
+//    calling it when Payment's guarded PENDING/REQUIRES_ACTION -> AUTHORIZED
+//    updateMany actually flips a row (count === 1), not on every call.
+//  - failure: the payment_intent.payment_failed webhook — sourceStripeEventId
+//    is always set to that event's id, which is what makes a Stripe webhook
+//    replay of the exact same failed attempt a safe no-op (see the unique
+//    constraint below), while a genuinely new decline produces a genuinely
+//    new Stripe event id and therefore a new row.
 model PaymentAttempt {
   id                    String   @id @default(cuid())
   paymentId             String
@@ -1254,6 +1274,12 @@ model PaymentAttempt {
   status                String
   failureCode           String?
   failureMessage        String?
+  // Null for the success path (not webhook-sourced). Set to the Stripe
+  // event id for the failure path — the idempotency anchor that makes a
+  // redelivered payment_intent.payment_failed event a safe no-op rather
+  // than a duplicate row, while still letting a genuinely distinct decline
+  // (its own distinct Stripe event id) produce its own distinct attempt.
+  sourceStripeEventId   String?  @unique
   createdAt             DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)

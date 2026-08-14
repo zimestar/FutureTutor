@@ -3,7 +3,13 @@ import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
-import { resolvePaymentFromStripePaymentIntent, resolveCaptureOutcomeAndConverge, convergeToCaptureFailed } from "@/services/payments";
+import {
+  resolvePaymentFromStripePaymentIntent,
+  resolveCaptureOutcomeAndConverge,
+  convergeToCaptureFailed,
+  recordPaymentAttemptBestEffort,
+  reconcileStripeFinancialDetails,
+} from "@/services/payments";
 import { syncTutorConnectStatusFromAccount } from "@/services/stripeConnect";
 
 const STALE_PROCESSING_THRESHOLD_MS = 5 * 60 * 1000;
@@ -96,14 +102,55 @@ async function runStripeEventBusinessLogic(event: Stripe.Event): Promise<void> {
       const payment = await resolvePaymentFromStripePaymentIntent(pi);
       if (!payment) return;
       if (payment.status === "AUTHORIZED" && payment.bookingId) {
-        // Capture-phase failure — a tutor slot was already reserved.
+        // Capture-phase failure — a tutor slot was already reserved, and the
+        // authorization is definitively no longer usable. This remains a
+        // genuinely terminal failure (unlike the branch below) — unchanged.
+        // Not a "confirmation try" in the PaymentAttempt sense (see its
+        // schema comment), so no attempt is recorded here.
         await convergeToCaptureFailed(payment.id);
-      } else if (payment.status === "PENDING" || payment.status === "REQUIRES_ACTION") {
-        // Authorization-phase failure — no booking/dispatch ever started;
-        // TutoringRequest (if any) simply stays PRICED, nothing to release.
+        return;
+      }
+
+      // Authorization-phase failure — a single declined/failed confirmation
+      // ATTEMPT, not a failed payment OBLIGATION. Stripe's own PaymentIntent
+      // is not terminal here: a decline or a failed 3DS challenge returns it
+      // to requires_payment_method (or leaves it at requires_action for
+      // another authentication try), fully able to accept another attempt
+      // against this exact same PI — the normal, expected retry flow, not an
+      // edge case (see the Payment model's own schema comment: "Stripe
+      // supports multiple confirmation attempts against the same PI").
+      //
+      // Recording the attempt is unconditional here (not gated behind
+      // Payment's current status) — a stale/out-of-order delivery of this
+      // event for an already-CAPTURED/CANCELLED/REFUNDED Payment still
+      // represents a real attempt that genuinely happened at some point;
+      // recordPaymentAttemptBestEffort's own sourceStripeEventId idempotency
+      // already prevents any duplicate row regardless of delivery order.
+      // Only the Payment.status mutation below needs the guard, so a stale
+      // event can never regress an already-resolved Payment.
+      await recordPaymentAttemptBestEffort({
+        paymentId: payment.id,
+        stripePaymentIntentId: pi.id,
+        status: "FAILED",
+        failureCode: pi.last_payment_error?.code ?? pi.last_payment_error?.decline_code ?? null,
+        failureMessage: pi.last_payment_error?.message ?? null,
+        sourceStripeEventId: event.id,
+      });
+
+      // Reflect Stripe's *current* retriable state locally — never a
+      // terminal one. Payment.status must never become FAILED merely
+      // because one attempt was declined; PaymentAttempt (above) is the
+      // durable record of that. Any pi.status other than these two is
+      // unexpected for this event — left untouched rather than guessed.
+      if (pi.status === "requires_action") {
         await db.payment.updateMany({
           where: { id: payment.id, status: { in: ["PENDING", "REQUIRES_ACTION"] } },
-          data: { status: "FAILED", failedAt: new Date() },
+          data: { status: "REQUIRES_ACTION" },
+        });
+      } else if (pi.status === "requires_payment_method") {
+        await db.payment.updateMany({
+          where: { id: payment.id, status: { in: ["PENDING", "REQUIRES_ACTION"] } },
+          data: { status: "PENDING" },
         });
       }
       return;
@@ -112,6 +159,28 @@ async function runStripeEventBusinessLogic(event: Stripe.Event): Promise<void> {
       const pi = event.data.object as Stripe.PaymentIntent;
       const payment = await resolvePaymentFromStripePaymentIntent(pi);
       if (!payment) return;
+
+      // Phase-aware, same reasoning as payment_intent.payment_failed above
+      // — checked via the actual relationship (does a PENDING_PAYMENT
+      // Booking exist), not a single Payment.status snapshot, so a
+      // partially-converged local state can't fall through the cracks. A
+      // cancelled PaymentIntent discovered post-Step-A is functionally
+      // identical to a failed capture: the authorization is gone and the
+      // reserved slot must be released, so it reuses the exact same shared
+      // convergence function rather than a second, divergent code path
+      // that would otherwise leave the Booking/quotes/request permanently
+      // stuck (the bug this fix addresses).
+      const booking = payment.bookingId ? await db.booking.findUnique({ where: { id: payment.bookingId } }) : null;
+      if (booking && booking.status === "PENDING_PAYMENT") {
+        await convergeToCaptureFailed(payment.id);
+        return;
+      }
+
+      // Pre-booking/authorization-phase cancellation — no slot was ever
+      // reserved, so there is nothing to release; a plain terminal status
+      // flip is sufficient. Safe even if reached for an already-resolved
+      // Payment (CAPTURED, CAPTURE_FAILED, etc.) — the WHERE guard below
+      // only ever matches a genuinely still-open Payment.
       await db.payment.updateMany({
         where: { id: payment.id, status: { in: ["PENDING", "REQUIRES_ACTION", "AUTHORIZED"] } },
         data: { status: "CANCELLED", cancelledAt: new Date() },
@@ -135,6 +204,24 @@ async function runStripeEventBusinessLogic(event: Stripe.Event): Promise<void> {
           status: charge.amount_refunded >= payment.amountCents ? "REFUNDED" : "PARTIALLY_REFUNDED",
         },
       });
+      return;
+    }
+    case "charge.updated": {
+      // Defensive fallback for Stripe fee/charge-linkage reconciliation
+      // (Phase G.1) — in practice, balance_transaction has been observed
+      // available synchronously right after capture for this integration's
+      // manual-capture PaymentIntents, so convergeToCaptured already
+      // resolves it opportunistically at capture time; this handler exists
+      // for the genuine cases where it's attached to the Charge later.
+      // Narrowly scoped: only enriches stripeChargeId/stripeBalanceTransactionId/
+      // stripeFeeCents, never touches Booking/payment lifecycle state.
+      const charge = event.data.object as Stripe.Charge;
+      const piId = getPaymentIntentId(charge.payment_intent);
+      if (!piId) return;
+      const payment = await db.payment.findUnique({ where: { stripePaymentIntentId: piId } });
+      if (!payment) return;
+      if (payment.stripeChargeId && payment.stripeBalanceTransactionId) return; // already fully enriched
+      await reconcileStripeFinancialDetails(payment.id);
       return;
     }
     case "account.updated": {
