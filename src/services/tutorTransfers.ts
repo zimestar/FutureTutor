@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { getStripeClient } from "@/lib/stripe";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { writeAuditLog } from "@/lib/audit";
@@ -99,17 +100,34 @@ export async function createTransferForEarning(earningId: string): Promise<void>
 
   let transfer = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earningId } });
   if (!transfer) {
-    transfer = await db.tutorTransfer.create({
-      data: {
-        id: randomUUID(),
-        tutorEarningId: earningId,
-        tutorProfileId: earning.tutorProfileId,
-        amountCents: earning.amountCents,
-        currency: earning.currency,
-        status: "PENDING",
-        initiatedAt: new Date(),
-      },
-    });
+    try {
+      transfer = await db.tutorTransfer.create({
+        data: {
+          id: randomUUID(),
+          tutorEarningId: earningId,
+          tutorProfileId: earning.tutorProfileId,
+          amountCents: earning.amountCents,
+          currency: earning.currency,
+          status: "PENDING",
+          initiatedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      // Lost a concurrent race to another caller creating the same
+      // TutorTransfer (unique on tutorEarningId) — same pattern as
+      // getOrCreatePaymentForQuote/recordPaymentAttempt: the DB constraint
+      // is the authoritative guard, not this catch. The winning caller (or,
+      // if it crashes before reaching Stripe, the next processEligibleTransfers
+      // sweep re-invoking this same function once earning.status is still
+      // ELIGIBLE) owns driving this transfer to Stripe — deferring here
+      // avoids a second concurrent stripe.transfers.create attempt and the
+      // duplicate audit-log/notification risk that would come with also
+      // racing into finalizeTransfer.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        return;
+      }
+      throw error;
+    }
   }
   if (transfer.status === "COMPLETED") return;
 
