@@ -340,7 +340,9 @@
     "yearsExperience": "{count}+ years of experience",
     "requestToBook": "Request to Book",
     "bookingNote": "Booking opens once accounts launch.",
-    "pricingNote": "FutureTutor calculates the session price based on subject, level and timing — you'll see it before confirming."
+    "pricingNote": "FutureTutor calculates the session price based on subject, level and timing — you'll see it before confirming.",
+    "noBookableChildren": "You don't have a linked child you can currently book for. Add a child or check your guardian status first.",
+    "manageFamilyCta": "Go to My Students"
   },
   "tutorProfileForm": {
     "title": "Your tutor profile",
@@ -415,13 +417,15 @@
     },
     "signup": {
       "title": "Create your account",
-      "subtitle": "Join FutureTutor as a student or a tutor.",
+      "subtitle": "Join FutureTutor as a student, a parent/guardian, or a tutor.",
       "roleLabel": "I am a...",
-      "roleStudent": "Student / Parent",
+      "roleStudent": "Student",
+      "roleParent": "Parent / Guardian",
       "roleTutor": "Tutor",
       "firstNameLabel": "First name",
       "lastNameLabel": "Last name",
       "emailLabel": "Email",
+      "dateOfBirthLabel": "Date of birth",
       "passwordLabel": "Password",
       "passwordHint": "At least 8 characters.",
       "submit": "Create Account",
@@ -450,7 +454,8 @@
       "pricing": "Pricing",
       "quickMatch": "Quick Match",
       "payouts": "Payouts",
-      "payments": "Payments"
+      "payments": "Payments",
+      "family": "My Students"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -655,6 +660,9 @@
     "sessionPrice": "Session",
     "tax": "Tax",
     "total": "Total",
+    "learnerSelectorLabel": "Booking for",
+    "paidByParentNote": "Paid by your account.",
+    "bookingForLabel": "Booking for {name}",
     "adjustmentReasons": {
       "urgencyShortNotice": "Short-notice booking",
       "urgencyUrgent": "Urgent booking",
@@ -687,6 +695,11 @@
   "quickMatch": {
     "title": "Quick Match",
     "description": "Tell us what you need and we'll find and dispatch the best available tutor automatically.",
+    "noBookableChildren": "You don't have a linked child you can currently start Quick Match for. Add a child or check your guardian status first.",
+    "manageFamilyCta": "Go to My Students",
+    "chooseChildPrompt": "Choose which child this request is for.",
+    "bookingForLabel": "Quick Match for {name}",
+    "changeChildCta": "Change child",
     "form": {
       "subjectLabel": "Subject",
       "levelLabel": "Level (optional)",
@@ -890,6 +903,220 @@
     "failed": "You scored {score}%, which doesn't meet the passing threshold. You can try again.",
     "errors": {
       "notATutor": "Only tutors can take this exam."
+    }
+  },
+  "family": {
+    "title": "My Students",
+    "subtitle": "Manage the children linked to your account and invite a co-guardian.",
+    "addChildCta": "Add a Child",
+    "emptyTitle": "No students yet",
+    "emptyDescription": "Add a child to get started — you'll be able to invite a second guardian afterward.",
+    "backToFamily": "Back to My Students",
+    "childCard": {
+      "noAcademicLevel": "No academic level set",
+      "guardianCount": "{count} active guardian(s)",
+      "manageGuardians": "Manage Guardians",
+      "profileCompleteness": "{filled} of {total} details completed"
+    },
+    "guardianVisibleLoginStatus": {
+      "NO_LOGIN": "No login yet",
+      "INVITED_PENDING": "Invited",
+      "WAITING_FOR_APPROVAL": "Waiting for your approval",
+      "ACTIVE": "Active",
+      "REJECTED_OR_REVOKED": "Revoked",
+      "EXPIRED": "Expired"
+    },
+    "addChildForm": {
+      "title": "Add a Child",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "dateOfBirthLabel": "Date of birth",
+      "academicLevelLabel": "Academic level",
+      "anyLevel": "Not set",
+      "submit": "Add Child",
+      "submitting": "Adding…",
+      "cancel": "Cancel",
+      "addedConfirmation": "Child added."
+    },
+    "guardians": {
+      "title": "Guardians",
+      "subtitle": "Everyone with active management authority over this student.",
+      "activeStatus": "Active",
+      "revokedStatus": "Revoked",
+      "youLabel": "(you)",
+      "revokeCta": "Revoke",
+      "revoking": "Revoking…"
+    },
+    "invite": {
+      "title": "Invite a Second Guardian",
+      "emailLabel": "Their email address",
+      "submit": "Generate Invite Link",
+      "submitting": "Generating…",
+      "linkGeneratedTitle": "Invite link created",
+      "linkGeneratedDescription": "Share this link with the guardian you're inviting — it's shown only once. FutureTutor doesn't send this by email yet.",
+      "copyCta": "Copy Link",
+      "copied": "Copied!",
+      "expiresNote": "This link expires in 72 hours."
+    },
+    "pendingClaims": {
+      "title": "Pending Guardian Requests",
+      "claimedBy": "Claimed by {name}",
+      "claimedAt": "Requested {date}",
+      "expiresAt": "Expires {date}",
+      "approveCta": "Approve",
+      "approving": "Approving…",
+      "rejectCta": "Reject",
+      "rejecting": "Rejecting…",
+      "empty": "No pending guardian requests."
+    },
+    "claimPage": {
+      "title": "Guardian Invitation",
+      "description": "Someone has invited you to become a guardian for a FutureTutor student.",
+      "invalidTitle": "Invitation not found",
+      "invalidDescription": "This invitation link is invalid or has already been used.",
+      "expiredDescription": "This invitation has expired. Ask the inviting guardian to send a new one.",
+      "signInPrompt": "Already have a FutureTutor account?",
+      "signInCta": "Sign in first",
+      "claimAsCta": "Claim as {email}",
+      "claiming": "Claiming…",
+      "newAccountTitle": "Create your account to accept",
+      "emailLabel": "Email",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "passwordLabel": "Password",
+      "passwordHint": "At least 8 characters.",
+      "createAndClaimCta": "Create Account & Accept",
+      "creating": "Creating…",
+      "successTitle": "Request sent",
+      "successDescription": "An existing guardian for this student needs to approve your request before you gain access. We'll let you know once they do.",
+      "wrongEmailDescription": "You're signed in with a different email than this invitation was sent to. Sign out and try again, or create a new account with the invited email."
+    },
+    "studentLoginInvite": {
+      "title": "Create a Student Login",
+      "description": "Give this student their own sign-in — they'll be able to view their own profile and schedule, but you'll remain in control of the account.",
+      "emailLabel": "Student's email address",
+      "submit": "Generate Invite Link",
+      "submitting": "Generating…",
+      "linkGeneratedTitle": "Invite link created",
+      "linkGeneratedDescription": "Share this link with the student — it's shown only once. FutureTutor doesn't send this by email yet.",
+      "copyCta": "Copy Link",
+      "copied": "Copied!",
+      "expiresNote": "This link expires in 72 hours."
+    },
+    "studentLoginStatus": {
+      "title": "Student Login",
+      "activeStatus": "Active",
+      "activeDescription": "This student has their own sign-in linked to this profile.",
+      "invitedPending": "Invited {email} — waiting for them to accept.",
+      "previouslyRevokedNote": "A previous student login for this account was revoked. You can send a new invitation below.",
+      "previouslyExpiredNote": "A previous student login invitation expired before it was approved. You can send a new invitation below."
+    },
+    "studentLoginClaimPage": {
+      "title": "Student Login Invitation",
+      "description": "A parent or guardian has invited you to get your own FutureTutor sign-in.",
+      "wrongRoleDescription": "You're signed in with an account that isn't a student account. Sign out and try again with a student account, or create a new one below.",
+      "wrongEmailDescription": "You're signed in with a different email than this invitation was sent to. Sign out and try again, or create a new account with the invited email.",
+      "signInPrompt": "Already have a FutureTutor student account?",
+      "signInCta": "Sign in first",
+      "claimAsCta": "Claim as {email}",
+      "claiming": "Claiming…",
+      "newAccountTitle": "Create your student account to accept",
+      "emailLabel": "Email",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "passwordLabel": "Password",
+      "passwordHint": "At least 8 characters.",
+      "createAndClaimCta": "Create Account & Accept",
+      "creating": "Creating…",
+      "successTitle": "Request sent",
+      "successDescription": "A parent or guardian for this student needs to approve your request before your login is active. We'll let you know once they do."
+    },
+    "studentPendingActivation": {
+      "title": "Your account is waiting for approval",
+      "description": "A parent or guardian needs to approve your student login before you can use FutureTutor. Check back soon, or ask them to approve your request."
+    },
+    "studentRejectedActivation": {
+      "title": "Your account wasn't approved",
+      "description": "Your parent or guardian did not approve this student login. If you think this is a mistake, contact them directly — you can't request a new invitation yourself. You can sign out from the menu above."
+    },
+    "studentExpiredActivation": {
+      "title": "Your invitation has expired",
+      "description": "The invitation you accepted expired before a parent or guardian could approve it. Ask them to send you a new invitation — invitations can't be reactivated. You can sign out from the menu above."
+    },
+    "studentUnlinkedActivation": {
+      "title": "Your account setup isn't complete",
+      "description": "Your account isn't linked to a student profile yet. Ask your parent or guardian to send you a student login invitation. You can sign out from the menu above."
+    },
+    "errors": {
+      "notAuthorized": "You don't have permission to do that.",
+      "invalidInput": "Please check your information and try again.",
+      "invitationInvalid": "This invitation is no longer valid.",
+      "invitationExpired": "This invitation has expired.",
+      "invitationAlreadyClaimed": "This invitation has already been claimed.",
+      "claimantNotEligible": "Your account isn't eligible to claim this invitation.",
+      "emailMismatch": "This invitation was sent to a different email address.",
+      "conflict": "That action couldn't be completed — please try again.",
+      "lastActiveGuardian": "This student must always have at least one active guardian — invite another guardian before revoking this one.",
+      "cannotRevokeOtherGuardian": "You can only remove your own guardian access. Removing another guardian requires contacting support.",
+      "mustBeSignedIn": "Please sign in first.",
+      "accountAlreadyExists": "An account with this email already exists — sign in and claim the invitation from your account instead.",
+      "studentAlreadyLinked": "This student already has a login linked to their profile.",
+      "claimantAlreadyLinkedElsewhere": "This account is already linked to a different student profile.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "parentSubtitle": "Manage your own account details.",
+    "parentProfileMissing": "We couldn't find your profile. Please contact support.",
+    "studentSubtitleFull": "Manage your own account details.",
+    "studentSubtitleLowStakes": "You can update a few personal preferences below. Other details are managed by your parent or guardian.",
+    "errors": {
+      "notAuthorized": "You don't have permission to do that.",
+      "invalidInput": "Please check your information and try again.",
+      "forbiddenField": "You don't have permission to update that field.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "studentForm": {
+      "sectionTitle": "Edit Profile",
+      "guardianSectionSubtitle": "As an active guardian, you can update this student's profile details.",
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "dateOfBirthLabel": "Date of birth",
+      "dateOfBirthReadOnlyNote": "Date of birth can't be changed here. Contact support if this needs to be corrected.",
+      "notSet": "Not set",
+      "provinceLabel": "Province",
+      "cityLabel": "City",
+      "academicLevelLabel": "Academic level",
+      "anyLevel": "Not set",
+      "tutoringModeLabel": "Tutoring mode",
+      "tutoringMode": {
+        "ONLINE": "Online",
+        "IN_PERSON": "In person",
+        "BOTH": "Online or in person"
+      },
+      "preferredLanguageLabel": "Preferred language",
+      "preferredLanguage": {
+        "en": "English",
+        "fr": "French"
+      },
+      "updated": "Profile updated.",
+      "saving": "Saving…",
+      "save": "Save Changes"
+    },
+    "parentForm": {
+      "firstNameLabel": "First name",
+      "lastNameLabel": "Last name",
+      "provinceLabel": "Province",
+      "cityLabel": "City",
+      "preferredLanguageLabel": "Preferred language",
+      "preferredLanguage": {
+        "en": "English",
+        "fr": "French"
+      },
+      "updated": "Profile updated.",
+      "saving": "Saving…",
+      "save": "Save Changes"
     }
   }
 }

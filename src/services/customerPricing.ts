@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
 import { roundMinorUnits, proRateCents, sumCents } from "@/lib/money";
 import { pickHighestPriorityRule } from "@/lib/ruleResolution";
@@ -186,15 +187,29 @@ async function calculateWithinSnapshot(tx: Prisma.TransactionClient, context: Cu
   return { result, ruleId: rule.id, settings };
 }
 
-/** Pure calculation, no persistence — used for search-page price previews. */
-export async function calculateCustomerPrice(context: CustomerPriceCalculationInput): Promise<CustomerPriceResult> {
-  return db.$transaction(async (tx) => (await calculateWithinSnapshot(tx, context)).result, {
+/**
+ * Pure calculation, no persistence — used for search-page price previews.
+ * Phase H.7 — `client` defaults to the ambient `db` singleton, preserving
+ * byte-identical behavior for every pre-existing call site (none of which
+ * pass a second argument). Added solely so the permanent H.7 integration
+ * test suite can point this at the isolated test database instead of
+ * silently operating against the real one — pure plumbing, no change to
+ * the calculation itself (§37 of the H.7 prompt).
+ */
+export async function calculateCustomerPrice(
+  context: CustomerPriceCalculationInput,
+  client: PrismaClient = db
+): Promise<CustomerPriceResult> {
+  return client.$transaction(async (tx) => (await calculateWithinSnapshot(tx, context)).result, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
   });
 }
 
-export async function createCustomerPriceQuote(context: CustomerPricingContext) {
-  return db.$transaction(
+/** Phase H.7 — same `client` plumbing as calculateCustomerPrice above, same
+ * reasoning: defaults to the ambient `db`, identical behavior for every
+ * existing caller. */
+export async function createCustomerPriceQuote(context: CustomerPricingContext, client: PrismaClient = db) {
+  return client.$transaction(
     async (tx) => {
       const { result, settings } = await calculateWithinSnapshot(tx, context);
       const expiresAt = new Date(result.calculatedAt.getTime() + settings.quoteTtlMinutes * 60 * 1000);

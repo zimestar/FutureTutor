@@ -39,20 +39,26 @@ model User {
   updatedAt     DateTime  @updatedAt
   deactivatedAt DateTime?
 
-  accounts                Account[]
-  sessions                Session[]
-  studentProfile          StudentProfile?
-  parentProfile           ParentProfile?
-  tutorProfile            TutorProfile?
-  sentMessages            Message[]                 @relation("MessageSender")
-  conversations           ConversationParticipant[]
-  notifications           Notification[]
-  notificationPreference  NotificationPreference?
-  auditLogs               AuditLog[]                @relation("AuditActor")
-  bookingStatusChanges    BookingStatusHistory[]    @relation("BookingStatusChangedBy")
-  createdPriceQuotes      CustomerPriceQuote[]
-  createdTutoringRequests TutoringRequest[]
-  payments                Payment[]
+  accounts                     Account[]
+  sessions                     Session[]
+  studentProfile               StudentProfile?
+  parentProfile                ParentProfile?
+  tutorProfile                 TutorProfile?
+  sentMessages                 Message[]                   @relation("MessageSender")
+  conversations                ConversationParticipant[]
+  notifications                Notification[]
+  notificationPreference       NotificationPreference?
+  auditLogs                    AuditLog[]                  @relation("AuditActor")
+  bookingStatusChanges         BookingStatusHistory[]      @relation("BookingStatusChangedBy")
+  createdPriceQuotes           CustomerPriceQuote[]
+  createdTutoringRequests      TutoringRequest[]
+  payments                     Payment[]
+  guardianRelationshipsCreated ParentStudentRelationship[] @relation("GuardianRelationshipCreatedBy")
+  guardianRelationshipsRevoked ParentStudentRelationship[] @relation("GuardianRelationshipRevokedBy")
+  familyInvitationsInvited     FamilyInvitation[]          @relation("FamilyInvitationInvitedBy")
+  familyInvitationsClaimed     FamilyInvitation[]          @relation("FamilyInvitationClaimedBy")
+  familyInvitationsApproved    FamilyInvitation[]          @relation("FamilyInvitationApprovedBy")
+  consentRecords               ConsentRecord[]             @relation("ConsentActor")
 
   @@index([role])
 }
@@ -104,20 +110,59 @@ enum TutoringMode {
   BOTH
 }
 
+/// Phase H.1 — who is authoritative for this StudentProfile's account
+/// management, consent, and financial decisions. Independent of age
+/// (StudentProfile.dateOfBirth) and independent of whether the profile has
+/// its own login (StudentProfile.userId != null) — see the Phase H planning
+/// report's "Account Management Authority Model" section. SELF_MANAGED and
+/// GUARDIAN_MANAGED are the two real states; LEGACY_UNKNOWN is reserved for
+/// a hypothetical future data-provenance gap and is never produced by this
+/// migration's own backfill (every existing row becomes SELF_MANAGED, since
+/// every existing row was created via the adult self-signup path).
+enum StudentManagementMode {
+  SELF_MANAGED
+  GUARDIAN_MANAGED
+  LEGACY_UNKNOWN
+}
+
 model StudentProfile {
-  id                String       @id @default(cuid())
-  userId            String       @unique
+  id                String                @id @default(cuid())
+  /// Phase H.1 — nullable (was required through Phase G.1): a
+  /// GUARDIAN_MANAGED child created by a parent may have no login of their
+  /// own yet. See the DB-level CHECK constraint (added via hand-edited
+  /// migration SQL) enforcing that SELF_MANAGED always requires this to be
+  /// non-null — a self-managed profile can never exist with no User to
+  /// manage it.
+  userId            String?               @unique
   firstName         String
   lastName          String
-  preferredLanguage String       @default("en")
+  preferredLanguage String                @default("en")
   province          String?
   city              String?
   academicLevelId   String?
-  tutoringMode      TutoringMode @default(BOTH)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  tutoringMode      TutoringMode          @default(BOTH)
+  /// Phase H.1 — nullable at the DB level for legacy-compatibility (existing
+  /// rows have none) and because collecting it is an application-layer
+  /// onboarding decision, not a hard DB requirement. Age derivation
+  /// (isMinor()) and any onboarding-required-field enforcement are later
+  /// Phase H sub-phase concerns, not implemented here.
+  dateOfBirth       DateTime?
+  /// Phase H.1 — see StudentManagementMode's own doc comment. NOT NULL with
+  /// no schema-level default; every existing row is explicitly backfilled to
+  /// SELF_MANAGED by this migration's own SQL (see the migration file), not
+  /// left to an implicit default that future inserts might accidentally
+  /// rely on instead of setting explicitly.
+  managementMode    StudentManagementMode
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
-  user                User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// onDelete: SetNull (changed from Cascade — Phase H.1): a StudentProfile
+  /// now legitimately outlives its linked User (a GUARDIAN_MANAGED profile
+  /// can exist with userId already null; this makes the reverse direction
+  /// consistent — losing the User account degrades this profile back to
+  /// that same "no login" state rather than destroying booking/payment
+  /// history attached to it).
+  user                User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
   academicLevel       AcademicLevel?              @relation(fields: [academicLevelId], references: [id])
   parentRelationships ParentStudentRelationship[]
   learningGoals       LearningGoal[]
@@ -126,6 +171,8 @@ model StudentProfile {
   reviews             Review[]
   priceQuotes         CustomerPriceQuote[]
   tutoringRequests    TutoringRequest[]
+  familyInvitations   FamilyInvitation[]
+  consentRecords      ConsentRecord[]
 }
 
 model ParentProfile {
@@ -143,17 +190,47 @@ model ParentProfile {
   studentRelationships ParentStudentRelationship[]
 }
 
+/// Phase H.1 — see the Phase H planning report's "Guardian Relationship
+/// Lifecycle" section. status/reactivation: a REVOKED row is reactivated in
+/// place (status flips back to ACTIVE) rather than a second row ever being
+/// inserted for the same (parentProfileId, studentProfileId) pair — the
+/// @@unique below is what makes a duplicate-insert attempt fail, by design.
+/// onDelete on the two subject FKs is Restrict (changed from the Phase A/B
+/// original Cascade, which was never exercised — this table has zero rows
+/// in every environment prior to Phase H): once this table is live and
+/// historically significant, a ParentProfile/StudentProfile must never be
+/// able to silently cascade-delete guardian-relationship history.
+enum GuardianRelationshipStatus {
+  ACTIVE
+  REVOKED
+}
+
 model ParentStudentRelationship {
-  id               String   @id @default(cuid())
+  id               String                     @id @default(cuid())
   parentProfileId  String
   studentProfileId String
-  relationshipType String   @default("PARENT")
-  createdAt        DateTime @default(now())
+  relationshipType String                     @default("PARENT")
+  status           GuardianRelationshipStatus @default(ACTIVE)
+  /// Actor pointers, not the subject of the historical record itself —
+  /// SetNull (not Restrict) if the actor User is ever removed: the fact
+  /// that the relationship existed/was revoked is preserved, only "who
+  /// performed it" degrades gracefully. No isPrimaryPayer field — removed
+  /// during architecture review; Payment.payerUserId is the sole
+  /// authoritative per-transaction payer, no default-guardian concept is
+  /// needed.
+  createdByUserId  String?
+  revokedAt        DateTime?
+  revokedByUserId  String?
+  createdAt        DateTime                   @default(now())
 
-  parentProfile  ParentProfile  @relation(fields: [parentProfileId], references: [id], onDelete: Cascade)
-  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  parentProfile  ParentProfile   @relation(fields: [parentProfileId], references: [id], onDelete: Restrict)
+  studentProfile StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Restrict)
+  createdByUser  User?           @relation("GuardianRelationshipCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  revokedByUser  User?           @relation("GuardianRelationshipRevokedBy", fields: [revokedByUserId], references: [id], onDelete: SetNull)
+  consentRecords ConsentRecord[]
 
   @@unique([parentProfileId, studentProfileId])
+  @@index([studentProfileId, status])
 }
 
 model LearningGoal {
@@ -165,6 +242,95 @@ model LearningGoal {
 
   studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
   subject        Subject?       @relation(fields: [subjectId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Family Accounts & Student Foundation (Phase H.1 — schema/domain foundation
+// only; the application behavior that consumes these structures — the
+// authorization policy layer, invitation token generation, claim/approval
+// Server Actions, onboarding UX — is later Phase H sub-phase work, not built
+// here. See FutureTutor_Phase_H_Planning_Report.md for the full design.
+// ---------------------------------------------------------------------------
+
+enum FamilyInvitationType {
+  STUDENT_LOGIN
+  GUARDIAN_LINK
+}
+
+/// Two-party activation state machine — see the planning report's
+/// "FamilyInvitation — Two-Party Activation" section. Reaching
+/// CLAIMED_PENDING_APPROVAL grants zero family/student access on its own;
+/// only an explicit, separately-authorized guardian's approval (the
+/// ACCEPTED transition) does. This closes the gap where a leaked invitation
+/// link, even combined with the correct intended email, could otherwise
+/// grant access without any independently-authorized human approving it.
+enum FamilyInvitationStatus {
+  PENDING
+  CLAIMED_PENDING_APPROVAL
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+/// Phase H.1 — schema only; token generation, the claim flow, and the
+/// approval flow (including re-verifying the approving guardian's CURRENT
+/// active authority) are H.4/H.5 application work. tokenHash is a hash, the
+/// plaintext token is never persisted. invitedEmailNormalized is the
+/// guardian-declared intended recipient, bound at claim/approval time by
+/// application logic — explicitly documented (in the planning report) as
+/// email-binding, not verified mailbox ownership, since no
+/// email-verification infrastructure exists in this codebase yet.
+model FamilyInvitation {
+  id                     String                 @id @default(cuid())
+  type                   FamilyInvitationType
+  targetStudentProfileId String
+  invitedEmailNormalized String
+  invitedByUserId        String?
+  tokenHash              String                 @unique
+  status                 FamilyInvitationStatus @default(PENDING)
+  claimedByUserId        String?
+  claimedAt              DateTime?
+  approvedByUserId       String?
+  approvedAt             DateTime?
+  expiresAt              DateTime
+  createdAt              DateTime               @default(now())
+
+  targetStudentProfile StudentProfile @relation(fields: [targetStudentProfileId], references: [id], onDelete: Cascade)
+  invitedByUser        User?          @relation("FamilyInvitationInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  claimedByUser        User?          @relation("FamilyInvitationClaimedBy", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  approvedByUser       User?          @relation("FamilyInvitationApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([targetStudentProfileId, type, status])
+}
+
+/// Phase H.1 — structural hooks only; no consent-gating logic exists yet and
+/// no legal policy is decided by this model's existence. Real FKs
+/// throughout (never a polymorphic subjectType/subjectId) — see the
+/// planning report's "Consent Foundation" section. actorUserId/
+/// studentProfileId/guardianRelationshipId all use Restrict: consent is the
+/// clearest legal/audit-history case in this schema, and must never
+/// silently disappear via a cascade from any direction. The CHECK
+/// constraint (guardianRelationshipId set implies studentProfileId set) is
+/// added via hand-edited migration SQL, since Prisma's schema DSL has no
+/// native multi-field CHECK syntax.
+model ConsentRecord {
+  id                     String    @id @default(cuid())
+  actorUserId            String
+  studentProfileId       String?
+  guardianRelationshipId String?
+  consentType            String
+  policyVersion          String
+  grantedAt              DateTime  @default(now())
+  revokedAt              DateTime?
+  sourceContext          String
+  createdAt              DateTime  @default(now())
+
+  actorUser            User                       @relation("ConsentActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  studentProfile       StudentProfile?            @relation(fields: [studentProfileId], references: [id], onDelete: Restrict)
+  guardianRelationship ParentStudentRelationship? @relation(fields: [guardianRelationshipId], references: [id], onDelete: Restrict)
+
+  @@index([studentProfileId])
+  @@index([actorUserId])
 }
 
 // ---------------------------------------------------------------------------

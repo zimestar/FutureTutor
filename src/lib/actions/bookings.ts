@@ -7,8 +7,14 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { canInitiatePaidBooking, canPayForStudent } from "@/services/studentAuthorization";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
-import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
+import {
+  reserveBookingPendingPayment,
+  SlotTakenError,
+  NotAuthorizedForLearnerError,
+  QuoteLearnerMismatchError,
+} from "@/services/bookingCreation";
 import {
   preparePaymentForQuote,
   getOrCreatePaymentForQuote,
@@ -43,19 +49,22 @@ export async function createBookingAction(
   const t = await getTranslations("booking.errors");
 
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") {
+  // Phase H.7 — the actor may now legitimately be a PARENT booking for a
+  // linked child, not only the learner's own STUDENT session.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
     return { error: t("notAStudent") };
   }
 
   const academicLevelId = formData.get("academicLevelId");
   const parsed = createBookingSchema.safeParse({
+    studentProfileId: formData.get("studentProfileId"),
     tutorProfileId: formData.get("tutorProfileId"),
     subjectId: formData.get("subjectId"),
     academicLevelId: academicLevelId ? String(academicLevelId) : undefined,
     startAt: formData.get("startAt"),
   });
   if (!parsed.success) return { error: t("invalidInput") };
-  const { tutorProfileId, subjectId, academicLevelId: levelId, startAt } = parsed.data;
+  const { studentProfileId, tutorProfileId, subjectId, academicLevelId: levelId, startAt } = parsed.data;
 
   const customerPriceQuoteId = String(formData.get("customerPriceQuoteId") ?? "");
   const tutorPayoutQuoteId = String(formData.get("tutorPayoutQuoteId") ?? "");
@@ -64,11 +73,27 @@ export async function createBookingAction(
     ? String(formData.get("stripePaymentIntentId"))
     : null;
 
+  // Phase H.7 — the learner is now an explicit, client-selected
+  // studentProfileId (self, or a linked child), never self-derived from
+  // the actor's own userId. Untrusted on its own — re-verified via H.2
+  // immediately below, and again inside the authoritative transaction
+  // (§17 — see reserveBookingPendingPayment's own re-check).
   const [studentProfile, tutorProfile] = await Promise.all([
-    db.studentProfile.findUnique({ where: { userId: session.user.id } }),
+    db.studentProfile.findUnique({ where: { id: studentProfileId } }),
     db.tutorProfile.findUnique({ where: { id: tutorProfileId } }),
   ]);
   if (!studentProfile || !tutorProfile) return { error: t("invalidInput") };
+
+  // Phase H.5 security correction (extended in H.7 for actor != learner):
+  // previously authorized solely by role===STUDENT + a raw
+  // studentProfile-by-own-userId lookup, with no H.2 involvement — a
+  // GUARDIAN_MANAGED student's own restricted login could reserve a slot
+  // and capture a real payment. Unchanged for every existing SELF_MANAGED
+  // student; now also correctly allows an ACTIVE guardian acting for their
+  // linked child. This is only the fast pre-check (§16) — the authoritative
+  // check is the one re-run inside the transaction below.
+  const authorized = await canInitiatePaidBooking(db, session.user.id, studentProfile.id);
+  if (!authorized) return { error: t("notAStudent") };
 
   const { timezone, days } = await getAvailableSlots(tutorProfileId, {
     durationMinutes: SESSION_DURATION_MINUTES,
@@ -112,6 +137,7 @@ export async function createBookingAction(
     await db.$transaction(
       async (tx) => {
         await reserveBookingPendingPayment(tx, {
+          actorUserId: session.user.id,
           studentProfileId: studentProfile.id,
           tutorProfileId,
           subjectId,
@@ -129,6 +155,13 @@ export async function createBookingAction(
     );
   } catch (error) {
     if (error instanceof SlotTakenError) return { error: t("slotTaken") };
+    // Phase H.7 — the transaction-bound re-check denied the actor's
+    // authority over the learner (revoked between pre-check and here), or
+    // the quote/learner pairing was inconsistent. Same fail-closed
+    // "unavailable" messaging as every other server-side denial here —
+    // never distinguishing the reason for an unauthorized caller.
+    if (error instanceof NotAuthorizedForLearnerError) return { error: t("notAStudent") };
+    if (error instanceof QuoteLearnerMismatchError) return { error: t("invalidInput") };
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return { error: t("slotTaken") };
     }
@@ -188,10 +221,18 @@ export async function cancelBookingAction(
   });
   if (!booking) return { error: t("notFound") };
 
-  const isOwner =
-    booking.studentProfile.userId === session.user.id || booking.tutorProfile.userId === session.user.id;
+  const isTutorOwner = booking.tutorProfile.userId === session.user.id;
   const isAdmin = session.user.role === "SUPER_ADMIN";
-  if (!isOwner && !isAdmin) return { error: t("notYours") };
+  // Phase H.5 security correction: cancellation triggers a real refund
+  // (cancelBookingWithRefund) — the student side of ownership must go
+  // through H.2's canPayForStudent, not a raw userId match, so a
+  // GUARDIAN_MANAGED student's own restricted login can't cancel/refund a
+  // booking on their own authority. Unchanged for every existing
+  // SELF_MANAGED student.
+  const isStudentOwner =
+    booking.studentProfile.userId === session.user.id &&
+    (await canPayForStudent(db, session.user.id, booking.studentProfileId));
+  if (!isStudentOwner && !isTutorOwner && !isAdmin) return { error: t("notYours") };
 
   try {
     await cancelBookingWithRefund(booking.id, session.user.id);

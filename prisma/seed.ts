@@ -85,6 +85,9 @@ async function main() {
       city: "Toronto",
       province: "ON",
       tutoringMode: "BOTH",
+      // Phase H.1 compatibility: this seeded fixture is the adult
+      // self-signup case, matching every other pre-Phase-H StudentProfile.
+      managementMode: "SELF_MANAGED",
     },
   });
   console.log(`Seeded STUDENT: ${studentEmail} / ${studentPassword}`);

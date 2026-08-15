@@ -135,11 +135,20 @@ export async function cancelBookingWithRefund(bookingId: string, actorUserId: st
     metadata: { bookingId: booking.id, amountCents: refund.amountCents },
   });
 
-  await notifyUser(db, {
-    userId: booking.studentProfile.userId,
-    type: "payment.refunded",
-    title: "Refund issued",
-    body: `A refund of ${(refund.amountCents / 100).toFixed(2)} ${refund.currency} has been issued for your cancelled session.`,
-    metadata: { bookingId: booking.id, refundId: refund.id },
-  });
+  // Phase H.1 compatibility: StudentProfile.userId is now nullable
+  // (a GUARDIAN_MANAGED child may have no login of their own). Every
+  // existing booking today is against a SELF_MANAGED student with a
+  // non-null userId, so this guard changes no current behavior — it only
+  // prevents a future GUARDIAN_MANAGED booking from crashing here.
+  // Notifying the guardian instead is later Phase H application work
+  // (H.7/H.8), not implemented in this schema-only sub-phase.
+  if (booking.studentProfile.userId) {
+    await notifyUser(db, {
+      userId: booking.studentProfile.userId,
+      type: "payment.refunded",
+      title: "Refund issued",
+      body: `A refund of ${(refund.amountCents / 100).toFixed(2)} ${refund.currency} has been issued for your cancelled session.`,
+      metadata: { bookingId: booking.id, refundId: refund.id },
+    });
+  }
 }

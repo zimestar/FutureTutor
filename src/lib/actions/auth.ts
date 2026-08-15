@@ -7,6 +7,7 @@ import { signIn, signOut } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { homePathForRole } from "@/lib/authorization";
 import { loginSchema, registerSchema } from "@/schemas/auth";
+import { createUserForSignup } from "@/services/signup";
 
 export type AuthActionState = { error?: string } | undefined;
 
@@ -23,13 +24,14 @@ export async function registerAction(
     email: formData.get("email"),
     password: formData.get("password"),
     role: formData.get("role"),
+    dateOfBirth: formData.get("dateOfBirth"),
   });
 
   if (!parsed.success) {
     return { error: t("invalidInput") };
   }
 
-  const { firstName, lastName, email, password, role } = parsed.data;
+  const { firstName, lastName, email, password, role, dateOfBirth } = parsed.data;
   const name = `${firstName} ${lastName}`;
 
   const existing = await db.user.findUnique({ where: { email } });
@@ -39,16 +41,14 @@ export async function registerAction(
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  await db.user.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      role,
-      ...(role === "STUDENT"
-        ? { studentProfile: { create: { firstName, lastName } } }
-        : { tutorProfile: { create: { slug: await generateTutorSlug(name) } } }),
-    },
+  await createUserForSignup(db, {
+    firstName,
+    lastName,
+    email,
+    passwordHash,
+    role,
+    dateOfBirth: role === "STUDENT" ? new Date(`${dateOfBirth}T00:00:00.000Z`) : undefined,
+    tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
   });
 
   await signIn("credentials", { email, password, redirect: false });

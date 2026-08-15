@@ -19,6 +19,11 @@ export interface BookingWidgetOption {
   label: string;
 }
 
+export interface BookableStudentOption {
+  id: string;
+  label: string;
+}
+
 export function BookingWidget({
   tutorProfileId,
   timezone,
@@ -27,6 +32,8 @@ export function BookingWidget({
   levels,
   useStripe,
   stripePublishableKey,
+  bookableStudents,
+  actorIsParent,
 }: {
   tutorProfileId: string;
   timezone: string;
@@ -35,6 +42,13 @@ export function BookingWidget({
   levels: BookingWidgetOption[];
   useStripe: boolean;
   stripePublishableKey: string | null;
+  // Phase H.7 — server-authoritative (listBookableStudentsForActor), never
+  // invented by this component. A SELF_MANAGED Student's own session has
+  // exactly one entry (their own profile) and no selector is shown, per
+  // §11's "preserve current UX as closely as possible." A Parent sees
+  // every linked child they may currently book for.
+  bookableStudents: BookableStudentOption[];
+  actorIsParent: boolean;
 }) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -43,13 +57,18 @@ export function BookingWidget({
   const [selectedSlot, setSelectedSlot] = useState("");
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
   const [academicLevelId, setAcademicLevelId] = useState("");
+  const [studentProfileId, setStudentProfileId] = useState(bookableStudents[0]?.id ?? "");
   // Keyed by the exact selection it was fetched for — a stale quote from a
   // superseded selection is detected during render (a pure comparison)
   // rather than cleared via a synchronous setState inside the effect body.
   const [quoteState, setQuoteState] = useState<{ key: string; result: PriceQuoteResult } | null>(null);
   const [quotePending, startQuoteTransition] = useTransition();
-  const quoteKey = selectedSlot && subjectId ? `${selectedSlot}|${subjectId}|${academicLevelId}` : null;
+  const quoteKey =
+    selectedSlot && subjectId && studentProfileId
+      ? `${studentProfileId}|${selectedSlot}|${subjectId}|${academicLevelId}`
+      : null;
   const quote = quoteState && quoteState.key === quoteKey ? quoteState.result : null;
+  const selectedStudent = bookableStudents.find((s) => s.id === studentProfileId) ?? null;
 
   // Payment preparation — only meaningful in live mode, and only once a
   // real quote exists. Keyed the same way as the quote itself so changing
@@ -81,10 +100,11 @@ export function BookingWidget({
   // — the UI never computes a price itself, it only displays what the
   // server calculated.
   useEffect(() => {
-    if (!quoteKey) return;
+    if (!quoteKey || !studentProfileId) return;
     let cancelled = false;
     startQuoteTransition(async () => {
       const result = await createPriceQuoteAction({
+        studentProfileId,
         tutorProfileId,
         subjectId,
         academicLevelId: academicLevelId || undefined,
@@ -95,7 +115,7 @@ export function BookingWidget({
     return () => {
       cancelled = true;
     };
-  }, [quoteKey, selectedSlot, subjectId, academicLevelId, tutorProfileId]);
+  }, [quoteKey, selectedSlot, subjectId, academicLevelId, tutorProfileId, studentProfileId]);
 
   // In live mode, once a real quote exists, prepare (or reuse) the Payment
   // + PaymentIntent for it so the card form can render.
@@ -130,6 +150,7 @@ export function BookingWidget({
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4">
+      <input type="hidden" name="studentProfileId" value={studentProfileId} />
       <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
       <input type="hidden" name="startAt" value={selectedSlot} />
       <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
@@ -139,6 +160,36 @@ export function BookingWidget({
       {state?.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {state.error}
+        </p>
+      )}
+
+      {/* Phase H.7 (§11/§35) — the selected learner's identity stays
+          visible for the whole flow: a real selector when the Parent has
+          more than one eligible child, a plain "booking for" label when
+          there's exactly one (no unnecessary dropdown, per §11), and
+          nothing extra for a Student booking themselves (unchanged UX). */}
+      {bookableStudents.length > 1 && (
+        <div data-testid="learner-selector">
+          <label htmlFor="learnerSelect" className="mb-1.5 block text-sm font-semibold text-navy">
+            {t("learnerSelectorLabel")}
+          </label>
+          <Select
+            id="learnerSelect"
+            value={studentProfileId}
+            onChange={(e) => setStudentProfileId(e.target.value)}
+          >
+            {bookableStudents.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.label}
+              </option>
+            ))}
+          </Select>
+          {actorIsParent && <p className="mt-1.5 text-xs text-slate">{t("paidByParentNote")}</p>}
+        </div>
+      )}
+      {bookableStudents.length === 1 && actorIsParent && selectedStudent && (
+        <p className="text-sm text-slate" data-testid="learner-single-label">
+          {t("bookingForLabel", { name: selectedStudent.label })}
         </p>
       )}
 

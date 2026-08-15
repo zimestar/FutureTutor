@@ -12,7 +12,25 @@ export interface QuickMatchOption {
 
 const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 
-export function QuickMatchRequestForm({ subjects, levels }: { subjects: QuickMatchOption[]; levels: QuickMatchOption[] }) {
+/** Phase H.7 — `studentProfileId` is the server-resolved, already-
+ * authorized learner for this request (see dashboard/quick-match/page.tsx:
+ * for a Student it's always their own profile; for a Parent it's whichever
+ * child the page-level selector currently has selected). Passed as a fixed
+ * hidden field, not chosen inside this form — the learner selector, when
+ * there is more than one eligible child, lives at the page level (a link
+ * per child, matching §56's explicit non-inference requirement), so the
+ * whole page (including any in-flight request status) stays scoped to one
+ * explicit child at a time rather than this form silently re-targeting a
+ * different learner than what the rest of the page is showing. */
+export function QuickMatchRequestForm({
+  subjects,
+  levels,
+  studentProfileId,
+}: {
+  subjects: QuickMatchOption[];
+  levels: QuickMatchOption[];
+  studentProfileId: string;
+}) {
   const t = useTranslations("quickMatch");
   const [state, formAction, pending] = useActionState(createTutoringRequestAction, undefined);
   const [tutoringMode, setTutoringMode] = useState<"ONLINE" | "IN_PERSON" | "BOTH">("ONLINE");
@@ -20,6 +38,7 @@ export function QuickMatchRequestForm({ subjects, levels }: { subjects: QuickMat
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6">
+      <input type="hidden" name="studentProfileId" value={studentProfileId} />
       {state && !state.success && state.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {state.error}

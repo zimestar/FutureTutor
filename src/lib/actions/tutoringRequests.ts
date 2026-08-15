@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { canInitiatePaidBooking, canPayForStudent } from "@/services/studentAuthorization";
 import {
   createTutoringRequestSchema,
   confirmTutoringRequestSchema,
@@ -26,6 +27,10 @@ import {
   PaymentIntentVerificationError,
 } from "@/services/payments";
 import { advanceDispatch, closeTutoringRequest } from "@/services/quickMatchDispatch";
+import {
+  createTutoringRequestForLearnerInOwnTransaction,
+  NotAuthorizedForLearnerError,
+} from "@/services/tutoringRequestCreation";
 
 export type CreateTutoringRequestState =
   | {
@@ -49,12 +54,16 @@ export async function createTutoringRequestAction(
   const t = await getTranslations("quickMatch.errors");
 
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") {
+  // Phase H.7 — the actor may now legitimately be a PARENT initiating
+  // Quick Match for a linked child, not only the learner's own STUDENT
+  // session.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
     return { success: false, error: t("notAStudent") };
   }
 
   const academicLevelId = formData.get("academicLevelId");
   const parsed = createTutoringRequestSchema.safeParse({
+    studentProfileId: formData.get("studentProfileId"),
     subjectId: formData.get("subjectId"),
     academicLevelId: academicLevelId ? String(academicLevelId) : undefined,
     tutoringMode: formData.get("tutoringMode"),
@@ -70,8 +79,18 @@ export async function createTutoringRequestAction(
   if (!parsed.success) return { success: false, error: t("invalidInput") };
   const data = parsed.data;
 
-  const studentProfile = await db.studentProfile.findUnique({ where: { userId: session.user.id } });
+  // Phase H.7 — the learner is now an explicit, client-selected
+  // studentProfileId (self, or a linked child), never self-derived from
+  // the actor's own userId.
+  const studentProfile = await db.studentProfile.findUnique({ where: { id: data.studentProfileId } });
   if (!studentProfile) return { success: false, error: t("invalidInput") };
+
+  // Phase H.5 security correction (extended in H.7 for actor != learner):
+  // previously authorized only by role===STUDENT + self-lookup, no H.2
+  // involvement. Unchanged for every existing SELF_MANAGED student; now
+  // also correctly allows an ACTIVE guardian acting for their linked child.
+  const authorized = await canInitiatePaidBooking(db, session.user.id, studentProfile.id);
+  if (!authorized) return { success: false, error: t("notAStudent") };
 
   try {
     // Tutor-agnostic, exactly like the Customer Price Engine was designed
@@ -86,32 +105,28 @@ export async function createTutoringRequestAction(
       requestedStartAt: data.requestedStartAt,
     });
 
-    const request = await db.tutoringRequest.create({
-      data: {
-        createdByUserId: session.user.id,
-        studentProfileId: studentProfile.id,
-        subjectId: data.subjectId,
-        academicLevelId: data.academicLevelId ?? null,
-        tutoringMode: data.tutoringMode,
-        durationMinutes: data.durationMinutes,
-        requestedStartAt: data.requestedStartAt,
-        addressLine1: data.addressLine1 ?? null,
-        addressLine2: data.addressLine2 ?? null,
-        city: data.city ?? null,
-        province: data.province ?? null,
-        postalCode: data.postalCode ?? null,
-        notes: data.notes ?? null,
-        currency: quote.currency,
-        customerPriceQuoteId: quote.id,
-        status: "PRICED",
-      },
-    });
-
-    await writeAuditLog({
+    // Phase H.7 (§17/§21) — the mandatory transaction-bound re-check,
+    // immediately before the authoritative TutoringRequest creation
+    // mutation, extracted into its own directly-testable service function
+    // (see tutoringRequestCreation.ts). Closes the TOCTOU window between
+    // the pre-check above and this exact write (e.g. a guardian
+    // relationship revoked in between).
+    const request = await createTutoringRequestForLearnerInOwnTransaction(db, {
       actorUserId: session.user.id,
-      action: "quickmatch.request.created",
-      entityType: "TutoringRequest",
-      entityId: request.id,
+      studentProfileId: studentProfile.id,
+      subjectId: data.subjectId,
+      academicLevelId: data.academicLevelId ?? null,
+      tutoringMode: data.tutoringMode,
+      durationMinutes: data.durationMinutes,
+      requestedStartAt: data.requestedStartAt,
+      addressLine1: data.addressLine1 ?? null,
+      addressLine2: data.addressLine2 ?? null,
+      city: data.city ?? null,
+      province: data.province ?? null,
+      postalCode: data.postalCode ?? null,
+      notes: data.notes ?? null,
+      currency: quote.currency,
+      customerPriceQuoteId: quote.id,
     });
 
     return {
@@ -127,6 +142,14 @@ export async function createTutoringRequestAction(
     };
   } catch (error) {
     if (error instanceof PricingRuleNotFoundError) return { success: false, error: t("pricingUnavailable") };
+    // Phase H.7 — the transaction-bound re-check denied the actor's
+    // authority over the learner (revoked between the pre-check and the
+    // authoritative creation transaction). The CustomerPriceQuote created
+    // just before this point is left ACTIVE/orphaned (never consumed,
+    // expires naturally via its own TTL) — not a security concern (it can
+    // only ever be consumed by the same createdByUserId that requested
+    // it), only a minor, accepted resource-cleanliness gap.
+    if (error instanceof NotAuthorizedForLearnerError) return { success: false, error: t("notAStudent") };
     return { success: false, error: t("generic") };
   }
 }
@@ -143,12 +166,24 @@ export type PreparePaymentState =
 export async function preparePaymentForRequestAction(tutoringRequestId: string): Promise<PreparePaymentState> {
   const t = await getTranslations("quickMatch.errors");
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") return { success: false, error: t("notAStudent") };
+  // Phase H.7 — the actor may be the Parent who created this request.
+  // canPayForStudent below (checked against request.studentProfileId, the
+  // authoritative learner — never re-derived from the actor) is the real
+  // gate; this is only the coarse role filter.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
+    return { success: false, error: t("notAStudent") };
+  }
 
   const request = await db.tutoringRequest.findUnique({ where: { id: tutoringRequestId } });
   if (!request || !request.customerPriceQuoteId) return { success: false, error: t("notFound") };
   if (request.createdByUserId !== session.user.id) return { success: false, error: t("notYours") };
   if (request.status !== "PRICED") return { success: false, error: t("invalidState") };
+
+  // Phase H.5 security correction: initiating Stripe PaymentIntent
+  // preparation previously only checked createdByUserId self-match, no H.2
+  // involvement. Unchanged for every existing SELF_MANAGED student.
+  const authorized = await canPayForStudent(db, session.user.id, request.studentProfileId);
+  if (!authorized) return { success: false, error: t("notAStudent") };
 
   try {
     if (paymentsUseStripe()) {
@@ -171,7 +206,11 @@ export async function confirmTutoringRequestAction(
 ): Promise<TutoringRequestActionState> {
   const t = await getTranslations("quickMatch.errors");
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") return { error: t("notAStudent") };
+  // Phase H.7 — same widening as preparePaymentForRequestAction; the real
+  // gate remains canPayForStudent against request.studentProfileId below.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
+    return { error: t("notAStudent") };
+  }
 
   const parsed = confirmTutoringRequestSchema.safeParse({
     tutoringRequestId: formData.get("tutoringRequestId"),
@@ -188,6 +227,13 @@ export async function confirmTutoringRequestAction(
   if (request.createdByUserId !== session.user.id) return { error: t("notYours") };
   if (request.status !== "PRICED") return { error: t("invalidState") };
   if (request.customerPriceQuoteId !== customerPriceQuoteId) return { error: t("invalidInput") };
+
+  // Phase H.5 security correction: confirming authorizes the Stripe
+  // payment and locks the quote — previously only createdByUserId
+  // self-match, no H.2 involvement. Unchanged for every existing
+  // SELF_MANAGED student.
+  const authorized = await canPayForStudent(db, session.user.id, request.studentProfileId);
+  if (!authorized) return { error: t("notAStudent") };
 
   // Server-side authorization verification — never trusts a client-side
   // stripe.confirmPayment() resolution alone (Phase G plan §12/Correction
@@ -276,7 +322,13 @@ export async function cancelTutoringRequestAction(
   if (!request) return { error: t("notFound") };
 
   const isAdmin = session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN";
-  if (request.createdByUserId !== session.user.id && !isAdmin) return { error: t("notYours") };
+  // Phase H.5 security correction: gated with the same H.2 capability as
+  // request creation, for consistency across this resource's lifecycle.
+  // Unchanged for every existing SELF_MANAGED student.
+  const isAuthorizedCreator =
+    request.createdByUserId === session.user.id &&
+    (await canInitiatePaidBooking(db, session.user.id, request.studentProfileId));
+  if (!isAuthorizedCreator && !isAdmin) return { error: t("notYours") };
 
   if (request.status === "DRAFT" || request.status === "PRICED") {
     await db.$transaction(async (tx) => {

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import type { TutoringMode, TutorTier } from "@/generated/prisma/enums";
 import { roundMinorUnits, proRateCents, sumCents } from "@/lib/money";
 import { pickHighestPriorityRule } from "@/lib/ruleResolution";
@@ -131,8 +132,16 @@ async function calculateWithinSnapshot(tx: Prisma.TransactionClient, context: Tu
   return { result, settings };
 }
 
-export async function calculateTutorPayout(context: TutorPayoutContext): Promise<TutorPayoutResult> {
-  return db.$transaction(async (tx) => (await calculateWithinSnapshot(tx, context)).result, {
+/** Phase H.7 — `client` defaults to the ambient `db` singleton, preserving
+ * byte-identical behavior for every pre-existing call site. Pure plumbing
+ * added so the permanent H.7 integration test suite can target the
+ * isolated test database instead of silently operating against the real
+ * one — same reasoning as customerPricing.ts's identical change. */
+export async function calculateTutorPayout(
+  context: TutorPayoutContext,
+  client: PrismaClient = db
+): Promise<TutorPayoutResult> {
+  return client.$transaction(async (tx) => (await calculateWithinSnapshot(tx, context)).result, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
   });
 }
@@ -201,8 +210,13 @@ async function createTutorPayoutQuoteInTx(
   });
 }
 
-export async function createTutorPayoutQuote(context: TutorPayoutContext, customerPriceQuoteId: string) {
-  return db.$transaction((tx) => createTutorPayoutQuoteInTx(tx, context, customerPriceQuoteId), {
+/** Phase H.7 — same `client` plumbing as calculateTutorPayout above. */
+export async function createTutorPayoutQuote(
+  context: TutorPayoutContext,
+  customerPriceQuoteId: string,
+  client: PrismaClient = db
+) {
+  return client.$transaction((tx) => createTutorPayoutQuoteInTx(tx, context, customerPriceQuoteId), {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
   });
 }

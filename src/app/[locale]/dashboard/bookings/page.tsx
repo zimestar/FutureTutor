@@ -3,10 +3,13 @@ import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { CancelBookingButton } from "@/components/dashboard/CancelBookingButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatBookingTime } from "@/lib/utils";
+import { resolveStudentAccountActivationState } from "@/services/familyManagement";
+import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 
 export default async function StudentBookingsPage({
   params,
@@ -30,6 +33,23 @@ export default async function StudentBookingsPage({
 
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
 
+  const navItems = getStudentDashboardNavItems((key) => tNav(key), user.role);
+
+  // Phase H.5 Final Claimant-State UX Correction: see
+  // src/app/[locale]/dashboard/page.tsx's identical guard for the full
+  // rationale. studentProfile above is still fetched directly for this
+  // page's own data (bookings), independent of this gating decision.
+  if (user.role === "STUDENT") {
+    const activationState = await resolveStudentAccountActivationState(db, user.id);
+    if (activationState.state !== "ACTIVE") {
+      return (
+        <DashboardShell navItems={navItems} userName={user.name ?? ""}>
+          <StudentActivationNotice state={activationState} />
+        </DashboardShell>
+      );
+    }
+  }
+
   const bookings = studentProfile
     ? await db.booking.findMany({
         where: { studentProfileId: studentProfile.id },
@@ -52,15 +72,7 @@ export default async function StudentBookingsPage({
   ];
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/dashboard" },
-        { label: tNav("favorites"), href: "/dashboard/favorites" },
-        { label: tNav("quickMatch"), href: "/dashboard/quick-match" },
-        { label: tNav("bookings"), href: "/dashboard/bookings" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={navItems} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

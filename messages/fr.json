@@ -340,7 +340,9 @@
     "yearsExperience": "{count}+ ans d'expérience",
     "requestToBook": "Demander une réservation",
     "bookingNote": "La réservation sera possible dès le lancement des comptes.",
-    "pricingNote": "FutureTutor calcule le prix de la séance selon la matière, le niveau et l'horaire — vous le verrez avant de confirmer."
+    "pricingNote": "FutureTutor calcule le prix de la séance selon la matière, le niveau et l'horaire — vous le verrez avant de confirmer.",
+    "noBookableChildren": "Vous n'avez aucun enfant lié pour qui vous pouvez réserver actuellement. Ajoutez un enfant ou vérifiez votre statut de parent/tuteur d'abord.",
+    "manageFamilyCta": "Aller à Mes élèves"
   },
   "tutorProfileForm": {
     "title": "Votre profil de tuteur",
@@ -415,13 +417,15 @@
     },
     "signup": {
       "title": "Créez votre compte",
-      "subtitle": "Joignez-vous à FutureTutor comme élève ou comme tuteur.",
+      "subtitle": "Joignez-vous à FutureTutor comme élève, comme parent ou tuteur légal, ou comme tuteur.",
       "roleLabel": "Je suis...",
-      "roleStudent": "Élève / Parent",
+      "roleStudent": "Élève",
+      "roleParent": "Parent / Tuteur légal",
       "roleTutor": "Tuteur",
       "firstNameLabel": "Prénom",
       "lastNameLabel": "Nom",
       "emailLabel": "Courriel",
+      "dateOfBirthLabel": "Date de naissance",
       "passwordLabel": "Mot de passe",
       "passwordHint": "Au moins 8 caractères.",
       "submit": "Créer le compte",
@@ -450,7 +454,8 @@
       "pricing": "Tarification",
       "quickMatch": "Jumelage rapide",
       "payouts": "Paiements",
-      "payments": "Paiements des clients"
+      "payments": "Paiements des clients",
+      "family": "Mes élèves"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -655,6 +660,9 @@
     "sessionPrice": "Séance",
     "tax": "Taxe",
     "total": "Total",
+    "learnerSelectorLabel": "Réservation pour",
+    "paidByParentNote": "Payé par votre compte.",
+    "bookingForLabel": "Réservation pour {name}",
     "adjustmentReasons": {
       "urgencyShortNotice": "Réservation à court préavis",
       "urgencyUrgent": "Réservation urgente",
@@ -687,6 +695,11 @@
   "quickMatch": {
     "title": "Jumelage rapide",
     "description": "Dites-nous ce dont vous avez besoin et nous trouverons et enverrons automatiquement le meilleur tuteur disponible.",
+    "noBookableChildren": "Vous n'avez aucun enfant lié pour qui vous pouvez démarrer un jumelage rapide actuellement. Ajoutez un enfant ou vérifiez votre statut de parent/tuteur d'abord.",
+    "manageFamilyCta": "Aller à Mes élèves",
+    "chooseChildPrompt": "Choisissez pour quel enfant cette demande est destinée.",
+    "bookingForLabel": "Jumelage rapide pour {name}",
+    "changeChildCta": "Changer d'enfant",
     "form": {
       "subjectLabel": "Matière",
       "levelLabel": "Niveau (optionnel)",
@@ -890,6 +903,220 @@
     "failed": "Vous avez obtenu {score} %, ce qui n'atteint pas le seuil de réussite. Vous pouvez réessayer.",
     "errors": {
       "notATutor": "Seuls les tuteurs peuvent passer cet examen."
+    }
+  },
+  "family": {
+    "title": "Mes élèves",
+    "subtitle": "Gérez les enfants liés à votre compte et invitez un deuxième parent ou tuteur légal.",
+    "addChildCta": "Ajouter un enfant",
+    "emptyTitle": "Aucun élève pour le moment",
+    "emptyDescription": "Ajoutez un enfant pour commencer — vous pourrez ensuite inviter un deuxième parent ou tuteur légal.",
+    "backToFamily": "Retour à Mes élèves",
+    "childCard": {
+      "noAcademicLevel": "Aucun niveau scolaire défini",
+      "guardianCount": "{count} parent(s)/tuteur(s) actif(s)",
+      "manageGuardians": "Gérer les parents/tuteurs",
+      "profileCompleteness": "{filled} sur {total} détails complétés"
+    },
+    "guardianVisibleLoginStatus": {
+      "NO_LOGIN": "Aucun accès de connexion",
+      "INVITED_PENDING": "Invité",
+      "WAITING_FOR_APPROVAL": "En attente de votre approbation",
+      "ACTIVE": "Actif",
+      "REJECTED_OR_REVOKED": "Révoqué",
+      "EXPIRED": "Expiré"
+    },
+    "addChildForm": {
+      "title": "Ajouter un enfant",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "dateOfBirthLabel": "Date de naissance",
+      "academicLevelLabel": "Niveau scolaire",
+      "anyLevel": "Non défini",
+      "submit": "Ajouter l'enfant",
+      "submitting": "Ajout en cours…",
+      "cancel": "Annuler",
+      "addedConfirmation": "Enfant ajouté."
+    },
+    "guardians": {
+      "title": "Parents et tuteurs légaux",
+      "subtitle": "Toutes les personnes ayant l'autorité de gestion active sur cet élève.",
+      "activeStatus": "Actif",
+      "revokedStatus": "Révoqué",
+      "youLabel": "(vous)",
+      "revokeCta": "Révoquer",
+      "revoking": "Révocation…"
+    },
+    "invite": {
+      "title": "Inviter un deuxième parent ou tuteur légal",
+      "emailLabel": "Son adresse courriel",
+      "submit": "Générer le lien d'invitation",
+      "submitting": "Génération…",
+      "linkGeneratedTitle": "Lien d'invitation créé",
+      "linkGeneratedDescription": "Partagez ce lien avec la personne que vous invitez — il n'est affiché qu'une seule fois. FutureTutor ne l'envoie pas encore par courriel.",
+      "copyCta": "Copier le lien",
+      "copied": "Copié!",
+      "expiresNote": "Ce lien expire dans 72 heures."
+    },
+    "pendingClaims": {
+      "title": "Demandes de parent/tuteur en attente",
+      "claimedBy": "Réclamée par {name}",
+      "claimedAt": "Demandée le {date}",
+      "expiresAt": "Expire le {date}",
+      "approveCta": "Approuver",
+      "approving": "Approbation…",
+      "rejectCta": "Rejeter",
+      "rejecting": "Rejet…",
+      "empty": "Aucune demande en attente."
+    },
+    "claimPage": {
+      "title": "Invitation de parent/tuteur",
+      "description": "Quelqu'un vous a invité à devenir parent ou tuteur légal pour un élève FutureTutor.",
+      "invalidTitle": "Invitation introuvable",
+      "invalidDescription": "Ce lien d'invitation est invalide ou a déjà été utilisé.",
+      "expiredDescription": "Cette invitation a expiré. Demandez à la personne qui vous a invité d'en envoyer une nouvelle.",
+      "signInPrompt": "Vous avez déjà un compte FutureTutor?",
+      "signInCta": "Connectez-vous d'abord",
+      "claimAsCta": "Réclamer en tant que {email}",
+      "claiming": "Réclamation…",
+      "newAccountTitle": "Créez votre compte pour accepter",
+      "emailLabel": "Courriel",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "passwordLabel": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères.",
+      "createAndClaimCta": "Créer le compte et accepter",
+      "creating": "Création…",
+      "successTitle": "Demande envoyée",
+      "successDescription": "Un parent ou tuteur légal actif pour cet élève doit approuver votre demande avant que vous n'ayez accès. Nous vous informerons une fois que ce sera fait.",
+      "wrongEmailDescription": "Vous êtes connecté avec une adresse courriel différente de celle à laquelle cette invitation a été envoyée. Déconnectez-vous et réessayez, ou créez un nouveau compte avec l'adresse courriel invitée."
+    },
+    "studentLoginInvite": {
+      "title": "Créer un accès élève",
+      "description": "Donnez à cet élève son propre accès de connexion — il pourra consulter son profil et son horaire, mais vous gardez le contrôle du compte.",
+      "emailLabel": "Adresse courriel de l'élève",
+      "submit": "Générer le lien d'invitation",
+      "submitting": "Génération…",
+      "linkGeneratedTitle": "Lien d'invitation créé",
+      "linkGeneratedDescription": "Partagez ce lien avec l'élève — il n'est affiché qu'une seule fois. FutureTutor ne l'envoie pas encore par courriel.",
+      "copyCta": "Copier le lien",
+      "copied": "Copié!",
+      "expiresNote": "Ce lien expire dans 72 heures."
+    },
+    "studentLoginStatus": {
+      "title": "Accès élève",
+      "activeStatus": "Actif",
+      "activeDescription": "Cet élève a son propre accès de connexion lié à ce profil.",
+      "invitedPending": "{email} invité — en attente de sa réponse.",
+      "previouslyRevokedNote": "Un accès élève précédent pour ce compte a été révoqué. Vous pouvez envoyer une nouvelle invitation ci-dessous.",
+      "previouslyExpiredNote": "Une invitation d'accès élève précédente a expiré avant d'être approuvée. Vous pouvez envoyer une nouvelle invitation ci-dessous."
+    },
+    "studentLoginClaimPage": {
+      "title": "Invitation d'accès élève",
+      "description": "Un parent ou tuteur légal vous a invité à obtenir votre propre accès FutureTutor.",
+      "wrongRoleDescription": "Vous êtes connecté avec un compte qui n'est pas un compte élève. Déconnectez-vous et réessayez avec un compte élève, ou créez-en un ci-dessous.",
+      "wrongEmailDescription": "Vous êtes connecté avec une adresse courriel différente de celle à laquelle cette invitation a été envoyée. Déconnectez-vous et réessayez, ou créez un nouveau compte avec l'adresse courriel invitée.",
+      "signInPrompt": "Vous avez déjà un compte élève FutureTutor?",
+      "signInCta": "Connectez-vous d'abord",
+      "claimAsCta": "Réclamer en tant que {email}",
+      "claiming": "Réclamation…",
+      "newAccountTitle": "Créez votre compte élève pour accepter",
+      "emailLabel": "Courriel",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "passwordLabel": "Mot de passe",
+      "passwordHint": "Au moins 8 caractères.",
+      "createAndClaimCta": "Créer le compte et accepter",
+      "creating": "Création…",
+      "successTitle": "Demande envoyée",
+      "successDescription": "Un parent ou tuteur légal de cet élève doit approuver votre demande avant que votre accès soit actif. Nous vous informerons une fois que ce sera fait."
+    },
+    "studentPendingActivation": {
+      "title": "Votre compte est en attente d'approbation",
+      "description": "Un parent ou tuteur légal doit approuver votre accès élève avant que vous puissiez utiliser FutureTutor. Revenez bientôt, ou demandez-lui d'approuver votre demande."
+    },
+    "studentRejectedActivation": {
+      "title": "Votre compte n'a pas été approuvé",
+      "description": "Votre parent ou tuteur légal n'a pas approuvé cet accès élève. Si vous pensez qu'il s'agit d'une erreur, contactez-le directement — vous ne pouvez pas demander une nouvelle invitation vous-même. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+    },
+    "studentExpiredActivation": {
+      "title": "Votre invitation a expiré",
+      "description": "L'invitation que vous avez acceptée a expiré avant qu'un parent ou tuteur légal puisse l'approuver. Demandez-lui de vous envoyer une nouvelle invitation — les invitations ne peuvent pas être réactivées. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+    },
+    "studentUnlinkedActivation": {
+      "title": "La configuration de votre compte n'est pas terminée",
+      "description": "Votre compte n'est pas encore lié à un profil élève. Demandez à votre parent ou tuteur légal de vous envoyer une invitation d'accès élève. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+    },
+    "errors": {
+      "notAuthorized": "Vous n'avez pas la permission de faire cela.",
+      "invalidInput": "Veuillez vérifier vos informations et réessayer.",
+      "invitationInvalid": "Cette invitation n'est plus valide.",
+      "invitationExpired": "Cette invitation a expiré.",
+      "invitationAlreadyClaimed": "Cette invitation a déjà été réclamée.",
+      "claimantNotEligible": "Votre compte n'est pas admissible pour réclamer cette invitation.",
+      "emailMismatch": "Cette invitation a été envoyée à une autre adresse courriel.",
+      "conflict": "Cette action n'a pas pu être complétée — veuillez réessayer.",
+      "lastActiveGuardian": "Cet élève doit toujours avoir au moins un parent/tuteur actif — invitez une autre personne avant de révoquer celle-ci.",
+      "cannotRevokeOtherGuardian": "Vous ne pouvez retirer que votre propre accès de parent/tuteur. Le retrait d'un autre parent/tuteur nécessite de contacter le soutien.",
+      "mustBeSignedIn": "Veuillez vous connecter d'abord.",
+      "accountAlreadyExists": "Un compte existe déjà avec ce courriel — connectez-vous et réclamez l'invitation à partir de votre compte.",
+      "studentAlreadyLinked": "Cet élève a déjà un accès de connexion lié à son profil.",
+      "claimantAlreadyLinkedElsewhere": "Ce compte est déjà lié à un profil d'élève différent.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "profile": {
+    "title": "Mon profil",
+    "parentSubtitle": "Gérez les détails de votre propre compte.",
+    "parentProfileMissing": "Nous n'avons pas trouvé votre profil. Veuillez contacter le soutien.",
+    "studentSubtitleFull": "Gérez les détails de votre propre compte.",
+    "studentSubtitleLowStakes": "Vous pouvez mettre à jour quelques préférences personnelles ci-dessous. Les autres détails sont gérés par votre parent ou tuteur légal.",
+    "errors": {
+      "notAuthorized": "Vous n'avez pas la permission de faire cela.",
+      "invalidInput": "Veuillez vérifier vos informations et réessayer.",
+      "forbiddenField": "Vous n'avez pas la permission de modifier ce champ.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
+    },
+    "studentForm": {
+      "sectionTitle": "Modifier le profil",
+      "guardianSectionSubtitle": "En tant que parent/tuteur actif, vous pouvez modifier les détails du profil de cet élève.",
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "dateOfBirthLabel": "Date de naissance",
+      "dateOfBirthReadOnlyNote": "La date de naissance ne peut pas être modifiée ici. Contactez le soutien si elle doit être corrigée.",
+      "notSet": "Non défini",
+      "provinceLabel": "Province",
+      "cityLabel": "Ville",
+      "academicLevelLabel": "Niveau scolaire",
+      "anyLevel": "Non défini",
+      "tutoringModeLabel": "Mode de tutorat",
+      "tutoringMode": {
+        "ONLINE": "En ligne",
+        "IN_PERSON": "En personne",
+        "BOTH": "En ligne ou en personne"
+      },
+      "preferredLanguageLabel": "Langue préférée",
+      "preferredLanguage": {
+        "en": "Anglais",
+        "fr": "Français"
+      },
+      "updated": "Profil mis à jour.",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer les modifications"
+    },
+    "parentForm": {
+      "firstNameLabel": "Prénom",
+      "lastNameLabel": "Nom",
+      "provinceLabel": "Province",
+      "cityLabel": "Ville",
+      "preferredLanguageLabel": "Langue préférée",
+      "preferredLanguage": {
+        "en": "Anglais",
+        "fr": "Français"
+      },
+      "updated": "Profil mis à jour.",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer les modifications"
     }
   }
 }

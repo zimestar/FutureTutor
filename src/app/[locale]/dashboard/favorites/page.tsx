@@ -3,9 +3,12 @@ import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { TutorCard } from "@/components/marketing/TutorCard";
 import { Button } from "@/components/ui/Button";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
+import { resolveStudentAccountActivationState } from "@/services/familyManagement";
+import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 
 export default async function FavoritesPage({
   params,
@@ -28,6 +31,23 @@ export default async function FavoritesPage({
 
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
 
+  const navItems = getStudentDashboardNavItems((key) => tNav(key), user.role);
+
+  // Phase H.5 Final Claimant-State UX Correction: see
+  // src/app/[locale]/dashboard/page.tsx's identical guard for the full
+  // rationale. studentProfile above is still fetched directly for this
+  // page's own data (favorites), independent of this gating decision.
+  if (user.role === "STUDENT") {
+    const activationState = await resolveStudentAccountActivationState(db, user.id);
+    if (activationState.state !== "ACTIVE") {
+      return (
+        <DashboardShell navItems={navItems} userName={user.name ?? ""}>
+          <StudentActivationNotice state={activationState} />
+        </DashboardShell>
+      );
+    }
+  }
+
   const favorites = studentProfile
     ? await db.tutorFavorite.findMany({
         where: { studentProfileId: studentProfile.id },
@@ -47,15 +67,7 @@ export default async function FavoritesPage({
   const tutors = favorites.map((f) => tutorProfileToCardData(f.tutorProfile, tSubjects, favoritedIds));
 
   return (
-    <DashboardShell
-      navItems={[
-        { label: tNav("overview"), href: "/dashboard" },
-        { label: tNav("favorites"), href: "/dashboard/favorites" },
-        { label: tNav("quickMatch"), href: "/dashboard/quick-match" },
-        { label: tNav("bookings"), href: "/dashboard/bookings" },
-      ]}
-      userName={user.name ?? ""}
-    >
+    <DashboardShell navItems={navItems} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

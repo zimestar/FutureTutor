@@ -10,7 +10,12 @@ import { notifyUser } from "@/lib/notify";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { respondTutorInvitationSchema, declineTutorInvitationSchema } from "@/schemas/tutoringRequest";
 import { isTutorEligibleForRequest } from "@/services/tutorEligibility";
-import { reserveBookingPendingPayment, SlotTakenError } from "@/services/bookingCreation";
+import {
+  reserveBookingPendingPayment,
+  SlotTakenError,
+  NotAuthorizedForLearnerError,
+  QuoteLearnerMismatchError,
+} from "@/services/bookingCreation";
 import { captureAuthorizedPayment, convergeToCaptured } from "@/services/payments";
 import {
   acceptTutorPayoutQuote,
@@ -114,6 +119,12 @@ export async function acceptTutorInvitationAction(
         const timezone = availabilityRow?.timezone ?? "UTC";
 
         const booking = await reserveBookingPendingPayment(tx, {
+          // Phase H.7 — the actor re-checked here is the ORIGINAL requester
+          // (Student or Parent) who initiated matching, resolved from the
+          // TutoringRequest itself, never the tutor accepting this
+          // invitation (session.user.id here is the tutor, who has no
+          // learner/actor/payer role at all — see §23 of the H.7 prompt).
+          actorUserId: request.createdByUserId,
           studentProfileId: request.studentProfileId,
           tutorProfileId: tutorProfile.id,
           subjectId: request.subjectId,
@@ -189,7 +200,19 @@ export async function acceptTutorInvitationAction(
       error instanceof TutorPayoutQuoteNotFoundError ||
       error instanceof TutorPayoutQuoteExpiredError ||
       error instanceof TutorPayoutQuoteNotActiveError ||
-      error instanceof TutorPayoutQuoteAlreadyAcceptedError
+      error instanceof TutorPayoutQuoteAlreadyAcceptedError ||
+      // Phase H.7 (§28): the original requester's authority over the
+      // learner was revoked (or the quote/learner pairing was somehow
+      // inconsistent) between an earlier check and this transaction.
+      // Treated the same as any other candidate-level failure — this
+      // dispatch attempt with this tutor did not produce a booking, so
+      // dispatch continues; if the cause is genuinely the requester's lost
+      // authority (not tutor-specific), every subsequent candidate will
+      // fail the same re-check for the same reason, and existing dispatch-
+      // exhaustion logic (unmodified by H.7) naturally reaches
+      // NO_TUTOR_FOUND rather than ever producing an unauthorized booking.
+      error instanceof NotAuthorizedForLearnerError ||
+      error instanceof QuoteLearnerMismatchError
     ) {
       // Candidate-level failure — the request itself is not FAILED;
       // dispatch simply continues to the next candidate/round (the

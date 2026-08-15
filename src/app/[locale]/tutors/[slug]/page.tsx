@@ -15,6 +15,7 @@ import { getFavoritedTutorIds } from "@/lib/favorites";
 import { dbModeToDisplay } from "@/lib/tutorMode";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { listBookableStudentsForActor } from "@/services/learnerSelection";
 
 type Params = { locale: string; slug: string };
 
@@ -63,10 +64,22 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
   const firstName = tutor.user.name?.split(" ")[0] ?? "";
   const displayMode = dbModeToDisplay(tutor.learningMode ?? "BOTH");
 
-  const isStudent = session?.user?.role === "STUDENT";
-  const { timezone, days } = isStudent
-    ? await getAvailableSlots(tutor.id)
-    : { timezone: null, days: [] };
+  // Phase H.5 (§30 dashboard/route audit) extended in H.7: role===STUDENT
+  // alone was never enough — a STUDENT session with no linked
+  // StudentProfile yet (a claimed-but-unapproved restricted login) must not
+  // be offered the booking widget. H.7 widens this from "does the actor
+  // have their own bookable profile" to "does the actor have ANY
+  // financially-bookable learner" — server-authoritative via
+  // listBookableStudentsForActor (H.2-backed), covering both a
+  // SELF_MANAGED Student's own profile and a Parent's linked children. The
+  // underlying Server Actions independently re-verify this on every call
+  // (§13/§25) — this is UX only, never the security boundary.
+  const bookableStudents =
+    session?.user && (session.user.role === "STUDENT" || session.user.role === "PARENT")
+      ? await listBookableStudentsForActor(db, session.user.id)
+      : [];
+  const canBook = bookableStudents.length > 0;
+  const { timezone, days } = canBook ? await getAvailableSlots(tutor.id) : { timezone: null, days: [] };
   const serializedDays = days.map((day) => ({
     date: day.date,
     slots: day.slots.map((slot) => ({ startAt: slot.startAt.toISOString(), endAt: slot.endAt.toISOString() })),
@@ -145,7 +158,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
             <p className="mt-1 text-sm text-slate">
               {tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}
             </p>
-            {isStudent ? (
+            {canBook ? (
               timezone ? (
                 <BookingWidget
                   tutorProfileId={tutor.id}
@@ -155,10 +168,23 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                   levels={tutor.levels.map((l) => ({ id: l.academicLevel.id, label: tLevels(l.academicLevel.slug) }))}
                   useStripe={paymentsUseStripe()}
                   stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
+                  bookableStudents={bookableStudents.map((s) => ({ id: s.id, label: `${s.firstName} ${s.lastName}` }))}
+                  actorIsParent={session?.user?.role === "PARENT"}
                 />
               ) : (
                 <p className="mt-6 text-sm text-slate">{tBooking("noAvailability")}</p>
               )
+            ) : session?.user?.role === "PARENT" ? (
+              // Phase H.7 — an authenticated Parent with zero currently-
+              // bookable children (none yet, or none with active guardian
+              // authority) gets a distinct, honest message instead of the
+              // generic "sign up" CTA meant for a logged-out visitor.
+              <>
+                <p className="mt-6 text-sm text-slate">{tProfile("noBookableChildren")}</p>
+                <Button href="/dashboard/family" className="mt-3 w-full">
+                  {tProfile("manageFamilyCta")}
+                </Button>
+              </>
             ) : (
               <>
                 <Button href="/signup" className="mt-6 w-full">

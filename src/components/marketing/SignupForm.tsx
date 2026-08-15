@@ -11,7 +11,13 @@ import { registerAction } from "@/lib/actions/auth";
 export function SignupForm() {
   const t = useTranslations("auth.signup");
   const [state, formAction, pending] = useActionState(registerAction, undefined);
-  const [role, setRole] = useState<"STUDENT" | "TUTOR">("STUDENT");
+  const [role, setRole] = useState<"STUDENT" | "TUTOR" | "PARENT">("STUDENT");
+
+  const roleLabels: Record<"STUDENT" | "TUTOR" | "PARENT", string> = {
+    STUDENT: t("roleStudent"),
+    PARENT: t("roleParent"),
+    TUTOR: t("roleTutor"),
+  };
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -21,8 +27,8 @@ export function SignupForm() {
         </p>
       )}
 
-      <div role="radiogroup" aria-label={t("roleLabel")} className="grid grid-cols-2 gap-3">
-        {(["STUDENT", "TUTOR"] as const).map((option) => (
+      <div role="radiogroup" aria-label={t("roleLabel")} className="grid grid-cols-3 gap-3">
+        {(["STUDENT", "PARENT", "TUTOR"] as const).map((option) => (
           <button
             key={option}
             type="button"
@@ -30,13 +36,13 @@ export function SignupForm() {
             aria-checked={role === option}
             onClick={() => setRole(option)}
             className={cn(
-              "rounded-md border px-4 py-3 text-left text-sm font-semibold transition-colors",
+              "rounded-md border px-3 py-3 text-left text-sm font-semibold transition-colors",
               role === option
                 ? "border-blue bg-blue/5 text-blue"
                 : "border-neutral-300 text-slate hover:border-neutral-400"
             )}
           >
-            {option === "STUDENT" ? t("roleStudent") : t("roleTutor")}
+            {roleLabels[option]}
           </button>
         ))}
         <input type="hidden" name="role" value={role} />
@@ -63,6 +69,15 @@ export function SignupForm() {
         </label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
+
+      {role === "STUDENT" && (
+        <div>
+          <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-semibold text-navy">
+            {t("dateOfBirthLabel")}
+          </label>
+          <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+        </div>
+      )}
 
       <div>
         <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-navy">

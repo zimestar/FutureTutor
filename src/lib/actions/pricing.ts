@@ -3,7 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { canActForStudent } from "@/lib/authorization.server";
+import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { createPriceQuoteSchema } from "@/schemas/pricing";
 import { createCustomerPriceQuote, PricingRuleNotFoundError, type PriceAdjustment } from "@/services/customerPricing";
 import { createTutorPayoutQuote, TutorPayoutRuleNotFoundError, NegativeSpreadError } from "@/services/tutorPayout";
@@ -27,6 +27,7 @@ export type PriceQuoteResult =
   | { success: false; error: string };
 
 export async function createPriceQuoteAction(input: {
+  studentProfileId: string;
   tutorProfileId: string;
   subjectId: string;
   academicLevelId?: string;
@@ -35,17 +36,32 @@ export async function createPriceQuoteAction(input: {
   const t = await getTranslations("booking.errors");
 
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") {
+  // Phase H.7 — the actor may now legitimately be a PARENT booking for a
+  // linked child, not only the learner's own STUDENT session.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
     return { success: false, error: t("notAStudent") };
   }
 
   const parsed = createPriceQuoteSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: t("invalidInput") };
 
-  const studentProfile = await db.studentProfile.findUnique({ where: { userId: session.user.id } });
+  // Phase H.7 — the learner is now an explicit, client-selected
+  // studentProfileId (self, or a linked child) instead of always being
+  // self-derived from the actor's own userId. That value is NEVER
+  // authority on its own — resolved fresh here, then independently
+  // re-verified via H.2 immediately below. A forged/unrelated id simply
+  // fails to resolve to a real StudentProfile, or fails the H.2 check.
+  const studentProfile = await db.studentProfile.findUnique({ where: { id: parsed.data.studentProfileId } });
   if (!studentProfile) return { success: false, error: t("invalidInput") };
 
-  const authorized = await canActForStudent(session.user.id, studentProfile.id);
+  // Phase H.5 security correction (extended in H.7 for actor != learner):
+  // the old self-ownership-only authorization.server.ts#canActForStudent
+  // had no managementMode awareness and would incorrectly authorize a
+  // GUARDIAN_MANAGED student's own restricted login. H.2's
+  // canInitiatePaidBooking correctly denies that, correctly allows an
+  // ACTIVE guardian acting for their linked child, and remains identical
+  // for every existing SELF_MANAGED student booking themselves.
+  const authorized = await canInitiatePaidBooking(db, session.user.id, studentProfile.id);
   if (!authorized) return { success: false, error: t("notAStudent") };
 
   const tutorProfile = await db.tutorProfile.findUnique({ where: { id: parsed.data.tutorProfileId } });

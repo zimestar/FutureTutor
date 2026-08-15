@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { preparePaymentForQuote, getOrCreatePaymentForQuote, ensureStripePaymentIntent } from "@/services/payments";
+import { canPayForStudent } from "@/services/studentAuthorization";
 
 export type PreparePaymentState =
   | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
@@ -17,11 +18,23 @@ export type PreparePaymentState =
 export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: string): Promise<PreparePaymentState> {
   const t = await getTranslations("booking.errors");
   const session = await auth();
-  if (!session?.user || session.user.role !== "STUDENT") return { success: false, error: t("notAStudent") };
+  // Phase H.7 — the actor may be the Parent who created this quote.
+  // canPayForStudent below (checked against quote.studentProfileId, the
+  // authoritative learner) is the real gate; this is only the coarse role
+  // filter.
+  if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
+    return { success: false, error: t("notAStudent") };
+  }
 
   const quote = await db.customerPriceQuote.findUnique({ where: { id: customerPriceQuoteId } });
   if (!quote || quote.createdByUserId !== session.user.id) return { success: false, error: t("invalidInput") };
   if (quote.status !== "ACTIVE") return { success: false, error: t("pricingUnavailable") };
+
+  // Phase H.5 security correction: previously only createdByUserId
+  // self-match, no H.2 involvement. Unchanged for every existing
+  // SELF_MANAGED student.
+  const authorized = await canPayForStudent(db, session.user.id, quote.studentProfileId);
+  if (!authorized) return { success: false, error: t("notAStudent") };
 
   try {
     if (paymentsUseStripe()) {

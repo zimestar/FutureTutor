@@ -1,10 +1,21 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
+import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 
 export const ACTIVE_BOOKING_STATUSES = ["DRAFT", "PENDING_PAYMENT", "CONFIRMED"] as const;
 
 export class SlotTakenError extends Error {}
+/** Phase H.7 — the transaction-bound H.2 re-check (§17 of the H.7 prompt)
+ * failed: the actor's authority over the learner was revoked (or never
+ * existed) between the pre-check and this mutation. */
+export class NotAuthorizedForLearnerError extends Error {}
+/** Phase H.7 (§15/§27) — the CustomerPriceQuote being consumed was priced
+ * for a DIFFERENT StudentProfile than the one this reservation targets. A
+ * quote is bound to the exact learner it was calculated for; a Parent
+ * selecting Child B while consuming a quote generated for Child A must
+ * fail, never silently book Child B (or Child A) instead. */
+export class QuoteLearnerMismatchError extends Error {}
 
 /**
  * True interval-overlap conflict check: existing.startAt < newEnd AND
@@ -42,6 +53,12 @@ export interface BookingLocationSnapshot {
 }
 
 export interface ReserveBookingPendingPaymentInput {
+  // Phase H.7 — the authenticated actor performing this reservation: the
+  // Student themselves (direct booking, SELF_MANAGED) or the original
+  // TutoringRequest.createdByUserId (Quick Match — the actor re-checked
+  // here is the requester who initiated matching, never the tutor
+  // accepting the invitation, who has no learner/payer role at all).
+  actorUserId: string;
   studentProfileId: string;
   tutorProfileId: string;
   subjectId: string;
@@ -80,16 +97,36 @@ export interface ReserveBookingPendingPaymentInput {
  * reservation might still fail to reach CONFIRMED (see
  * src/services/payments.ts's convergeToCaptured / convergeToCaptureFailed
  * for the two possible resolutions).
+ *
+ * Phase H.7 (§17/§23/§28): this is the ONE place both Direct Booking and
+ * Quick Match actually create the reservation row, so it is also the one
+ * place the mandatory transaction-bound authority re-check belongs —
+ * `canInitiatePaidBooking(tx, input.actorUserId, input.studentProfileId)`,
+ * re-read fresh from inside this same Serializable transaction, immediately
+ * before the protected mutation. A guardian relationship revoked after an
+ * earlier pre-check (createBookingAction's own check, or the moment a
+ * TutoringRequest was confirmed) is caught here, every time, regardless of
+ * caller. Also enforces that the quote being consumed was actually priced
+ * for this exact learner (`customerQuote.studentProfileId ===
+ * input.studentProfileId`) — closing the "Child A quote + Child B selector"
+ * gap a client-supplied studentProfileId could otherwise exploit.
  */
 export async function reserveBookingPendingPayment(
   tx: Prisma.TransactionClient,
   input: ReserveBookingPendingPaymentInput
 ) {
+  const authorized = await canInitiatePaidBooking(tx, input.actorUserId, input.studentProfileId);
+  if (!authorized) throw new NotAuthorizedForLearnerError();
+
   const conflict = await hasOverlappingActiveBooking(tx, input.tutorProfileId, input.startAt, input.endAt);
   if (conflict) throw new SlotTakenError();
 
   const customerQuote = await tx.customerPriceQuote.findUniqueOrThrow({ where: { id: input.customerPriceQuoteId } });
   const payoutQuote = await tx.tutorPayoutQuote.findUniqueOrThrow({ where: { id: input.tutorPayoutQuoteId } });
+
+  if (customerQuote.studentProfileId !== input.studentProfileId) {
+    throw new QuoteLearnerMismatchError();
+  }
 
   const grossSpreadCents = customerQuote.subtotalCents - payoutQuote.totalPayoutCents;
 
