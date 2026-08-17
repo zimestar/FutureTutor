@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { formatBookingTime } from "@/lib/utils";
 import { resolveStudentAccountActivationState } from "@/services/familyManagement";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
+import { listBookableStudentsForActor } from "@/services/learnerSelection";
+import { describeCancellationConsequence } from "@/services/cancellationPolicy";
 
 export default async function StudentBookingsPage({
   params,
@@ -50,17 +52,33 @@ export default async function StudentBookingsPage({
     }
   }
 
-  const bookings = studentProfile
-    ? await db.booking.findMany({
-        where: { studentProfileId: studentProfile.id },
-        include: {
-          tutorProfile: { select: { user: { select: { name: true } } } },
-          subject: { select: { slug: true } },
-          payment: { select: { status: true, refundedAmountCents: true, currency: true } },
-        },
-        orderBy: { startAt: "asc" },
-      })
-    : [];
+  // Phase H.8 (§V) — a PARENT actor sees their currently-ACTIVE-relationship
+  // children's bookings. A REVOKED guardian has NO booking-history
+  // visibility through this surface (closed product decision, §AJ item 1)
+  // — listBookableStudentsForActor already scopes to ACTIVE relationships
+  // only, so reusing it here directly (rather than duplicating its query)
+  // makes that exclusion automatic, not an extra filter to remember.
+  let childProfilesById = new Map<string, { firstName: string }>();
+  if (user.role === "PARENT") {
+    const bookableStudents = await listBookableStudentsForActor(db, user.id);
+    childProfilesById = new Map(bookableStudents.map((s) => [s.id, { firstName: s.firstName }]));
+  }
+
+  const studentProfileIds =
+    user.role === "PARENT" ? Array.from(childProfilesById.keys()) : studentProfile ? [studentProfile.id] : [];
+
+  const bookings =
+    studentProfileIds.length > 0
+      ? await db.booking.findMany({
+          where: { studentProfileId: { in: studentProfileIds } },
+          include: {
+            tutorProfile: { select: { user: { select: { name: true } } } },
+            subject: { select: { slug: true } },
+            payment: { select: { status: true, refundedAmountCents: true, amountCents: true, currency: true } },
+          },
+          orderBy: { startAt: "asc" },
+        })
+      : [];
 
   const now = new Date();
   const upcoming = bookings.filter((b) => b.endAt >= now);
@@ -101,6 +119,11 @@ export default async function StudentBookingsPage({
                           {tSubjects(booking.subject.slug)} —{" "}
                           {t("withTutor", { name: booking.tutorProfile.user.name?.split(" ")[0] ?? "" })}
                         </p>
+                        {user.role === "PARENT" && childProfilesById.get(booking.studentProfileId) && (
+                          <p className="mt-0.5 text-xs font-semibold text-slate">
+                            For {childProfilesById.get(booking.studentProfileId)!.firstName}
+                          </p>
+                        )}
                         <p className="mt-1 text-sm text-slate">
                           {formatBookingTime(booking.startAt, booking.timezone, locale)}
                         </p>
@@ -117,11 +140,19 @@ export default async function StudentBookingsPage({
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>
                           {tStatus(booking.status)}
                         </Badge>
-                        {section.allowCancel && booking.status === "CONFIRMED" && (
+                        {section.allowCancel && booking.status === "CONFIRMED" && booking.startAt > now && (
                           <CancelBookingButton
                             bookingId={booking.id}
                             label={t("cancelCta")}
                             cancellingLabel={t("cancelling")}
+                            consequencePreview={describeCancellationConsequence({
+                              isTutorViewer: false,
+                              paymentStatus: booking.payment?.status === "CAPTURED" ? "CAPTURED" : null,
+                              sessionStartAt: booking.startAt,
+                              now,
+                              amountCents: booking.payment?.amountCents ?? 0,
+                              currency: booking.payment?.currency ?? booking.currency,
+                            })}
                           />
                         )}
                       </div>

@@ -689,7 +689,8 @@
       "generic": "Something went wrong. Please try again.",
       "notFound": "This booking could not be found.",
       "notYours": "You can't manage this booking.",
-      "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject."
+      "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
+      "alreadyStarted": "This session has already started and can no longer be cancelled."
     }
   },
   "quickMatch": {

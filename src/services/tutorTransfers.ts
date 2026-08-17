@@ -6,7 +6,14 @@ import { getStripeClient } from "@/lib/stripe";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
-import { resolveCaptureOutcomeAndConverge, cancelAuthorizedPayment, reconcileStripeFinancialDetails } from "@/services/payments";
+import {
+  resolveCaptureOutcomeAndConverge,
+  cancelAuthorizedPayment,
+  reconcileStripeFinancialDetails,
+  resolveRefundOutcomeAndConverge,
+  convergeCancelledBookingPayment,
+  isRefundObligationSatisfied,
+} from "@/services/payments";
 
 const STUCK_PAYMENT_THRESHOLD_MS = 30 * 60 * 1000; // [YOUR IDEA — INITIAL DEFAULT], §7/§19 of the Phase G plan
 
@@ -131,6 +138,15 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   }
   if (transfer.status === "COMPLETED") return;
 
+  // Phase H.8 (§R fix #1) — narrow the cancellation-race window: one
+  // additional fresh status check immediately before the Stripe call, not
+  // just at function entry. Shrinks the exposure window from "the entire
+  // function body" down to "the gap between this read and the Stripe
+  // call" — the same residual-window shape every other Step A/B/C
+  // primitive in this codebase already accepts as unavoidable.
+  const freshEarning = await db.tutorEarning.findUnique({ where: { id: earningId }, select: { status: true } });
+  if (freshEarning?.status !== "ELIGIBLE") return; // lost the race to a concurrent cancellation — bail before calling Stripe
+
   if (!paymentsUseStripe()) {
     // Dev/test bypass — no Stripe call, mirrors preparePaymentForQuote's
     // own dev-bypass shape.
@@ -246,5 +262,177 @@ export async function reconcileStuckPayments(): Promise<void> {
   });
   for (const payment of capturedMissingChargeDetails) {
     await reconcileStripeFinancialDetails(payment.id).catch(() => {});
+  }
+
+  // ---------------------------------------------------------------------
+  // Phase H.8 (§Q) — three new refund-reconciliation tiers, added to this
+  // same sweep (reused, not a second cron architecture).
+  // ---------------------------------------------------------------------
+
+  // Tier 4 — Refund rows stuck PENDING past the same threshold (network
+  // ambiguity, crashed process, or a not-yet-resolved async refund
+  // method). PENDING is the one Refund.status value safe to auto-retry via
+  // the ordinary convergence function — it means "no attempt has yet
+  // reached a terminal outcome," not "an attempt already failed."
+  const stuckRefunds = await db.refund.findMany({
+    where: { status: "PENDING", updatedAt: { lt: threshold } },
+    select: { id: true },
+    take: 50,
+  });
+  for (const refund of stuckRefunds) {
+    await resolveRefundOutcomeAndConverge(refund.id).catch(() => {});
+  }
+
+  // Tier 5 — CANCELLED Bookings whose Payment never reached a terminal
+  // disposition (covers: the synchronous cancellation's own convergence
+  // call threw and was never retried; a late-capture-wins race whose
+  // convergeCancelledBookingPayment call was itself interrupted).
+  const unconvergedCancelledBookings = await db.booking.findMany({
+    where: { status: "CANCELLED", payment: { status: { in: ["AUTHORIZED", "CAPTURED", "PENDING", "REQUIRES_ACTION"] } } },
+    select: { id: true },
+    take: 50,
+  });
+  for (const booking of unconvergedCancelledBookings) {
+    await convergeCancelledBookingPayment(booking.id).catch(() => {});
+  }
+
+  // Tier 6 — CANCELLED Bookings whose latest Refund attempt is
+  // definitively FAILED and whose obligation is NOT yet satisfied. This
+  // tier's ONLY job is VISIBILITY — it deliberately never calls
+  // resolveRefundOutcomeAndConverge (would no-op immediately on a FAILED
+  // refund, by design) and never calls recoverFailedRefund (that would be
+  // an automatic retry of a failed Stripe Refund object, which the minimum
+  // safe recovery policy explicitly forbids) — it keeps the outstanding
+  // obligation surfaced for a deliberate, future, human-triggered recovery.
+  const failedRefundsWithOutstandingObligation = await db.refund.findMany({
+    where: { status: "FAILED", booking: { status: "CANCELLED" } },
+    select: { id: true, bookingId: true, amountCents: true, paymentId: true, payment: { select: { refundedAmountCents: true } } },
+    take: 50,
+  });
+  for (const refund of failedRefundsWithOutstandingObligation) {
+    if (isRefundObligationSatisfied(refund.amountCents, refund.payment)) continue;
+    await writeAuditLog({
+      actorUserId: null,
+      action: "refund.obligation_outstanding",
+      entityType: "Refund",
+      entityId: refund.id,
+      metadata: { bookingId: refund.bookingId, paymentId: refund.paymentId, owedCents: refund.amountCents, refundedCents: refund.payment.refundedAmountCents },
+    });
+  }
+
+  // Tier 7 (Phase H.8.1, §0/§11) — see runTier7RecentSuccessReverify's own
+  // doc comment below for the full pagination/window/isolation design.
+  await runTier7RecentSuccessReverify();
+}
+
+// ---------------------------------------------------------------------
+// Phase H.8.1 (§0/§11) — Tier 7: bounded, EXHAUSTIVELY-paginated recent-
+// success re-verification. Corrects the H.8.1 draft's originally-proposed
+// `findMany({ take: 50 })` design, which could re-select the same 50 rows
+// forever and starve later-eligible refunds (plan §0 items 1-2).
+//
+// RECENT_SUCCESS_REVERIFY_WINDOW_DAYS is a FutureTutor OPERATIONAL POLICY,
+// NOT a Stripe guarantee (plan §0 item 4 / §3a / §3f): Stripe documents that
+// failed-refund processing "can take up to 30 days from the post date," but
+// never states a hard finality period after which a succeeded Refund can no
+// longer fail. 30 documented days + a 5-day operational safety margin = 35.
+// This window applies ONLY to this proactive polling tier — it must NEVER
+// gate refund.failed/refund.updated webhook handling (stripeWebhooks.ts's
+// unmodified refund.* case, via resolveRefundOutcomeAndConverge's
+// observedStripeRefundId path), which remains unbounded (plan §0 item 5).
+// ---------------------------------------------------------------------
+const RECENT_SUCCESS_REVERIFY_WINDOW_DAYS = 35;
+const RECENT_SUCCESS_REVERIFY_WINDOW_MS = RECENT_SUCCESS_REVERIFY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+/** Injectable so tests can prove REAL multi-page pagination with a tiny
+ * batch size (plan §0 item 8) without needing 51 heavy fixtures. Every
+ * production call site uses the default. */
+export const TIER7_DEFAULT_BATCH_SIZE = 50;
+
+/**
+ * Exhaustive (updatedAt ASC, id ASC) cursor pagination over every
+ * currently-SUCCEEDED, Stripe-linked Refund inside the reconciliation
+ * window — never a single fixed-size query. Required invariant (plan §0
+ * item 1): every Refund that is SUCCEEDED, has a non-null stripeRefundId,
+ * and falls inside the window as of this invocation's start must be
+ * reachable within this one call.
+ *
+ * A "still succeeded" verification is a pure financial AND row-level
+ * no-op: resolveRefundOutcomeAndConverge's own guarded updateMany
+ * (`where: { status: "PENDING" }`) matches zero rows for an
+ * already-SUCCEEDED refund, so NOTHING is written — Refund.updatedAt is
+ * never touched merely to reschedule a check (plan §0 item 3). This is
+ * exactly what makes the cursor safe: a row's position in the ordering can
+ * only change via a REAL state mutation (an actual reversal), never as a
+ * side effect of this sweep's own reads.
+ *
+ * Per-candidate failures are isolated (plan §0 item 7): one throwing
+ * Stripe retrieve must never abort the rest of the batch, and is recorded
+ * via AuditLog (never a silent `.catch(() => {})` with zero observability).
+ */
+export async function runTier7RecentSuccessReverify(batchSize: number = TIER7_DEFAULT_BATCH_SIZE): Promise<void> {
+  const windowStart = new Date(Date.now() - RECENT_SUCCESS_REVERIFY_WINDOW_MS);
+  let cursor: { updatedAt: Date; id: string } | null = null;
+
+  for (;;) {
+    const whereClause: Prisma.RefundWhereInput = {
+      status: "SUCCEEDED",
+      stripeRefundId: { not: null },
+      updatedAt: { gte: windowStart },
+      ...(cursor
+        ? {
+            OR: [
+              { updatedAt: { gt: cursor.updatedAt } },
+              { updatedAt: cursor.updatedAt, id: { gt: cursor.id } },
+            ],
+          }
+        : {}),
+    };
+    const batch: Array<{ id: string; stripeRefundId: string | null; updatedAt: Date }> = await db.refund.findMany({
+      where: whereClause,
+      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+      select: { id: true, stripeRefundId: true, updatedAt: true },
+      take: batchSize,
+    });
+    if (batch.length === 0) break;
+
+    for (const candidate of batch) {
+      try {
+        // Forces the "confirm current attempt" path (payments.ts §7.1) even
+        // though no real webhook fired — a webhook-independent safety net,
+        // reusing the exact same corrected convergence function; zero new
+        // convergence logic lives in this tier.
+        //
+        // NOTE: resolveRefundOutcomeAndConverge fails SOFT on a Stripe
+        // retrieve error (returns "uncertain", it does not throw) — that is
+        // deliberate, existing H.8 behavior, unchanged here. So per-item
+        // failure isolation must inspect the RETURN VALUE too, not only
+        // catch thrown exceptions (which cover a different failure class —
+        // e.g. a DB/transaction error surfacing from inside convergence).
+        // Both classes are logged; neither aborts the batch.
+        const outcome = await resolveRefundOutcomeAndConverge(candidate.id, { observedStripeRefundId: candidate.stripeRefundId! });
+        if (outcome === "uncertain") {
+          await writeAuditLog({
+            actorUserId: null,
+            action: "refund.tier7_reverify_error",
+            entityType: "Refund",
+            entityId: candidate.id,
+            metadata: { reason: "resolveRefundOutcomeAndConverge returned uncertain (Stripe retrieve failure or a validation mismatch)" },
+          }).catch(() => {}); // an audit-write failure itself must never abort the batch either
+        }
+      } catch (error) {
+        await writeAuditLog({
+          actorUserId: null,
+          action: "refund.tier7_reverify_error",
+          entityType: "Refund",
+          entityId: candidate.id,
+          metadata: { error: error instanceof Error ? error.message.slice(0, 500) : "Unknown error" },
+        }).catch(() => {}); // an audit-write failure itself must never abort the batch either
+      }
+    }
+
+    const last = batch[batch.length - 1];
+    cursor = { updatedAt: last.updatedAt, id: last.id };
+    if (batch.length < batchSize) break; // last (possibly partial) page — the eligible set as of this invocation's start is exhausted
   }
 }

@@ -14,4 +14,7 @@ export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
 export const cancelBookingSchema = z.object({
   bookingId: z.string().min(1),
+  // Phase H.8 (§18) — optional free-text reason, written to the
+  // already-existing BookingStatusHistory.reason field. No migration.
+  reason: z.string().max(500).optional(),
 });

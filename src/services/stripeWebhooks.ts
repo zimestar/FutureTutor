@@ -9,6 +9,7 @@ import {
   convergeToCaptureFailed,
   recordPaymentAttemptBestEffort,
   reconcileStripeFinancialDetails,
+  resolveRefundOutcomeAndConverge,
 } from "@/services/payments";
 import { syncTutorConnectStatusFromAccount } from "@/services/stripeConnect";
 
@@ -187,10 +188,27 @@ async function runStripeEventBusinessLogic(event: Stripe.Event): Promise<void> {
       });
       return;
     }
+    case "refund.created":
+    case "refund.updated":
+    case "refund.failed": {
+      // Phase H.8 (§P, amended §AM) — the primary refund-convergence
+      // mechanism. The event payload IS the Stripe.Refund object itself,
+      // complete with its own metadata — no need to reach for it through
+      // an expanded Charge.refunds list. observedStripeRefundId is passed
+      // so resolveRefundOutcomeAndConverge can validate it against durable
+      // accounted/current attempt state before ever treating it as truth —
+      // a delayed webhook for a superseded (accounted) attempt is inert,
+      // never capable of rolling the logical Refund backwards.
+      const stripeRefund = event.data.object as Stripe.Refund;
+      const refundId = stripeRefund.metadata?.refundId;
+      if (!refundId) return; // not a FutureTutor-originated refund (e.g. a Dashboard-created one) — nothing to converge
+      await resolveRefundOutcomeAndConverge(refundId, { observedStripeRefundId: stripeRefund.id });
+      return;
+    }
     case "charge.refunded": {
       // Safety net for a refund created directly in the Stripe dashboard
-      // (bypassing FutureTutor's own createRefund flow, which already
-      // updates local state synchronously) — reconciles if Stripe's
+      // (bypassing FutureTutor's own refund flow, which already updates
+      // local state synchronously) — reconciles if Stripe's
       // authoritative refunded amount disagrees with the local record.
       const charge = event.data.object as Stripe.Charge;
       const piId = getPaymentIntentId(charge.payment_intent);

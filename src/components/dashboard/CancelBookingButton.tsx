@@ -7,16 +7,23 @@ export function CancelBookingButton({
   bookingId,
   label,
   cancellingLabel,
+  consequencePreview,
 }: {
   bookingId: string;
   label: string;
   cancellingLabel: string;
+  /** Phase H.8 (§W) — server-computed refund-consequence preview text,
+   * e.g. "Full refund: $50.00" / "No refund under the cancellation
+   * policy." Never computed client-side — this is purely informational;
+   * the server calculation remains the sole source of truth. */
+  consequencePreview?: string;
 }) {
   const [state, formAction, pending] = useActionState(cancelBookingAction, undefined);
 
   return (
-    <form action={formAction}>
+    <form action={formAction} className="flex flex-col items-end gap-1">
       <input type="hidden" name="bookingId" value={bookingId} />
+      {consequencePreview && <p className="text-xs text-slate">{consequencePreview}</p>}
       <button
         type="submit"
         data-testid="cancel-booking"

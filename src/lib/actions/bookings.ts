@@ -7,7 +7,8 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
-import { canInitiatePaidBooking, canPayForStudent } from "@/services/studentAuthorization";
+import { canInitiatePaidBooking } from "@/services/studentAuthorization";
+import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
 import {
   reserveBookingPendingPayment,
@@ -36,7 +37,12 @@ import {
   TutorPayoutQuoteExpiredError,
   TutorPayoutQuoteNotActiveError,
 } from "@/services/tutorPayout";
-import { cancelBookingWithRefund } from "@/services/cancellationPolicy";
+import {
+  cancelBookingWithRefund,
+  BookingNotCancellableError,
+  NotAuthorizedToCancelError,
+  SessionAlreadyStartedError,
+} from "@/services/cancellationPolicy";
 
 export type BookingActionState = { error?: string; success?: boolean } | undefined;
 
@@ -217,26 +223,39 @@ export async function cancelBookingAction(
 
   const booking = await db.booking.findUnique({
     where: { id: parsed.data.bookingId },
-    include: { studentProfile: true, tutorProfile: true },
+    include: { tutorProfile: { select: { userId: true } } },
   });
   if (!booking) return { error: t("notFound") };
 
-  const isTutorOwner = booking.tutorProfile.userId === session.user.id;
-  const isAdmin = session.user.role === "SUPER_ADMIN";
-  // Phase H.5 security correction: cancellation triggers a real refund
-  // (cancelBookingWithRefund) — the student side of ownership must go
-  // through H.2's canPayForStudent, not a raw userId match, so a
-  // GUARDIAN_MANAGED student's own restricted login can't cancel/refund a
-  // booking on their own authority. Unchanged for every existing
-  // SELF_MANAGED student.
-  const isStudentOwner =
-    booking.studentProfile.userId === session.user.id &&
-    (await canPayForStudent(db, session.user.id, booking.studentProfileId));
-  if (!isStudentOwner && !isTutorOwner && !isAdmin) return { error: t("notYours") };
+  // Phase H.8 — Layer 1: fast, non-transactional pre-check (UX only, NOT
+  // trusted as authoritative). The role is read fresh from the session's
+  // own server-verified value; the authoritative Layer 2 re-check inside
+  // cancelBookingWithRefund's own Serializable transaction re-reads the
+  // role from the database again rather than trusting this session object,
+  // per §I of the H.8 plan.
+  const preCheckAuthority = await resolveCancellationAuthority(db, session.user.id, session.user.role, {
+    studentProfileId: booking.studentProfileId,
+    tutorProfileUserId: booking.tutorProfile.userId,
+  });
+  if (preCheckAuthority === "DENIED") return { error: t("notYours") };
 
   try {
-    await cancelBookingWithRefund(booking.id, session.user.id);
-  } catch {
+    // actorRole is re-resolved fresh from the DB (never the potentially
+    // stale `session.user.role`) so the authoritative Layer 2 check inside
+    // the transaction reflects the actor's CURRENT role, not the role at
+    // sign-in time.
+    const freshUser = await db.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { role: true } });
+    await cancelBookingWithRefund(booking.id, session.user.id, { actorRole: freshUser.role });
+  } catch (error) {
+    if (error instanceof SessionAlreadyStartedError) return { error: t("alreadyStarted") };
+    if (error instanceof NotAuthorizedToCancelError) return { error: t("notYours") };
+    if (error instanceof BookingNotCancellableError) return { error: t("generic") };
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+      // Serializable conflict on the authorization/mutation transaction —
+      // never auto-retried here (§I of the H.8 plan); a fresh Server
+      // Action resubmission naturally re-runs both layers from scratch.
+      return { error: t("generic") };
+    }
     return { error: t("generic") };
   }
 

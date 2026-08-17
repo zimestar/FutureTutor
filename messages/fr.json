@@ -689,7 +689,8 @@
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "notFound": "Cette réservation est introuvable.",
       "notYours": "Vous ne pouvez pas gérer cette réservation.",
-      "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière."
+      "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
+      "alreadyStarted": "Cette séance a déjà commencé et ne peut plus être annulée."
     }
   },
   "quickMatch": {

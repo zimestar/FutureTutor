@@ -7,6 +7,7 @@ import { CancelBookingButton } from "@/components/dashboard/CancelBookingButton"
 import { Badge } from "@/components/ui/Badge";
 import { formatBookingTime } from "@/lib/utils";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { describeCancellationConsequence } from "@/services/cancellationPolicy";
 
 export default async function TutorBookingsPage({
   params,
@@ -95,11 +96,19 @@ export default async function TutorBookingsPage({
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>
                           {tStatus(booking.status)}
                         </Badge>
-                        {section.allowCancel && booking.status === "CONFIRMED" && (
+                        {section.allowCancel && booking.status === "CONFIRMED" && booking.startAt > now && (
                           <CancelBookingButton
                             bookingId={booking.id}
                             label={t("cancelCta")}
                             cancellingLabel={t("cancelling")}
+                            consequencePreview={describeCancellationConsequence({
+                              isTutorViewer: true,
+                              paymentStatus: null,
+                              sessionStartAt: booking.startAt,
+                              now,
+                              amountCents: 0,
+                              currency: booking.currency,
+                            })}
                           />
                         )}
                       </div>
