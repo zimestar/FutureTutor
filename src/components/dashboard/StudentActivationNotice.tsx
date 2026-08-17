@@ -1,5 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { StudentAccountActivationState } from "@/services/familyManagement";
+import { Alert } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 /**
  * Phase H.5 Final Claimant-State UX Correction. Replaces the old
@@ -29,12 +31,14 @@ export async function StudentActivationNotice({ state }: { state: StudentAccount
 
   return (
     <div
-      className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center"
+      className="max-w-2xl"
       data-testid="student-activation-notice"
       data-activation-state={state.state}
     >
-      <p className="text-lg font-semibold text-navy">{t("title")}</p>
-      <p className="mt-2 text-sm text-slate">{t("description")}</p>
+      <PageHeader title={t("title")} description={t("description")} />
+      <Alert tone="info" title={t("statusTitle")} className="mt-6">
+        {t("statusDescription")}
+      </Alert>
     </div>
   );
 }

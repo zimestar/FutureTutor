@@ -478,13 +478,33 @@
     },
     "student": {
       "welcome": "Bienvenue, {name}",
-      "description": "Voici votre tableau de bord élève. La réservation, la messagerie et le suivi des progrès arrivent bientôt.",
+      "description": "Trouvez le bon soutien et gardez vos activités de tutorat à portée de main.",
       "noBookingsTitle": "Aucune réservation pour l'instant",
       "noBookingsDescription": "Dès que vous réservez une séance avec un tuteur, elle apparaîtra ici.",
       "findTutorCta": "Trouver un tuteur",
+      "quickMatchCta": "Lancer un jumelage rapide",
+      "actions": {
+        "eyebrow": "Besoin d'aide maintenant?",
+        "title": "Trouvez le soutien qui vous convient",
+        "description": "Choisissez le jumelage rapide pour obtenir de l'aide sans attendre, ou parcourez les profils à votre rythme."
+      },
+      "schedule": {
+        "title": "Votre horaire de tutorat",
+        "description": "Gardez un œil sur les séances que vous avez planifiées.",
+        "viewCta": "Voir les réservations",
+        "emptyTitle": "À vous de choisir le bon moment",
+        "emptyDescription": "Trouvez un tuteur lorsque vous serez prêt à planifier votre prochaine séance."
+      },
+      "saved": {
+        "title": "Vos tuteurs favoris",
+        "description": "Revenez aux profils qui vous intéressent et comparez facilement vos options.",
+        "cta": "Voir les favoris"
+      },
       "favorites": {
         "title": "Vos tuteurs favoris",
         "description": "Les tuteurs que vous avez sauvegardés.",
+        "savedCount": "{count, plural, one {# tuteur favori} other {# tuteurs favoris}}",
+        "emptyTitle": "Gardez vos meilleurs choix ici",
         "empty": "Vous n'avez pas encore sauvegardé de tuteur.",
         "findTutorCta": "Trouver un tuteur"
       },
@@ -498,6 +518,37 @@
         "withTutor": "avec {name}",
         "cancelCta": "Annuler la séance",
         "cancelling": "Annulation…"
+      }
+    },
+    "parent": {
+      "welcome": "Bienvenue, {name}",
+      "description": "Un aperçu clair de vos élèves et des prochaines étapes de leur tutorat.",
+      "learnerCount": "{count, plural, one {# élève} other {# élèves}}",
+      "actions": {
+        "title": "Trouvez le bon soutien",
+        "description": "Obtenez de l'aide rapidement, parcourez les profils ou gérez votre famille au même endroit.",
+        "quickMatch": "Jumelage rapide",
+        "findTutor": "Trouver un tuteur",
+        "family": "Mes élèves"
+      },
+      "attention": {
+        "title": "Il reste quelques renseignements à ajouter",
+        "description": "{count, plural, one {Le profil d'un élève pourrait être complété.} other {Les profils de # élèves pourraient être complétés.}} Ajoutez ces renseignements lorsque vous le souhaitez pour obtenir des jumelages plus pertinents."
+      },
+      "learners": {
+        "title": "Vos élèves",
+        "description": "Les élèves que vous gérez actuellement.",
+        "viewAll": "Gérer la famille",
+        "noLevel": "Niveau scolaire à ajouter",
+        "manage": "Gérer l'élève",
+        "emptyTitle": "Ajoutez votre premier élève",
+        "emptyDescription": "Créez un profil d'élève pour commencer à chercher des tuteurs et à planifier du soutien.",
+        "addCta": "Aller à Mes élèves"
+      },
+      "schedule": {
+        "title": "Horaire de tutorat familial",
+        "description": "Ouvrez Réservations pour consulter les activités de tutorat actuellement accessibles dans votre compte.",
+        "cta": "Voir les réservations"
       }
     },
     "tutor": {
@@ -946,6 +997,7 @@
   "family": {
     "title": "Mes élèves",
     "subtitle": "Gérez les enfants liés à votre compte et invitez un deuxième parent ou tuteur légal.",
+    "learnerCount": "{count, plural, one {# élève} other {# élèves}}",
     "addChildCta": "Ajouter un enfant",
     "emptyTitle": "Aucun élève pour le moment",
     "emptyDescription": "Ajoutez un enfant pour commencer — vous pourrez ensuite inviter un deuxième parent ou tuteur légal.",
@@ -1071,19 +1123,27 @@
     },
     "studentPendingActivation": {
       "title": "Votre compte est en attente d'approbation",
-      "description": "Un parent ou tuteur légal doit approuver votre accès élève avant que vous puissiez utiliser FutureTutor. Revenez bientôt, ou demandez-lui d'approuver votre demande."
+      "description": "Un parent ou tuteur légal doit approuver votre accès élève avant que vous puissiez utiliser FutureTutor. Revenez bientôt, ou demandez-lui d'approuver votre demande.",
+      "statusTitle": "Ce que vous pouvez faire maintenant",
+      "statusDescription": "Vous pouvez consulter cet état et vous déconnecter. Les outils de tutorat, les favoris, les réservations et le profil seront accessibles après l'approbation."
     },
     "studentRejectedActivation": {
       "title": "Votre compte n'a pas été approuvé",
-      "description": "Votre parent ou tuteur légal n'a pas approuvé cet accès élève. Si vous pensez qu'il s'agit d'une erreur, contactez-le directement — vous ne pouvez pas demander une nouvelle invitation vous-même. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+      "description": "Votre parent ou tuteur légal n'a pas approuvé cet accès élève. Si vous pensez qu'il s'agit d'une erreur, contactez-le directement — vous ne pouvez pas demander une nouvelle invitation vous-même. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "statusTitle": "Votre prochaine étape",
+      "statusDescription": "Communiquez directement avec votre parent ou tuteur légal. Pour votre sécurité, ce compte ne peut pas demander ni approuver son propre accès."
     },
     "studentExpiredActivation": {
       "title": "Votre invitation a expiré",
-      "description": "L'invitation que vous avez acceptée a expiré avant qu'un parent ou tuteur légal puisse l'approuver. Demandez-lui de vous envoyer une nouvelle invitation — les invitations ne peuvent pas être réactivées. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+      "description": "L'invitation que vous avez acceptée a expiré avant qu'un parent ou tuteur légal puisse l'approuver. Demandez-lui de vous envoyer une nouvelle invitation — les invitations ne peuvent pas être réactivées. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "statusTitle": "Votre prochaine étape",
+      "statusDescription": "Demandez une nouvelle invitation à votre parent ou tuteur légal. Ce compte ne peut pas réactiver une invitation expirée."
     },
     "studentUnlinkedActivation": {
       "title": "La configuration de votre compte n'est pas terminée",
-      "description": "Votre compte n'est pas encore lié à un profil élève. Demandez à votre parent ou tuteur légal de vous envoyer une invitation d'accès élève. Vous pouvez vous déconnecter à partir du menu ci-dessus."
+      "description": "Votre compte n'est pas encore lié à un profil élève. Demandez à votre parent ou tuteur légal de vous envoyer une invitation d'accès élève. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "statusTitle": "Votre prochaine étape",
+      "statusDescription": "Demandez à votre parent ou tuteur légal de lier cette connexion à votre profil d'élève. Les outils de tutorat restent indisponibles jusqu'à l'approbation du lien."
     },
     "errors": {
       "notAuthorized": "Vous n'avez pas la permission de faire cela.",

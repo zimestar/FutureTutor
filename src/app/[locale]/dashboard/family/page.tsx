@@ -6,6 +6,10 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { AddChildForm } from "@/components/dashboard/AddChildForm";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
+import { UsersRound } from "lucide-react";
 import { listChildrenForGuardian, type GuardianVisibleStudentLoginStatus } from "@/services/familyManagement";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 
@@ -54,47 +58,52 @@ export default async function FamilyPage({ params }: { params: Promise<{ locale:
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle")}
+        status={children.length > 0 ? <Badge variant="blue">{t("learnerCount", { count: children.length })}</Badge> : undefined}
+      />
 
       {children.length > 0 ? (
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="children-list">
+        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" data-testid="children-list">
           {children.map(({ studentProfile, activeGuardianCount, studentLoginStatus }) => {
             const completeness = computeProfileCompleteness(studentProfile);
             return (
-              <div
+              <Surface
                 key={studentProfile.id}
-                className="flex flex-col rounded-xl border border-neutral-200 bg-white p-5"
+                className="flex flex-col"
                 data-testid="child-card"
                 data-student-profile-id={studentProfile.id}
               >
-                <p className="text-lg font-bold text-navy">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue/10 font-bold text-blue" aria-hidden="true">
+                    {studentProfile.firstName.charAt(0)}
+                  </span>
+                  <div data-testid="child-card-login-status">
+                    <Badge variant={LOGIN_STATUS_BADGE_VARIANT[studentLoginStatus]}>{tLoginStatus(studentLoginStatus)}</Badge>
+                  </div>
+                </div>
+                <p className="mt-4 text-lg font-bold text-navy">
                   {studentProfile.firstName} {studentProfile.lastName}
                 </p>
                 <p className="mt-1 text-sm text-slate">
                   {studentProfile.academicLevel ? tLevels(studentProfile.academicLevel.slug) : t("childCard.noAcademicLevel")}
                 </p>
                 <p className="mt-1 text-sm text-slate">{t("childCard.guardianCount", { count: activeGuardianCount })}</p>
-                <p className="mt-1 text-xs text-slate">
+                <p className="mt-3 text-xs font-semibold text-slate">
                   {t("childCard.profileCompleteness", { filled: completeness.filled, total: completeness.total })}
                 </p>
-                <div className="mt-3 flex items-center gap-2" data-testid="child-card-login-status">
-                  <Badge variant={LOGIN_STATUS_BADGE_VARIANT[studentLoginStatus]}>{tLoginStatus(studentLoginStatus)}</Badge>
-                </div>
-                <div className="mt-4">
-                  <Button href={`/dashboard/family/${studentProfile.id}`} size="sm" variant="outline">
+                <div className="mt-auto pt-5">
+                  <Button href={`/dashboard/family/${studentProfile.id}`} size="sm" variant="outline" className="w-full">
                     {t("childCard.manageGuardians")}
                   </Button>
                 </div>
-              </div>
+              </Surface>
             );
           })}
         </div>
       ) : (
-        <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-          <p className="text-lg font-semibold text-navy">{t("emptyTitle")}</p>
-          <p className="mt-2 text-sm text-slate">{t("emptyDescription")}</p>
-        </div>
+        <EmptyState className="mt-8" icon={UsersRound} title={t("emptyTitle")} description={t("emptyDescription")} />
       )}
 
       <div className="mt-6">

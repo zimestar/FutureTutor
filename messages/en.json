@@ -478,13 +478,33 @@
     },
     "student": {
       "welcome": "Welcome, {name}",
-      "description": "This is your student dashboard. Booking, messaging and progress tracking are on the way.",
+      "description": "Find the right support and keep your tutoring plans close at hand.",
       "noBookingsTitle": "No bookings yet",
       "noBookingsDescription": "Once you book a session with a tutor, it will show up here.",
       "findTutorCta": "Find a Tutor",
+      "quickMatchCta": "Start Quick Match",
+      "actions": {
+        "eyebrow": "Need help now?",
+        "title": "Get matched with the right support",
+        "description": "Use Quick Match for the fastest path, or browse tutors at your own pace."
+      },
+      "schedule": {
+        "title": "Your tutoring schedule",
+        "description": "Keep track of the sessions you have planned.",
+        "viewCta": "View bookings",
+        "emptyTitle": "Ready when you are",
+        "emptyDescription": "Find a tutor when you are ready to plan your next session."
+      },
+      "saved": {
+        "title": "Tutors you saved",
+        "description": "Return to tutors that felt like a good fit and continue comparing your options.",
+        "cta": "View favorites"
+      },
       "favorites": {
         "title": "Your favorite tutors",
         "description": "Tutors you've saved for later.",
+        "savedCount": "{count, plural, one {# saved tutor} other {# saved tutors}}",
+        "emptyTitle": "Save tutors that feel right",
         "empty": "You haven't saved any tutors yet.",
         "findTutorCta": "Find a Tutor"
       },
@@ -498,6 +518,37 @@
         "withTutor": "with {name}",
         "cancelCta": "Cancel session",
         "cancelling": "Cancelling…"
+      }
+    },
+    "parent": {
+      "welcome": "Welcome, {name}",
+      "description": "A clear view of your learners and the next steps for their tutoring.",
+      "learnerCount": "{count, plural, one {# learner} other {# learners}}",
+      "actions": {
+        "title": "Find the right support",
+        "description": "Get help quickly, browse tutors, or manage your family in one place.",
+        "quickMatch": "Quick Match",
+        "findTutor": "Find a Tutor",
+        "family": "My Students"
+      },
+      "attention": {
+        "title": "A little information is still needed",
+        "description": "{count, plural, one {One learner profile could use a few more details.} other {# learner profiles could use a few more details.}} Add them when you are ready so tutor matching can be more relevant."
+      },
+      "learners": {
+        "title": "Your learners",
+        "description": "The students you currently manage.",
+        "viewAll": "Manage family",
+        "noLevel": "Academic level not added yet",
+        "manage": "Manage learner",
+        "emptyTitle": "Add your first learner",
+        "emptyDescription": "Create a learner profile to start finding tutors and planning support.",
+        "addCta": "Go to My Students"
+      },
+      "schedule": {
+        "title": "Family tutoring schedule",
+        "description": "Open Bookings to review the tutoring activity currently available to your account.",
+        "cta": "View bookings"
       }
     },
     "tutor": {
@@ -946,6 +997,7 @@
   "family": {
     "title": "My Students",
     "subtitle": "Manage the children linked to your account and invite a co-guardian.",
+    "learnerCount": "{count, plural, one {# learner} other {# learners}}",
     "addChildCta": "Add a Child",
     "emptyTitle": "No students yet",
     "emptyDescription": "Add a child to get started — you'll be able to invite a second guardian afterward.",
@@ -1071,19 +1123,27 @@
     },
     "studentPendingActivation": {
       "title": "Your account is waiting for approval",
-      "description": "A parent or guardian needs to approve your student login before you can use FutureTutor. Check back soon, or ask them to approve your request."
+      "description": "A parent or guardian needs to approve your student login before you can use FutureTutor. Check back soon, or ask them to approve your request.",
+      "statusTitle": "What you can do now",
+      "statusDescription": "You can review this status and sign out. Tutoring, favorites, bookings, and profile tools will become available after approval."
     },
     "studentRejectedActivation": {
       "title": "Your account wasn't approved",
-      "description": "Your parent or guardian did not approve this student login. If you think this is a mistake, contact them directly — you can't request a new invitation yourself. You can sign out from the menu above."
+      "description": "Your parent or guardian did not approve this student login. If you think this is a mistake, contact them directly — you can't request a new invitation yourself. You can sign out from the menu above.",
+      "statusTitle": "Your next step",
+      "statusDescription": "Contact your parent or guardian directly. For your safety, this account cannot request or approve its own access."
     },
     "studentExpiredActivation": {
       "title": "Your invitation has expired",
-      "description": "The invitation you accepted expired before a parent or guardian could approve it. Ask them to send you a new invitation — invitations can't be reactivated. You can sign out from the menu above."
+      "description": "The invitation you accepted expired before a parent or guardian could approve it. Ask them to send you a new invitation — invitations can't be reactivated. You can sign out from the menu above.",
+      "statusTitle": "Your next step",
+      "statusDescription": "Ask your parent or guardian for a new invitation. This account cannot reactivate an expired invitation."
     },
     "studentUnlinkedActivation": {
       "title": "Your account setup isn't complete",
-      "description": "Your account isn't linked to a student profile yet. Ask your parent or guardian to send you a student login invitation. You can sign out from the menu above."
+      "description": "Your account isn't linked to a student profile yet. Ask your parent or guardian to send you a student login invitation. You can sign out from the menu above.",
+      "statusTitle": "Your next step",
+      "statusDescription": "Ask your parent or guardian to connect this login to your learner profile. Tutoring tools stay unavailable until that link is approved."
     },
     "errors": {
       "notAuthorized": "You don't have permission to do that.",

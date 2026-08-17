@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { TutorCard } from "@/components/marketing/TutorCard";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Heart } from "lucide-react";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { resolveStudentAccountActivationState } from "@/services/familyManagement";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
@@ -68,8 +71,11 @@ export default async function FavoritesPage({
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        status={tutors.length > 0 ? <span className="text-sm font-semibold text-text-muted">{t("savedCount", { count: tutors.length })}</span> : undefined}
+      />
 
       {tutors.length > 0 ? (
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -78,12 +84,7 @@ export default async function FavoritesPage({
           ))}
         </div>
       ) : (
-        <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-          <p className="text-slate">{t("empty")}</p>
-          <div className="mt-6 flex justify-center">
-            <Button href="/find-tutors">{t("findTutorCta")}</Button>
-          </div>
-        </div>
+        <EmptyState className="mt-8" icon={Heart} title={t("emptyTitle")} description={t("empty")} action={<Button href="/find-tutors">{t("findTutorCta")}</Button>} />
       )}
     </DashboardShell>
   );
