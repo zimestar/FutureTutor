@@ -54,12 +54,14 @@ export function SignupForm() {
             {t("firstNameLabel")}
           </label>
           <Input id="firstName" name="firstName" autoComplete="given-name" required />
+          {state?.fieldErrors?.firstName && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.firstName}</p>}
         </div>
         <div>
           <label htmlFor="lastName" className="mb-1.5 block text-sm font-semibold text-navy">
             {t("lastNameLabel")}
           </label>
           <Input id="lastName" name="lastName" autoComplete="family-name" required />
+          {state?.fieldErrors?.lastName && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.lastName}</p>}
         </div>
       </div>
 
@@ -68,6 +70,7 @@ export function SignupForm() {
           {t("emailLabel")}
         </label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
+        {state?.fieldErrors?.email && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.email}</p>}
       </div>
 
       {role === "STUDENT" && (
@@ -76,6 +79,7 @@ export function SignupForm() {
             {t("dateOfBirthLabel")}
           </label>
           <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+          {state?.fieldErrors?.dateOfBirth && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.dateOfBirth}</p>}
         </div>
       )}
 
@@ -85,6 +89,7 @@ export function SignupForm() {
         </label>
         <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
         <p className="mt-1.5 text-xs text-slate">{t("passwordHint")}</p>
+        {state?.fieldErrors?.password && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.password}</p>}
       </div>
 
       <Button type="submit" size="lg" disabled={pending} className="mt-2">

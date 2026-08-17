@@ -8,8 +8,15 @@ import { redirect } from "@/i18n/navigation";
 import { homePathForRole } from "@/lib/authorization";
 import { loginSchema, registerSchema } from "@/schemas/auth";
 import { createUserForSignup } from "@/services/signup";
+import { signInResultHasError } from "@/services/signupAuthResult";
 
-export type AuthActionState = { error?: string } | undefined;
+type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth";
+
+export type AuthActionState = {
+  error?: string;
+  fieldErrors?: Partial<Record<RegisterField, string>>;
+  accountCreated?: boolean;
+} | undefined;
 
 export async function registerAction(
   _prevState: AuthActionState,
@@ -28,30 +35,63 @@ export async function registerAction(
   });
 
   if (!parsed.success) {
-    return { error: t("invalidInput") };
+    const fieldErrors: Partial<Record<RegisterField, string>> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0];
+      if (typeof field === "string" && isRegisterField(field) && !fieldErrors[field]) {
+        fieldErrors[field] = t(`${field}Invalid`);
+      }
+    }
+    return { error: t("invalidInput"), fieldErrors };
   }
 
   const { firstName, lastName, email, password, role, dateOfBirth } = parsed.data;
   const name = `${firstName} ${lastName}`;
 
-  const existing = await db.user.findUnique({ where: { email } });
+  let existing;
+  try {
+    existing = await db.user.findUnique({ where: { email } });
+  } catch (error) {
+    logRegisterFailure("duplicate-email-check", error);
+    return { error: t("signupFailed") };
+  }
   if (existing) {
     return { error: t("emailTaken") };
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  let passwordHash: string;
+  try {
+    passwordHash = await bcrypt.hash(password, 12);
+  } catch (error) {
+    logRegisterFailure("password-hash", error);
+    return { error: t("signupFailed") };
+  }
 
-  await createUserForSignup(db, {
-    firstName,
-    lastName,
-    email,
-    passwordHash,
-    role,
-    dateOfBirth: role === "STUDENT" ? new Date(`${dateOfBirth}T00:00:00.000Z`) : undefined,
-    tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
-  });
+  try {
+    await createUserForSignup(db, {
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+      role,
+      dateOfBirth: role === "STUDENT" ? new Date(`${dateOfBirth}T00:00:00.000Z`) : undefined,
+      tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
+    });
+  } catch (error) {
+    logRegisterFailure("user-profile-create", error);
+    return { error: t("signupFailed") };
+  }
 
-  await signIn("credentials", { email, password, redirect: false });
+  try {
+    const signInResult = await signIn("credentials", { email, password, redirect: false });
+    if (signInResultHasError(signInResult)) {
+      logRegisterFailure("automatic-sign-in", new Error("Auth.js returned an error URL"));
+      return { error: t("accountCreatedSignInFailed"), accountCreated: true };
+    }
+  } catch (error) {
+    logRegisterFailure("automatic-sign-in", error);
+    return { error: t("accountCreatedSignInFailed"), accountCreated: true };
+  }
   redirect({ href: homePathForRole(role), locale });
 }
 
@@ -91,6 +131,28 @@ export async function signOutAction() {
 }
 
 const DIACRITIC_MARKS = new RegExp("[\\u0300-\\u036f]", "g");
+
+const REGISTER_FIELDS = new Set<RegisterField>([
+  "firstName",
+  "lastName",
+  "email",
+  "password",
+  "role",
+  "dateOfBirth",
+]);
+
+function isRegisterField(value: string): value is RegisterField {
+  return REGISTER_FIELDS.has(value as RegisterField);
+}
+
+function logRegisterFailure(stage: string, error: unknown) {
+  const safeError = error as { name?: unknown; code?: unknown };
+  console.error("registerAction failed", {
+    stage,
+    errorName: typeof safeError?.name === "string" ? safeError.name : "UnknownError",
+    errorCode: typeof safeError?.code === "string" ? safeError.code : undefined,
+  });
+}
 
 async function generateTutorSlug(name: string): Promise<string> {
   const base = name

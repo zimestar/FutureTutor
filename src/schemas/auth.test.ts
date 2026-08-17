@@ -32,6 +32,16 @@ describe("registerSchema — role whitelist", () => {
     expect(result.success).toBe(true);
   });
 
+  it("3a. accepts PARENT when an absent form field is represented as null", () => {
+    const result = registerSchema.safeParse({ ...BASE, role: "PARENT", dateOfBirth: null });
+    expect(result.success).toBe(true);
+  });
+
+  it("3b. accepts TUTOR when an absent form field is represented as null", () => {
+    const result = registerSchema.safeParse({ ...BASE, role: "TUTOR", dateOfBirth: null });
+    expect(result.success).toBe(true);
+  });
+
   it("4. rejects ADMIN — not a public self-signup role", () => {
     const result = registerSchema.safeParse({ ...BASE, role: "ADMIN" });
     expect(result.success).toBe(false);

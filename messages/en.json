@@ -436,7 +436,15 @@
     "errors": {
       "invalidInput": "Please check your information and try again.",
       "emailTaken": "An account with this email already exists.",
-      "invalidCredentials": "Incorrect email or password."
+      "invalidCredentials": "Incorrect email or password.",
+      "firstNameInvalid": "Enter a first name between 1 and 50 characters.",
+      "lastNameInvalid": "Enter a last name between 1 and 50 characters.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordInvalid": "Use a password between 8 and 72 characters.",
+      "roleInvalid": "Choose Student, Parent / Guardian, or Tutor.",
+      "dateOfBirthInvalid": "Enter a valid date of birth that is not in the future.",
+      "signupFailed": "We couldn't create your account. Please try again.",
+      "accountCreatedSignInFailed": "Your account was created, but we couldn't sign you in automatically. Please log in with your new account."
     }
   },
   "dashboard": {

@@ -436,7 +436,15 @@
     "errors": {
       "invalidInput": "Veuillez vérifier vos informations et réessayer.",
       "emailTaken": "Un compte existe déjà avec ce courriel.",
-      "invalidCredentials": "Courriel ou mot de passe incorrect."
+      "invalidCredentials": "Courriel ou mot de passe incorrect.",
+      "firstNameInvalid": "Saisissez un prénom de 1 à 50 caractères.",
+      "lastNameInvalid": "Saisissez un nom de 1 à 50 caractères.",
+      "emailInvalid": "Saisissez une adresse courriel valide.",
+      "passwordInvalid": "Utilisez un mot de passe de 8 à 72 caractères.",
+      "roleInvalid": "Choisissez Élève, Parent / Tuteur légal ou Tuteur.",
+      "dateOfBirthInvalid": "Saisissez une date de naissance valide qui n'est pas dans le futur.",
+      "signupFailed": "Nous n'avons pas pu créer votre compte. Veuillez réessayer.",
+      "accountCreatedSignInFailed": "Votre compte a été créé, mais nous n'avons pas pu vous connecter automatiquement. Veuillez vous connecter avec votre nouveau compte."
     }
   },
   "dashboard": {

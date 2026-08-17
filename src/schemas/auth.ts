@@ -38,7 +38,10 @@ export const registerSchema = z
     // policy decision, not a data-validity concern. Only genuinely
     // impossible values (unparseable, future, non-existent calendar dates)
     // are rejected.
-    dateOfBirth: z.string().trim().optional(),
+    dateOfBirth: z.preprocess(
+      (value) => (value === null || value === "" ? undefined : value),
+      z.string().trim().optional()
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.role !== "STUDENT") return;
