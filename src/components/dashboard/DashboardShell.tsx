@@ -1,62 +1,150 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useCallback, useState, type ReactNode } from "react";
+import {
+  BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText,
+  GraduationCap, Heart, LayoutDashboard, LogOut, Menu, Search,
+  SlidersHorizontal, Sparkles, UserRound, UsersRound, WalletCards,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { Logo } from "@/components/marketing/Logo";
+import { Drawer } from "@/components/ui/Dialog";
+import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
 
 export interface DashboardNavItem {
   label: string;
   href: string;
+  group?: string;
 }
 
-export function DashboardShell({
-  navItems,
-  userName,
-  children,
-}: {
-  navItems: DashboardNavItem[];
-  userName: string;
-  children: ReactNode;
-}) {
-  const t = useTranslations("dashboard");
+const navIcons: Record<string, typeof LayoutDashboard> = {
+  "/dashboard": LayoutDashboard,
+  "/find-tutors": Search,
+  "/dashboard/favorites": Heart,
+  "/dashboard/quick-match": Sparkles,
+  "/dashboard/bookings": CalendarDays,
+  "/dashboard/profile": UserRound,
+  "/dashboard/family": UsersRound,
+  "/tutor/dashboard": LayoutDashboard,
+  "/tutor/profile": UserRound,
+  "/tutor/documents": FileText,
+  "/tutor/training": GraduationCap,
+  "/tutor/exam": ClipboardCheck,
+  "/tutor/availability": CalendarDays,
+  "/tutor/quick-match": Sparkles,
+  "/tutor/bookings": BookOpenCheck,
+  "/tutor/payouts": WalletCards,
+  "/admin": LayoutDashboard,
+  "/admin/tutors": UsersRound,
+  "/admin/pricing": SlidersHorizontal,
+  "/admin/quick-match": Sparkles,
+  "/admin/payments": CreditCard,
+};
+
+function isActiveRoute(pathname: string, href: string) {
+  if (href === "/dashboard" || href === "/tutor/dashboard" || href === "/admin") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavItem[]; onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const groups = navItems.reduce<Array<{ label?: string; items: DashboardNavItem[] }>>((result, item) => {
+    const last = result[result.length - 1];
+    if (!last || last.label !== item.group) result.push({ label: item.group, items: [item] });
+    else last.items.push(item);
+    return result;
+  }, []);
 
   return (
-    <div className="flex min-h-screen bg-off-white">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-white px-5 py-6 lg:flex">
-        <Logo />
-        <nav aria-label="Dashboard" className="mt-10 flex flex-col gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2.5 text-sm font-semibold text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-navy"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+    <nav aria-label="Dashboard" className="flex flex-col gap-6">
+      {groups.map((group, index) => (
+        <div key={`${group.label ?? "navigation"}-${index}`}>
+          {group.label && <p className="mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-400">{group.label}</p>}
+          <ul className="flex flex-col gap-1">
+            {group.items.map((item) => {
+              const active = isActiveRoute(pathname, item.href);
+              const Icon = navIcons[item.href] ?? LayoutDashboard;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={onNavigate}
+                    className={cn(
+                      "group flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+                      active ? "bg-blue/10 text-blue" : "text-neutral-600 hover:bg-neutral-100 hover:text-navy"
+                    )}
+                  >
+                    <Icon className={cn("size-[18px] shrink-0", active ? "text-blue" : "text-neutral-400 group-hover:text-neutral-600")} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function AccountArea({ userName, compact = false }: { userName: string; compact?: boolean }) {
+  const t = useTranslations("dashboard");
+  const initial = userName.trim().charAt(0).toUpperCase() || "F";
+  return (
+    <div className={cn("flex items-center gap-3", compact ? "min-w-0" : "rounded-lg border border-border bg-surface-subtle p-3")}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white" aria-hidden="true">{initial}</span>
+      <div className="min-w-0 flex-1">
+        {!compact && <p className="text-xs text-text-muted">{t("signedInAs")}</p>}
+        <p className="truncate text-sm font-bold text-text-primary">{userName}</p>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardShell({ navItems, userName, children }: { navItems: DashboardNavItem[]; userName: string; children: ReactNode }) {
+  const t = useTranslations("dashboard");
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const closeNavigation = useCallback(() => setNavigationOpen(false), []);
+
+  return (
+    <div className="min-h-screen bg-canvas lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[17.5rem] flex-col border-r border-border bg-surface lg:flex">
+        <div className="flex min-h-20 items-center border-b border-border px-6"><Logo className="h-9" /></div>
+        <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} /></div>
+        <div className="border-t border-border p-4">
+          <AccountArea userName={userName} />
+          <form action={signOutAction} className="mt-2">
+            <button type="submit" className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary">
+              <LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}
+            </button>
+          </form>
+        </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-5 lg:px-8">
-          <div className="lg:hidden">
-            <Logo />
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm font-semibold text-navy">{userName}</span>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-slate transition-colors hover:border-navy hover:text-navy"
-              >
-                {t("logOut")}
-              </button>
-            </form>
-          </div>
+      <div className="min-w-0 lg:col-start-2">
+        <header className="sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-border bg-surface/95 px-4 backdrop-blur-sm sm:px-6 lg:hidden">
+          <button type="button" onClick={() => setNavigationOpen(true)} className="flex size-11 shrink-0 items-center justify-center rounded-md text-text-primary hover:bg-surface-subtle" aria-label={t("openNavigation")} aria-expanded={navigationOpen} aria-controls="dashboard-mobile-navigation">
+            <Menu className="size-5" aria-hidden="true" />
+          </button>
+          <Logo className="h-8" />
+          <div className="ml-auto min-w-0"><AccountArea userName={userName} compact /></div>
         </header>
 
-        <main className="flex-1 px-5 py-8 lg:px-8">{children}</main>
+        <main id="dashboard-main" className="min-h-screen px-(--spacing-page-x) py-(--spacing-page-y)">{children}</main>
       </div>
+
+      <Drawer open={navigationOpen} onClose={closeNavigation} id="dashboard-mobile-navigation" title={<Logo className="h-8" />} closeLabel={t("closeNavigation")}>
+        <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} onNavigate={closeNavigation} /></div>
+        <div className="border-t border-border p-4">
+          <AccountArea userName={userName} />
+          <form action={signOutAction} className="mt-2">
+            <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary"><LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}</button>
+          </form>
+        </div>
+      </Drawer>
     </div>
   );
 }

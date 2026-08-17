@@ -14,14 +14,15 @@ export function getStudentDashboardNavItems(
   role: "STUDENT" | "PARENT"
 ): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
-    { label: tNav("overview"), href: "/dashboard" },
-    { label: tNav("favorites"), href: "/dashboard/favorites" },
-    { label: tNav("quickMatch"), href: "/dashboard/quick-match" },
-    { label: tNav("bookings"), href: "/dashboard/bookings" },
-    { label: tNav("profile"), href: "/dashboard/profile" },
+    { label: tNav("overview"), href: "/dashboard", group: tNav("learningGroup") },
+    { label: tNav("findTutor"), href: "/find-tutors", group: tNav("learningGroup") },
+    { label: tNav("quickMatch"), href: "/dashboard/quick-match", group: tNav("learningGroup") },
+    { label: tNav("bookings"), href: "/dashboard/bookings", group: tNav("learningGroup") },
+    { label: tNav("favorites"), href: "/dashboard/favorites", group: tNav("learningGroup") },
   ];
   if (role === "PARENT") {
-    items.push({ label: tNav("family"), href: "/dashboard/family" });
+    items.push({ label: tNav("family"), href: "/dashboard/family", group: tNav("accountGroup") });
   }
+  items.push({ label: tNav("profile"), href: "/dashboard/profile", group: tNav("accountGroup") });
   return items;
 }

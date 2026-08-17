@@ -449,6 +449,9 @@
   },
   "dashboard": {
     "logOut": "Log Out",
+    "openNavigation": "Open dashboard navigation",
+    "closeNavigation": "Close dashboard navigation",
+    "signedInAs": "Signed in as",
     "nav": {
       "overview": "Overview",
       "profile": "Profile",
@@ -464,7 +467,14 @@
       "payouts": "Payouts",
       "payments": "Payments",
       "family": "My Students",
-      "familyInvitations": "Family Invitations"
+      "familyInvitations": "Family Invitations",
+      "findTutor": "Find a Tutor",
+      "learningGroup": "Learning",
+      "accountGroup": "Account",
+      "tutoringGroup": "My tutoring",
+      "approvalGroup": "Get approved",
+      "operationsGroup": "Operations",
+      "financeGroup": "Finance"
     },
     "student": {
       "welcome": "Welcome, {name}",

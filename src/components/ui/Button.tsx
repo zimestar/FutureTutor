@@ -14,6 +14,7 @@ const buttonVariants = cva(
           "border border-neutral-300 bg-transparent text-navy hover:border-navy hover:bg-neutral-100",
         ghost: "bg-transparent text-navy hover:bg-neutral-100",
         "ghost-inverse": "bg-transparent text-white hover:bg-white/10",
+        destructive: "bg-destructive text-white hover:bg-destructive-hover",
       },
       size: {
         sm: "h-9 px-4 text-sm",
