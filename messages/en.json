@@ -463,7 +463,8 @@
       "quickMatch": "Quick Match",
       "payouts": "Payouts",
       "payments": "Payments",
-      "family": "My Students"
+      "family": "My Students",
+      "familyInvitations": "Family Invitations"
     },
     "student": {
       "welcome": "Welcome, {name}",
@@ -542,6 +543,24 @@
         "totalUsers": "Total Users",
         "totalTutors": "Tutor Profiles",
         "pendingApplications": "Pending Applications"
+      },
+      "familyInvitations": {
+        "title": "Family Invitations Requiring Attention",
+        "description": "Invitations claimed by a guardian or student but not yet approved. This view is read-only — approval and rejection remain a guardian action; nudge the guardian directly if a claim is stuck.",
+        "summaryTotal": "Awaiting guardian approval",
+        "summaryPastDue": "Past due (can no longer be approved)",
+        "listTitle": "Claims awaiting guardian approval",
+        "empty": "No family invitations currently require attention.",
+        "typeGuardianLink": "Guardian Link",
+        "typeStudentLogin": "Student Login",
+        "statusWaitingApproval": "Waiting for approval",
+        "statusPastDue": "Past due",
+        "invitedBy": "Invited by {name}",
+        "claimedBy": "Claimed by {name}",
+        "createdAt": "Created {date}",
+        "claimedAt": "Claimed {date}",
+        "notYetClaimed": "Not yet claimed",
+        "pastDueNote": "This claim's invitation has expired — it can no longer be approved or rejected through the guardian's own dashboard. The guardian should send a new invitation."
       }
     }
   },

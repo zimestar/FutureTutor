@@ -463,7 +463,8 @@
       "quickMatch": "Jumelage rapide",
       "payouts": "Paiements",
       "payments": "Paiements des clients",
-      "family": "Mes élèves"
+      "family": "Mes élèves",
+      "familyInvitations": "Invitations familiales"
     },
     "student": {
       "welcome": "Bienvenue, {name}",
@@ -542,6 +543,24 @@
         "totalUsers": "Utilisateurs au total",
         "totalTutors": "Profils de tuteurs",
         "pendingApplications": "Demandes en attente"
+      },
+      "familyInvitations": {
+        "title": "Invitations familiales nécessitant une attention",
+        "description": "Invitations réclamées par un parent/tuteur légal ou un élève, mais pas encore approuvées. Cette vue est en lecture seule — l'approbation et le rejet demeurent une action du parent/tuteur légal; communiquez directement avec cette personne si une réclamation semble bloquée.",
+        "summaryTotal": "En attente d'approbation d'un parent/tuteur légal",
+        "summaryPastDue": "En retard (ne peut plus être approuvée)",
+        "listTitle": "Réclamations en attente d'approbation",
+        "empty": "Aucune invitation familiale ne nécessite d'attention pour le moment.",
+        "typeGuardianLink": "Lien parent/tuteur légal",
+        "typeStudentLogin": "Accès élève",
+        "statusWaitingApproval": "En attente d'approbation",
+        "statusPastDue": "En retard",
+        "invitedBy": "Invitée par {name}",
+        "claimedBy": "Réclamée par {name}",
+        "createdAt": "Créée le {date}",
+        "claimedAt": "Réclamée le {date}",
+        "notYetClaimed": "Pas encore réclamée",
+        "pastDueNote": "L'invitation liée à cette réclamation a expiré — elle ne peut plus être approuvée ni rejetée depuis le tableau de bord du parent/tuteur légal. Cette personne doit envoyer une nouvelle invitation."
       }
     }
   },

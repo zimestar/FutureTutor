@@ -9,6 +9,7 @@ import {
   normalizeEmail,
   claimGuardianInvitation,
   claimStudentLoginInvitation,
+  isAdminRole,
   NotAuthorizedError,
   InvitationNotFoundError,
   StudentAlreadyLinkedError,
@@ -330,3 +331,30 @@ describe("STUDENT_LOGIN error messages never include raw tokens or passwords (te
 // Test 12 (already-linked StudentProfile cannot be invited again) requires
 // a real StudentProfile row with userId already set — verified in
 // integration test 11.
+
+describe("isAdminRole — Phase H.9 Admin gate (pure, no I/O)", () => {
+  it("returns true for ADMIN", () => {
+    expect(isAdminRole("ADMIN")).toBe(true);
+  });
+
+  it("returns true for SUPER_ADMIN", () => {
+    expect(isAdminRole("SUPER_ADMIN")).toBe(true);
+  });
+
+  it("returns false for PARENT", () => {
+    expect(isAdminRole("PARENT")).toBe(false);
+  });
+
+  it("returns false for STUDENT", () => {
+    expect(isAdminRole("STUDENT")).toBe(false);
+  });
+
+  it("returns false for TUTOR", () => {
+    expect(isAdminRole("TUTOR")).toBe(false);
+  });
+
+  it("returns false for an empty or unrecognized string", () => {
+    expect(isAdminRole("")).toBe(false);
+    expect(isAdminRole("admin")).toBe(false); // case-sensitive, matches every other role check in this codebase
+  });
+});

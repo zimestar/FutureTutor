@@ -982,6 +982,124 @@ export async function rejectFamilyInvitationClaim(client: PrismaClient, actingUs
 }
 
 // ---------------------------------------------------------------------------
+// Admin visibility (Phase H.9 — planning report §28) — READ-ONLY.
+//
+// Closes the gap the Post-H.8 readiness audit surfaced: a FamilyInvitation
+// can reach CLAIMED_PENDING_APPROVAL and simply sit there forever if the
+// inviting/active guardian never returns to approve it — nothing before
+// H.9 gave an Admin any visibility into that. This section adds exactly one
+// additive, narrowly-scoped read query; it does NOT add a new mutation.
+//
+// Why read-only: both approveFamilyInvitation and rejectFamilyInvitationClaim
+// re-check hasActiveGuardianAuthority(tx, actingUserId, studentProfileId),
+// which requires the actor to own an ACTIVE ParentStudentRelationship for
+// that exact student. An ADMIN/SUPER_ADMIN actor has no ParentProfile and
+// can never satisfy that check — there is no admin-safe variant of either
+// mutation anywhere in this codebase. Per Phase H.9's own explicit
+// fallback instruction ("if no safe existing mutation maps exactly to the
+// need, keep H.9 read-only and report the gap"), this module adds
+// visibility only. Support/Admin response to a stuck claim remains: nudge
+// the guardian (out of band) to sign in and approve or reject it
+// themselves through the existing guardian-facing action.
+// ---------------------------------------------------------------------------
+
+/** Pure, no I/O — the exact two-role Admin gate every existing `/admin/*`
+ * route already enforces inline at the page level (see e.g.
+ * src/app/[locale]/admin/payments/page.tsx). Extracted here so this
+ * module's own admin read model re-verifies it server-side, independently
+ * of the calling page, and so the decision itself is directly unit
+ * testable without a database — never a new/weaker authorization rule. */
+export function isAdminRole(role: string): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+export type FamilyInvitationTypeValue = "STUDENT_LOGIN" | "GUARDIAN_LINK";
+
+export interface AdminActor {
+  id: string;
+  role: string;
+}
+
+/** One row of Family-Accounts-scoped Admin visibility. Deliberately narrow:
+ * no dateOfBirth, no unrelated StudentProfile fields, no financial data, no
+ * password/token material — only what's needed to identify the invitation,
+ * the learner it concerns, the guardian who created it, and the account
+ * that claimed it (§8 of the H.9 implementation prompt's privacy
+ * boundary). `claimedByUser`/`invitedByUser` expose the same shape
+ * (name/email) already shown to a guardian on their own Family dashboard
+ * (see PendingClaimRow) — no new disclosure beyond what an authorized
+ * guardian for this exact family already sees today. */
+export interface AdminFamilyInvitationAttentionRow {
+  id: string;
+  type: FamilyInvitationTypeValue;
+  status: "CLAIMED_PENDING_APPROVAL";
+  targetStudentProfileId: string;
+  studentFirstName: string;
+  studentLastName: string;
+  invitedEmailNormalized: string;
+  invitedByUser: { name: string | null; email: string } | null;
+  claimedByUser: { name: string | null; email: string } | null;
+  createdAt: Date;
+  claimedAt: Date | null;
+  expiresAt: Date;
+  /** Reuses isInvitationExpired — the SAME time gate
+   * approveFamilyInvitation/rejectFamilyInvitationClaim already enforce
+   * (both throw InvitationExpiredError once this is true). true means this
+   * claim can no longer be approved OR rejected through the existing
+   * guardian-facing action and is genuinely, permanently stuck absent a
+   * fresh invitation — never a fabricated derived business status, just
+   * the same existing field compared against "now" the same way the real
+   * mutation already does. */
+  pastDue: boolean;
+}
+
+/**
+ * Every FamilyInvitation currently in CLAIMED_PENDING_APPROVAL — the exact
+ * "requiring attention" set named by the planning report's §28 and the
+ * Post-H.8 readiness audit. PENDING (not yet claimed), ACCEPTED, EXPIRED,
+ * and REVOKED are all terminal-or-not-yet-actionable from an Admin's
+ * perspective and are intentionally excluded: PENDING has no claimant yet
+ * to investigate; the other three are already resolved. ADMIN/SUPER_ADMIN
+ * only — fails closed via isAdminRole for any other actor, including a
+ * PARENT with active guardian authority over one of the returned students
+ * (guardian authority over a student is not, and must never become, Admin
+ * authority over this global cross-family view).
+ */
+export async function listFamilyInvitationsRequiringAdminAttention(
+  client: PrismaClient,
+  actor: AdminActor
+): Promise<AdminFamilyInvitationAttentionRow[]> {
+  if (!isAdminRole(actor.role)) throw new NotAuthorizedError();
+
+  const invitations = await client.familyInvitation.findMany({
+    where: { status: "CLAIMED_PENDING_APPROVAL" },
+    include: {
+      targetStudentProfile: { select: { firstName: true, lastName: true } },
+      invitedByUser: { select: { name: true, email: true } },
+      claimedByUser: { select: { name: true, email: true } },
+    },
+    orderBy: { claimedAt: "asc" },
+  });
+
+  const now = new Date();
+  return invitations.map((inv) => ({
+    id: inv.id,
+    type: inv.type,
+    status: "CLAIMED_PENDING_APPROVAL" as const,
+    targetStudentProfileId: inv.targetStudentProfileId,
+    studentFirstName: inv.targetStudentProfile.firstName,
+    studentLastName: inv.targetStudentProfile.lastName,
+    invitedEmailNormalized: inv.invitedEmailNormalized,
+    invitedByUser: inv.invitedByUser,
+    claimedByUser: inv.claimedByUser,
+    createdAt: inv.createdAt,
+    claimedAt: inv.claimedAt,
+    expiresAt: inv.expiresAt,
+    pastDue: isInvitationExpired(inv.expiresAt, now),
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Guardian relationship revocation (§27-§30)
 // ---------------------------------------------------------------------------
 
