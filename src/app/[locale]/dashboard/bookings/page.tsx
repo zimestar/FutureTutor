@@ -32,6 +32,7 @@ export default async function StudentBookingsPage({
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tStatus = await getTranslations({ locale, namespace: "booking.status" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
+  const tSession = await getTranslations({ locale, namespace: "sessionExperience" });
 
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
 
@@ -75,6 +76,7 @@ export default async function StudentBookingsPage({
             tutorProfile: { select: { user: { select: { name: true } } } },
             subject: { select: { slug: true } },
             payment: { select: { status: true, refundedAmountCents: true, amountCents: true, currency: true } },
+            session: { select: { id: true } },
           },
           orderBy: { startAt: "asc" },
         })
@@ -136,10 +138,15 @@ export default async function StudentBookingsPage({
                           <p className="mt-1 text-xs font-semibold text-slate">Payment processing…</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>
                           {tStatus(booking.status)}
                         </Badge>
+                        {booking.session && (
+                          <Button href={`/session/${booking.id}`} variant="outline" size="sm">
+                            {tSession("viewSession")}
+                          </Button>
+                        )}
                         {section.allowCancel && booking.status === "CONFIRMED" && booking.startAt > now && (
                           <CancelBookingButton
                             bookingId={booking.id}

@@ -93,7 +93,25 @@ function makeFakeStripeClient(
             return result;
           }
           const refund: FakeStripeRefund = {
-            id: `re_fake_${nextId++}`,
+            // H.8.1 test-infra repair — `re_fake_${nextId++}` alone is a
+            // low-cardinality, deterministic id that always restarts at
+            // `re_fake_1` for every fresh makeFakeStripeClient() instance.
+            // Refund.stripeRefundId carries a REAL Postgres UNIQUE
+            // constraint (correct, intentional production behavior — see
+            // prisma/schema.prisma), so any Refund row left behind in the
+            // shared futuretutor_test database by a previous interrupted/
+            // crashed test run (a process killed mid-suite never reaches
+            // its own afterEach/afterAll cleanup) permanently blocks every
+            // later run's "genuinely first-ever attempt" create() call from
+            // ever converging (it throws P2002 on this exact updateMany,
+            // which resolveRefundOutcomeAndConverge's own try/catch turns
+            // into a silent "uncertain" — no exception ever surfaces to the
+            // test). Folding a fresh randomUUID() into the id makes it
+            // collision-proof against ANY prior run's leftover state,
+            // permanently and deterministically — not a retry/sleep
+            // workaround. `nextId` is kept purely for human-readable
+            // per-test ordering in failure output.
+            id: `re_fake_${randomUUID()}_${nextId++}`,
             status: "succeeded",
             amount: params.amount,
             payment_intent: params.payment_intent,

@@ -1422,5 +1422,92 @@
       "saving": "Saving…",
       "save": "Save Changes"
     }
+  },
+  "sessionExperience": {
+    "eyebrow": "Session arrival",
+    "subtitle": "Session with {name}",
+    "viewSession": "View session",
+    "states": {
+      "preWindow": {
+        "label": "Upcoming",
+        "title": "Your session is coming up",
+        "description": "Check-in opens at {opensAt}. You can return to this page when you arrive."
+      },
+      "ready": {
+        "label": "Ready to check in",
+        "title": "Check-in is open",
+        "description": "Record only the presence you can confirm. This session is scheduled to end at {endTime}."
+      },
+      "waitingForTutor": {
+        "label": "Waiting to start",
+        "title": "Learner presence is recorded",
+        "description": "Waiting for the Tutor to arrive. The session remains scheduled to end at {endTime}."
+      },
+      "waitingForStudent": {
+        "label": "Waiting to start",
+        "title": "Tutor presence is recorded",
+        "description": "Waiting for the learner to arrive. The session remains scheduled to end at {endTime}."
+      },
+      "inProgress": {
+        "label": "In session",
+        "title": "The session has started",
+        "description": "Both participants are present. The scheduled end time remains {endTime}."
+      },
+      "unavailable": {
+        "label": "Session updated",
+        "title": "Check-in is no longer available",
+        "description": "This session has changed. Return to your bookings for the latest available details."
+      }
+    },
+    "presence": {
+      "title": "Arrival status",
+      "tutor": "Tutor",
+      "present": "Presence recorded",
+      "notYetRecorded": "Not yet recorded",
+      "recordedBy": {
+        "STUDENT": "{name} recorded their presence.",
+        "GUARDIAN": "A parent or guardian recorded {name}'s presence.",
+        "TUTOR": "The Tutor confirmed that {name} is present."
+      }
+    },
+    "checkIn": {
+      "title": "Confirm arrival",
+      "description": "Tutor arrival and learner presence are recorded separately."
+    },
+    "actions": {
+      "tutorSelf": "I'm here",
+      "studentSelf": "I'm here",
+      "guardianStudent": "Confirm that {name} is here",
+      "tutorStudent": "Confirm that {name} is here",
+      "recording": "Recording…"
+    },
+    "result": {
+      "recorded": "Presence recorded. Updating the session…"
+    },
+    "errors": {
+      "tooEarly": "Check-in is not open yet. The opening time is shown above.",
+      "notAuthorized": "You are not authorized to record this presence.",
+      "notEligible": "This session changed and can no longer accept that check-in. The latest state is being loaded.",
+      "generic": "We couldn't record the check-in. Please try again."
+    },
+    "details": {
+      "title": "Session details",
+      "scheduledStart": "Scheduled start",
+      "scheduledEnd": "Scheduled end",
+      "mode": "Session format"
+    },
+    "mode": {
+      "online": "Online presence is manual for now. This page does not detect classroom activity.",
+      "inPerson": "Use the arrival controls only when you can confirm physical presence."
+    },
+    "started": {
+      "title": "Session started",
+      "description": "Started at {startedAt}. The contractual end time remains {endTime}.",
+      "timeUnavailable": "time not available"
+    },
+    "access": {
+      "title": "Session unavailable",
+      "description": "This session could not be found or you do not have permission to view it."
+    }
   }
 }

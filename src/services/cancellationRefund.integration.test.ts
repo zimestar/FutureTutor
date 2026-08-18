@@ -90,7 +90,16 @@ function makeFakeStripeClient(opts: {
           return result;
         }
         const refund: FakeStripeRefund = {
-          id: `re_fake_${nextId++}`,
+          // H.8.1 test-infra repair — see refundSettlementFinality.
+          // integration.test.ts's identical comment: `re_fake_${nextId++}`
+          // alone always restarts at `re_fake_1`, which permanently
+          // collides with any Refund row a previously interrupted/crashed
+          // run left behind (Refund.stripeRefundId has a real Postgres
+          // UNIQUE constraint), silently turning a genuine first-ever
+          // create() into "uncertain" via resolveRefundOutcomeAndConverge's
+          // own catch-all. Folding randomUUID() in makes the id
+          // collision-proof against any prior run's leftover state.
+          id: `re_fake_${randomUUID()}_${nextId++}`,
           status: "succeeded",
           amount: params.amount,
           payment_intent: params.payment_intent,

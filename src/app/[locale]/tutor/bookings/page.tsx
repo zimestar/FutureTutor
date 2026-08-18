@@ -11,6 +11,7 @@ import { describeCancellationConsequence } from "@/services/cancellationPolicy";
 import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
+import { Button } from "@/components/ui/Button";
 
 export default async function TutorBookingsPage({
   params,
@@ -32,6 +33,7 @@ export default async function TutorBookingsPage({
   const tStatus = await getTranslations({ locale, namespace: "booking.status" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const tPayouts = await getTranslations({ locale, namespace: "tutorPayouts" });
+  const tSession = await getTranslations({ locale, namespace: "sessionExperience" });
 
   const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
 
@@ -42,6 +44,7 @@ export default async function TutorBookingsPage({
           studentProfile: { select: { firstName: true, lastName: true } },
           subject: { select: { slug: true } },
           earning: { select: { status: true, amountCents: true, currency: true } },
+          session: { select: { id: true } },
         },
         orderBy: { startAt: "asc" },
       })
@@ -99,10 +102,15 @@ export default async function TutorBookingsPage({
                           <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>
                           {tStatus(booking.status)}
                         </Badge>
+                        {booking.session && (
+                          <Button href={`/session/${booking.id}`} variant="outline" size="sm">
+                            {tSession("viewSession")}
+                          </Button>
+                        )}
                         {section.allowCancel && booking.status === "CONFIRMED" && booking.startAt > now && (
                           <CancelBookingButton
                             bookingId={booking.id}

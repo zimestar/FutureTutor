@@ -1422,5 +1422,92 @@
       "saving": "Enregistrement…",
       "save": "Enregistrer les modifications"
     }
+  },
+  "sessionExperience": {
+    "eyebrow": "Arrivée à la séance",
+    "subtitle": "Séance avec {name}",
+    "viewSession": "Voir la séance",
+    "states": {
+      "preWindow": {
+        "label": "À venir",
+        "title": "Votre séance approche",
+        "description": "L'enregistrement des présences ouvre à {opensAt}. Revenez à cette page à votre arrivée."
+      },
+      "ready": {
+        "label": "Prêt pour l'arrivée",
+        "title": "L'enregistrement des présences est ouvert",
+        "description": "Enregistrez uniquement la présence que vous pouvez confirmer. La séance doit se terminer à {endTime}."
+      },
+      "waitingForTutor": {
+        "label": "En attente de commencer",
+        "title": "La présence de l'élève est enregistrée",
+        "description": "Nous attendons l'arrivée du tuteur. La séance doit toujours se terminer à {endTime}."
+      },
+      "waitingForStudent": {
+        "label": "En attente de commencer",
+        "title": "La présence du tuteur est enregistrée",
+        "description": "Nous attendons l'arrivée de l'élève. La séance doit toujours se terminer à {endTime}."
+      },
+      "inProgress": {
+        "label": "Séance en cours",
+        "title": "La séance a commencé",
+        "description": "Les deux participants sont présents. L'heure de fin prévue demeure {endTime}."
+      },
+      "unavailable": {
+        "label": "Séance mise à jour",
+        "title": "L'enregistrement des présences n'est plus disponible",
+        "description": "Cette séance a changé. Consultez vos réservations pour voir les derniers renseignements disponibles."
+      }
+    },
+    "presence": {
+      "title": "État des arrivées",
+      "tutor": "Tuteur",
+      "present": "Présence enregistrée",
+      "notYetRecorded": "Pas encore enregistrée",
+      "recordedBy": {
+        "STUDENT": "{name} a enregistré sa présence.",
+        "GUARDIAN": "Un parent ou tuteur légal a enregistré la présence de {name}.",
+        "TUTOR": "Le tuteur a confirmé la présence de {name}."
+      }
+    },
+    "checkIn": {
+      "title": "Confirmer l'arrivée",
+      "description": "L'arrivée du tuteur et la présence de l'élève sont enregistrées séparément."
+    },
+    "actions": {
+      "tutorSelf": "Je suis arrivé",
+      "studentSelf": "Je suis arrivé",
+      "guardianStudent": "Confirmer la présence de {name}",
+      "tutorStudent": "Confirmer la présence de {name}",
+      "recording": "Enregistrement…"
+    },
+    "result": {
+      "recorded": "Présence enregistrée. Mise à jour de la séance…"
+    },
+    "errors": {
+      "tooEarly": "L'enregistrement des présences n'est pas encore ouvert. L'heure d'ouverture est indiquée ci-dessus.",
+      "notAuthorized": "Vous n'êtes pas autorisé à enregistrer cette présence.",
+      "notEligible": "Cette séance a changé et n'accepte plus cet enregistrement. Le nouvel état est en cours de chargement.",
+      "generic": "Nous n'avons pas pu enregistrer la présence. Veuillez réessayer."
+    },
+    "details": {
+      "title": "Détails de la séance",
+      "scheduledStart": "Début prévu",
+      "scheduledEnd": "Fin prévue",
+      "mode": "Format de la séance"
+    },
+    "mode": {
+      "online": "La présence en ligne est manuelle pour le moment. Cette page ne détecte pas l'activité d'une classe virtuelle.",
+      "inPerson": "Utilisez les commandes d'arrivée uniquement lorsque vous pouvez confirmer la présence physique."
+    },
+    "started": {
+      "title": "Séance commencée",
+      "description": "Commencée à {startedAt}. L'heure de fin contractuelle demeure {endTime}.",
+      "timeUnavailable": "heure non disponible"
+    },
+    "access": {
+      "title": "Séance non disponible",
+      "description": "Cette séance est introuvable ou vous n'avez pas l'autorisation de la consulter."
+    }
   }
 }
