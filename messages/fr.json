@@ -347,6 +347,26 @@
   "tutorProfileForm": {
     "title": "Votre profil de tuteur",
     "subtitle": "Voici ce que les élèves verront une fois votre demande approuvée.",
+    "editableStatus": "Modifiable",
+    "identitySectionTitle": "Identité du profil",
+    "identitySectionDescription": "Présentez votre approche professionnelle dans vos propres mots.",
+    "teachingSectionTitle": "Enseignement",
+    "teachingSectionDescription": "Décrivez les matières, les niveaux et les modes que vous enseignez.",
+    "sections": {
+      "identity": {
+        "title": "Identité et enseignement",
+        "description": "Gardez votre présentation et vos renseignements d'enseignement clairs, exacts et à jour."
+      },
+      "qualifications": {
+        "title": "Qualifications",
+        "description": "Ajoutez les études et certifications qui appuient votre expérience d'enseignement."
+      },
+      "publicProfile": {
+        "eyebrow": "Profil de tuteur",
+        "title": "Ce que les familles peuvent voir",
+        "description": "Les tuteurs approuvés peuvent continuer à mettre ces renseignements à jour. L'enregistrement d'une modification ne signifie pas qu'une nouvelle évaluation a commencé."
+      }
+    },
     "headlineLabel": "Titre professionnel",
     "bioLabel": "À propos de vous",
     "subjectsLabel": "Matières que vous enseignez",
@@ -454,6 +474,7 @@
     "signedInAs": "Connecté en tant que",
     "nav": {
       "overview": "Aperçu",
+      "applicationOverview": "Aperçu de la candidature",
       "profile": "Profil",
       "favorites": "Favoris",
       "tutors": "Tuteurs",
@@ -586,13 +607,159 @@
           "approved": "Approuvé"
         }
       },
+      "experience": {
+        "modeApproval": "Obtenir l'approbation",
+        "modeTutoring": "Mon tutorat",
+        "journeyTitle": "Votre parcours d'approbation",
+        "journeyLabel": "Étapes de la candidature de tuteur",
+        "whatNextTitle": "La prochaine étape",
+        "responsible": {
+          "tutor": "Votre prochaine étape",
+          "futureTutor": "Prochaine étape de FutureTutor",
+          "admin": "Géré par FutureTutor"
+        },
+        "journeyStates": {
+          "complete": "Terminée",
+          "current": "En cours",
+          "pending": "À venir",
+          "blocked": "Non disponible",
+          "needsAction": "Action requise"
+        },
+        "journeySteps": {
+          "profile": "Présentez votre expérience, votre approche et les matières enseignées.",
+          "documents": "Fournissez des preuves privées à l'appui de vos qualifications.",
+          "interview": "Rencontrez FutureTutor dans le cadre du processus d'évaluation.",
+          "training": "Terminez les modules de formation actifs de la plateforme.",
+          "exam": "Passez l'examen de la plateforme lorsque cette étape est ouverte.",
+          "approved": "Terminez l'évaluation et accédez à votre espace de tutorat."
+        },
+        "states": {
+          "DRAFT": {
+            "title": "Candidature en préparation",
+            "description": "Créez un profil de tuteur clair avant de soumettre votre candidature.",
+            "actionTitle": "Complétez votre profil de tuteur",
+            "actionDescription": "Ajoutez votre présentation professionnelle, vos renseignements d'enseignement et vos qualifications, puis soumettez votre candidature lorsque vous serez prêt.",
+            "actionCta": "Compléter le profil",
+            "whatNext": "Après la soumission, FutureTutor examinera votre profil et les renseignements à l'appui."
+          },
+          "SUBMITTED": {
+            "title": "Candidature soumise",
+            "description": "Votre candidature a été transmise à FutureTutor aux fins d'évaluation.",
+            "actionTitle": "Aucune action n'est requise pour le moment",
+            "actionDescription": "Vos renseignements sont en attente de l'équipe d'évaluation de FutureTutor.",
+            "whatNext": "FutureTutor examinera votre candidature et la fera passer à l'étape appropriée."
+          },
+          "UNDER_REVIEW": {
+            "title": "Candidature en cours d'évaluation",
+            "description": "FutureTutor examine les renseignements que vous avez soumis.",
+            "actionTitle": "FutureTutor évalue votre candidature",
+            "actionDescription": "Vous n'avez rien d'autre à faire, sauf si FutureTutor vous demande une mise à jour.",
+            "whatNext": "L'équipe déterminera si votre candidature est prête pour l'étape de l'entrevue."
+          },
+          "INTERVIEW_REQUIRED": {
+            "title": "L'entrevue est la prochaine étape",
+            "description": "Votre candidature est maintenant rendue à l'étape de l'entrevue.",
+            "actionTitle": "FutureTutor communiquera avec vous",
+            "actionDescription": "Votre compte ne contient aucune action de planification. FutureTutor vous transmettra directement les détails.",
+            "whatNext": "Surveillez les communications de FutureTutor au sujet de votre entrevue. Aucune date ni heure n'est affichée ici."
+          },
+          "INTERVIEW_COMPLETED": {
+            "title": "Entrevue terminée",
+            "description": "Votre entrevue est terminée et FutureTutor prépare la prochaine étape.",
+            "actionTitle": "Aucune action n'est requise pour le moment",
+            "actionDescription": "FutureTutor mettra votre candidature à jour lorsque la prochaine étape sera disponible.",
+            "whatNext": "Si votre candidature progresse, la formation requise deviendra votre prochaine action."
+          },
+          "TRAINING_REQUIRED": {
+            "title": "Formation requise",
+            "description": "Vos modules de formation actifs sont prêts.",
+            "actionTitle": "Poursuivez votre formation",
+            "actionDescription": "Consultez et confirmez chaque module actif afin de progresser.",
+            "actionCta": "Ouvrir la formation",
+            "whatNext": "Lorsque la formation sera terminée, FutureTutor fera progresser votre candidature vers l'examen."
+          },
+          "TRAINING_COMPLETED": {
+            "title": "Formation terminée",
+            "description": "Vos modules de formation actifs sont terminés.",
+            "actionTitle": "Aucune action n'est requise pour le moment",
+            "actionDescription": "FutureTutor ouvrira la prochaine étape lorsque votre candidature sera prête.",
+            "whatNext": "L'examen de la plateforme devrait suivre, mais commencez-le seulement lorsque votre état indiquera Examen requis."
+          },
+          "EXAM_REQUIRED": {
+            "title": "Examen de la plateforme requis",
+            "description": "L'étape de l'examen est ouverte pour votre candidature.",
+            "actionTitle": "Passez l'examen de la plateforme",
+            "actionDescription": "Répondez à toutes les questions et soumettez votre tentative lorsque vous êtes prêt.",
+            "actionCta": "Ouvrir l'examen",
+            "whatNext": "Après la réussite de l'examen, votre candidature pourra passer à l'évaluation finale."
+          },
+          "EXAM_COMPLETED": {
+            "title": "Examen terminé",
+            "description": "L'étape de l'examen est terminée et votre candidature progresse.",
+            "actionTitle": "Aucune action n'est requise pour le moment",
+            "actionDescription": "FutureTutor préparera votre candidature pour l'évaluation finale.",
+            "whatNext": "L'équipe terminera l'évaluation restante avant de prendre une décision."
+          },
+          "FINAL_REVIEW": {
+            "title": "Candidature en évaluation finale",
+            "description": "FutureTutor effectue la dernière évaluation de votre candidature.",
+            "actionTitle": "La prochaine étape appartient à FutureTutor",
+            "actionDescription": "Aucune action supplémentaire n'est requise de votre part.",
+            "whatNext": "FutureTutor consignera la décision finale lorsque l'évaluation sera terminée."
+          },
+          "REJECTED": {
+            "title": "Candidature non approuvée",
+            "description": "FutureTutor ne poursuit pas le traitement de cette candidature.",
+            "actionTitle": "Aucune nouvelle soumission libre-service n'est offerte",
+            "actionDescription": "Votre compte n'offre actuellement aucune action pour soumettre de nouveau ou réessayer.",
+            "whatNext": "Cet état est final dans le processus actuel. Ne créez pas une nouvelle soumission depuis ce tableau de bord."
+          },
+          "SUSPENDED": {
+            "title": "Compte de tuteur suspendu",
+            "description": "Votre accès de tuteur a été suspendu par FutureTutor.",
+            "actionTitle": "La réactivation est gérée par FutureTutor",
+            "actionDescription": "Votre compte ne comporte aucune action de réactivation libre-service.",
+            "whatNext": "Seul un administrateur FutureTutor peut réactiver un compte de tuteur suspendu."
+          }
+        }
+      },
+      "approved": {
+        "title": "Bon retour, {name}",
+        "description": "Consultez votre prochaine séance, les occasions actives et les éléments essentiels à votre activité de tutorat.",
+        "nextBookingTitle": "Prochaine réservation",
+        "withStudent": "Séance avec {name}",
+        "when": "Quand",
+        "mode": "Mode",
+        "viewBookings": "Voir toutes les réservations",
+        "noBookingTitle": "Aucune réservation à venir",
+        "noBookingDescription": "Les nouvelles réservations confirmées ou en cours s'afficheront ici lorsqu'elles seront planifiées.",
+        "quickMatchTitle": "Jumelage rapide",
+        "quickMatchCount": "{count, plural, =0 {Aucune occasion en attente} one {# occasion en attente} other {# occasions en attente}}",
+        "openQuickMatch": "Ouvrir le jumelage rapide",
+        "availabilityTitle": "Disponibilités",
+        "availabilityConfigured": "{count, plural, one {# journée configurée} other {# journées configurées}}",
+        "availabilityEmpty": "Les disponibilités ne sont pas encore configurées",
+        "manageAvailability": "Gérer les disponibilités",
+        "earningsTitle": "Gain le plus récent",
+        "latestEarning": "Séance de {subject} du {date}",
+        "noEarnings": "Votre gain le plus récent s'affichera ici après une activité de tutorat admissible.",
+        "viewPayouts": "Voir les paiements",
+        "profileTitle": "Profil public",
+        "profileDescription": "Gardez à jour les renseignements qui aident les familles à comprendre votre approche pédagogique.",
+        "manageProfile": "Gérer le profil"
+      },
       "bookings": {
         "title": "Vos réservations",
         "description": "Les séances que des élèves ont réservées avec vous.",
+        "eyebrow": "Mon tutorat",
+        "bookingCount": "{count, plural, one {# réservation} other {# réservations}}",
         "upcomingTitle": "Séances à venir",
         "pastTitle": "Séances passées",
+        "emptyTitle": "Aucune réservation",
         "empty": "Personne n'a encore réservé de séance avec vous.",
         "withStudent": "avec {name}",
+        "earning": "Gain : {amount} {currency}",
+        "paymentProcessing": "Traitement du paiement…",
         "cancelCta": "Annuler la séance",
         "cancelling": "Annulation…"
       }
@@ -705,6 +872,14 @@
   "tutorAvailability": {
     "title": "Disponibilités",
     "subtitle": "Définissez les jours et heures où vous êtes disponible pour des séances. Les élèves ne peuvent réserver que dans ces plages.",
+    "approvalTitle": "Définissez vos disponibilités de tutorat",
+    "approvalSubtitle": "Ajoutez les jours et les heures que vous comptez offrir après l'approbation de votre candidature.",
+    "approvedTitle": "Gérer les disponibilités",
+    "approvedSubtitle": "Gardez à jour les jours et les heures auxquels les élèves peuvent réserver avec vous.",
+    "modeApproval": "Obtenir l'approbation",
+    "modeTutoring": "Mon tutorat",
+    "configured": "{count, plural, one {# journée configurée} other {# journées configurées}}",
+    "notConfigured": "Non configurées",
     "timezoneLabel": "Fuseau horaire",
     "timezones": {
       "America/St_Johns": "Heure de Terre-Neuve (St. John's)",
@@ -866,6 +1041,11 @@
     },
     "tutorInvitation": {
       "pageTitle": "Demandes de jumelage rapide",
+      "eyebrow": "Mon tutorat",
+      "opportunityCount": "{count, plural, =0 {Aucune occasion en attente} one {# occasion en attente} other {# occasions en attente}}",
+      "opportunitiesTitle": "Occasions en attente",
+      "opportunitiesDescription": "Consultez les détails réels de la séance et la rémunération proposée avant de répondre.",
+      "emptyTitle": "Aucune occasion en attente",
       "pageDescription": "Demandes qui vous ont été envoyées. Acceptez rapidement — elles expirent si vous ne répondez pas à temps.",
       "empty": "Aucune demande en attente pour le moment.",
       "anyLevel": "Tous les niveaux",
@@ -891,7 +1071,9 @@
   "tutorPayouts": {
     "title": "Paiements",
     "description": "Configurez Stripe pour recevoir le paiement de vos séances et suivez vos gains.",
+    "eyebrow": "Mon tutorat",
     "stripeStatusTitle": "État du compte de paiement",
+    "stripeStatusDescription": "La configuration Stripe détermine si les fonds admissibles peuvent vous être transférés.",
     "stripeStatus": {
       "NOT_STARTED": "Non commencé",
       "PENDING": "Configuration en cours",
@@ -904,6 +1086,7 @@
     "onboardingError": "Nous n'avons pas pu démarrer la configuration Stripe — veuillez réessayer.",
     "devModeNotice": "Les paiements fonctionnent en mode développement — aucun compte Stripe réel n'est encore requis.",
     "earningsTitle": "Vos gains",
+    "earningsEmptyTitle": "Aucun gain",
     "earningsEmpty": "Vous n'avez encore rien gagné.",
     "earningStatus": {
       "PENDING_ELIGIBLE": "En attente",
@@ -912,6 +1095,7 @@
       "CANCELLED": "Annulé"
     },
     "transfersTitle": "Historique des transferts",
+    "transfersEmptyTitle": "Aucun transfert",
     "transfersEmpty": "Aucun transfert pour le moment.",
     "transferStatus": {
       "PENDING": "En attente",
@@ -944,6 +1128,15 @@
   "tutorDocuments": {
     "title": "Documents",
     "subtitle": "Téléversez vos relevés de notes, diplômes ou certificats pour appuyer votre demande. Ces documents sont privés et visibles uniquement par vous et les administrateurs FutureTutor.",
+    "eyebrow": "Obtenir l'approbation",
+    "uploadTitle": "Téléverser une pièce justificative",
+    "uploadDescription": "Choisissez le type qui décrit le mieux le fichier. FutureTutor ne publie pas ces documents.",
+    "historyTitle": "Historique des documents",
+    "historyDescription": "Suivez l'état d'évaluation de chaque document fourni.",
+    "documentCount": "{count, plural, one {# document} other {# documents}}",
+    "emptyTitle": "Aucun document téléversé",
+    "emptyDescription": "Les documents téléversés et leur état d'évaluation s'afficheront ici.",
+    "replacementGuidanceTitle": "Directives de remplacement",
     "uploadSuccess": "Document téléversé — en attente de révision.",
     "typeLabel": "Type de document",
     "types": {
@@ -976,6 +1169,12 @@
   "tutorTraining": {
     "title": "Formation",
     "subtitle": "Complétez les modules de formation requis pour avancer dans votre demande.",
+    "eyebrow": "Obtenir l'approbation",
+    "remaining": "{count, plural, =0 {Formation terminée} one {# module restant} other {# modules restants}}",
+    "emptyTitle": "Aucun module de formation actif",
+    "modulesTitle": "Modules actifs",
+    "modulesDescription": "Tous les modules affichés sont actuellement accessibles; aucun ordre préalable n'est sous-entendu.",
+    "completedCount": "{complete} sur {total} terminés",
     "empty": "Aucun module de formation pour l'instant.",
     "duration": "{minutes} min",
     "completed": "Complété",
@@ -985,6 +1184,13 @@
   "tutorExam": {
     "title": "Examen de la plateforme",
     "subtitle": "Répondez à chaque question, puis soumettez. Vous verrez votre résultat immédiatement.",
+    "eyebrow": "Obtenir l'approbation",
+    "latestPassed": "Dernière tentative réussie",
+    "latestNotPassed": "Dernière tentative non réussie",
+    "latestAttemptTitle": "Tentative no {number}",
+    "latestAttemptScore": "Résultat enregistré : {score} %.",
+    "formTitle": "Questions de l'examen",
+    "formDescription": "Répondez à toutes les questions. Les règles existantes de notation et de reprise demeurent inchangées.",
     "previousAttempts": "Vous avez déjà tenté cet examen {count} fois.",
     "submitting": "Soumission…",
     "submit": "Soumettre l'examen",

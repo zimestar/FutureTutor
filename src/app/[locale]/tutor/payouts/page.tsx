@@ -8,6 +8,9 @@ import { tutorNavItems } from "@/lib/tutorNav";
 import { startStripeOnboardingAction } from "@/lib/actions/stripeConnect";
 import { syncTutorConnectStatusFromStripe } from "@/services/stripeConnect";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 const STATUS_BADGE: Record<string, "mint" | "outline" | "blue" | "neutral"> = {
   NOT_STARTED: "outline",
@@ -68,14 +71,19 @@ export default async function TutorPayoutsPage({
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "CAD" });
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        eyebrow={t("eyebrow")}
+        status={<Badge variant={STATUS_BADGE[status] ?? "outline"}>{t(`stripeStatus.${status}`)}</Badge>}
+      />
 
-      <section className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
+      <Surface className="mt-8" aria-labelledby="payout-setup-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-semibold text-navy">{t("stripeStatusTitle")}</p>
+            <h2 id="payout-setup-title" className="font-extrabold text-navy">{t("stripeStatusTitle")}</h2>
+            <p className="mt-1 text-sm text-text-secondary">{t("stripeStatusDescription")}</p>
             <div className="mt-1">
               <Badge variant={STATUS_BADGE[status] ?? "outline"}>{t(`stripeStatus.${status}`)}</Badge>
             </div>
@@ -95,16 +103,16 @@ export default async function TutorPayoutsPage({
         </div>
         {onboarding === "error" && <p className="mt-3 text-sm font-semibold text-error">{t("onboardingError")}</p>}
         {!paymentsUseStripe() && <p className="mt-3 text-sm text-slate">{t("devModeNotice")}</p>}
-      </section>
+      </Surface>
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold text-navy">{t("earningsTitle")}</h2>
         {earnings.length === 0 ? (
-          <p className="text-sm text-slate">{t("earningsEmpty")}</p>
+          <EmptyState title={t("earningsEmptyTitle")} description={t("earningsEmpty")} />
         ) : (
           <div className="flex flex-col gap-2">
             {earnings.map((earning) => (
-              <div key={earning.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+              <Surface key={earning.id} padding="sm" className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="font-semibold text-navy">
                   {tSubjects(earning.booking.subject.slug)} — {new Date(earning.booking.startAt).toLocaleDateString(locale)}
                 </span>
@@ -112,7 +120,7 @@ export default async function TutorPayoutsPage({
                   <span className="text-navy">{currencyFormatter.format(earning.amountCents / 100)}</span>
                   <Badge variant={earning.status === "TRANSFERRED" ? "mint" : "outline"}>{t(`earningStatus.${earning.status}`)}</Badge>
                 </div>
-              </div>
+              </Surface>
             ))}
           </div>
         )}
@@ -121,17 +129,17 @@ export default async function TutorPayoutsPage({
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold text-navy">{t("transfersTitle")}</h2>
         {transfers.length === 0 ? (
-          <p className="text-sm text-slate">{t("transfersEmpty")}</p>
+          <EmptyState title={t("transfersEmptyTitle")} description={t("transfersEmpty")} />
         ) : (
           <div className="flex flex-col gap-2">
             {transfers.map((transfer) => (
-              <div key={transfer.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-sm">
+              <Surface key={transfer.id} padding="sm" className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-navy">{new Date(transfer.createdAt).toLocaleDateString(locale)}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-navy">{currencyFormatter.format(transfer.amountCents / 100)}</span>
                   <Badge variant={transfer.status === "COMPLETED" ? "mint" : "outline"}>{t(`transferStatus.${transfer.status}`)}</Badge>
                 </div>
-              </div>
+              </Surface>
             ))}
           </div>
         )}

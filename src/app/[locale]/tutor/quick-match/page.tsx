@@ -7,6 +7,9 @@ import { TutorInvitationCard } from "@/components/dashboard/TutorInvitationCard"
 import { AutoRefresh } from "@/components/dashboard/AutoRefresh";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { expireStaleInvitationsAndAdvance } from "@/services/quickMatchDispatch";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function TutorQuickMatchPage({
   params,
@@ -59,17 +62,22 @@ export default async function TutorQuickMatchPage({
     : [];
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
       <AutoRefresh />
-      <h1 className="text-2xl font-bold text-navy">{t("pageTitle")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("pageDescription")}</p>
+      <PageHeader
+        title={t("pageTitle")}
+        description={t("pageDescription")}
+        eyebrow={t("eyebrow")}
+        status={<Badge variant={pendingInvitations.length > 0 ? "blue" : "neutral"}>{t("opportunityCount", { count: pendingInvitations.length })}</Badge>}
+      />
 
       {pendingInvitations.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-          <p className="text-slate">{t("empty")}</p>
-        </div>
+        <EmptyState className="mt-8" title={t("emptyTitle")} description={t("empty")} />
       ) : (
-        <div className="mt-8 flex flex-col gap-3">
+        <section className="mt-8" aria-labelledby="quick-match-opportunities-title">
+          <h2 id="quick-match-opportunities-title" className="text-lg font-extrabold text-text-primary">{t("opportunitiesTitle")}</h2>
+          <p className="mt-1 text-sm text-text-secondary">{t("opportunitiesDescription")}</p>
+        <div className="mt-4 flex flex-col gap-3">
           {pendingInvitations.map((invitation) => (
             <TutorInvitationCard
               key={invitation.id}
@@ -98,6 +106,7 @@ export default async function TutorQuickMatchPage({
             />
           ))}
         </div>
+        </section>
       )}
     </DashboardShell>
   );

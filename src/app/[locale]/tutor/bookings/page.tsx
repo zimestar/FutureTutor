@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/Badge";
 import { formatBookingTime } from "@/lib/utils";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { describeCancellationConsequence } from "@/services/cancellationPolicy";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorBookingsPage({
   params,
@@ -28,6 +31,7 @@ export default async function TutorBookingsPage({
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tStatus = await getTranslations({ locale, namespace: "booking.status" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
+  const tPayouts = await getTranslations({ locale, namespace: "tutorPayouts" });
 
   const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
 
@@ -53,14 +57,16 @@ export default async function TutorBookingsPage({
   ];
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        eyebrow={t("eyebrow")}
+        status={bookings.length > 0 && <Badge variant="neutral">{t("bookingCount", { count: bookings.length })}</Badge>}
+      />
 
       {bookings.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-          <p className="text-slate">{t("empty")}</p>
-        </div>
+        <EmptyState className="mt-8" title={t("emptyTitle")} description={t("empty")} />
       ) : (
         <div className="mt-8 flex flex-col gap-8">
           {sections
@@ -70,9 +76,10 @@ export default async function TutorBookingsPage({
                 <h2 className="mb-3 text-lg font-bold text-navy">{section.title}</h2>
                 <div className="flex flex-col gap-3">
                   {section.bookings.map((booking) => (
-                    <div
+                    <Surface
                       key={booking.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4"
+                      padding="sm"
+                      className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-semibold text-navy">
@@ -84,12 +91,12 @@ export default async function TutorBookingsPage({
                         </p>
                         {booking.earning && (
                           <p className="mt-1 text-xs font-semibold text-slate" data-testid="earning-status">
-                            Earning: {(booking.earning.amountCents / 100).toFixed(2)} {booking.earning.currency} —{" "}
-                            {booking.earning.status}
+                            {t("earning", { amount: (booking.earning.amountCents / 100).toFixed(2), currency: booking.earning.currency })} —{" "}
+                            {tPayouts(`earningStatus.${booking.earning.status}`)}
                           </p>
                         )}
                         {booking.status === "PENDING_PAYMENT" && (
-                          <p className="mt-1 text-xs font-semibold text-slate">Payment processing…</p>
+                          <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
@@ -112,7 +119,7 @@ export default async function TutorBookingsPage({
                           />
                         )}
                       </div>
-                    </div>
+                    </Surface>
                   ))}
                 </div>
               </div>

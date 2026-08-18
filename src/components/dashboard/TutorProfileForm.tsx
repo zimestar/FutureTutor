@@ -93,6 +93,11 @@ export function TutorProfileForm({
       )}
 
       <div>
+        <h3 className="text-base font-extrabold text-text-primary">{t("identitySectionTitle")}</h3>
+        <p className="mt-1 text-sm text-text-secondary">{t("identitySectionDescription")}</p>
+      </div>
+
+      <div>
         <label htmlFor="headline" className="mb-1.5 block text-sm font-semibold text-navy">
           {t("headlineLabel")}
         </label>
@@ -114,35 +119,40 @@ export function TutorProfileForm({
         />
       </div>
 
-      <div>
-        <p className="mb-1.5 text-sm font-semibold text-navy">{t("subjectsLabel")}</p>
+      <div className="border-t border-border pt-6">
+        <h3 className="text-base font-extrabold text-text-primary">{t("teachingSectionTitle")}</h3>
+        <p className="mt-1 text-sm text-text-secondary">{t("teachingSectionDescription")}</p>
+      </div>
+
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-semibold text-navy">{t("subjectsLabel")}</legend>
         <CheckboxGroup
           name="subjectSlugs"
           defaultValue={values.subjectSlugs}
           options={subjects.map((s) => ({ value: s.slug, label: tSubjects(s.slug) }))}
         />
-      </div>
+      </fieldset>
 
-      <div>
-        <p className="mb-1.5 text-sm font-semibold text-navy">{t("levelsLabel")}</p>
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-semibold text-navy">{t("levelsLabel")}</legend>
         <CheckboxGroup
           name="levelSlugs"
           defaultValue={values.levelSlugs}
           options={levelSlugs.map((slug) => ({ value: slug, label: tLevels(slug) }))}
         />
-      </div>
+      </fieldset>
 
-      <div>
-        <p className="mb-1.5 text-sm font-semibold text-navy">{t("languagesLabel")}</p>
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-semibold text-navy">{t("languagesLabel")}</legend>
         <CheckboxGroup
           name="languages"
           defaultValue={values.languages}
           options={languageOptions.map((lang) => ({ value: lang, label: tLanguages(lang) }))}
         />
-      </div>
+      </fieldset>
 
-      <div>
-        <p className="mb-1.5 text-sm font-semibold text-navy">{t("modeLabel")}</p>
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-semibold text-navy">{t("modeLabel")}</legend>
         <div className="flex flex-wrap gap-2">
           {(["ONLINE", "IN_PERSON", "BOTH"] as const).map((mode) => (
             <label
@@ -161,7 +171,7 @@ export function TutorProfileForm({
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       <p className="rounded-md bg-blue/5 px-4 py-3 text-sm text-slate">{t("pricingNote")}</p>
 

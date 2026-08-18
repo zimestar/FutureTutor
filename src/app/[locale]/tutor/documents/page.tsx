@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { TutorDocumentUploadForm } from "@/components/dashboard/TutorDocumentUploadForm";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { Alert, EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorDocumentsPage({
   params,
@@ -39,31 +42,50 @@ export default async function TutorDocumentsPage({
   const statusVariant = { UPLOADED: "outline", PENDING_REVIEW: "outline", APPROVED: "mint", REJECTED: "outline", REPLACEMENT_REQUIRED: "outline" } as const;
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+      <PageHeader title={t("title")} description={t("subtitle")} eyebrow={t("eyebrow")} />
 
-      <div className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
+      <Surface className="mt-8" aria-labelledby="document-upload-title">
+        <h2 id="document-upload-title" className="text-lg font-extrabold text-text-primary">{t("uploadTitle")}</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{t("uploadDescription")}</p>
+        <div className="mt-5">
         <TutorDocumentUploadForm />
-      </div>
+        </div>
+      </Surface>
 
-      {documents.length > 0 && (
-        <div className="mt-8 flex flex-col gap-3">
+      <section className="mt-8" aria-labelledby="document-history-title">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="document-history-title" className="text-lg font-extrabold text-text-primary">{t("historyTitle")}</h2>
+            <p className="mt-1 text-sm text-text-secondary">{t("historyDescription")}</p>
+          </div>
+          {documents.length > 0 && <Badge variant="neutral">{t("documentCount", { count: documents.length })}</Badge>}
+        </div>
+        {documents.length === 0 ? (
+          <EmptyState className="mt-4" title={t("emptyTitle")} description={t("emptyDescription")} />
+        ) : (
+        <div className="mt-4 flex flex-col gap-3">
           {documents.map((doc) => (
-            <div
+            <Surface
               key={doc.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4"
+              padding="sm"
+              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
                 <p className="font-semibold text-navy">{t(`types.${doc.type}`)}</p>
                 <p className="text-sm text-slate">{doc.originalFileName}</p>
-                {doc.rejectionReason && <p className="mt-1 text-sm text-error">{doc.rejectionReason}</p>}
+                {doc.rejectionReason && (
+                  <Alert tone="warning" title={t("replacementGuidanceTitle")} className="mt-3">
+                    {doc.rejectionReason}
+                  </Alert>
+                )}
               </div>
               <Badge variant={statusVariant[doc.status]}>{t(`status.${doc.status}`)}</Badge>
-            </div>
+            </Surface>
           ))}
         </div>
-      )}
+        )}
+      </section>
     </DashboardShell>
   );
 }

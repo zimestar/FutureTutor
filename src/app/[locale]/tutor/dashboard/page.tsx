@@ -1,50 +1,24 @@
+import { CalendarDays, Clock3, Sparkles, UserRound, WalletCards } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { TutorApprovalJourney } from "@/components/dashboard/TutorApprovalJourney";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { formatBookingTime } from "@/lib/utils";
+import { getTutorExperience, TUTOR_JOURNEY_STEPS } from "@/lib/tutorExperience";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
 
-const LIFECYCLE_STEPS = ["profile", "documents", "interview", "training", "exam", "approved"] as const;
-type LifecycleStep = (typeof LIFECYCLE_STEPS)[number];
+const statusBadgeVariant = (status: TutorApplicationStatus) =>
+  status === "APPROVED" ? "mint" : status === "REJECTED" || status === "SUSPENDED" ? "outline" : "blue";
 
-const STEP_COMPLETE_AT: Record<LifecycleStep, TutorApplicationStatus[]> = {
-  profile: [
-    "SUBMITTED",
-    "UNDER_REVIEW",
-    "INTERVIEW_REQUIRED",
-    "INTERVIEW_COMPLETED",
-    "TRAINING_REQUIRED",
-    "TRAINING_COMPLETED",
-    "EXAM_REQUIRED",
-    "EXAM_COMPLETED",
-    "FINAL_REVIEW",
-    "APPROVED",
-  ],
-  documents: [
-    "INTERVIEW_REQUIRED",
-    "INTERVIEW_COMPLETED",
-    "TRAINING_REQUIRED",
-    "TRAINING_COMPLETED",
-    "EXAM_REQUIRED",
-    "EXAM_COMPLETED",
-    "FINAL_REVIEW",
-    "APPROVED",
-  ],
-  interview: ["TRAINING_REQUIRED", "TRAINING_COMPLETED", "EXAM_REQUIRED", "EXAM_COMPLETED", "FINAL_REVIEW", "APPROVED"],
-  training: ["EXAM_REQUIRED", "EXAM_COMPLETED", "FINAL_REVIEW", "APPROVED"],
-  exam: ["FINAL_REVIEW", "APPROVED"],
-  approved: ["APPROVED"],
-};
-
-export default async function TutorDashboardPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function TutorDashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
@@ -57,60 +31,225 @@ export default async function TutorDashboardPage({
 
   const t = await getTranslations({ locale, namespace: "dashboard.tutor" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
-  const tStatus = await getTranslations({ locale, namespace: "dashboard.tutor.applicationStatus" });
-  const tLifecycle = await getTranslations({ locale, namespace: "dashboard.tutor.lifecycle" });
+  const tBookingStatus = await getTranslations({ locale, namespace: "booking.status" });
+  const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
+  const tMode = await getTranslations({ locale, namespace: "quickMatch.mode" });
+  const tPayouts = await getTranslations({ locale, namespace: "tutorPayouts" });
 
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { userId: user.id },
-    select: { applicationStatus: true, headline: true },
+    select: { id: true, applicationStatus: true },
   });
-
   const status = tutorProfile?.applicationStatus ?? "DRAFT";
-  const isIncomplete = !tutorProfile?.headline;
-  const isTerminal = status === "APPROVED" || status === "REJECTED" || status === "SUSPENDED";
+
+  if (status !== "APPROVED") {
+    const experience = getTutorExperience(status);
+    const stateKey = `experience.states.${status}` as const;
+
+    return (
+      <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""}>
+        <PageHeader
+          eyebrow={t("experience.modeApproval")}
+          title={t(`${stateKey}.title`)}
+          description={t(`${stateKey}.description`)}
+          status={<Badge variant={statusBadgeVariant(status)}>{t(`applicationStatus.${status}`)}</Badge>}
+        />
+
+        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+          <div className="space-y-6">
+            <Alert tone={experience.tone} title={t(`${stateKey}.actionTitle`)}>
+              <p>{t(`${stateKey}.actionDescription`)}</p>
+              {experience.nextActionHref && (
+                <Button href={experience.nextActionHref} size="sm" className="mt-4">
+                  {t(`${stateKey}.actionCta`)}
+                </Button>
+              )}
+            </Alert>
+
+            <Surface>
+              <TutorApprovalJourney
+                title={t("experience.journeyTitle")}
+                label={t("experience.journeyLabel")}
+                items={TUTOR_JOURNEY_STEPS.map((step) => {
+                  const journeyState = experience.journey[step];
+                  const isAction = journeyState === "needsAction" && experience.nextActionHref === `/tutor/${step}`;
+                  return {
+                    id: step,
+                    label: t(`lifecycle.steps.${step}`),
+                    description: t(`experience.journeySteps.${step}`),
+                    state: journeyState,
+                    stateLabel: t(`experience.journeyStates.${journeyState}`),
+                    action: isAction
+                      ? { href: experience.nextActionHref!, label: t(`${stateKey}.actionCta`) }
+                      : undefined,
+                  };
+                })}
+              />
+            </Surface>
+          </div>
+
+          <Surface className="h-fit" aria-labelledby="what-happens-next-title">
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-blue">
+              {t(`experience.responsible.${experience.responsibleParty}`)}
+            </p>
+            <h2 id="what-happens-next-title" className="mt-2 text-lg font-extrabold text-text-primary">
+              {t("experience.whatNextTitle")}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">{t(`${stateKey}.whatNext`)}</p>
+          </Surface>
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  const now = new Date();
+  const [nextBooking, pendingOpportunityCount, availabilityDays, latestEarning] = tutorProfile
+    ? await Promise.all([
+        db.booking.findFirst({
+          where: { tutorProfileId: tutorProfile.id, endAt: { gte: now } },
+          select: {
+            startAt: true,
+            timezone: true,
+            mode: true,
+            status: true,
+            studentProfile: { select: { firstName: true } },
+            subject: { select: { slug: true } },
+          },
+          orderBy: { startAt: "asc" },
+        }),
+        db.tutorInvitation.count({ where: { tutorProfileId: tutorProfile.id, status: "PENDING" } }),
+        db.tutorAvailability.count({ where: { tutorProfileId: tutorProfile.id } }),
+        db.tutorEarning.findFirst({
+          where: { tutorProfileId: tutorProfile.id },
+          select: {
+            amountCents: true,
+            currency: true,
+            status: true,
+            booking: { select: { startAt: true, subject: { select: { slug: true } } } },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+      ])
+    : [null, 0, 0, null];
+
+  const latestEarningAmount = latestEarning
+    ? new Intl.NumberFormat(locale, { style: "currency", currency: latestEarning.currency }).format(
+        latestEarning.amountCents / 100,
+      )
+    : null;
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-navy">
-          {t("welcome", { name: user.name?.split(" ")[0] ?? "" })}
-        </h1>
-        <Badge variant={status === "APPROVED" ? "mint" : "outline"}>{tStatus(status)}</Badge>
+    <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""}>
+      <PageHeader
+        eyebrow={t("experience.modeTutoring")}
+        title={t("approved.title", { name: user.name?.split(" ")[0] ?? "" })}
+        description={t("approved.description")}
+        status={<Badge variant="mint">{t("applicationStatus.APPROVED")}</Badge>}
+      />
+
+      <div className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <Surface className="xl:row-span-2" aria-labelledby="next-booking-title">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-blue/10 text-blue">
+              <CalendarDays className="size-5" aria-hidden="true" />
+            </span>
+            <h2 id="next-booking-title" className="text-lg font-extrabold text-text-primary">
+              {t("approved.nextBookingTitle")}
+            </h2>
+          </div>
+          {nextBooking ? (
+            <div className="mt-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xl font-extrabold text-text-primary">{tSubjects(nextBooking.subject.slug)}</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {t("approved.withStudent", { name: nextBooking.studentProfile.firstName })}
+                  </p>
+                </div>
+                <Badge variant={nextBooking.status === "CONFIRMED" ? "mint" : "outline"}>
+                  {tBookingStatus(nextBooking.status)}
+                </Badge>
+              </div>
+              <dl className="mt-5 grid gap-4 rounded-lg bg-surface-subtle p-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{t("approved.when")}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-text-primary">
+                    {formatBookingTime(nextBooking.startAt, nextBooking.timezone, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{t("approved.mode")}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-text-primary">{tMode(nextBooking.mode)}</dd>
+                </div>
+              </dl>
+              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-5">
+                {t("approved.viewBookings")}
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-5 rounded-lg border border-dashed border-border-strong p-6">
+              <p className="font-bold text-text-primary">{t("approved.noBookingTitle")}</p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">{t("approved.noBookingDescription")}</p>
+              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-4">
+                {t("approved.viewBookings")}
+              </Button>
+            </div>
+          )}
+        </Surface>
+
+        <Surface aria-labelledby="quick-match-summary-title">
+          <div className="flex items-center gap-3">
+            <Sparkles className="size-5 text-blue" aria-hidden="true" />
+            <h2 id="quick-match-summary-title" className="font-extrabold text-text-primary">{t("approved.quickMatchTitle")}</h2>
+          </div>
+          <p className="mt-3 text-3xl font-extrabold text-text-primary">{pendingOpportunityCount}</p>
+          <p className="mt-1 text-sm text-text-secondary">{t("approved.quickMatchCount", { count: pendingOpportunityCount })}</p>
+          <Button href="/tutor/quick-match" variant="outline" size="sm" className="mt-4">{t("approved.openQuickMatch")}</Button>
+        </Surface>
+
+        <Surface aria-labelledby="availability-summary-title">
+          <div className="flex items-center gap-3">
+            <Clock3 className="size-5 text-blue" aria-hidden="true" />
+            <h2 id="availability-summary-title" className="font-extrabold text-text-primary">{t("approved.availabilityTitle")}</h2>
+          </div>
+          <p className="mt-3 font-bold text-text-primary">
+            {availabilityDays > 0 ? t("approved.availabilityConfigured", { count: availabilityDays }) : t("approved.availabilityEmpty")}
+          </p>
+          <Button href="/tutor/availability" variant="outline" size="sm" className="mt-4">{t("approved.manageAvailability")}</Button>
+        </Surface>
       </div>
-      <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 
-      {!isTerminal && (
-        <div className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
-          <p className="mb-4 text-sm font-semibold text-navy">{tLifecycle("title")}</p>
-          <ol className="flex flex-wrap gap-3">
-            {LIFECYCLE_STEPS.map((step) => {
-              const isDone = STEP_COMPLETE_AT[step].includes(status);
-              return (
-                <li
-                  key={step}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                    isDone ? "border-success bg-success-light text-success" : "border-neutral-300 text-slate"
-                  }`}
-                >
-                  <span>{isDone ? "✓" : "○"}</span>
-                  {tLifecycle(`steps.${step}`)}
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Surface aria-labelledby="earnings-summary-title">
+          <div className="flex items-center gap-3">
+            <WalletCards className="size-5 text-blue" aria-hidden="true" />
+            <h2 id="earnings-summary-title" className="font-extrabold text-text-primary">{t("approved.earningsTitle")}</h2>
+          </div>
+          {latestEarning ? (
+            <div className="mt-3">
+              <p className="text-2xl font-extrabold text-text-primary">{latestEarningAmount}</p>
+              <p className="mt-1 text-sm text-text-secondary">
+                {t("approved.latestEarning", {
+                  subject: tSubjects(latestEarning.booking.subject.slug),
+                  date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(latestEarning.booking.startAt),
+                })}
+              </p>
+              <Badge className="mt-3" variant={latestEarning.status === "TRANSFERRED" ? "mint" : "outline"}>
+                {tPayouts(`earningStatus.${latestEarning.status}`)}
+              </Badge>
+            </div>
+          ) : <p className="mt-3 text-sm leading-6 text-text-secondary">{t("approved.noEarnings")}</p>}
+          <Button href="/tutor/payouts" variant="outline" size="sm" className="mt-4">{t("approved.viewPayouts")}</Button>
+        </Surface>
 
-      <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-        <p className="text-lg font-semibold text-navy">
-          {isIncomplete ? t("profileIncompleteTitle") : t("profileCompleteTitle")}
-        </p>
-        <p className="mt-2 text-sm text-slate">
-          {isIncomplete ? t("profileIncompleteDescription") : t("profileCompleteDescription")}
-        </p>
-        <div className="mt-6 flex justify-center">
-          <Button href="/tutor/profile">{isIncomplete ? t("completeProfileCta") : t("editProfileCta")}</Button>
-        </div>
+        <Surface aria-labelledby="profile-summary-title">
+          <div className="flex items-center gap-3">
+            <UserRound className="size-5 text-blue" aria-hidden="true" />
+            <h2 id="profile-summary-title" className="font-extrabold text-text-primary">{t("approved.profileTitle")}</h2>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-text-secondary">{t("approved.profileDescription")}</p>
+          <Button href="/tutor/profile" variant="outline" size="sm" className="mt-4">{t("approved.manageProfile")}</Button>
+        </Surface>
       </div>
     </DashboardShell>
   );

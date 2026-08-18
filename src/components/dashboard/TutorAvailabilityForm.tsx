@@ -48,19 +48,16 @@ export function TutorAvailabilityForm({ values }: { values: TutorAvailabilityFor
         {DAY_KEYS.map((dayKey, i) => {
           const day = values.days[i];
           return (
-            <div key={dayKey} className="flex flex-wrap items-center gap-4 px-4 py-3">
-              <label className="flex w-32 shrink-0 cursor-pointer items-center gap-2 text-sm font-semibold text-navy">
+            <div key={dayKey} className="grid gap-3 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-navy">
                 <input type="checkbox" name={`day-${i}-enabled`} defaultChecked={day.enabled} className="h-4 w-4" />
                 {t(`days.${dayKey}`)}
               </label>
-              <Input
-                type="time"
-                name={`day-${i}-startTime`}
-                defaultValue={day.startTime}
-                className="w-36"
-              />
-              <span className="text-sm text-slate">{t("to")}</span>
-              <Input type="time" name={`day-${i}-endTime`} defaultValue={day.endTime} className="w-36" />
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                <Input type="time" name={`day-${i}-startTime`} defaultValue={day.startTime} className="min-w-0" />
+                <span className="text-sm text-slate">{t("to")}</span>
+                <Input type="time" name={`day-${i}-endTime`} defaultValue={day.endTime} className="min-w-0" />
+              </div>
             </div>
           );
         })}

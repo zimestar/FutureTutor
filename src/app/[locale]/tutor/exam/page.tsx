@@ -6,6 +6,10 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorExamForm } from "@/components/dashboard/TutorExamForm";
 import { PLATFORM_EXAM_QUESTIONS } from "@/lib/exam/examQuestions";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorExamPage({
   params,
@@ -31,19 +35,41 @@ export default async function TutorExamPage({
     return;
   }
 
-  const previousAttempts = await db.tutorExamAttempt.count({ where: { tutorProfileId: tutorProfile.id } });
+  const [previousAttempts, latestAttempt] = await Promise.all([
+    db.tutorExamAttempt.count({ where: { tutorProfileId: tutorProfile.id } }),
+    db.tutorExamAttempt.findFirst({
+      where: { tutorProfileId: tutorProfile.id, submittedAt: { not: null } },
+      select: { score: true, passed: true, attemptNumber: true },
+      orderBy: { attemptNumber: "desc" },
+    }),
+  ]);
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
-      {previousAttempts > 0 && (
-        <p className="mt-2 text-sm text-slate">{t("previousAttempts", { count: previousAttempts })}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle")}
+        eyebrow={t("eyebrow")}
+        status={latestAttempt && <Badge variant={latestAttempt.passed ? "mint" : "outline"}>{latestAttempt.passed ? t("latestPassed") : t("latestNotPassed")}</Badge>}
+      />
+      {latestAttempt && (
+        <Alert tone={latestAttempt.passed ? "success" : "info"} title={t("latestAttemptTitle", { number: latestAttempt.attemptNumber })} className="mt-8 max-w-3xl">
+          {t("latestAttemptScore", { score: latestAttempt.score })}
+        </Alert>
       )}
 
-      <div className="mt-8 max-w-2xl">
+      <Surface className="mt-6 max-w-3xl" padding="lg" aria-labelledby="exam-form-title">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="exam-form-title" className="text-lg font-extrabold text-text-primary">{t("formTitle")}</h2>
+            <p className="mt-1 text-sm text-text-secondary">{t("formDescription")}</p>
+          </div>
+          {previousAttempts > 0 && <p className="text-sm font-semibold text-text-secondary">{t("previousAttempts", { count: previousAttempts })}</p>}
+        </div>
+        <div className="mt-6">
         <TutorExamForm questions={PLATFORM_EXAM_QUESTIONS} />
-      </div>
+        </div>
+      </Surface>
     </DashboardShell>
   );
 }

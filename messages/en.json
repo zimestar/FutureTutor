@@ -347,6 +347,26 @@
   "tutorProfileForm": {
     "title": "Your tutor profile",
     "subtitle": "This is what students will see once your application is approved.",
+    "editableStatus": "Editable",
+    "identitySectionTitle": "Profile identity",
+    "identitySectionDescription": "Introduce your professional approach in your own words.",
+    "teachingSectionTitle": "Teaching",
+    "teachingSectionDescription": "Describe what, where and how you teach.",
+    "sections": {
+      "identity": {
+        "title": "Profile identity and teaching",
+        "description": "Keep your introduction and teaching details clear, accurate and current."
+      },
+      "qualifications": {
+        "title": "Qualifications",
+        "description": "Add the education and certifications that support your teaching experience."
+      },
+      "publicProfile": {
+        "eyebrow": "Tutor profile",
+        "title": "What families can see",
+        "description": "Approved Tutors remain able to update this information. Saving a change does not imply that a new review has started."
+      }
+    },
     "headlineLabel": "Professional headline",
     "bioLabel": "About you",
     "subjectsLabel": "Subjects you teach",
@@ -454,6 +474,7 @@
     "signedInAs": "Signed in as",
     "nav": {
       "overview": "Overview",
+      "applicationOverview": "Application Overview",
       "profile": "Profile",
       "favorites": "Favorites",
       "tutors": "Tutors",
@@ -586,13 +607,159 @@
           "approved": "Approved"
         }
       },
+      "experience": {
+        "modeApproval": "Get approved",
+        "modeTutoring": "My tutoring",
+        "journeyTitle": "Your approval journey",
+        "journeyLabel": "Tutor application milestones",
+        "whatNextTitle": "What happens next",
+        "responsible": {
+          "tutor": "Your next step",
+          "futureTutor": "FutureTutor's next step",
+          "admin": "Managed by FutureTutor"
+        },
+        "journeyStates": {
+          "complete": "Complete",
+          "current": "In progress",
+          "pending": "Coming next",
+          "blocked": "Unavailable",
+          "needsAction": "Action needed"
+        },
+        "journeySteps": {
+          "profile": "Introduce your experience, teaching approach and subjects.",
+          "documents": "Provide private evidence that supports your qualifications.",
+          "interview": "Meet with FutureTutor as part of the review process.",
+          "training": "Complete the active platform training modules.",
+          "exam": "Complete the platform exam when this stage opens.",
+          "approved": "Finish the review and unlock your tutoring workspace."
+        },
+        "states": {
+          "DRAFT": {
+            "title": "Application in progress",
+            "description": "Build a clear tutor profile before sending your application for review.",
+            "actionTitle": "Complete your tutor profile",
+            "actionDescription": "Add your professional introduction, teaching details and qualifications, then submit when you are ready.",
+            "actionCta": "Complete profile",
+            "whatNext": "After you submit, FutureTutor will review your profile and supporting information."
+          },
+          "SUBMITTED": {
+            "title": "Application submitted",
+            "description": "Your application has reached FutureTutor for review.",
+            "actionTitle": "No action is required right now",
+            "actionDescription": "Your information is waiting for the FutureTutor review team.",
+            "whatNext": "FutureTutor will review your application and move it to the appropriate next stage."
+          },
+          "UNDER_REVIEW": {
+            "title": "Application under review",
+            "description": "FutureTutor is reviewing the information you submitted.",
+            "actionTitle": "FutureTutor is reviewing your application",
+            "actionDescription": "You do not need to take another step unless FutureTutor requests an update.",
+            "whatNext": "The review team will determine whether your application is ready for the interview stage."
+          },
+          "INTERVIEW_REQUIRED": {
+            "title": "Interview is the next step",
+            "description": "Your application has progressed to the interview stage.",
+            "actionTitle": "FutureTutor will contact you",
+            "actionDescription": "There is no interview scheduling action in your account. FutureTutor will provide the details directly.",
+            "whatNext": "Watch for communication from FutureTutor about your interview. No date or time is currently shown here."
+          },
+          "INTERVIEW_COMPLETED": {
+            "title": "Interview completed",
+            "description": "Your interview is complete and FutureTutor is preparing the next stage.",
+            "actionTitle": "No action is required right now",
+            "actionDescription": "FutureTutor will update your application when the next stage is available.",
+            "whatNext": "If your application proceeds, required training will become your next action."
+          },
+          "TRAINING_REQUIRED": {
+            "title": "Training required",
+            "description": "Your active training modules are ready to complete.",
+            "actionTitle": "Continue your training",
+            "actionDescription": "Review and acknowledge every active module to move forward.",
+            "actionCta": "Open training",
+            "whatNext": "Once training is complete, FutureTutor will move your application toward the exam stage."
+          },
+          "TRAINING_COMPLETED": {
+            "title": "Training completed",
+            "description": "Your active training modules are complete.",
+            "actionTitle": "No action is required right now",
+            "actionDescription": "FutureTutor will open the next stage when your application is ready.",
+            "whatNext": "The platform exam is expected next, but it should only be started once your status changes to Exam required."
+          },
+          "EXAM_REQUIRED": {
+            "title": "Platform exam required",
+            "description": "The exam stage is open for your application.",
+            "actionTitle": "Take the platform exam",
+            "actionDescription": "Answer every question and submit your attempt when you are ready.",
+            "actionCta": "Open exam",
+            "whatNext": "After a successful exam result, your application can proceed to final review."
+          },
+          "EXAM_COMPLETED": {
+            "title": "Exam completed",
+            "description": "Your exam stage is complete and your application is moving forward.",
+            "actionTitle": "No action is required right now",
+            "actionDescription": "FutureTutor will prepare your application for final review.",
+            "whatNext": "The review team will complete the remaining assessment before making an approval decision."
+          },
+          "FINAL_REVIEW": {
+            "title": "Application in final review",
+            "description": "FutureTutor is completing the last review of your application.",
+            "actionTitle": "FutureTutor has the next step",
+            "actionDescription": "No additional action is required from you at this stage.",
+            "whatNext": "FutureTutor will record the final application decision when the review is complete."
+          },
+          "REJECTED": {
+            "title": "Application not approved",
+            "description": "FutureTutor is not moving this application forward.",
+            "actionTitle": "There is no self-service resubmission path",
+            "actionDescription": "Your account does not currently provide a Resubmit or Try again action.",
+            "whatNext": "This application state is final in the current workflow. Do not create a new submission from this dashboard."
+          },
+          "SUSPENDED": {
+            "title": "Tutor account suspended",
+            "description": "Your Tutor access has been suspended by FutureTutor.",
+            "actionTitle": "Reactivation is managed by FutureTutor",
+            "actionDescription": "There is no self-service Reactivate action in your account.",
+            "whatNext": "Only a FutureTutor administrator can reactivate a suspended Tutor account."
+          }
+        }
+      },
+      "approved": {
+        "title": "Welcome back, {name}",
+        "description": "Review your next session, live opportunities and the essentials that keep your tutoring work ready.",
+        "nextBookingTitle": "Next booking",
+        "withStudent": "Session with {name}",
+        "when": "When",
+        "mode": "Mode",
+        "viewBookings": "View all bookings",
+        "noBookingTitle": "No upcoming booking",
+        "noBookingDescription": "New confirmed and in-progress bookings will appear here when they are scheduled.",
+        "quickMatchTitle": "Quick Match",
+        "quickMatchCount": "{count, plural, =0 {No pending opportunities} one {# pending opportunity} other {# pending opportunities}}",
+        "openQuickMatch": "Open Quick Match",
+        "availabilityTitle": "Availability",
+        "availabilityConfigured": "{count, plural, one {# day configured} other {# days configured}}",
+        "availabilityEmpty": "Availability is not configured yet",
+        "manageAvailability": "Manage availability",
+        "earningsTitle": "Latest earning",
+        "latestEarning": "{subject} session on {date}",
+        "noEarnings": "Your most recent earning will appear here after eligible tutoring activity.",
+        "viewPayouts": "View payouts",
+        "profileTitle": "Public profile",
+        "profileDescription": "Keep the teaching information families use to understand your approach accurate and current.",
+        "manageProfile": "Manage profile"
+      },
       "bookings": {
         "title": "Your bookings",
         "description": "Sessions students have booked with you.",
+        "eyebrow": "My tutoring",
+        "bookingCount": "{count, plural, one {# booking} other {# bookings}}",
         "upcomingTitle": "Upcoming sessions",
         "pastTitle": "Past sessions",
+        "emptyTitle": "No bookings yet",
         "empty": "No one has booked a session with you yet.",
         "withStudent": "with {name}",
+        "earning": "Earning: {amount} {currency}",
+        "paymentProcessing": "Payment processing…",
         "cancelCta": "Cancel session",
         "cancelling": "Cancelling…"
       }
@@ -705,6 +872,14 @@
   "tutorAvailability": {
     "title": "Availability",
     "subtitle": "Set the days and hours you're open for sessions. Students can only book within these windows.",
+    "approvalTitle": "Set your tutoring availability",
+    "approvalSubtitle": "Add the days and hours you plan to offer once your Tutor application is approved.",
+    "approvedTitle": "Manage availability",
+    "approvedSubtitle": "Keep the days and hours students can book with you accurate.",
+    "modeApproval": "Get approved",
+    "modeTutoring": "My tutoring",
+    "configured": "{count, plural, one {# day configured} other {# days configured}}",
+    "notConfigured": "Not configured",
     "timezoneLabel": "Timezone",
     "timezones": {
       "America/St_Johns": "Newfoundland Time (St. John's)",
@@ -866,6 +1041,11 @@
     },
     "tutorInvitation": {
       "pageTitle": "Quick Match requests",
+      "eyebrow": "My tutoring",
+      "opportunityCount": "{count, plural, =0 {No pending opportunities} one {# pending opportunity} other {# pending opportunities}}",
+      "opportunitiesTitle": "Pending opportunities",
+      "opportunitiesDescription": "Review the real session details and payout quote before responding.",
+      "emptyTitle": "No pending opportunities",
       "pageDescription": "Requests dispatched to you. Accept quickly — these expire if you don't respond in time.",
       "empty": "No pending requests right now.",
       "anyLevel": "Any level",
@@ -891,7 +1071,9 @@
   "tutorPayouts": {
     "title": "Payouts",
     "description": "Set up Stripe to receive payment for your sessions, and track what you've earned.",
+    "eyebrow": "My tutoring",
     "stripeStatusTitle": "Payout account status",
+    "stripeStatusDescription": "Stripe setup controls whether eligible funds can be transferred to you.",
     "stripeStatus": {
       "NOT_STARTED": "Not started",
       "PENDING": "Setup in progress",
@@ -904,6 +1086,7 @@
     "onboardingError": "We couldn't start Stripe onboarding — please try again.",
     "devModeNotice": "Payments are running in development mode — no real Stripe account is required yet.",
     "earningsTitle": "Your earnings",
+    "earningsEmptyTitle": "No earnings yet",
     "earningsEmpty": "You haven't earned anything yet.",
     "earningStatus": {
       "PENDING_ELIGIBLE": "Pending",
@@ -912,6 +1095,7 @@
       "CANCELLED": "Cancelled"
     },
     "transfersTitle": "Transfer history",
+    "transfersEmptyTitle": "No transfers yet",
     "transfersEmpty": "No transfers yet.",
     "transferStatus": {
       "PENDING": "Pending",
@@ -944,6 +1128,15 @@
   "tutorDocuments": {
     "title": "Documents",
     "subtitle": "Upload transcripts, diplomas, or certificates to support your application. These are private and only visible to you and FutureTutor admins.",
+    "eyebrow": "Get approved",
+    "uploadTitle": "Upload supporting evidence",
+    "uploadDescription": "Choose the document type that best describes the file. FutureTutor does not publish these documents.",
+    "historyTitle": "Document history",
+    "historyDescription": "Track the review state of every document you have provided.",
+    "documentCount": "{count, plural, one {# document} other {# documents}}",
+    "emptyTitle": "No documents uploaded",
+    "emptyDescription": "Uploaded documents and their review states will appear here.",
+    "replacementGuidanceTitle": "Replacement guidance",
     "uploadSuccess": "Document uploaded — it's now pending review.",
     "typeLabel": "Document type",
     "types": {
@@ -976,6 +1169,12 @@
   "tutorTraining": {
     "title": "Training",
     "subtitle": "Complete the required training modules to move forward in your application.",
+    "eyebrow": "Get approved",
+    "remaining": "{count, plural, =0 {Training complete} one {# module remaining} other {# modules remaining}}",
+    "emptyTitle": "No active training modules",
+    "modulesTitle": "Active modules",
+    "modulesDescription": "All modules shown here are currently available; no prerequisite order is implied.",
+    "completedCount": "{complete} of {total} completed",
     "empty": "No training modules yet.",
     "duration": "{minutes} min",
     "completed": "Completed",
@@ -985,6 +1184,13 @@
   "tutorExam": {
     "title": "Platform Exam",
     "subtitle": "Answer every question, then submit. You'll see your result immediately.",
+    "eyebrow": "Get approved",
+    "latestPassed": "Latest attempt passed",
+    "latestNotPassed": "Latest attempt not passed",
+    "latestAttemptTitle": "Attempt #{number}",
+    "latestAttemptScore": "Recorded score: {score}%.",
+    "formTitle": "Exam questions",
+    "formDescription": "Complete every question. The existing scoring and retry rules remain unchanged.",
     "previousAttempts": "You've attempted this exam {count} time(s) before.",
     "submitting": "Submitting…",
     "submit": "Submit Exam",

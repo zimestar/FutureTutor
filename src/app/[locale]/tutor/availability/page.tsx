@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorAvailabilityForm } from "@/components/dashboard/TutorAvailabilityForm";
 import { TIMEZONE_OPTIONS } from "@/schemas/tutorAvailability";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { Badge } from "@/components/ui/Badge";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorAvailabilityPage({
   params,
@@ -46,13 +49,17 @@ export default async function TutorAvailabilityPage({
   };
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+      <PageHeader
+        title={tutorProfile.applicationStatus === "APPROVED" ? t("approvedTitle") : t("approvalTitle")}
+        description={tutorProfile.applicationStatus === "APPROVED" ? t("approvedSubtitle") : t("approvalSubtitle")}
+        eyebrow={tutorProfile.applicationStatus === "APPROVED" ? t("modeTutoring") : t("modeApproval")}
+        status={<Badge variant={existing.length > 0 ? "mint" : "outline"}>{existing.length > 0 ? t("configured", { count: existing.length }) : t("notConfigured")}</Badge>}
+      />
 
-      <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
+      <Surface className="mt-8 max-w-3xl" padding="lg">
         <TutorAvailabilityForm values={values} />
-      </div>
+      </Surface>
     </DashboardShell>
   );
 }

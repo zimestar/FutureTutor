@@ -6,6 +6,9 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorProfileForm } from "@/components/dashboard/TutorProfileForm";
 import { TutorEducationForm } from "@/components/dashboard/TutorEducationForm";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { Badge } from "@/components/ui/Badge";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorProfilePage({
   params,
@@ -42,11 +45,20 @@ export default async function TutorProfilePage({
   }
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+      <PageHeader
+        eyebrow={t("sections.publicProfile.eyebrow")}
+        title={t("title")}
+        description={t("subtitle")}
+        status={(tutorProfile.applicationStatus === "DRAFT" || tutorProfile.applicationStatus === "APPROVED")
+          ? <Badge variant={tutorProfile.applicationStatus === "APPROVED" ? "mint" : "outline"}>{t("editableStatus")}</Badge>
+          : undefined}
+      />
 
-      <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
+      <Surface className="mt-8 max-w-4xl" padding="lg" aria-labelledby="profile-identity-title">
+        <h2 id="profile-identity-title" className="text-lg font-extrabold text-text-primary">{t("sections.identity.title")}</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{t("sections.identity.description")}</p>
+        <div className="mt-6">
         <TutorProfileForm
           applicationStatus={tutorProfile.applicationStatus}
           values={{
@@ -61,9 +73,13 @@ export default async function TutorProfilePage({
             learningMode: tutorProfile.learningMode ?? "",
           }}
         />
-      </div>
+        </div>
+      </Surface>
 
-      <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 md:p-8">
+      <Surface className="mt-6 max-w-4xl" padding="lg" aria-labelledby="profile-qualifications-title">
+        <h2 id="profile-qualifications-title" className="text-lg font-extrabold text-text-primary">{t("sections.qualifications.title")}</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{t("sections.qualifications.description")}</p>
+        <div className="mt-6">
         <TutorEducationForm
           initialEducation={tutorProfile.education.map((e) => ({
             institution: e.institution,
@@ -79,7 +95,13 @@ export default async function TutorProfilePage({
             credentialUrl: c.credentialUrl ?? "",
           }))}
         />
-      </div>
+        </div>
+      </Surface>
+
+      <Surface className="mt-6 max-w-4xl bg-surface-subtle" aria-labelledby="public-profile-title">
+        <h2 id="public-profile-title" className="text-lg font-extrabold text-text-primary">{t("sections.publicProfile.title")}</h2>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">{t("sections.publicProfile.description")}</p>
+      </Surface>
     </DashboardShell>
   );
 }

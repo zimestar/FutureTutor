@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TrainingModuleCard } from "@/components/dashboard/TrainingModuleCard";
 import { tutorNavItems } from "@/lib/tutorNav";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/Feedback";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Surface } from "@/components/ui/Surface";
 
 export default async function TutorTrainingPage({
   params,
@@ -35,18 +39,29 @@ export default async function TutorTrainingPage({
     db.tutorTrainingProgress.findMany({ where: { tutorProfileId: tutorProfile.id } }),
   ]);
   const completedModuleIds = new Set(progress.filter((p) => p.completedAt).map((p) => p.trainingModuleId));
+  const remainingCount = Math.max(0, modules.length - completedModuleIds.size);
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("subtitle")}</p>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle")}
+        eyebrow={t("eyebrow")}
+        status={<Badge variant={remainingCount === 0 && modules.length > 0 ? "mint" : "blue"}>{t("remaining", { count: remainingCount })}</Badge>}
+      />
 
       {modules.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-slate">
-          {t("empty")}
-        </div>
+        <EmptyState className="mt-8" title={t("emptyTitle")} description={t("empty")} />
       ) : (
-        <div className="mt-8 flex flex-col gap-4">
+        <Surface className="mt-8" aria-labelledby="training-modules-title">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="training-modules-title" className="text-lg font-extrabold text-text-primary">{t("modulesTitle")}</h2>
+              <p className="mt-1 text-sm text-text-secondary">{t("modulesDescription")}</p>
+            </div>
+            <p className="text-sm font-semibold text-text-secondary">{t("completedCount", { complete: completedModuleIds.size, total: modules.length })}</p>
+          </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
           {modules.map((mod) => (
             <TrainingModuleCard
               key={mod.id}
@@ -58,6 +73,7 @@ export default async function TutorTrainingPage({
             />
           ))}
         </div>
+        </Surface>
       )}
     </DashboardShell>
   );

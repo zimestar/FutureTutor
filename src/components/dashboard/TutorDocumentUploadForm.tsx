@@ -13,22 +13,22 @@ export function TutorDocumentUploadForm() {
   const [state, formAction, pending] = useActionState(uploadDocumentAction, undefined);
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-4">
+    <form action={formAction} className="grid gap-4 sm:grid-cols-2 sm:items-end lg:grid-cols-[14rem_minmax(0,1fr)_auto]">
       {state?.error && (
-        <p role="alert" className="w-full rounded-md bg-error-light px-4 py-3 text-sm font-semibold text-error">
+        <p role="alert" className="w-full rounded-md bg-error-light px-4 py-3 text-sm font-semibold text-error sm:col-span-2 lg:col-span-3">
           {state.error}
         </p>
       )}
       {state?.success && (
-        <p role="status" className="w-full rounded-md bg-success-light px-4 py-3 text-sm font-semibold text-success">
+        <p role="status" className="w-full rounded-md bg-success-light px-4 py-3 text-sm font-semibold text-success sm:col-span-2 lg:col-span-3">
           {t("uploadSuccess")}
         </p>
       )}
-      <div>
+      <div className="min-w-0">
         <label htmlFor="type" className="mb-1.5 block text-sm font-semibold text-navy">
           {t("typeLabel")}
         </label>
-        <Select id="type" name="type" required className="w-56">
+        <Select id="type" name="type" required className="w-full">
           {DOCUMENT_TYPES.map((type) => (
             <option key={type} value={type}>
               {t(`types.${type}`)}
@@ -36,7 +36,7 @@ export function TutorDocumentUploadForm() {
           ))}
         </Select>
       </div>
-      <div>
+      <div className="min-w-0">
         <label htmlFor="file" className="mb-1.5 block text-sm font-semibold text-navy">
           {t("fileLabel")}
         </label>
@@ -46,13 +46,13 @@ export function TutorDocumentUploadForm() {
           type="file"
           accept="application/pdf,image/jpeg,image/png"
           required
-          className="block text-sm text-navy"
+          className="block max-w-full text-sm text-navy"
         />
       </div>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending ? t("uploading") : t("upload")}
       </Button>
-      <p className="w-full text-xs text-slate">{t("uploadHint")}</p>
+      <p className="w-full text-xs text-slate sm:col-span-2 lg:col-span-3">{t("uploadHint")}</p>
     </form>
   );
 }
