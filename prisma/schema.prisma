@@ -848,6 +848,9 @@ model Booking {
   subjectId                String
   academicLevelId          String?
   startAt                  DateTime
+  // Scheduled contractual end time — commercial, never adjusted post-
+  // creation, never extended by a late arrival. Session_.completedAt (see
+  // below) is the separate, operational "did it actually finish" fact.
   endAt                    DateTime
   timezone                 String
   mode                     TutoringMode
@@ -942,6 +945,11 @@ enum SessionStatus {
   COMPLETED
   NO_SHOW
   CANCELLED
+  // Session Lifecycle Phase 1 (foundation only — no writer exists yet): a
+  // session that successfully started but suffered a material interruption.
+  // Distinct from COMPLETED (ran to a normal end) and NO_SHOW (never
+  // established presence) — never overload either to mean this.
+  INTERRUPTED
 }
 
 // Named Session_ to avoid clashing with NextAuth's own `Session` model above
@@ -956,6 +964,12 @@ model Session_ {
   studentAttendance Boolean?
   onlineMeetingUrl  String?
   notes             String?       @db.Text
+  // Session Lifecycle Phase 1 (foundation only — no writer exists yet): the
+  // authoritative timestamp of successful operational completion, as
+  // determined by the future Session Lifecycle domain. Distinct from
+  // Booking.endAt (the scheduled contractual end time, never adjusted) and
+  // from endedAt/updatedAt — never overload those to mean this.
+  completedAt       DateTime?
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
