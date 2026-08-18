@@ -59,6 +59,7 @@ model User {
   familyInvitationsClaimed     FamilyInvitation[]          @relation("FamilyInvitationClaimedBy")
   familyInvitationsApproved    FamilyInvitation[]          @relation("FamilyInvitationApprovedBy")
   consentRecords               ConsentRecord[]             @relation("ConsentActor")
+  sessionAttendanceEventsRecorded SessionAttendanceEvent[] @relation("SessionAttendanceRecordedBy")
 
   @@index([role])
 }
@@ -971,9 +972,96 @@ model Session_ {
   // from endedAt/updatedAt — never overload those to mean this.
   completedAt       DateTime?
 
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking          Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  attendanceEvents SessionAttendanceEvent[]
 
   @@map("Session_tutoring")
+}
+
+// ---------------------------------------------------------------------------
+// Session Lifecycle Phase 2 — Attendance/check-in foundation. ATTENDANCE ONLY:
+// no no-show determination, no incidents/disputes, no automatic completion, no
+// TutorEarning/financial effect. See
+// FutureTutor_SessionLifecycle_Phase2_Implementation_Report.md for the full
+// design rationale.
+// ---------------------------------------------------------------------------
+
+/// Whose physical presence a SessionAttendanceEvent represents — NOT who
+/// performed the action (see SessionAttendanceEvent.recordedByUserId for
+/// that). A Tutor may record that a Student is present (participantRole =
+/// STUDENT, recordedByUserId = the Tutor's own User id) — the subject and
+/// the actor are deliberately independent fields, never conflated.
+enum SessionParticipantRole {
+  TUTOR
+  STUDENT
+}
+
+/// CHECK_IN is the only event type with a writer in Phase 2. CHECK_OUT is
+/// declared now (schema-complete per the approved design) but deliberately
+/// has no writer yet — recording checkout is evidence-only and adds no
+/// Phase 2 capability (nothing reads it), so implementing it now would be
+/// speculative scope; see the Phase 2 report's "Check-out" section for the
+/// explicit deferral decision. Never let a future CHECK_OUT writer trigger a
+/// state transition on its own (that decision belongs to a later phase).
+enum SessionAttendanceEventType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+/// IN_PERSON_MANUAL is the only source with a writer in Phase 2 — a
+/// participant (or, for a represented learner, an authorized actor) taps
+/// "I am here" and the server stamps occurredAt; no GPS, no photo, no QR
+/// (approved rule B). ONLINE_ACTIVITY is reserved for a future phase that
+/// derives presence from authenticated in-app session activity (rule B's
+/// "eventually" framing) — declared here only so the evidence-row shape
+/// never needs a breaking change when that phase lands; no code path
+/// produces it in Phase 2.
+enum SessionAttendanceSource {
+  IN_PERSON_MANUAL
+  ONLINE_ACTIVITY
+}
+
+/// Append-only presence evidence. Never updated, never deleted by
+/// application code — a later CHECK_IN is a NEW row, not a rewrite of an
+/// earlier one, so a full presence history always remains reconstructable
+/// for a future dispute (see FutureTutor_Session_Lifecycle_Architecture_Audit.md
+/// §21). Deliberately NOT unique on (sessionId, participantRole, eventType):
+/// the concurrency-safety mechanism for "only one IN_PROGRESS transition" is
+/// the guarded Session_.status updateMany in sessionLifecycle.ts, not a
+/// row-level uniqueness constraint here — a uniqueness constraint would
+/// additionally have to special-case legitimate repeat/reconnect check-ins,
+/// which the append-only design explicitly wants to allow (§6 of the Phase 2
+/// task spec). Duplicate CHECK_IN rows for the same participant are harmless:
+/// "has this participant checked in at all" is derived from row EXISTENCE,
+/// not row COUNT or uniqueness.
+model SessionAttendanceEvent {
+  id               String                     @id @default(cuid())
+  sessionId        String
+  /// Whose presence this row represents — TUTOR or STUDENT. See the enum's
+  /// own doc comment for the subject-vs-actor distinction.
+  participantRole  SessionParticipantRole
+  /// Who performed the declaration (authenticated actor) — the Tutor
+  /// themselves for their own check-in; the Student, an authorized Guardian,
+  /// or the owning Tutor (declaring learner presence) for a STUDENT-role
+  /// event. SetNull (not Restrict), mirroring
+  /// ParentStudentRelationship.createdByUserId's established precedent for
+  /// actor pointers: the row is a historical presence record, not the actor's
+  /// own data — losing the User account degrades "who performed it" without
+  /// destroying the evidence itself.
+  recordedByUserId String?
+  eventType        SessionAttendanceEventType
+  /// Authoritative server-generated timestamp — ALWAYS the server clock()
+  /// evaluated at write time inside the authoritative transaction, NEVER a
+  /// client-supplied value. See sessionLifecycle.ts's clock() parameter and
+  /// the forged-timestamp regression tests.
+  occurredAt       DateTime
+  source           SessionAttendanceSource
+  createdAt        DateTime                   @default(now())
+
+  session        Session_ @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  recordedByUser User?    @relation("SessionAttendanceRecordedBy", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, participantRole, eventType, occurredAt])
 }
 
 // ---------------------------------------------------------------------------
