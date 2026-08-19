@@ -1424,10 +1424,12 @@
     }
   },
   "sessionExperience": {
-    "eyebrow": "Arrivée à la séance",
+    "eyebrow": "Séance de tutorat",
     "subtitle": "Séance avec {name}",
     "viewSession": "Voir la séance",
     "bookingNoShow": "La séance n'a pas commencé",
+    "bookingCompleted": "Séance terminée",
+    "bookingInterrupted": "Séance terminée plus tôt",
     "states": {
       "preWindow": {
         "label": "À venir",
@@ -1473,6 +1475,21 @@
         "label": "Séance en cours",
         "title": "La séance a commencé",
         "description": "Les deux participants sont présents. L'heure de fin prévue demeure {endTime}."
+      },
+      "completionPending": {
+        "label": "Mise à jour de la séance",
+        "title": "Vérification de l'état de la séance",
+        "description": "L'heure de fin prévue est arrivée. Le serveur vérifie l'état officiel de la séance."
+      },
+      "completed": {
+        "label": "Terminée",
+        "title": "Séance terminée",
+        "description": "Cette séance s'est rendue à sa fin prévue."
+      },
+      "interrupted": {
+        "label": "Terminée plus tôt",
+        "title": "Séance terminée plus tôt",
+        "description": "Cette séance avait commencé, mais elle s'est terminée avant l'heure prévue."
       },
       "studentNoShow": {
         "label": "La séance n'a pas commencé",
@@ -1520,6 +1537,37 @@
       "authorityNote": "Ce compte à rebours est fourni à titre indicatif. Le serveur détermine le résultat de la séance.",
       "refreshing": "Vérification du dernier état de la séance…"
     },
+    "completion": {
+      "checking": "Vérification de l'état le plus récent de la séance...",
+      "authorityNote": "Le serveur détermine si la séance est terminée.",
+      "retry": "Réessayer",
+      "errors": {
+        "notAuthorized": "Vous n'êtes pas autorisé à mettre cette séance à jour.",
+        "notEligible": "L'état de cette séance a changé. Le chargement de l'état le plus récent pourrait résoudre le problème.",
+        "generic": "Nous n'avons pas pu vérifier l'état de la séance. Veuillez réessayer."
+      }
+    },
+    "interruption": {
+      "trigger": "Terminer la séance plus tôt",
+      "triggerGuardian": "Terminer la séance de {name} plus tôt",
+      "summary": "Si cette séance active doit prendre fin avant l'heure prévue, utilisez la confirmation ci-dessous.",
+      "summaryGuardian": "Si la séance active de {name} doit prendre fin avant l'heure prévue, utilisez la confirmation ci-dessous.",
+      "dialogTitle": "Terminer cette séance plus tôt?",
+      "dialogTitleGuardian": "Terminer la séance de {name} plus tôt?",
+      "dialogDescription": "Cette action mettra fin à la séance de tutorat active. Elle ne pourra pas revenir à l'état en cours.",
+      "dialogDescriptionGuardian": "Cette action mettra fin à la séance de tutorat active de {name}. Elle ne pourra pas revenir à l'état en cours.",
+      "reasonLabel": "Raison (facultative)",
+      "reasonPlaceholder": "Ajoutez un bref contexte, au besoin",
+      "reasonHelp": "Maximum de 500 caractères. N'incluez pas de renseignements personnels sensibles.",
+      "cancel": "Garder la séance active",
+      "confirm": "Confirmer et terminer la séance",
+      "ending": "Fin de la séance...",
+      "errors": {
+        "notAuthorized": "Vous n'êtes pas autorisé à terminer cette séance.",
+        "notEligible": "L'état de cette séance a changé et elle ne peut plus être terminée de cette façon. L'état le plus récent est en cours de chargement.",
+        "generic": "Nous n'avons pas pu terminer la séance. Veuillez réessayer."
+      }
+    },
     "presence": {
       "title": "État des arrivées",
       "tutor": "Tuteur",
@@ -1555,6 +1603,9 @@
       "title": "Détails de la séance",
       "scheduledStart": "Début prévu",
       "scheduledEnd": "Fin prévue",
+      "startedAt": "Début réel",
+      "completedAt": "Fin réelle",
+      "endedAt": "Fin anticipée",
       "graceDeadline": "Échéance de la période de grâce",
       "mode": "Format de la séance"
     },

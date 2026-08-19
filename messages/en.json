@@ -1424,10 +1424,12 @@
     }
   },
   "sessionExperience": {
-    "eyebrow": "Session arrival",
+    "eyebrow": "Tutoring session",
     "subtitle": "Session with {name}",
     "viewSession": "View session",
     "bookingNoShow": "Session did not start",
+    "bookingCompleted": "Session completed",
+    "bookingInterrupted": "Session ended early",
     "states": {
       "preWindow": {
         "label": "Upcoming",
@@ -1473,6 +1475,21 @@
         "label": "In session",
         "title": "The session has started",
         "description": "Both participants are present. The scheduled end time remains {endTime}."
+      },
+      "completionPending": {
+        "label": "Updating session",
+        "title": "Checking session status",
+        "description": "The scheduled end time has been reached. The server is checking the authoritative session status."
+      },
+      "completed": {
+        "label": "Completed",
+        "title": "Session completed",
+        "description": "This session reached its scheduled completion."
+      },
+      "interrupted": {
+        "label": "Ended early",
+        "title": "Session ended early",
+        "description": "This session started but ended before its scheduled completion."
       },
       "studentNoShow": {
         "label": "Session did not start",
@@ -1520,6 +1537,37 @@
       "authorityNote": "This countdown is informational. The server determines the session outcome.",
       "refreshing": "Checking the latest session status…"
     },
+    "completion": {
+      "checking": "Checking the latest session status...",
+      "authorityNote": "The server determines whether the session is complete.",
+      "retry": "Try again",
+      "errors": {
+        "notAuthorized": "You are not authorized to update this session.",
+        "notEligible": "This session changed. Loading the latest status may resolve the issue.",
+        "generic": "We couldn't check the session status. Please try again."
+      }
+    },
+    "interruption": {
+      "trigger": "End session early",
+      "triggerGuardian": "End {name}'s session early",
+      "summary": "If this active session must stop before its scheduled end, use the confirmation below.",
+      "summaryGuardian": "If {name}'s active session must stop before its scheduled end, use the confirmation below.",
+      "dialogTitle": "End this session early?",
+      "dialogTitleGuardian": "End {name}'s session early?",
+      "dialogDescription": "This will end the active tutoring session. It cannot be returned to in-progress status.",
+      "dialogDescriptionGuardian": "This will end {name}'s active tutoring session. It cannot be returned to in-progress status.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Add brief context if helpful",
+      "reasonHelp": "Up to 500 characters. Do not include sensitive personal information.",
+      "cancel": "Keep session active",
+      "confirm": "Confirm and end session",
+      "ending": "Ending session...",
+      "errors": {
+        "notAuthorized": "You are not authorized to end this session.",
+        "notEligible": "This session changed and can no longer be ended this way. The latest status is loading.",
+        "generic": "We couldn't end the session. Please try again."
+      }
+    },
     "presence": {
       "title": "Arrival status",
       "tutor": "Tutor",
@@ -1555,6 +1603,9 @@
       "title": "Session details",
       "scheduledStart": "Scheduled start",
       "scheduledEnd": "Scheduled end",
+      "startedAt": "Started",
+      "completedAt": "Completed",
+      "endedAt": "Ended early",
       "graceDeadline": "Grace-period deadline",
       "mode": "Session format"
     },

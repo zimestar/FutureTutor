@@ -8,27 +8,41 @@ export type SessionArrivalPresentation =
   | "graceWaitingForStudent"
   | "deadlinePending"
   | "inProgress"
+  | "completionPending"
+  | "completed"
+  | "interrupted"
   | "studentNoShow"
   | "tutorNoShow"
   | "neutralNoShow"
   | "unavailable";
+
+export function sessionStateTranslationKeys(presentation: SessionArrivalPresentation) {
+  return {
+    label: `states.${presentation}.label` as const,
+    title: `states.${presentation}.title` as const,
+    description: `states.${presentation}.description` as const,
+  };
+}
 
 export function deriveSessionArrivalPresentation(input: {
   status: string;
   now: Date;
   checkInWindowOpensAt: Date;
   scheduledStartAt: Date;
+  scheduledEndAt: Date;
   graceDeadlineAt: Date;
   tutorPresenceRecorded: boolean;
   studentPresenceRecorded: boolean;
   noShowOutcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null;
 }): SessionArrivalPresentation {
-  if (input.status === "IN_PROGRESS") return "inProgress";
+  if (input.status === "COMPLETED") return "completed";
+  if (input.status === "INTERRUPTED") return "interrupted";
   if (input.status === "NO_SHOW") {
     if (input.noShowOutcome === "STUDENT_NO_SHOW") return "studentNoShow";
     if (input.noShowOutcome === "TUTOR_NO_SHOW") return "tutorNoShow";
     return "neutralNoShow";
   }
+  if (input.status === "IN_PROGRESS") return input.now >= input.scheduledEndAt ? "completionPending" : "inProgress";
   if (input.status !== "SCHEDULED") return "unavailable";
   if (input.now < input.checkInWindowOpensAt) return "preWindow";
   if (input.now >= input.graceDeadlineAt) return "deadlinePending";
@@ -66,6 +80,10 @@ export function isTerminalNoShowPresentation(presentation: SessionArrivalPresent
   return presentation === "studentNoShow" || presentation === "tutorNoShow" || presentation === "neutralNoShow";
 }
 
+export function isTerminalSessionPresentation(presentation: SessionArrivalPresentation): boolean {
+  return isTerminalNoShowPresentation(presentation) || presentation === "completed" || presentation === "interrupted";
+}
+
 export function noShowCopyKind(
   viewerRole: string,
   outcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null,
@@ -89,5 +107,5 @@ export function shouldRefreshSessionAfterCheckIn(state: { success?: boolean; err
 }
 
 export function shouldShowSessionCheckIn(presentation: SessionArrivalPresentation, allowedActions: readonly string[]): boolean {
-  return allowedActions.length > 0 && presentation !== "deadlinePending" && !isTerminalNoShowPresentation(presentation);
+  return allowedActions.length > 0 && presentation !== "deadlinePending" && presentation !== "completionPending" && presentation !== "inProgress" && !isTerminalSessionPresentation(presentation);
 }

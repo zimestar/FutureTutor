@@ -107,6 +107,8 @@ export default async function TutorBookingsPage({
                           {tStatus(booking.status)}
                         </Badge>
                         {booking.session?.status === "NO_SHOW" && <Badge variant="neutral">{tSession("bookingNoShow")}</Badge>}
+                        {booking.session?.status === "COMPLETED" && <Badge variant="mint">{tSession("bookingCompleted")}</Badge>}
+                        {booking.session?.status === "INTERRUPTED" && <Badge variant="neutral">{tSession("bookingInterrupted")}</Badge>}
                         {booking.session && (
                           <Button href={`/session/${booking.id}`} variant="outline" size="sm">
                             {tSession("viewSession")}

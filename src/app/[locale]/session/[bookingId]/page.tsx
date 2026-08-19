@@ -5,6 +5,8 @@ import { redirect } from "@/i18n/navigation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { SessionCheckInPanel } from "@/components/session/SessionCheckInPanel";
 import { SessionGraceCountdown } from "@/components/session/SessionGraceCountdown";
+import { SessionCompletionBoundary } from "@/components/session/SessionCompletionBoundary";
+import { SessionInterruptionPanel } from "@/components/session/SessionInterruptionPanel";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -12,7 +14,7 @@ import { Surface } from "@/components/ui/Surface";
 import { db } from "@/lib/db";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { tutorNavItems } from "@/lib/tutorNav";
-import { deriveSessionArrivalPresentation, isTerminalNoShowPresentation, noShowCopyKind, shouldShowSessionCheckIn } from "@/lib/sessionPresentation";
+import { deriveSessionArrivalPresentation, isTerminalNoShowPresentation, noShowCopyKind, sessionStateTranslationKeys, shouldShowSessionCheckIn } from "@/lib/sessionPresentation";
 import {
   getSessionContext,
   SessionNotFoundError,
@@ -72,6 +74,7 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
     now: new Date(),
     checkInWindowOpensAt: context.checkInWindowOpensAt,
     scheduledStartAt: context.scheduledStartAt,
+    scheduledEndAt: context.scheduledEndAt,
     graceDeadlineAt: context.graceDeadlineAt,
     tutorPresenceRecorded: context.tutorPresenceRecorded,
     studentPresenceRecorded: context.studentPresenceRecorded,
@@ -82,7 +85,11 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
   const terminalNoShow = isTerminalNoShowPresentation(presentation);
   const inGracePeriod = presentation.startsWith("grace");
   const noShowCopy = noShowCopyKind(context.viewerRole, context.noShowOutcome);
-  const statusTone = presentation === "inProgress" ? "success" : terminalNoShow ? "warning" : presentation.startsWith("waiting") || inGracePeriod || presentation === "deadlinePending" ? "pending" : "info";
+  const activeSession = presentation === "inProgress" || presentation === "completionPending";
+  const showSessionCheckIn = shouldShowSessionCheckIn(presentation, context.allowedActions);
+  const statusTone = presentation === "completed" ? "success" : presentation === "interrupted" || terminalNoShow ? "warning" : presentation.startsWith("waiting") || inGracePeriod || presentation === "deadlinePending" || presentation === "completionPending" ? "pending" : "info";
+  const badgeVariant = presentation === "inProgress" || presentation === "completed" ? "mint" : presentation === "interrupted" || terminalNoShow ? "neutral" : "blue";
+  const stateKeys = sessionStateTranslationKeys(presentation);
 
   return (
     <DashboardShell navItems={navItems} userName={session.user.name ?? ""}>
@@ -90,22 +97,24 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
         eyebrow={t("eyebrow")}
         title={tSubjects(context.subjectSlug)}
         description={t("subtitle", { name: context.representedLearner.firstName })}
-        status={<Badge variant={presentation === "inProgress" ? "mint" : terminalNoShow ? "neutral" : "blue"}>{t(`states.${presentation}.label`)}</Badge>}
+        status={<Badge variant={badgeVariant}>{t(stateKeys.label)}</Badge>}
       />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <div className="space-y-6">
-          <Alert tone={statusTone} title={t(`states.${presentation}.title`)}>
-            <p>{terminalNoShow
-              ? t(`noShow.${noShowCopy}.description`, { name: context.representedLearner.firstName })
-              : t(`states.${presentation}.description`, { opensAt: dateTime(context.checkInWindowOpensAt), endTime: time(context.scheduledEndAt), name: context.representedLearner.firstName })}</p>
-          </Alert>
+          {!activeSession && (
+            <Alert tone={statusTone} title={t(stateKeys.title)}>
+              <p>{terminalNoShow
+                ? t(`noShow.${noShowCopy}.description`, { name: context.representedLearner.firstName })
+                : t(stateKeys.description, { opensAt: dateTime(context.checkInWindowOpensAt), endTime: time(context.scheduledEndAt), name: context.representedLearner.firstName })}</p>
+            </Alert>
+          )}
 
           {(inGracePeriod || presentation === "deadlinePending") && (
             <SessionGraceCountdown bookingId={context.bookingId} locale={locale} graceDeadlineAt={context.graceDeadlineAt.toISOString()} />
           )}
 
-          {presentation !== "inProgress" && presentation !== "unavailable" && !terminalNoShow && (
+          {!activeSession && presentation !== "completed" && presentation !== "interrupted" && presentation !== "unavailable" && !terminalNoShow && (
             <Surface aria-labelledby="presence-title">
               <div className="flex items-center gap-3"><UsersRound className="size-5 text-blue" aria-hidden="true" /><h2 id="presence-title" className="text-lg font-extrabold text-text-primary">{t("presence.title")}</h2></div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -118,17 +127,21 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
             </Surface>
           )}
 
-          {shouldShowSessionCheckIn(presentation, context.allowedActions) && (
+          {showSessionCheckIn && (
             <Surface>
               <SessionCheckInPanel bookingId={context.bookingId} locale={locale} learnerFirstName={context.representedLearner.firstName} viewerRole={context.viewerRole} allowedActions={context.allowedActions} />
             </Surface>
           )}
 
-          {presentation === "inProgress" && (
-            <Surface className="border-success/30 bg-success-light/40" aria-labelledby="started-title">
-              <div className="flex items-center gap-3"><CheckCircle2 className="size-6 text-success" aria-hidden="true" /><h2 id="started-title" className="text-xl font-extrabold text-text-primary">{t("started.title")}</h2></div>
-              <p className="mt-3 text-sm leading-6 text-text-secondary">{t("started.description", { startedAt: context.startedAt ? time(context.startedAt) : t("started.timeUnavailable"), endTime: time(context.scheduledEndAt) })}</p>
-            </Surface>
+          {activeSession && (
+            <div className="space-y-5">
+              <SessionCompletionBoundary bookingId={context.bookingId} locale={locale} scheduledEndAt={context.scheduledEndAt.toISOString()} startedAtLabel={context.startedAt ? time(context.startedAt) : t("started.timeUnavailable")} scheduledEndLabel={time(context.scheduledEndAt)} />
+              {context.allowedActions.includes("REQUEST_INTERRUPTION") && (
+                <Surface>
+                  <SessionInterruptionPanel bookingId={context.bookingId} locale={locale} learnerFirstName={context.representedLearner.firstName} guardianViewer={context.viewerRole === "GUARDIAN"} />
+                </Surface>
+              )}
+            </div>
           )}
         </div>
 
@@ -137,10 +150,15 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
           <dl className="mt-5 space-y-5 text-sm">
             <Detail icon={CalendarDays} label={t("details.scheduledStart")} value={dateTime(context.scheduledStartAt)} />
             <Detail icon={Clock3} label={t("details.scheduledEnd")} value={dateTime(context.scheduledEndAt)} />
-            <Detail icon={Clock3} label={t("details.graceDeadline")} value={dateTime(context.graceDeadlineAt)} />
+            {context.startedAt && <Detail icon={CheckCircle2} label={t("details.startedAt")} value={dateTime(context.startedAt)} />}
+            {presentation === "completed" && context.completedAt && <Detail icon={CheckCircle2} label={t("details.completedAt")} value={dateTime(context.completedAt)} />}
+            {presentation === "interrupted" && context.endedAt && <Detail icon={Clock3} label={t("details.endedAt")} value={dateTime(context.endedAt)} />}
+            {!activeSession && presentation !== "completed" && presentation !== "interrupted" && <Detail icon={Clock3} label={t("details.graceDeadline")} value={dateTime(context.graceDeadlineAt)} />}
             <Detail icon={context.mode === "ONLINE" ? Monitor : MapPin} label={t("details.mode")} value={tMode(context.mode)} />
           </dl>
-          <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs leading-5 text-text-secondary">{context.mode === "ONLINE" ? t("mode.online") : t("mode.inPerson")}</p>
+          {showSessionCheckIn && (
+            <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs leading-5 text-text-secondary">{context.mode === "ONLINE" ? t("mode.online") : t("mode.inPerson")}</p>
+          )}
         </Surface>
       </div>
     </DashboardShell>

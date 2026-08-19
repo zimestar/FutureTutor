@@ -6,6 +6,7 @@ import {
   deriveSessionArrivalPresentation,
   graceRemainingParts,
   isTerminalNoShowPresentation,
+  isTerminalSessionPresentation,
   noShowCopyKind,
   sessionCheckInControls,
   sessionCheckInErrorCode,
@@ -17,8 +18,9 @@ import {
 const windowOpen = new Date("2026-08-18T16:45:00Z");
 const scheduledStart = new Date("2026-08-18T17:00:00Z");
 const graceDeadline = new Date("2026-08-18T17:15:00Z");
+const scheduledEnd = new Date("2026-08-18T18:00:00Z");
 const state = (overrides: Partial<Parameters<typeof deriveSessionArrivalPresentation>[0]> = {}) =>
-  deriveSessionArrivalPresentation({ status: "SCHEDULED", now: windowOpen, checkInWindowOpensAt: windowOpen, scheduledStartAt: scheduledStart, graceDeadlineAt: graceDeadline, tutorPresenceRecorded: false, studentPresenceRecorded: false, noShowOutcome: null, ...overrides });
+  deriveSessionArrivalPresentation({ status: "SCHEDULED", now: windowOpen, checkInWindowOpensAt: windowOpen, scheduledStartAt: scheduledStart, scheduledEndAt: scheduledEnd, graceDeadlineAt: graceDeadline, tutorPresenceRecorded: false, studentPresenceRecorded: false, noShowOutcome: null, ...overrides });
 
 describe("SUI-1 Session arrival presentation", () => {
   it("presents the pre-window state before the authoritative opening instant", () => expect(state({ now: new Date(windowOpen.getTime() - 1) })).toBe("preWindow"));
@@ -33,6 +35,16 @@ describe("SUI-1 Session arrival presentation", () => {
   it("waits for the Tutor after Student presence", () => expect(state({ studentPresenceRecorded: true })).toBe("waitingForTutor"));
   it("waits for the learner after Tutor presence", () => expect(state({ tutorPresenceRecorded: true })).toBe("waitingForStudent"));
   it("uses the authoritative IN_PROGRESS state", () => expect(state({ status: "IN_PROGRESS", tutorPresenceRecorded: true, studentPresenceRecorded: true })).toBe("inProgress"));
+  it("shows completionPending at the contractual end without inventing COMPLETED", () => {
+    expect(state({ status: "IN_PROGRESS", now: scheduledEnd })).toBe("completionPending");
+    expect(state({ status: "IN_PROGRESS", now: new Date(scheduledEnd.getTime() + 60_000) })).toBe("completionPending");
+  });
+  it("uses only authoritative terminal statuses for completed and interrupted", () => {
+    expect(state({ status: "COMPLETED", now: windowOpen })).toBe("completed");
+    expect(state({ status: "INTERRUPTED", now: scheduledEnd })).toBe("interrupted");
+    expect(isTerminalSessionPresentation("completed")).toBe(true);
+    expect(isTerminalSessionPresentation("interrupted")).toBe(true);
+  });
   it("does not invent terminal outcome presentation", () => expect(state({ status: "UNRECOGNIZED_TERMINAL" })).toBe("unavailable"));
   it("maps authorization errors safely", () => expect(sessionCheckInErrorCode("notAuthorized")).toBe("notAuthorized"));
   it("maps too-early errors safely", () => expect(sessionCheckInErrorCode("tooEarly")).toBe("tooEarly"));
@@ -59,6 +71,10 @@ describe("SUI-1 Session arrival presentation", () => {
     expect(shouldShowSessionCheckIn("studentNoShow", actions)).toBe(false);
     expect(shouldShowSessionCheckIn("tutorNoShow", actions)).toBe(false);
     expect(shouldShowSessionCheckIn("neutralNoShow", actions)).toBe(false);
+    expect(shouldShowSessionCheckIn("inProgress", actions)).toBe(false);
+    expect(shouldShowSessionCheckIn("completionPending", actions)).toBe(false);
+    expect(shouldShowSessionCheckIn("completed", actions)).toBe(false);
+    expect(shouldShowSessionCheckIn("interrupted", actions)).toBe(false);
   });
   it("refreshes after authoritative late-check-in rejection", () => expect(shouldRefreshSessionAfterCheckIn({ error: "notEligible" })).toBe(true));
   it("countdown formatting is presentational and clamps at zero", () => {
@@ -72,15 +88,18 @@ describe("SUI-1 Session arrival presentation", () => {
   });
 
   for (const [locale, messages] of [["en", en], ["fr", fr]] as const) {
-    it(`resolves SUI-1 messages in ${locale}`, () => {
+    it(`resolves SUI-1/SUI-2/SUI-3 messages in ${locale}`, () => {
       const translate = createTranslator({ locale, messages, namespace: "sessionExperience", onError: (error) => { throw error; } });
       expect(translate("states.waitingForTutor.title")).not.toContain("sessionExperience");
       expect(translate("actions.guardianStudent", { name: "Emma" })).toContain("Emma");
       expect(translate("errors.tooEarly")).toBeTruthy();
       expect(translate("states.graceWaitingForTutor.title")).toBeTruthy();
       expect(translate("states.studentNoShow.title")).toBeTruthy();
-      const noShowCopy = JSON.stringify(messages.sessionExperience.noShow);
-      expect(noShowCopy).not.toMatch(/refund|remboursement|compensation|TutorEarning/i);
+      expect(translate("states.completed.title")).toBeTruthy();
+      expect(translate("states.interrupted.title")).toBeTruthy();
+      expect(translate("interruption.triggerGuardian", { name: "Emma" })).toContain("Emma");
+      const lifecycleCopy = JSON.stringify({ states: messages.sessionExperience.states, completion: messages.sessionExperience.completion, interruption: messages.sessionExperience.interruption });
+      expect(lifecycleCopy).not.toMatch(/refund|remboursement|compensation|TutorEarning|payout|versement/i);
       expect(JSON.stringify(messages.sessionExperience.states)).not.toMatch(/COMPLETED|INTERRUPTED/);
     });
   }

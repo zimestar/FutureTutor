@@ -17,7 +17,7 @@ export function SessionCheckInPanel({
   locale: string;
   learnerFirstName: string;
   viewerRole: string;
-  allowedActions: Array<"CHECK_IN_AS_TUTOR" | "CHECK_IN_AS_STUDENT">;
+  allowedActions: Array<"CHECK_IN_AS_TUTOR" | "CHECK_IN_AS_STUDENT" | "REQUEST_INTERRUPTION">;
 }) {
   const t = useTranslations("sessionExperience");
   const router = useRouter();
