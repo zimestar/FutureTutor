@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock3, MapPin, Monitor, UsersRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, LayoutDashboard, MapPin, Monitor, Search, UsersRound } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
@@ -8,13 +8,14 @@ import { SessionGraceCountdown } from "@/components/session/SessionGraceCountdow
 import { SessionCompletionBoundary } from "@/components/session/SessionCompletionBoundary";
 import { SessionInterruptionPanel } from "@/components/session/SessionInterruptionPanel";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
 import { db } from "@/lib/db";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { tutorNavItems } from "@/lib/tutorNav";
-import { deriveSessionArrivalPresentation, isTerminalNoShowPresentation, noShowCopyKind, sessionStateTranslationKeys, shouldShowSessionCheckIn } from "@/lib/sessionPresentation";
+import { deriveSessionArrivalPresentation, isTerminalNoShowPresentation, isTerminalSessionPresentation, noShowCopyKind, postSessionNavigationActions, postSessionNavigationHref, sessionStateTranslationKeys, shouldShowSessionCheckIn } from "@/lib/sessionPresentation";
 import {
   getSessionContext,
   SessionNotFoundError,
@@ -90,6 +91,8 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
   const statusTone = presentation === "completed" ? "success" : presentation === "interrupted" || terminalNoShow ? "warning" : presentation.startsWith("waiting") || inGracePeriod || presentation === "deadlinePending" || presentation === "completionPending" ? "pending" : "info";
   const badgeVariant = presentation === "inProgress" || presentation === "completed" ? "mint" : presentation === "interrupted" || terminalNoShow ? "neutral" : "blue";
   const stateKeys = sessionStateTranslationKeys(presentation);
+  const terminalSession = isTerminalSessionPresentation(presentation);
+  const postSessionActions = postSessionNavigationActions(presentation, context.viewerRole);
 
   return (
     <DashboardShell navItems={navItems} userName={session.user.name ?? ""}>
@@ -108,6 +111,38 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
                 ? t(`noShow.${noShowCopy}.description`, { name: context.representedLearner.firstName })
                 : t(stateKeys.description, { opensAt: dateTime(context.checkInWindowOpensAt), endTime: time(context.scheduledEndAt), name: context.representedLearner.firstName })}</p>
             </Alert>
+          )}
+
+          {terminalSession && (
+            <Surface aria-labelledby="next-steps-title">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-blue" aria-hidden="true" />
+                <div>
+                  <h2 id="next-steps-title" className="text-lg font-extrabold text-text-primary">{t("postSession.next.title")}</h2>
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    {context.viewerRole === "GUARDIAN"
+                      ? t("postSession.next.guardianDescription", { name: context.representedLearner.firstName })
+                      : context.viewerRole === "TUTOR_OWNER"
+                        ? t("postSession.next.tutorDescription")
+                        : t("postSession.next.studentDescription")}
+                  </p>
+                </div>
+              </div>
+              <nav className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap" aria-label={t("postSession.next.navigationLabel")}>
+                {postSessionActions.map((action) => (
+                  <Button
+                    key={action}
+                    href={postSessionNavigationHref(action, context.viewerRole)}
+                    variant={action === "bookings" ? "primary" : "outline"}
+                    className="w-full sm:w-auto"
+                  >
+                    {action === "tutorDashboard" && <LayoutDashboard className="size-4" aria-hidden="true" />}
+                    {action === "findTutor" && <Search className="size-4" aria-hidden="true" />}
+                    {t(`postSession.next.actions.${action}`)}
+                  </Button>
+                ))}
+              </nav>
+            </Surface>
           )}
 
           {(inGracePeriod || presentation === "deadlinePending") && (
@@ -146,8 +181,9 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
         </div>
 
         <Surface className="h-fit" aria-labelledby="details-title">
-          <h2 id="details-title" className="text-lg font-extrabold text-text-primary">{t("details.title")}</h2>
+          <h2 id="details-title" className="text-lg font-extrabold text-text-primary">{terminalSession ? t("postSession.record.title") : t("details.title")}</h2>
           <dl className="mt-5 space-y-5 text-sm">
+            {terminalSession && <Detail icon={UsersRound} label={t("postSession.record.learner")} value={`${context.representedLearner.firstName} ${context.representedLearner.lastName}`} />}
             <Detail icon={CalendarDays} label={t("details.scheduledStart")} value={dateTime(context.scheduledStartAt)} />
             <Detail icon={Clock3} label={t("details.scheduledEnd")} value={dateTime(context.scheduledEndAt)} />
             {context.startedAt && <Detail icon={CheckCircle2} label={t("details.startedAt")} value={dateTime(context.startedAt)} />}
@@ -155,6 +191,7 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
             {presentation === "interrupted" && context.endedAt && <Detail icon={Clock3} label={t("details.endedAt")} value={dateTime(context.endedAt)} />}
             {!activeSession && presentation !== "completed" && presentation !== "interrupted" && <Detail icon={Clock3} label={t("details.graceDeadline")} value={dateTime(context.graceDeadlineAt)} />}
             <Detail icon={context.mode === "ONLINE" ? Monitor : MapPin} label={t("details.mode")} value={tMode(context.mode)} />
+            {terminalSession && <Detail icon={CheckCircle2} label={t("postSession.record.finalStatus")} value={t(stateKeys.label)} />}
           </dl>
           {showSessionCheckIn && (
             <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs leading-5 text-text-secondary">{context.mode === "ONLINE" ? t("mode.online") : t("mode.inPerson")}</p>

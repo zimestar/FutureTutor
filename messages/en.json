@@ -1613,6 +1613,25 @@
       "online": "Online presence is manual for now. This page does not detect classroom activity.",
       "inPerson": "Use the arrival controls only when you can confirm physical presence."
     },
+    "postSession": {
+      "record": {
+        "title": "Session record",
+        "learner": "Learner",
+        "finalStatus": "Final session status"
+      },
+      "next": {
+        "title": "What you can do next",
+        "tutorDescription": "This session record is complete. Continue to your bookings or tutoring dashboard when you're ready.",
+        "studentDescription": "This session record is complete. You can return to your bookings or continue finding tutoring support.",
+        "guardianDescription": "This session record is for {name}. You can return to family bookings or continue finding tutoring support for your learner.",
+        "navigationLabel": "Post-session navigation",
+        "actions": {
+          "bookings": "View bookings",
+          "tutorDashboard": "Tutor dashboard",
+          "findTutor": "Find a Tutor"
+        }
+      }
+    },
     "started": {
       "title": "Session started",
       "description": "Started at {startedAt}. The contractual end time remains {endTime}.",

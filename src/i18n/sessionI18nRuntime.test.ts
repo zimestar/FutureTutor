@@ -27,6 +27,16 @@ describe("Session runtime i18n namespace contract", () => {
       for (const key of ["details.startedAt", "details.completedAt", "details.endedAt"] as const) {
         expect(t(key)).not.toContain("sessionExperience.");
       }
+      const postSessionCopy = [
+        t("postSession.record.title"),
+        t("postSession.record.finalStatus"),
+        t("postSession.next.guardianDescription", { name: "Sam" }),
+        t("postSession.next.actions.bookings"),
+        t("postSession.next.actions.tutorDashboard"),
+        t("postSession.next.actions.findTutor"),
+      ].join(" | ");
+      expect(postSessionCopy).not.toContain("sessionExperience.");
+      expect(postSessionCopy).not.toContain("postSession.");
     });
 
     it(`resolves the exact scoped client-component namespaces without unresolved keys in ${locale}`, () => {

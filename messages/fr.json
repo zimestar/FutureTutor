@@ -1613,6 +1613,25 @@
       "online": "La présence en ligne est manuelle pour le moment. Cette page ne détecte pas l'activité d'une classe virtuelle.",
       "inPerson": "Utilisez les commandes d'arrivée uniquement lorsque vous pouvez confirmer la présence physique."
     },
+    "postSession": {
+      "record": {
+        "title": "Dossier de la séance",
+        "learner": "Élève",
+        "finalStatus": "État final de la séance"
+      },
+      "next": {
+        "title": "Prochaines options",
+        "tutorDescription": "Le dossier de cette séance est complet. Consultez vos réservations ou votre tableau de bord de tutorat lorsque vous êtes prêt.",
+        "studentDescription": "Le dossier de cette séance est complet. Vous pouvez retourner à vos réservations ou continuer à chercher du soutien scolaire.",
+        "guardianDescription": "Ce dossier de séance concerne {name}. Vous pouvez retourner aux réservations familiales ou continuer à chercher du soutien scolaire pour votre élève.",
+        "navigationLabel": "Navigation après la séance",
+        "actions": {
+          "bookings": "Voir les réservations",
+          "tutorDashboard": "Tableau de bord du tuteur",
+          "findTutor": "Trouver un tuteur"
+        }
+      }
+    },
     "started": {
       "title": "Séance commencée",
       "description": "Commencée à {startedAt}. L'heure de fin contractuelle demeure {endTime}.",

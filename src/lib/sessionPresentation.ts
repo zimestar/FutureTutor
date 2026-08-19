@@ -84,6 +84,24 @@ export function isTerminalSessionPresentation(presentation: SessionArrivalPresen
   return isTerminalNoShowPresentation(presentation) || presentation === "completed" || presentation === "interrupted";
 }
 
+export type PostSessionNavigationAction = "bookings" | "tutorDashboard" | "findTutor";
+
+export function postSessionNavigationActions(
+  presentation: SessionArrivalPresentation,
+  viewerRole: string,
+): PostSessionNavigationAction[] {
+  if (!isTerminalSessionPresentation(presentation)) return [];
+  return viewerRole === "TUTOR_OWNER"
+    ? ["bookings", "tutorDashboard"]
+    : ["bookings", "findTutor"];
+}
+
+export function postSessionNavigationHref(action: PostSessionNavigationAction, viewerRole: string): string {
+  if (action === "bookings") return viewerRole === "TUTOR_OWNER" ? "/tutor/bookings" : "/dashboard/bookings";
+  if (action === "tutorDashboard") return "/tutor/dashboard";
+  return "/find-tutors";
+}
+
 export function noShowCopyKind(
   viewerRole: string,
   outcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null,

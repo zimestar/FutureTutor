@@ -8,6 +8,8 @@ import {
   isTerminalNoShowPresentation,
   isTerminalSessionPresentation,
   noShowCopyKind,
+  postSessionNavigationActions,
+  postSessionNavigationHref,
   sessionCheckInControls,
   sessionCheckInErrorCode,
   shouldRefreshSessionAfterCheckIn,
@@ -87,6 +89,21 @@ describe("SUI-1 Session arrival presentation", () => {
     expect(noShowCopyKind("GUARDIAN", "TUTOR_NO_SHOW")).toBe("tutorAbsentLearner");
   });
 
+  it("offers navigation-only next steps for every terminal outcome and role", () => {
+    for (const presentation of ["completed", "interrupted", "studentNoShow", "tutorNoShow", "neutralNoShow"] as const) {
+      expect(postSessionNavigationActions(presentation, "TUTOR_OWNER")).toEqual(["bookings", "tutorDashboard"]);
+      expect(postSessionNavigationActions(presentation, "SELF_MANAGED_STUDENT")).toEqual(["bookings", "findTutor"]);
+      expect(postSessionNavigationActions(presentation, "GUARDIAN")).toEqual(["bookings", "findTutor"]);
+      expect(shouldShowSessionCheckIn(presentation, ["CHECK_IN_AS_TUTOR", "REQUEST_INTERRUPTION"])).toBe(false);
+    }
+    expect(postSessionNavigationActions("inProgress", "TUTOR_OWNER")).toEqual([]);
+    expect(postSessionNavigationActions("completionPending", "GUARDIAN")).toEqual([]);
+    expect(postSessionNavigationHref("bookings", "TUTOR_OWNER")).toBe("/tutor/bookings");
+    expect(postSessionNavigationHref("bookings", "GUARDIAN")).toBe("/dashboard/bookings");
+    expect(postSessionNavigationHref("tutorDashboard", "TUTOR_OWNER")).toBe("/tutor/dashboard");
+    expect(postSessionNavigationHref("findTutor", "SELF_MANAGED_STUDENT")).toBe("/find-tutors");
+  });
+
   for (const [locale, messages] of [["en", en], ["fr", fr]] as const) {
     it(`resolves SUI-1/SUI-2/SUI-3 messages in ${locale}`, () => {
       const translate = createTranslator({ locale, messages, namespace: "sessionExperience", onError: (error) => { throw error; } });
@@ -98,8 +115,10 @@ describe("SUI-1 Session arrival presentation", () => {
       expect(translate("states.completed.title")).toBeTruthy();
       expect(translate("states.interrupted.title")).toBeTruthy();
       expect(translate("interruption.triggerGuardian", { name: "Emma" })).toContain("Emma");
-      const lifecycleCopy = JSON.stringify({ states: messages.sessionExperience.states, completion: messages.sessionExperience.completion, interruption: messages.sessionExperience.interruption });
-      expect(lifecycleCopy).not.toMatch(/refund|remboursement|compensation|TutorEarning|payout|versement/i);
+      expect(translate("postSession.next.guardianDescription", { name: "Emma" })).toContain("Emma");
+      expect(translate("postSession.record.title")).toBeTruthy();
+      const lifecycleCopy = JSON.stringify({ states: messages.sessionExperience.states, completion: messages.sessionExperience.completion, interruption: messages.sessionExperience.interruption, postSession: messages.sessionExperience.postSession });
+      expect(lifecycleCopy).not.toMatch(/refund|remboursement|compensation|TutorEarning|payout|versement|review|rating|évaluation|dispute|litige|appeal/i);
       expect(JSON.stringify(messages.sessionExperience.states)).not.toMatch(/COMPLETED|INTERRUPTED/);
     });
   }
