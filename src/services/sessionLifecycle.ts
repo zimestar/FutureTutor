@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import type { Role, SessionParticipantRole, SessionStatus, TutoringMode } from "@/generated/prisma/enums";
 import { withSerializableRetry } from "@/lib/serializableRetry";
+import { writeAuditLog } from "@/lib/audit";
 import {
   resolveSessionCheckInAuthority,
   resolveSessionViewerAuthority,
@@ -178,6 +179,11 @@ interface BookingSessionFacts {
   bookingId: string;
   bookingStatus: string;
   bookingStartAt: Date;
+  /** Added for Session Lifecycle Phase 4 (completion convergence, which is
+   * keyed on Booking.endAt rather than startAt) — additive-only extension of
+   * the shared Phase 2/3 facts loader, mirroring how Phase 3 reused this
+   * exact function rather than introducing a parallel one. */
+  bookingEndAt: Date;
   studentProfileId: string;
   tutorProfileUserId: string;
   sessionId: string;
@@ -194,6 +200,7 @@ async function loadBookingSessionFacts(
       id: true,
       status: true,
       startAt: true,
+      endAt: true,
       studentProfileId: true,
       tutorProfile: { select: { userId: true } },
       session: { select: { id: true, status: true } },
@@ -204,6 +211,7 @@ async function loadBookingSessionFacts(
     bookingId: booking.id,
     bookingStatus: booking.status,
     bookingStartAt: booking.startAt,
+    bookingEndAt: booking.endAt,
     studentProfileId: booking.studentProfileId,
     tutorProfileUserId: booking.tutorProfile.userId,
     sessionId: booking.session.id,
@@ -565,7 +573,7 @@ export async function recordSessionCheckIn(
 // — Session Lifecycle Phase 2 has zero financial surface by design.
 // ---------------------------------------------------------------------------
 
-export type SessionAllowedAction = "CHECK_IN_AS_TUTOR" | "CHECK_IN_AS_STUDENT";
+export type SessionAllowedAction = "CHECK_IN_AS_TUTOR" | "CHECK_IN_AS_STUDENT" | "REQUEST_INTERRUPTION";
 
 export interface SessionContext {
   sessionId: string;
@@ -579,6 +587,13 @@ export interface SessionContext {
   status: SessionStatus;
   startedAt: Date | null;
   completedAt: Date | null;
+  /** Session Lifecycle Phase 4 — the server-generated terminal timestamp for
+   * an INTERRUPTED session (never written for COMPLETED — see
+   * requestSessionInterruption's own doc comment for why endedAt/completedAt
+   * are deliberately two separate, non-overlapping fields rather than one
+   * field overloaded to mean "terminal timestamp regardless of outcome").
+   * Null until (and unless) the session is interrupted. */
+  endedAt: Date | null;
   viewerRole: SessionViewerRole;
   /** The learner this session's Student side represents — always the
    * booking's own StudentProfile, exposed only because the viewer is
@@ -612,6 +627,19 @@ export interface SessionContext {
   noShowOutcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null;
   viewerCanCheckInAsTutor: boolean;
   viewerCanCheckInAsStudent: boolean;
+  /** Session Lifecycle Phase 4 — true only while status === "IN_PROGRESS"
+   * AND the viewer already holds session-viewer authority (TUTOR_OWNER,
+   * SELF_MANAGED_STUDENT, GUARDIAN_MANAGED_STUDENT_SELF, GUARDIAN, ADMIN,
+   * SUPER_ADMIN — see requestSessionInterruption's doc comment for why this
+   * function deliberately reuses resolveSessionViewerAuthority rather than
+   * the narrower, participant-only check-in authority). Since this function
+   * already throws SessionViewerNotAuthorizedError for a DENIED viewer
+   * before this point is reached, viewerRole here is guaranteed authorized —
+   * so this reduces to a pure state check, kept as its own named field for
+   * read-model clarity and forward-compatibility (a future phase could add
+   * a narrower interruption-specific authority without changing this
+   * field's shape). */
+  viewerCanRequestInterruption: boolean;
   allowedActions: SessionAllowedAction[];
 }
 
@@ -638,7 +666,7 @@ export async function getSessionContext(
       studentProfileId: true,
       studentProfile: { select: { firstName: true, lastName: true } },
       tutorProfile: { select: { userId: true } },
-      session: { select: { id: true, status: true, startedAt: true, completedAt: true } },
+      session: { select: { id: true, status: true, startedAt: true, completedAt: true, endedAt: true } },
     },
   });
   if (!booking || !booking.session) throw new SessionNotFoundError();
@@ -691,6 +719,7 @@ export async function getSessionContext(
     bookingId: booking.id,
     bookingStatus: booking.status,
     bookingStartAt: booking.startAt,
+    bookingEndAt: booking.endAt,
     studentProfileId: booking.studentProfileId,
     tutorProfileUserId: booking.tutorProfile.userId,
     sessionId: booking.session.id,
@@ -715,9 +744,18 @@ export async function getSessionContext(
     }
   }
 
+  // Session Lifecycle Phase 4 — interruption is only ever offered while the
+  // session is genuinely IN_PROGRESS (mirrors computeSessionInterruptionEligibility's
+  // own single-gate rule exactly, kept in sync deliberately rather than
+  // re-deriving it here). viewerRole is already guaranteed !== "DENIED" at
+  // this point (the function throws above otherwise), so no second
+  // authorization call is needed.
+  const viewerCanRequestInterruption = booking.session.status === "IN_PROGRESS";
+
   const allowedActions: SessionAllowedAction[] = [];
   if (viewerCanCheckInAsTutor) allowedActions.push("CHECK_IN_AS_TUTOR");
   if (viewerCanCheckInAsStudent) allowedActions.push("CHECK_IN_AS_STUDENT");
+  if (viewerCanRequestInterruption) allowedActions.push("REQUEST_INTERRUPTION");
 
   // Session Lifecycle Phase 3 — T+15 grace deadline + the reconstructed
   // no-show outcome (never a new column; see decideNoShowOutcome's doc
@@ -743,6 +781,7 @@ export async function getSessionContext(
     status: booking.session.status,
     startedAt: booking.session.startedAt,
     completedAt: booking.session.completedAt,
+    endedAt: booking.session.endedAt,
     viewerRole,
     representedLearner: {
       studentProfileId: booking.studentProfileId,
@@ -757,6 +796,7 @@ export async function getSessionContext(
     noShowOutcome,
     viewerCanCheckInAsTutor,
     viewerCanCheckInAsStudent,
+    viewerCanRequestInterruption,
     allowedActions,
   };
 }
@@ -899,4 +939,610 @@ export async function sweepDueNoShowConvergence(limit = 100): Promise<SweepDueNo
     if (result.transitioned) transitioned++;
   }
   return { evaluated: candidates.length, transitioned };
+}
+
+// ---------------------------------------------------------------------------
+// Session Lifecycle Phase 4 — IN_PROGRESS -> COMPLETED / INTERRUPTED. Builds
+// directly on Phases 1-3's established shapes (pure decision function +
+// guarded-updateMany-with-count-check transactional core + standalone
+// entrypoint + cron liveness backstop) and on the H.8 Session-writer
+// hardening convention (guard on the exact expected prior status, never an
+// unguarded/uncounted updateMany). NOT a payment/refund/dispute phase — no
+// Payment, Refund, TutorEarning, or Stripe call exists anywhere below (see
+// the Phase 4 implementation report's "financial firewall" section for the
+// explicit verification that TutorEarning.eligibleAt is driven purely by
+// Booking.endAt + a fixed offset, never by Session_.status, so this phase
+// changes zero financial behavior by construction).
+//
+// TWO DIFFERENT MECHANISMS, DELIBERATELY:
+//  - COMPLETED is reached ONLY through server-side time convergence (never a
+//    client "mark complete" action) — a browser clock must never decide a
+//    Session is complete (task §4/§16). This mirrors Phase 3's no-show
+//    convergence exactly: a pure decision function, a guarded transactional
+//    core, a standalone entrypoint, and a cron backstop.
+//  - INTERRUPTED is reached ONLY through an explicit, authorized actor
+//    request that the server validates and performs — a client can REQUEST
+//    an interruption; it can never submit status="INTERRUPTED" directly
+//    (task §8). This mirrors cancelBookingWithRefund's two-layer
+//    authorization + guarded-write shape, not Phase 3's convergence shape,
+//    because unlike no-show/completion there is no server-derivable "due"
+//    condition for interruption — only a participant genuinely knows a
+//    session must stop early, and the server's only job is to authorize and
+//    record that fact, never to infer it from time or telemetry FutureTutor
+//    does not actually have (see requestSessionInterruption's own doc
+//    comment for the explicit "no presence telemetry" honesty this implies).
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// COMPLETED — automatic time convergence at Booking.endAt (the contractual,
+// never-adjusted scheduled end — see Booking.endAt's own schema doc
+// comment). Deliberately NOT embedded inside recordSessionCheckIn (unlike
+// Phase 3's no-show convergence-first step): a late/repeat check-in during
+// an IN_PROGRESS session that has run past its scheduled end is harmless
+// append-only evidence and creates no incorrect state, so there is no
+// analogous "late check-in silently rescues an already-due negative outcome"
+// correctness bug to close here (Phase 3's actual reason for embedding).
+// Auto-completing a still-active session as an unrelated side effect of its
+// own participant checking in again would be a surprising, product-risky
+// behavior this phase deliberately avoids introducing. Completion is
+// therefore driven ONLY by resolveSessionCompletionConvergence (a direct
+// "please evaluate now" call) and the cron backstop below — see the
+// implementation report's "remaining risks" section for the explicit,
+// honest consequence: unlike no-show (which also has a lazy trigger),
+// completion convergence in this environment depends entirely on the cron
+// backstop actually running.
+// ---------------------------------------------------------------------------
+
+export type SessionCompletionDecision = "NOT_APPLICABLE" | "NOT_YET_DUE" | "COMPLETE";
+
+export interface SessionCompletionDecisionInput {
+  bookingStatus: string;
+  sessionStatus: SessionStatus;
+  bookingEndAt: Date;
+  now: Date;
+}
+
+/**
+ * PURE decision logic — no I/O. Mirrors decideNoShowOutcome's own
+ * "pure boundary function, unit-tested at the exact instant" pattern. >= on
+ * the Booking.endAt boundary — an evaluation at EXACTLY the scheduled end is
+ * eligible for completion, one millisecond before is not, so no instant
+ * falls into two branches. The ONLY gate on sessionStatus is IN_PROGRESS —
+ * every other status (SCHEDULED, NO_SHOW, CANCELLED, COMPLETED, INTERRUPTED)
+ * returns NOT_APPLICABLE unconditionally, which is what makes every terminal
+ * -finality requirement in task §13 hold by construction: nothing but
+ * IN_PROGRESS can ever become COMPLETED.
+ */
+export function decideSessionCompletionOutcome(input: SessionCompletionDecisionInput): SessionCompletionDecision {
+  if (input.bookingStatus !== "CONFIRMED") return "NOT_APPLICABLE";
+  if (input.sessionStatus !== "IN_PROGRESS") return "NOT_APPLICABLE";
+  if (input.now.getTime() < input.bookingEndAt.getTime()) return "NOT_YET_DUE";
+  return "COMPLETE";
+}
+
+interface SessionCompletionConvergenceOutcome {
+  decision: SessionCompletionDecision;
+  /** True only when THIS invocation's own updateMany performed the
+   * IN_PROGRESS -> COMPLETED write — never true when it merely observed an
+   * already-converged, not-yet-due, or not-applicable session. */
+  transitioned: boolean;
+  sessionStatus: SessionStatus;
+  completedAt: Date | null;
+}
+
+/**
+ * Session Lifecycle Phase 4 — the guarded transactional core for completion
+ * convergence, structurally identical to applyNoShowConvergenceIfDue: one
+ * guarded `updateMany` keyed on the expected prior state (status:
+ * "IN_PROGRESS"), so concurrent duplicate invocations (two convergence
+ * workers, a cron tick racing a direct call) are safe no-ops by
+ * construction — only one caller's updateMany can ever match count===1.
+ *
+ * completedAt is written from `now` (the SAME clock() value used for the
+ * decision), inside the authoritative transaction — never a client-supplied
+ * timestamp (no parameter on any Phase 4 input type accepts one).
+ */
+async function applyCompletionConvergenceIfDue(
+  tx: Prisma.TransactionClient,
+  facts: BookingSessionFacts,
+  now: Date
+): Promise<SessionCompletionConvergenceOutcome> {
+  const decision = decideSessionCompletionOutcome({
+    bookingStatus: facts.bookingStatus,
+    sessionStatus: facts.sessionStatus,
+    bookingEndAt: facts.bookingEndAt,
+    now,
+  });
+
+  if (decision !== "COMPLETE") {
+    return { decision, transitioned: false, sessionStatus: facts.sessionStatus, completedAt: null };
+  }
+
+  const updated = await tx.session_.updateMany({
+    where: { id: facts.sessionId, status: "IN_PROGRESS" },
+    data: { status: "COMPLETED", completedAt: now },
+  });
+  const transitioned = updated.count === 1;
+
+  // Authoritative post-write re-read — never assume the in-memory decision
+  // reflects what actually committed (mirrors applyNoShowConvergenceIfDue /
+  // cancelBookingWithRefund's own "authoritative post-write re-read"
+  // discipline).
+  const finalSession = await tx.session_.findUniqueOrThrow({
+    where: { id: facts.sessionId },
+    select: { status: true, completedAt: true },
+  });
+
+  return { decision, transitioned, sessionStatus: finalSession.status, completedAt: finalSession.completedAt };
+}
+
+export interface ResolveSessionCompletionConvergenceOptions {
+  /** Injectable clock — real time by default. Never a client-supplied
+   * timestamp — this function's input type has no such field (§16 of the
+   * task). */
+  clock?: () => Date;
+}
+
+export interface SessionCompletionConvergenceResult {
+  bookingId: string;
+  sessionId: string;
+  decision: SessionCompletionDecision;
+  /** True only on the specific call whose own updateMany performed the
+   * IN_PROGRESS -> COMPLETED transition. */
+  transitioned: boolean;
+  sessionStatus: SessionStatus;
+  completedAt: Date | null;
+}
+
+/**
+ * Session Lifecycle Phase 4 — the standalone completion convergence
+ * entrypoint: "please evaluate now," structurally identical to
+ * resolveSessionNoShowConvergence. No participant-claimed outcome exists on
+ * this function's input type by construction — the server alone derives
+ * COMPLETE from Booking.endAt and the current server clock.
+ *
+ * AUTHORIZATION NOTE (mirrors resolveSessionNoShowConvergence's own
+ * rationale exactly): this function performs no actor-based authorization
+ * of its own. It accepts no claimed outcome, and its only possible effect is
+ * the single guarded Session_.status transition its own fresh time
+ * comparison already justifies — there is no action a caller could bias by
+ * invoking it. Trusted invocation context is established by each caller:
+ * the cron route below is gated by a shared-secret header. This function
+ * must not be wired to a new unauthenticated public route.
+ */
+export async function resolveSessionCompletionConvergence(
+  bookingId: string,
+  options: ResolveSessionCompletionConvergenceOptions = {}
+): Promise<SessionCompletionConvergenceResult> {
+  const clock = options.clock ?? (() => new Date());
+
+  return withSerializableRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const facts = await loadBookingSessionFacts(tx, bookingId);
+        if (!facts) throw new SessionNotFoundError();
+
+        const now = clock();
+        const outcome = await applyCompletionConvergenceIfDue(tx, facts, now);
+
+        return {
+          bookingId: facts.bookingId,
+          sessionId: facts.sessionId,
+          decision: outcome.decision,
+          transitioned: outcome.transitioned,
+          sessionStatus: outcome.sessionStatus,
+          completedAt: outcome.completedAt,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    )
+  );
+}
+
+export interface SweepDueSessionCompletionConvergenceResult {
+  evaluated: number;
+  transitioned: number;
+}
+
+/**
+ * Session Lifecycle Phase 4 — liveness backstop for completion, structurally
+ * identical to sweepDueNoShowConvergence. Finds Sessions still IN_PROGRESS
+ * whose Booking remains CONFIRMED and whose contractual end (Booking.endAt)
+ * has already passed, and calls the SAME resolveSessionCompletionConvergence
+ * entrypoint used everywhere else — no separate decision logic, no direct
+ * Session_ write of its own.
+ *
+ * UNLIKE sweepDueNoShowConvergence, this sweep is NOT a mere backstop behind
+ * a lazy/embedded trigger — Phase 4 deliberately has no embedded completion
+ * trigger (see the section header comment above for why), so in this
+ * environment (no built-in scheduler — see the Phase 3 report §12, still
+ * true here) this sweep is, in practice, the PRIMARY mechanism by which a
+ * Session ever actually reaches COMPLETED, not just a liveness convenience.
+ * This is called out explicitly, not glossed over, in the Phase 4
+ * implementation report's remaining-risks section.
+ */
+export async function sweepDueSessionCompletionConvergence(limit = 100): Promise<SweepDueSessionCompletionConvergenceResult> {
+  const now = new Date();
+  const candidates = await db.session_.findMany({
+    where: {
+      status: "IN_PROGRESS",
+      booking: { status: "CONFIRMED", endAt: { lte: now } },
+    },
+    select: { bookingId: true },
+    take: limit,
+  });
+
+  let transitioned = 0;
+  for (const candidate of candidates) {
+    const result = await resolveSessionCompletionConvergence(candidate.bookingId);
+    if (result.transitioned) transitioned++;
+  }
+  return { evaluated: candidates.length, transitioned };
+}
+
+// ---------------------------------------------------------------------------
+// Session Lifecycle Phase 4 HARDENING — authenticated/trusted lazy-
+// convergence adapter for completion. Closes the gap the Phase 4 review
+// explicitly flagged: production correctness for COMPLETED must not depend
+// EXCLUSIVELY on sweepDueSessionCompletionConvergence's external cron
+// trigger (this repo still has no built-in scheduler — see that function's
+// own doc comment, unchanged).
+//
+// WHY THIS SHAPE, NOT AN EMBEDDED CHECK-IN STEP: Phase 3's own precedent for
+// this exact class of gap (no-show) was to embed a convergence-first step
+// inside recordSessionCheckIn — the one existing frontend-facing mutation a
+// participant already calls. That approach is explicitly forbidden here:
+// auto-completing a still-legitimately-running session as a surprising side
+// effect of an unrelated check-in call would be a new, unnecessary product
+// risk (see the section header comment above decideSessionCompletionOutcome
+// for the full "why no analogous late-check-in bug exists for completion"
+// reasoning, which is precisely why no embedding was done there in the first
+// place).
+//
+// WHY NOT EMBEDDED IN getSessionContext EITHER: the Phase 3 implementation
+// report's own remaining-risks section considered exactly this — "
+// getSessionContext does not eagerly trigger convergence on read — a
+// deliberate choice (kept the read model side-effect-free)... A future phase
+// may want a lazy-convergence-on-read variant if this proves too slow in
+// practice" — but that would silently change getSessionContext's own
+// already-reviewed, already-tested side-effect-free read contract (task
+// §20's own read-model tests depend on it staying a pure read). Instead,
+// this hardening keeps that contract untouched and adds a SEPARATE, minimal,
+// explicit entrypoint with the identical underlying philosophy Phase 3's
+// embedded step has: a trusted, already-authorized caller (never an
+// anonymous route) asking the server to "please evaluate completion now,"
+// gated by the SAME authorization function that already gates
+// getSessionContext and requestSessionInterruption
+// (resolveSessionViewerAuthority — zero new authorization logic), and
+// delegating its entire effect to the existing
+// resolveSessionCompletionConvergence — zero duplicated decision or write
+// logic. This is "analogous in philosophy" (reuse the same trust/authority
+// model, no new decision logic, no dedicated 'mark complete' semantics —
+// only 'please check now') without either forbidden shape.
+// ---------------------------------------------------------------------------
+
+export interface RequestSessionCompletionConvergenceOptions {
+  /** Injectable clock — real time by default. NEVER a client-supplied
+   * timestamp — this function's input type has no such field, and neither
+   * does resolveSessionCompletionConvergence's. The server clock and the
+   * authoritative Booking.endAt remain the only source of truth for WHETHER
+   * convergence occurs; nothing here can be influenced by client input. */
+  clock?: () => Date;
+}
+
+/**
+ * The authenticated/trusted lazy-convergence adapter for completion (Phase 4
+ * hardening). Any Session viewer already authorized to read this session via
+ * resolveSessionViewerAuthority (TUTOR_OWNER, SELF_MANAGED_STUDENT,
+ * GUARDIAN_MANAGED_STUDENT_SELF, GUARDIAN, ADMIN, SUPER_ADMIN) may call this
+ * to ask the server to re-evaluate completion right now, instead of relying
+ * solely on sweepDueSessionCompletionConvergence's next cron tick. A DENIED
+ * viewer is rejected — via the exact same SessionViewerNotAuthorizedError
+ * getSessionContext already throws — BEFORE resolveSessionCompletionConvergence
+ * is ever invoked, so an unauthorized caller cannot trigger a convergence
+ * side effect even indirectly.
+ *
+ * Client input is ONLY `bookingId` (plus `actorUserId`/`actorRole`, which a
+ * caller must derive from its own authenticated session — never trusted from
+ * client-submitted data, mirroring every other actor-role parameter in this
+ * file). No timestamp, desired lifecycle status, completion outcome, or
+ * completedAt exists on this function's input type by construction.
+ *
+ * SINGLE-LAYER AUTHORIZATION CHECK, DELIBERATELY (not the two-layer TOCTOU
+ * pattern requestSessionInterruption uses): that pattern exists there
+ * because the GUARDED WRITE's correctness depends on authorization staying
+ * valid at write time (interruption records a specific actor's identity as
+ * the reason the session ended). Completion convergence has no such
+ * dependency — resolveSessionCompletionConvergence's outcome is entirely
+ * actor-independent (purely time + status derived) and, per its own doc
+ * comment, is "safe to call for ANY booking, any number of times, from any
+ * trusted trigger." Authorization here answers only "may this caller ask,"
+ * never "does this caller's identity affect what happens" — so a single,
+ * non-transactional resolveSessionViewerAuthority check, immediately before
+ * delegating, is sufficient and does not introduce a TOCTOU gap.
+ *
+ * Zero duplicated lifecycle logic: once authorized, this function's entire
+ * effect is calling the existing resolveSessionCompletionConvergence — the
+ * SAME entrypoint sweepDueSessionCompletionConvergence calls per candidate.
+ * It is therefore automatically:
+ *  - Idempotent: a repeat call after the session has already converged
+ *    observes decision !== "COMPLETE" (or a zero-count guarded updateMany)
+ *    and returns transitioned: false against the already-persisted
+ *    completedAt — never a second write.
+ *  - Race-safe against the cron sweep: both ultimately call the identical
+ *    guarded `updateMany({ where: { status: "IN_PROGRESS" } })` inside
+ *    applyCompletionConvergenceIfDue — whichever transaction's write commits
+ *    first wins under Postgres Serializable isolation; the other observes
+ *    count===0 and reports transitioned: false against the already-committed
+ *    result.
+ *  - Race-safe against requestSessionInterruption: that function's own
+ *    guarded write uses the identical `where: { status: "IN_PROGRESS" }`
+ *    shape for its own IN_PROGRESS -> INTERRUPTED transition — only one of
+ *    any concurrent {completion, interruption} attempt can ever match,
+ *    preserving exactly one terminal outcome by the same construction the
+ *    existing completion-vs-interruption concurrency test already proves for
+ *    the cron path (test #21, above).
+ */
+export async function requestSessionCompletionConvergence(
+  bookingId: string,
+  actorUserId: string,
+  actorRole: Role,
+  options: RequestSessionCompletionConvergenceOptions = {}
+): Promise<SessionCompletionConvergenceResult> {
+  const facts = await loadBookingSessionFacts(db, bookingId);
+  if (!facts) throw new SessionNotFoundError();
+
+  const viewerRole = await resolveSessionViewerAuthority(db, actorUserId, actorRole, {
+    studentProfileId: facts.studentProfileId,
+    tutorProfileUserId: facts.tutorProfileUserId,
+  });
+  if (viewerRole === "DENIED") throw new SessionViewerNotAuthorizedError();
+
+  return resolveSessionCompletionConvergence(bookingId, options);
+}
+
+// ---------------------------------------------------------------------------
+// INTERRUPTED — explicit, authorized actor request only. NOT a generic "I
+// want to leave" button (task §7): the only state transition it can ever
+// perform is IN_PROGRESS -> INTERRUPTED, gated by the exact same
+// participant/guardian/admin authority already established for reading the
+// session (resolveSessionViewerAuthority, sessionAuthorization.ts) — no new
+// authorization logic is introduced (task §19).
+//
+// HONESTY ABOUT PRESENCE TELEMETRY (task §9): FutureTutor has no continuous
+// presence signal beyond append-only CHECK_IN declarations (Phase 2) — no
+// heartbeat, no WebRTC/media-session liveness, no "tab visible" signal, no
+// disconnect detector. This function does NOT attempt to infer that a
+// participant "disappeared," "closed their browser," or "lost network" —
+// those are explicitly NOT authoritative lifecycle facts here, and no code
+// path in this phase manufactures that certainty. What it DOES support is
+// exactly what the server can actually stand behind: an authorized actor,
+// authenticated and authorized for THIS session, explicitly telling the
+// server "this session must stop now," with a server-generated timestamp
+// and an auditable actor + optional free-text reason. Distinguishing WHY it
+// stopped (technical failure vs. one party leaving vs. mutual agreement) is
+// deliberately NOT modeled as structured data in Phase 4 — see the
+// implementation report for why a controlled reason taxonomy/dispute model
+// is explicitly out of scope here (task §7/§18: "do not create a large
+// dispute-resolution subsystem").
+// ---------------------------------------------------------------------------
+
+export type SessionInterruptionRejection = "NOT_IN_PROGRESS";
+
+export interface SessionInterruptionEligibilityInput {
+  sessionStatus: SessionStatus;
+}
+
+/**
+ * PURE decision logic — no I/O. The ENTIRE interruption eligibility rule is
+ * this one gate: only a Session_ that is genuinely IN_PROGRESS may be
+ * interrupted. This single allowlist (rather than a denylist of terminal
+ * states) is what makes every task §10/§13 requirement hold by construction:
+ * SCHEDULED -> INTERRUPTED, NO_SHOW -> INTERRUPTED, COMPLETED -> INTERRUPTED,
+ * CANCELLED -> INTERRUPTED, and INTERRUPTED -> INTERRUPTED (a duplicate
+ * request) are ALL rejected by this same single check, not five separate
+ * special cases.
+ */
+export function computeSessionInterruptionEligibility(
+  input: SessionInterruptionEligibilityInput
+): SessionInterruptionRejection | null {
+  if (input.sessionStatus !== "IN_PROGRESS") return "NOT_IN_PROGRESS";
+  return null;
+}
+
+export class SessionInterruptionNotAuthorizedError extends Error {}
+
+/** Raised whenever computeSessionInterruptionEligibility rejects, OR the
+ * authoritative guarded write's own count-check disambiguates a zero-row
+ * match (the H.8-established "guard + count-check + throw" shape, reused
+ * verbatim here per the H.8 report's own explicit recommendation for every
+ * future Session_ writer Phase 4 introduces). Carries the session's actual
+ * current status for precise, UI-mappable messaging without a second query
+ * by the caller. */
+export class SessionNotInterruptibleError extends Error {
+  constructor(public readonly currentStatus: SessionStatus) {
+    super(`Session_ ${currentStatus} is not eligible for interruption (must be IN_PROGRESS)`);
+  }
+}
+
+const MAX_INTERRUPTION_REASON_LENGTH = 500;
+
+/** Optional, free-text, actor-supplied context — never a controlled outcome
+ * (no "who is at fault" field exists), capped defensively, trimmed, and
+ * normalized to null when empty. Stored only in the AuditLog metadata this
+ * function writes — never persisted onto Session_ itself (task §18: reuse
+ * the codebase's own established actor/reason audit convention rather than
+ * adding a new schema field). */
+function normalizeInterruptionReason(reason: string | undefined): string | null {
+  if (reason == null) return null;
+  const trimmed = reason.trim();
+  if (trimmed.length === 0) return null;
+  return trimmed.length > MAX_INTERRUPTION_REASON_LENGTH ? trimmed.slice(0, MAX_INTERRUPTION_REASON_LENGTH) : trimmed;
+}
+
+/** Mirrors cancelBookingWithRefund's own AUDIT_ACTION_BY_ROLE table exactly
+ * — one named audit action per authorized actor kind, keyed off the SAME
+ * SessionViewerRole this function's authorization already resolves (no
+ * duplicated role taxonomy). */
+const INTERRUPTION_AUDIT_ACTION_BY_ROLE: Record<Exclude<SessionViewerRole, "DENIED">, string> = {
+  TUTOR_OWNER: "session.interrupted_by_tutor",
+  SELF_MANAGED_STUDENT: "session.interrupted_by_student",
+  GUARDIAN_MANAGED_STUDENT_SELF: "session.interrupted_by_student",
+  GUARDIAN: "session.interrupted_by_guardian",
+  ADMIN: "session.interrupted_by_admin",
+  SUPER_ADMIN: "session.interrupted_by_admin",
+};
+
+export interface RequestSessionInterruptionOptions {
+  /** Fresh-read from the DB by the caller, never trusted from a stale
+   * session object — mirrors every other Session Lifecycle actor-role
+   * parameter in this file. */
+  actorRole: Role;
+  /** Optional free-text context, capped and normalized — see
+   * normalizeInterruptionReason. Never a claimed lifecycle outcome. */
+  reason?: string;
+  /** Injectable clock — real time by default. NEVER a client-supplied
+   * timestamp — this is the only source of the persisted endedAt value. */
+  clock?: () => Date;
+}
+
+export interface RequestSessionInterruptionResult {
+  sessionId: string;
+  bookingId: string;
+  actorRole: Exclude<SessionViewerRole, "DENIED">;
+  occurredAt: Date;
+  sessionStatus: "INTERRUPTED";
+  reason: string | null;
+}
+
+/**
+ * Records an authorized, explicit request to end an IN_PROGRESS Session_
+ * early. Two-layer TOCTOU-safe pattern, mirroring cancelBookingWithRefund /
+ * recordSessionCheckIn exactly:
+ *  - Layer 1 (fast, non-transactional pre-check, client = ambient db):
+ *    cheap rejection before opening a transaction.
+ *  - Layer 2 (authoritative, inside the Serializable transaction, client =
+ *    tx): the ONLY check ever trusted for the actual mutation.
+ *
+ * AUTHORIZATION CHOICE (task §8): deliberately reuses
+ * resolveSessionViewerAuthority — the SAME function that already gates
+ * read access to the session context — rather than the narrower,
+ * participant-role-scoped resolveSessionCheckInAuthority used by check-in.
+ * This is intentional, not an oversight: ending an active session is an
+ * action taken on behalf of the WHOLE session (like reading it), not a
+ * declaration about one specific participant's physical presence (like
+ * check-in). It also correctly admits ADMIN/SUPER_ADMIN, matching the
+ * task's own explicit "Admin/system" actor (§8) — check-in authority
+ * deliberately excludes admin (an admin must never impersonate a
+ * participant's physical presence), but that rationale does not apply to
+ * authorizing an end-of-session action. Reusing this function, rather than
+ * writing a new one, satisfies task §19's "do not duplicate authorization
+ * logic" directly.
+ *
+ * RACE SAFETY: the guarded `updateMany` below (`where: { status:
+ * "IN_PROGRESS" }`) is the concurrency guard, identical in shape to every
+ * other Session_ writer in this file and to cancellationPolicy.ts's own
+ * H.8-hardened step 9. A concurrent completion convergence, a concurrent
+ * second interruption request, or (in the one theoretically-reachable early
+ * -start edge case documented in the H.8 Session Writer Hardening report)
+ * a concurrent cancellation attempt can never race this write into a mixed
+ * or corrupted state: whichever transaction's updateMany commits first
+ * wins, and every other guarded Session_ writer in this codebase (H.8's
+ * cancellation guard, Phase 3's no-show guard, Phase 2's IN_PROGRESS guard,
+ * this phase's own completion guard) only ever matches its OWN expected
+ * prior status — none of them can ever match a Session_ row this write has
+ * already moved to INTERRUPTED.
+ */
+export async function requestSessionInterruption(
+  bookingId: string,
+  actorUserId: string,
+  options: RequestSessionInterruptionOptions
+): Promise<RequestSessionInterruptionResult> {
+  const clock = options.clock ?? (() => new Date());
+  const reason = normalizeInterruptionReason(options.reason);
+
+  // Layer 1 — fast pre-check, may use a slightly-stale `now`/state; never
+  // the authoritative decision.
+  const preCheckFacts = await loadBookingSessionFacts(db, bookingId);
+  if (!preCheckFacts) throw new SessionNotFoundError();
+  const preCheckAuthority = await resolveSessionViewerAuthority(db, actorUserId, options.actorRole, {
+    studentProfileId: preCheckFacts.studentProfileId,
+    tutorProfileUserId: preCheckFacts.tutorProfileUserId,
+  });
+  if (preCheckAuthority === "DENIED") throw new SessionInterruptionNotAuthorizedError();
+  const preRejection = computeSessionInterruptionEligibility({ sessionStatus: preCheckFacts.sessionStatus });
+  if (preRejection) throw new SessionNotInterruptibleError(preCheckFacts.sessionStatus);
+
+  return withSerializableRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        // 1. Re-fetch booking+session fresh via tx — never trust the Layer 1 read.
+        const facts = await loadBookingSessionFacts(tx, bookingId);
+        if (!facts) throw new SessionNotFoundError();
+
+        // 2. Authoritative re-check (Layer 2) — the exact same function as
+        // Layer 1, re-invoked with tx, immediately before the guarded write.
+        const authority = await resolveSessionViewerAuthority(tx, actorUserId, options.actorRole, {
+          studentProfileId: facts.studentProfileId,
+          tutorProfileUserId: facts.tutorProfileUserId,
+        });
+        if (authority === "DENIED") throw new SessionInterruptionNotAuthorizedError();
+
+        // 3. State re-evaluated inside the authoritative transaction.
+        const rejection = computeSessionInterruptionEligibility({ sessionStatus: facts.sessionStatus });
+        if (rejection) throw new SessionNotInterruptibleError(facts.sessionStatus);
+
+        // 4. Guarded, count-checked IN_PROGRESS -> INTERRUPTED write —
+        // endedAt (NOT completedAt — see the section header comment on
+        // why these are deliberately two separate, non-overlapping
+        // fields) is the server-generated terminal timestamp, from `now`
+        // (clock()), never a client-supplied value.
+        const now = clock();
+        const updated = await tx.session_.updateMany({
+          where: { id: facts.sessionId, status: "IN_PROGRESS" },
+          data: { status: "INTERRUPTED", endedAt: now },
+        });
+        if (updated.count === 0) {
+          // Lost a genuine race between step 3's re-check and this write
+          // (mirrors cancellationPolicy.ts step 9's own disambiguation
+          // exactly) — re-read to report the actual current status.
+          const current = await tx.session_.findUniqueOrThrow({
+            where: { id: facts.sessionId },
+            select: { status: true },
+          });
+          throw new SessionNotInterruptibleError(current.status);
+        }
+
+        // 5. Auditable actor/reason record (task §18), written atomically
+        // with the Session_ write above — mirrors cancelBookingWithRefund's
+        // own "one enriched AuditLog row, inside the same transaction"
+        // convention exactly.
+        await writeAuditLog(
+          {
+            actorUserId,
+            action: INTERRUPTION_AUDIT_ACTION_BY_ROLE[authority],
+            entityType: "Session_",
+            entityId: facts.sessionId,
+            metadata: {
+              bookingId: facts.bookingId,
+              actorRole: authority,
+              reason,
+              interruptedAt: now.toISOString(),
+            },
+          },
+          tx
+        );
+
+        return {
+          sessionId: facts.sessionId,
+          bookingId: facts.bookingId,
+          actorRole: authority,
+          occurredAt: now,
+          sessionStatus: "INTERRUPTED" as const,
+          reason,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    )
+  );
 }

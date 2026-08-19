@@ -946,10 +946,13 @@ enum SessionStatus {
   COMPLETED
   NO_SHOW
   CANCELLED
-  // Session Lifecycle Phase 1 (foundation only — no writer exists yet): a
-  // session that successfully started but suffered a material interruption.
-  // Distinct from COMPLETED (ran to a normal end) and NO_SHOW (never
-  // established presence) — never overload either to mean this.
+  // Session Lifecycle Phase 4: a session that successfully reached
+  // IN_PROGRESS but terminated early through an explicit, authorized actor
+  // request (requestSessionInterruption, src/services/sessionLifecycle.ts)
+  // rather than running to its normal contractual end. Distinct from
+  // COMPLETED (ran to a normal end) and NO_SHOW (never established
+  // presence) — never overload either to mean this. Reachable ONLY from
+  // IN_PROGRESS; every other transition into this value is rejected.
   INTERRUPTED
 }
 
@@ -959,17 +962,27 @@ model Session_ {
   id                String        @id @default(cuid())
   bookingId         String        @unique
   startedAt         DateTime?
+  // Session Lifecycle Phase 4: the authoritative, server-generated
+  // timestamp of an early/abnormal termination — written ONLY by
+  // requestSessionInterruption alongside status -> INTERRUPTED, never for a
+  // normal COMPLETED end (see completedAt below). Deliberately kept as a
+  // separate, non-overlapping field from completedAt rather than one field
+  // overloaded to mean "terminal timestamp regardless of outcome" — exactly
+  // one of endedAt/completedAt is ever non-null for a given terminal
+  // Session_ row.
   endedAt           DateTime?
   status            SessionStatus @default(SCHEDULED)
   tutorAttendance   Boolean?
   studentAttendance Boolean?
   onlineMeetingUrl  String?
   notes             String?       @db.Text
-  // Session Lifecycle Phase 1 (foundation only — no writer exists yet): the
-  // authoritative timestamp of successful operational completion, as
-  // determined by the future Session Lifecycle domain. Distinct from
+  // Session Lifecycle Phase 4: the authoritative, server-generated
+  // timestamp of successful operational completion — written ONLY by
+  // resolveSessionCompletionConvergence (src/services/sessionLifecycle.ts)
+  // alongside status -> COMPLETED, at/after Booking.endAt. Distinct from
   // Booking.endAt (the scheduled contractual end time, never adjusted) and
-  // from endedAt/updatedAt — never overload those to mean this.
+  // from endedAt (the separate INTERRUPTED-only terminal timestamp above) —
+  // never overload either to mean this.
   completedAt       DateTime?
 
   booking          Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
