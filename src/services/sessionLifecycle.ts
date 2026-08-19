@@ -110,6 +110,32 @@ function isTerminalNoShowDecision(decision: SessionNoShowDecision): boolean {
   return TERMINAL_NO_SHOW_DECISIONS.includes(decision);
 }
 
+/** The specific granular outcome a NO_SHOW session actually reached — a
+ * strict subset of SessionNoShowDecision (excludes NOT_APPLICABLE/
+ * NOT_YET_DUE/NO_TRANSITION_DUAL_PRESENT, none of which ever produce a
+ * persisted NO_SHOW status). */
+export type NoShowOutcome = Extract<SessionNoShowDecision, "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED">;
+
+/**
+ * PURE, single shared reconstruction of "which no-show case occurred" from
+ * evidence-existence booleans alone. Phase 5 audit finding: this exact A/B/C
+ * classification previously existed in TWO independent places — inline at
+ * the tail of decideNoShowOutcome below, and duplicated a second time inside
+ * getSessionContext's own no-show read-model branch — and Phase 5B's own
+ * task spec explicitly requires collapsing that to one shared helper rather
+ * than adding a THIRD copy inside financial convergence code. Both existing
+ * call sites are refactored to call this function (behavior-preserving —
+ * the case split is unchanged); the Phase 5B financial convergence engine
+ * (src/services/tutorEarningConvergence.ts) also calls this via
+ * getSessionFinancialFacts below, rather than re-deriving the mapping a
+ * third time.
+ */
+export function reconstructNoShowOutcome(tutorHasCheckedIn: boolean, studentHasCheckedIn: boolean): NoShowOutcome {
+  if (tutorHasCheckedIn && !studentHasCheckedIn) return "STUDENT_NO_SHOW";
+  if (!tutorHasCheckedIn && studentHasCheckedIn) return "TUTOR_NO_SHOW";
+  return "NO_SHOW_UNRESOLVED";
+}
+
 export interface NoShowDecisionInput {
   bookingStatus: string;
   sessionStatus: SessionStatus;
@@ -138,9 +164,7 @@ export function decideNoShowOutcome(input: NoShowDecisionInput): SessionNoShowDe
   if (input.now.getTime() < graceDeadlineAt) return "NOT_YET_DUE";
 
   if (input.tutorHasCheckedIn && input.studentHasCheckedIn) return "NO_TRANSITION_DUAL_PRESENT";
-  if (input.tutorHasCheckedIn && !input.studentHasCheckedIn) return "STUDENT_NO_SHOW";
-  if (!input.tutorHasCheckedIn && input.studentHasCheckedIn) return "TUTOR_NO_SHOW";
-  return "NO_SHOW_UNRESOLVED";
+  return reconstructNoShowOutcome(input.tutorHasCheckedIn, input.studentHasCheckedIn);
 }
 
 export class SessionCheckInNotAuthorizedError extends Error {}
@@ -771,9 +795,7 @@ export async function getSessionContext(
   const graceDeadlineAt = computeNoShowGraceDeadline(booking.startAt);
   let noShowOutcome: SessionContext["noShowOutcome"] = null;
   if (booking.session.status === "NO_SHOW") {
-    if (tutorPresenceRecorded && !studentPresenceRecorded) noShowOutcome = "STUDENT_NO_SHOW";
-    else if (!tutorPresenceRecorded && studentPresenceRecorded) noShowOutcome = "TUTOR_NO_SHOW";
-    else noShowOutcome = "NO_SHOW_UNRESOLVED";
+    noShowOutcome = reconstructNoShowOutcome(tutorPresenceRecorded, studentPresenceRecorded);
   }
 
   return {
@@ -1552,4 +1574,94 @@ export async function requestSessionInterruption(
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     )
   );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5B — read-only Session-truth facts for the financial convergence
+// engine (src/services/tutorEarningConvergence.ts). ARCHITECTURAL BOUNDARY
+// (Phase 5B task §1): "Session lifecycle produces facts. The financial
+// convergence engine consumes those facts." — this function is that
+// boundary, made concrete. It performs ZERO writes (a plain read, no
+// $transaction, no updateMany) and has ZERO knowledge of TutorEarning —
+// Session Lifecycle remains, as every prior phase's own header comments
+// already state, financially inert by construction. The financial engine
+// never queries Session_/SessionAttendanceEvent directly; it only ever
+// calls this function.
+// ---------------------------------------------------------------------------
+
+export interface SessionFinancialFacts {
+  sessionId: string;
+  bookingId: string;
+  bookingStatus: string;
+  sessionStatus: SessionStatus;
+  /** Non-null only once status === "COMPLETED" (resolveSessionCompletionConvergence's
+   * own server-generated timestamp) — the authoritative anchor the Phase 5B
+   * engine uses for the COMPLETED financial delay (see that engine's own
+   * doc comment for why completedAt, not Booking.endAt, is the correct
+   * anchor). */
+  completedAt: Date | null;
+  /** Non-null only once status === "NO_SHOW" (applyNoShowConvergenceIfDue's
+   * own server-generated timestamp, Phase 5A) — the authoritative anchor
+   * the Phase 5B engine uses for the STUDENT_NO_SHOW financial delay. */
+  noShowConvergedAt: Date | null;
+  /** Non-null ONLY when sessionStatus === "NO_SHOW" — the reconstructed
+   * case (via the SAME shared reconstructNoShowOutcome helper
+   * decideNoShowOutcome and getSessionContext already use), never a
+   * separately-invented classification. Null for every other sessionStatus
+   * (including a NO_SHOW-eligible-but-not-yet-converged SCHEDULED session —
+   * there is no outcome to reconstruct until the status transition has
+   * actually happened). */
+  noShowOutcome: NoShowOutcome | null;
+}
+
+/**
+ * Reads the authoritative Session_ facts the Phase 5B financial convergence
+ * engine needs, for one booking. Returns null when the booking or its
+ * Session_ row doesn't exist (mirrors loadBookingSessionFacts's own null
+ * contract) — the caller (convergeTutorEarningFromSession) is responsible
+ * for deciding what a missing Session_ means for the earning.
+ *
+ * Accepts either the ambient `db` or an open `tx` — the financial engine
+ * calls this from inside its own Serializable transaction (mirroring every
+ * other convergence entrypoint in this file), never from a pre-transaction
+ * snapshot.
+ */
+export async function getSessionFinancialFacts(
+  client: Prisma.TransactionClient | typeof db,
+  bookingId: string
+): Promise<SessionFinancialFacts | null> {
+  const booking = await client.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id: true,
+      status: true,
+      session: { select: { id: true, status: true, completedAt: true, noShowConvergedAt: true } },
+    },
+  });
+  if (!booking || !booking.session) return null;
+
+  let noShowOutcome: NoShowOutcome | null = null;
+  if (booking.session.status === "NO_SHOW") {
+    const [tutorEvidence, studentEvidence] = await Promise.all([
+      client.sessionAttendanceEvent.findFirst({
+        where: { sessionId: booking.session.id, participantRole: "TUTOR", eventType: "CHECK_IN" },
+        select: { id: true },
+      }),
+      client.sessionAttendanceEvent.findFirst({
+        where: { sessionId: booking.session.id, participantRole: "STUDENT", eventType: "CHECK_IN" },
+        select: { id: true },
+      }),
+    ]);
+    noShowOutcome = reconstructNoShowOutcome(tutorEvidence != null, studentEvidence != null);
+  }
+
+  return {
+    sessionId: booking.session.id,
+    bookingId: booking.id,
+    bookingStatus: booking.status,
+    sessionStatus: booking.session.status,
+    completedAt: booking.session.completedAt,
+    noShowConvergedAt: booking.session.noShowConvergedAt,
+    noShowOutcome,
+  };
 }

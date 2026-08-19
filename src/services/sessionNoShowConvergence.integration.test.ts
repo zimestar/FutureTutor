@@ -611,12 +611,13 @@ describe("Session Lifecycle Phase 3 — no-show convergence at T+15", () => {
       expect(paymentAfter.refundedAmountCents).toBe(paymentBefore.refundedAmountCents);
       expect(earningAfter.status).toBe(earningBefore.status);
       expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
-      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
-      // (payments.ts) is unchanged in this phase and always populates a
-      // concrete Date at creation — assert it stays non-null and unchanged.
-      expect(earningBefore.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
+      // Phase 5B: creation now leaves eligibleAt null (Session-outcome-driven
+      // eligibility, not wall-clock) — assert it stays null and unchanged.
+      // No-show convergence itself (resolveSessionNoShowConvergence) never
+      // touches TutorEarning — the separate financial convergence engine
+      // (tutorEarningConvergence.ts) is not invoked here.
+      expect(earningBefore.eligibleAt).toBeNull();
+      expect(earningAfter.eligibleAt).toBeNull();
       expect(refunds.length).toBe(0);
     });
 
@@ -793,18 +794,16 @@ describe("Session Lifecycle Phase 3 — no-show convergence at T+15", () => {
     });
   });
 
-  describe("PHASE 5A — TutorEarning.eligibleAt nullability", () => {
-    it("28. Prisma accepts an explicit null eligibleAt, and markEligibleEarnings() fails closed (never treats a null eligibleAt as due/eligible)", async () => {
+  describe("PHASE 5A/5B — TutorEarning.eligibleAt nullability", () => {
+    it("28. Creation writes a null eligibleAt, and markEligibleEarnings() fails closed (never treats a null eligibleAt as due/eligible)", async () => {
       const { booking } = await setupConfirmedCapturedBooking();
       const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
-      expect(earning.eligibleAt).not.toBeNull();
-
-      // Directly exercise the new nullable column — no production writer
-      // sets eligibleAt to null in Phase 5A (payments.ts is unchanged), so
-      // this simulates the Phase 5B shape (creation-time null, pending a
-      // later authoritative Session outcome) purely at the schema level.
-      const nulled = await db.tutorEarning.update({ where: { id: earning.id }, data: { eligibleAt: null } });
-      expect(nulled.eligibleAt).toBeNull();
+      // Phase 5B: the production writer (payments.ts, TutorEarning creation
+      // inside convergeToCaptured) now leaves eligibleAt null at creation —
+      // this is no longer a simulated/manual schema-level exercise, it is
+      // the actual, real production behavior for a Session still SCHEDULED.
+      expect(earning.status).toBe("PENDING_ELIGIBLE");
+      expect(earning.eligibleAt).toBeNull();
 
       const { markEligibleEarnings } = await import("./tutorTransfers");
       await markEligibleEarnings();

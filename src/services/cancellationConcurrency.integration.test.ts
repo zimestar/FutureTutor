@@ -647,6 +647,17 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
     }
 
     // Ordering B: the eligibility sweep commits first, cancellation after.
+    //
+    // Phase 5B REVISION: pre-Phase-5B, markEligibleEarnings promoted purely
+    // on `eligibleAt <= now`, so a still-SCHEDULED session's earning with a
+    // stale/past eligibleAt WAS promoted to ELIGIBLE here. That is exactly
+    // the wall-clock-only defect Phase 5B closes (task §9) — the hardened
+    // markEligibleEarnings now additionally requires authoritative Session
+    // permission (COMPLETED, or NO_SHOW+STUDENT_NO_SHOW), which a
+    // still-SCHEDULED session never has. This block now asserts THAT
+    // invariant directly: the sweep must NOT promote it, and the earning
+    // must still end up voided (PENDING_ELIGIBLE is one of cancellation's
+    // own two guarded prior states).
     {
       const { booking, student } = await setupConfirmedCapturedBooking();
       const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
@@ -655,14 +666,43 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
 
       await markEligibleEarnings();
       const midEarning = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });
-      expect(midEarning.status).toBe("ELIGIBLE");
+      // Session_ is still SCHEDULED (never converged) — Session truth does
+      // not authorize eligibility, so the hardened sweep correctly refuses
+      // to promote from a stale eligibleAt/time alone.
+      expect(midEarning.status).toBe("PENDING_ELIGIBLE");
 
       await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
 
       const finalEarning = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });
-      // Cancellation's own guard matches BOTH PENDING_ELIGIBLE and
-      // ELIGIBLE -- still correctly voided even though the sweep already
-      // flipped it.
+      expect(finalEarning.status).toBe("CANCELLED");
+    }
+
+    // Ordering B2: cancellation's own guard (cancellationPolicy.ts,
+    // unmodified by Phase 5B — the H.8 firewall) still matches BOTH
+    // PENDING_ELIGIBLE and ELIGIBLE. Post-Phase-5B, an earning can only
+    // become genuinely ELIGIBLE once its Session has reached a terminal,
+    // non-cancellable outcome (COMPLETED / STUDENT_NO_SHOW) — at which
+    // point H.8's own pre-existing Session_ guard (step 9) already rejects
+    // the cancellation attempt outright (SessionNotCancellableError), so
+    // "cancel an already-ELIGIBLE earning" is no longer reachable via the
+    // real sweep. This block keeps the underlying guard-array regression
+    // covered directly (an earning forced to ELIGIBLE, mirroring this same
+    // file's own established "direct DB write to exercise a status value"
+    // technique — see test #26/#27's precedent in
+    // sessionNoShowConvergence.integration.test.ts) — the SESSION here is
+    // deliberately left SCHEDULED (an artificial combination that cannot
+    // occur via real convergence, but is still the exact state
+    // cancellationPolicy.ts's own `status: { in: [...] }` guard must
+    // correctly handle if it were ever reached by any future writer).
+    {
+      const { booking, student } = await setupConfirmedCapturedBooking();
+      const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      await db.tutorEarning.update({ where: { id: earning.id }, data: { status: "ELIGIBLE" } });
+      vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
+
+      await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
+
+      const finalEarning = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });
       expect(finalEarning.status).toBe("CANCELLED");
     }
 

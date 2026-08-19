@@ -675,10 +675,17 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
                 tutorProfileId: booking.tutorProfileId,
                 amountCents: booking.tutorPayoutCents ?? 0,
                 currency: booking.currency,
-                // [YOUR IDEA — RECOMMENDED PAYOUT TIMING] — a temporary rule
-                // pending the future Session Completion phase; see
-                // TutorEarning.eligibleAt's schema comment.
-                eligibleAt: new Date(booking.endAt.getTime() + 24 * 60 * 60 * 1000),
+                // Phase 5B: eligibility is now Session-outcome-driven, not
+                // wall-clock-driven — this writer no longer pre-authorizes
+                // a payout date at creation time. status defaults to
+                // PENDING_ELIGIBLE (schema default) and eligibleAt starts
+                // null; src/services/tutorEarningConvergence.ts's
+                // convergeTutorEarningFromSession is the sole later writer
+                // of eligibleAt (COMPLETED/STUDENT_NO_SHOW outcomes only)
+                // or of a HELD status (TUTOR_NO_SHOW/NO_SHOW_UNRESOLVED/
+                // INTERRUPTED) — see TutorEarning.eligibleAt's own schema
+                // comment for the full rationale this writer now honors.
+                eligibleAt: null,
               },
             });
 

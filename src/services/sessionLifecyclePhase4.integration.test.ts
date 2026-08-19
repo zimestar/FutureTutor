@@ -466,15 +466,15 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
       expect(paymentAfter.refundedAmountCents).toBe(paymentBefore.refundedAmountCents);
       expect(earningAfter.status).toBe(earningBefore.status);
       expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
-      // TutorEarning.eligibleAt is driven purely by Booking.endAt + a fixed
-      // offset (see the model's own schema comment) — never by
-      // Session_.status. Completion must not change it.
-      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
-      // (payments.ts) is unchanged in this phase and always populates a
-      // concrete Date at creation — assert it stays non-null and unchanged.
-      expect(earningBefore.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
+      // Session Lifecycle's own resolveSessionCompletionConvergence never
+      // touches TutorEarning at all (task §1's architectural boundary,
+      // preserved unchanged in Phase 5B) — the SEPARATE financial
+      // convergence engine (tutorEarningConvergence.ts) is the only writer
+      // of eligibleAt, and it is never invoked here. Creation now leaves
+      // eligibleAt null (Session-outcome-driven eligibility, not
+      // wall-clock) — assert it stays null and unchanged by this call.
+      expect(earningBefore.eligibleAt).toBeNull();
+      expect(earningAfter.eligibleAt).toBeNull();
       expect(refunds.length).toBe(0);
     });
 
@@ -664,12 +664,10 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
 
       expect(paymentAfter.status).toBe(paymentBefore.status);
       expect(earningAfter.status).toBe(earningBefore.status);
-      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
-      // (payments.ts) is unchanged in this phase and always populates a
-      // concrete Date at creation — assert it stays non-null and unchanged.
-      expect(earningBefore.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
+      // Phase 5B: creation now leaves eligibleAt null (Session-outcome-driven
+      // eligibility, not wall-clock) — assert it stays null and unchanged.
+      expect(earningBefore.eligibleAt).toBeNull();
+      expect(earningAfter.eligibleAt).toBeNull();
       expect(refunds.length).toBe(0);
     });
 
@@ -1092,12 +1090,10 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
       expect(paymentAfter.refundedAmountCents).toBe(paymentBefore.refundedAmountCents);
       expect(earningAfter.status).toBe(earningBefore.status);
       expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
-      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
-      // (payments.ts) is unchanged in this phase and always populates a
-      // concrete Date at creation — assert it stays non-null and unchanged.
-      expect(earningBefore.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt).not.toBeNull();
-      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
+      // Phase 5B: creation now leaves eligibleAt null (Session-outcome-driven
+      // eligibility, not wall-clock) — assert it stays null and unchanged.
+      expect(earningBefore.eligibleAt).toBeNull();
+      expect(earningAfter.eligibleAt).toBeNull();
       expect(refunds.length).toBe(0);
     });
   });

@@ -14,22 +14,60 @@ import {
   convergeCancelledBookingPayment,
   isRefundObligationSatisfied,
 } from "@/services/payments";
+import { getSessionFinancialFacts } from "@/services/sessionLifecycle";
+import { isSessionEligibleForPayment, sweepTutorEarningConvergence } from "@/services/tutorEarningConvergence";
 
 const STUCK_PAYMENT_THRESHOLD_MS = 30 * 60 * 1000; // [YOUR IDEA — INITIAL DEFAULT], §7/§19 of the Phase G plan
 
 /**
- * TutorEarning eligibility depends only on eligibleAt and the booking not
- * having been voided — never on Stripe Connect readiness (Correction 6 of
- * the Phase G plan). Payout-readiness is a separate, later check, in
- * createTransferForEarning below.
+ * Phase 5B HARDENING (task §9): TutorEarning.eligibleAt is no longer, on its
+ * own, sufficient authorization to promote PENDING_ELIGIBLE -> ELIGIBLE.
+ * "SCHEDULED/IN_PROGRESS + past clock deadline" must never become ELIGIBLE
+ * merely because time passed — pre-Phase-5B, this function trusted
+ * `eligibleAt: { lte: now }` alone, which is exactly the wall-clock-only
+ * defect the Phase 5B task closes. This is defense-in-depth beyond the
+ * convergence engine's own write-once eligibleAt guard (see
+ * tutorEarningConvergence.ts's doc comment): it also protects LEGACY rows —
+ * any TutorEarning created before Phase 5B already carries a populated,
+ * wall-clock-derived eligibleAt that the new engine deliberately never
+ * rewrites (task §10, "do not blindly rewrite legacy rows") — by requiring
+ * a SECOND, independent, authoritative check against the current Session
+ * outcome (isSessionEligibleForPayment, the SAME predicate the convergence
+ * engine itself uses for its TRANSFERRED/ELIGIBLE conflict check — one
+ * shared definition of "which Session outcomes ever justify payment," not
+ * two).
+ *
+ * Each candidate is read-then-conditionally-promoted individually (rather
+ * than one blanket updateMany) precisely so this Session-truth check can be
+ * interposed per row before any write is attempted. No Serializable
+ * transaction/retry wrapping is needed here: once a Session_ reaches a
+ * terminal outcome (COMPLETED, or NO_SHOW with its granular case), no writer
+ * anywhere in this codebase ever transitions it again (Session Lifecycle
+ * Phases 3/4's own "terminal-finality" invariant) — so the fact read here
+ * and the guarded single-row updateMany moments later can never observe a
+ * genuine race on that fact. The updateMany's own `where` clause remains the
+ * sole concurrency guard for the ACTUAL status write, exactly as before.
  */
-export async function markEligibleEarnings(): Promise<number> {
+export async function markEligibleEarnings(limit = 200): Promise<number> {
   const now = new Date();
-  const result = await db.tutorEarning.updateMany({
+  const candidates = await db.tutorEarning.findMany({
     where: { status: "PENDING_ELIGIBLE", eligibleAt: { lte: now } },
-    data: { status: "ELIGIBLE" },
+    select: { id: true, bookingId: true },
+    take: limit,
   });
-  return result.count;
+
+  let promoted = 0;
+  for (const candidate of candidates) {
+    const facts = await getSessionFinancialFacts(db, candidate.bookingId);
+    if (!facts || !isSessionEligibleForPayment(facts)) continue; // Session truth does not (or no longer) authorizes payment — never promote from eligibleAt/time alone
+
+    const result = await db.tutorEarning.updateMany({
+      where: { id: candidate.id, status: "PENDING_ELIGIBLE", eligibleAt: { lte: now } },
+      data: { status: "ELIGIBLE" },
+    });
+    promoted += result.count;
+  }
+  return promoted;
 }
 
 async function finalizeTransfer(transferId: string, stripeTransferId: string): Promise<void> {
@@ -190,9 +228,30 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   }
 }
 
-/** The cron sweep's entry point for the earning/transfer half of
- * reconciliation — see reconcileStuckPayments below for the payment half. */
-export async function processEligibleTransfers(): Promise<{ markedEligible: number; transfersAttempted: number }> {
+/**
+ * The cron sweep's entry point for the earning/transfer half of
+ * reconciliation — see reconcileStuckPayments below for the payment half.
+ *
+ * Phase 5B: runs the financial convergence sweep FIRST — converging every
+ * PENDING_ELIGIBLE earning against its authoritative Session outcome
+ * (setting eligibleAt for a permitted COMPLETED/STUDENT_NO_SHOW outcome, or
+ * moving to HELD for TUTOR_NO_SHOW/NO_SHOW_UNRESOLVED/INTERRUPTED) — BEFORE
+ * markEligibleEarnings' own (now Session-truth-hardened) promotion sweep
+ * runs. This is task §9's option A ("converge Session financial state
+ * before eligibility sweep"), combined with markEligibleEarnings' own
+ * independent option B check, as belt-and-suspenders: the convergence step
+ * is what actually POPULATES eligibleAt for a freshly-COMPLETED session in
+ * normal operation; the hardened promotion check is what protects against
+ * any row (legacy or otherwise) whose eligibleAt doesn't yet — or should
+ * never — reflect Session truth.
+ */
+export async function processEligibleTransfers(): Promise<{
+  convergedEarnings: number;
+  reconciliationRequired: number;
+  markedEligible: number;
+  transfersAttempted: number;
+}> {
+  const convergence = await sweepTutorEarningConvergence();
   const markedEligible = await markEligibleEarnings();
 
   const candidates = await db.tutorEarning.findMany({
@@ -203,7 +262,12 @@ export async function processEligibleTransfers(): Promise<{ markedEligible: numb
   for (const candidate of candidates) {
     await createTransferForEarning(candidate.id);
   }
-  return { markedEligible, transfersAttempted: candidates.length };
+  return {
+    convergedEarnings: convergence.converged,
+    reconciliationRequired: convergence.reconciliationRequired,
+    markedEligible,
+    transfersAttempted: candidates.length,
+  };
 }
 
 /**
