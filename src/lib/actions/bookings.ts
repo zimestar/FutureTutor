@@ -42,6 +42,7 @@ import {
   BookingNotCancellableError,
   NotAuthorizedToCancelError,
   SessionAlreadyStartedError,
+  SessionNotCancellableError,
 } from "@/services/cancellationPolicy";
 
 export type BookingActionState = { error?: string; success?: boolean } | undefined;
@@ -250,6 +251,12 @@ export async function cancelBookingAction(
     if (error instanceof SessionAlreadyStartedError) return { error: t("alreadyStarted") };
     if (error instanceof NotAuthorizedToCancelError) return { error: t("notYours") };
     if (error instanceof BookingNotCancellableError) return { error: t("generic") };
+    // Pre-Phase-4 H.8 hardening — the booking's Session_ had already moved
+    // off SCHEDULED (e.g. an early dual check-in already started the
+    // session) when the guarded Session_ write ran; the whole cancellation
+    // attempt was rolled back. Same generic messaging as every other
+    // domain-rejection branch above — no new user-facing copy introduced.
+    if (error instanceof SessionNotCancellableError) return { error: t("generic") };
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       // Serializable conflict on the authorization/mutation transaction —
       // never auto-retried here (§I of the H.8 plan); a fresh Server

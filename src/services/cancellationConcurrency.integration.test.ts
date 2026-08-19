@@ -34,6 +34,14 @@ let reserveBookingPendingPayment: typeof import("./bookingCreation").reserveBook
 let cancelBookingWithRefund: typeof import("./cancellationPolicy").cancelBookingWithRefund;
 let NotAuthorizedToCancelError: typeof import("./cancellationPolicy").NotAuthorizedToCancelError;
 let SessionAlreadyStartedError: typeof import("./cancellationPolicy").SessionAlreadyStartedError;
+let BookingNotCancellableError: typeof import("./cancellationPolicy").BookingNotCancellableError;
+// Pre-Phase-4 H.8 Session Writer Hardening — the new guarded/count-checked
+// Session_ write's own domain error, and recordSessionCheckIn (used below
+// to construct the one genuinely-reachable pre-hardening bug scenario: an
+// early dual check-in moving Session_ to IN_PROGRESS before Booking.startAt,
+// still inside cancelBookingWithRefund's own cancellable window).
+let SessionNotCancellableError: typeof import("./cancellationPolicy").SessionNotCancellableError;
+let recordSessionCheckIn: typeof import("./sessionLifecycle").recordSessionCheckIn;
 let convergeToCaptured: typeof import("./payments").convergeToCaptured;
 let getOrCreateRefund: typeof import("./payments").getOrCreateRefund;
 let refundIdForBooking: typeof import("./payments").refundIdForBooking;
@@ -153,11 +161,13 @@ beforeAll(async () => {
   ({ createCustomerPriceQuote } = await import("./customerPricing"));
   ({ createTutorPayoutQuote } = await import("./tutorPayout"));
   ({ reserveBookingPendingPayment } = await import("./bookingCreation"));
-  ({ cancelBookingWithRefund, NotAuthorizedToCancelError, SessionAlreadyStartedError } = await import("./cancellationPolicy"));
+  ({ cancelBookingWithRefund, NotAuthorizedToCancelError, SessionAlreadyStartedError, SessionNotCancellableError, BookingNotCancellableError } =
+    await import("./cancellationPolicy"));
   ({ convergeToCaptured, getOrCreateRefund, refundIdForBooking, resolveRefundOutcomeAndConverge, recoverFailedRefund } = await import(
     "./payments"
   ));
   ({ createTransferForEarning, markEligibleEarnings } = await import("./tutorTransfers"));
+  ({ recordSessionCheckIn } = await import("./sessionLifecycle"));
 
   // Pre-sandbox verification, item 3 — same ambient-singleton database
   // proof as cancellationRefund.integration.test.ts (see that file's own
@@ -793,5 +803,164 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
 
     const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
     expect(finalBooking.status).toBe("CONFIRMED"); // untouched
+  });
+});
+
+// Pre-Phase-4 H.8 Session Writer Hardening — permanent regression coverage
+// for the newly guarded/count-checked Session_ write in cancelBookingWithRefund
+// (step 9). See FutureTutor_H8_SessionWriter_Hardening_Report.md §2-§4 for
+// the full investigation: the guard closes a genuinely reachable production
+// scenario (recordSessionCheckIn's own SCHEDULED -> IN_PROGRESS transition
+// has no upper time bound tied to Booking.startAt, only a lower one,
+// startAt - 15min, so an early dual check-in can legitimately move
+// Session_ to IN_PROGRESS while Booking.status is still CONFIRMED and
+// `now` is still < startAt — i.e. still inside cancelBookingWithRefund's
+// own cancellable window) while leaving the far more common "no Session_
+// row exists yet" case (every DRAFT/PENDING_PAYMENT booking) completely
+// unaffected.
+describe("Pre-Phase-4 H.8 Session Writer Hardening — Session_ write invariant", () => {
+  it("A. Normal pre-start cancellation (no concurrent Session writer) -> Session_ SCHEDULED -> CANCELLED under the new count-checked write, refund proceeds normally", async () => {
+    const { booking, student } = await setupConfirmedCapturedBooking();
+    vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
+
+    await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
+
+    const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(finalBooking.status).toBe("CANCELLED");
+    const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    expect(finalSession.status).toBe("CANCELLED");
+  });
+
+  it("B/E/F/G. Session already IN_PROGRESS (early dual check-in) at cancellation time -> the guarded Session_ write rejects the WHOLE attempt: zero Booking mutation, zero Refund, zero Stripe call, Booking/Session pairing stays consistent", async () => {
+    const startAt = new Date(Date.now() + 10 * 60 * 1000); // inside the 15-min check-in window, still before startAt
+    const { tutor, student, booking } = await setupConfirmedCapturedBooking({ startAt });
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    // Both sides check in for real (sequential, not racing) — the exact,
+    // currently-reachable production pathway this hardening closes.
+    await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+    const studentCheckIn = await recordSessionCheckIn(booking.id, student.user.id, "STUDENT", { actorRole: "STUDENT" });
+    expect(studentCheckIn.transitionedToInProgress).toBe(true);
+
+    const preSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    expect(preSession.status).toBe("IN_PROGRESS");
+
+    // Cancellation attempted while `now` is still (deliberately, via the
+    // real clock) < startAt — step 3's own SessionAlreadyStartedError
+    // boundary does NOT reject this attempt; the NEW guarded Session_
+    // write (step 9) is what must.
+    await expect(cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" })).rejects.toThrow(
+      SessionNotCancellableError
+    );
+
+    // (G) Booking/Session consistency: both untouched — never the invalid
+    // CANCELLED-Booking/IN_PROGRESS-Session mixed pairing.
+    const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(finalBooking.status).toBe("CONFIRMED");
+    const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    expect(finalSession.status).toBe("IN_PROGRESS");
+
+    // Whole transaction rolled back — no BookingStatusHistory-implying
+    // cancellation-intent AuditLog, no TutorEarning void.
+    const cancelAudit = await db.auditLog.findFirst({
+      where: {
+        entityType: "Booking",
+        entityId: booking.id,
+        action: { in: ["booking.cancelled_by_customer", "booking.cancelled_by_tutor", "booking.cancelled_by_admin"] },
+      },
+    });
+    expect(cancelAudit).toBeNull();
+    const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    expect(earning.status).toBe("PENDING_ELIGIBLE"); // never voided
+
+    // (E) No Refund row at all — Phase 2 (convergeCancelledBookingPayment)
+    // is only reached after the transaction COMMITS; it never ran here.
+    const refund = await db.refund.findUnique({ where: { id: refundIdForBooking(booking.id) } });
+    expect(refund).toBeNull();
+
+    // (F) No Stripe call of any kind — same reasoning.
+    expect(fake.refunds.create).not.toHaveBeenCalled();
+    expect(fake.paymentIntents.cancel).not.toHaveBeenCalled();
+  });
+
+  it("Benign-missing-row regression: cancelling a PENDING_PAYMENT booking (no Session_ row exists yet) proceeds exactly as before this hardening", async () => {
+    const tutor = await createTutorUser();
+    const student = await createSelfManagedStudent();
+    const quote = await makeQuote(student.user.id, student.studentProfile.id);
+    const payoutQuote = await makePayoutQuote(tutor.tutorProfile.id, quote.id);
+    const payment = await makePayment(quote.id, student.user.id);
+    const booking = await reserveBooking({
+      actorUserId: student.user.id,
+      studentProfileId: student.studentProfile.id,
+      tutorProfileId: tutor.tutorProfile.id,
+      customerPriceQuoteId: quote.id,
+      tutorPayoutQuoteId: payoutQuote.id,
+      paymentId: payment.id,
+    });
+    // Deliberately never converged to CAPTURED/CONFIRMED — the booking
+    // remains PENDING_PAYMENT, which never gets a Session_ row (see
+    // payments.ts's own tx.session_.create, gated on the CONFIRMED
+    // transition). Payment has no stripePaymentIntentId either, so
+    // convergence resolves locally with no Stripe call needed.
+    const preBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(preBooking.status).toBe("PENDING_PAYMENT");
+    const preSession = await db.session_.findUnique({ where: { bookingId: booking.id } });
+    expect(preSession).toBeNull();
+
+    await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
+
+    const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(finalBooking.status).toBe("CANCELLED");
+    const finalSession = await db.session_.findUnique({ where: { bookingId: booking.id } });
+    expect(finalSession).toBeNull(); // still no Session_ row — the guard's missing-row branch never throws
+  });
+
+  it("C. Two concurrent cancellation attempts on the same CONFIRMED booking -> exactly one succeeds and reaches the guarded Session_ write; the other is rejected by step 4's own Booking guard before ever reaching it", async () => {
+    const { booking, student } = await setupConfirmedCapturedBooking();
+    vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
+
+    const outcomes = await Promise.allSettled([
+      cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" }),
+      cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" }),
+    ]);
+
+    expect(outcomes.filter((o) => o.status === "fulfilled").length).toBe(1);
+    const rejected = outcomes.find((o): o is PromiseRejectedResult => o.status === "rejected");
+    expect(rejected?.reason).toBeInstanceOf(BookingNotCancellableError);
+
+    const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+    expect(finalSession.status).toBe("CANCELLED"); // reached CANCELLED exactly once, via the one successful attempt
+  });
+
+  it("D. Genuine race: both check-ins and cancellation fired together, repeatedly -> exactly one authoritative outcome each time, Booking/Session pairing always consistent", async () => {
+    for (let i = 0; i < 5; i++) {
+      const startAt = new Date(Date.now() + 10 * 60 * 1000);
+      const { tutor, student, booking } = await setupConfirmedCapturedBooking({ startAt });
+      vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
+
+      await Promise.allSettled([
+        recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" }),
+        recordSessionCheckIn(booking.id, student.user.id, "STUDENT", { actorRole: "STUDENT" }),
+        cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" }),
+      ]);
+
+      const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+      const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+
+      // Exactly two valid, mutually exclusive outcomes: cancellation won
+      // (both Booking and Session reach CANCELLED together), or the
+      // Session writer(s) won (Booking stays CONFIRMED, Session is
+      // SCHEDULED or IN_PROGRESS depending on how many check-ins landed
+      // before cancellation's guarded write ran).
+      if (finalBooking.status === "CANCELLED") {
+        expect(finalSession.status).toBe("CANCELLED");
+      } else {
+        expect(finalBooking.status).toBe("CONFIRMED");
+        expect(["SCHEDULED", "IN_PROGRESS"]).toContain(finalSession.status);
+      }
+      // The one invariant that must never break, regardless of interleaving.
+      expect(finalSession.status === "IN_PROGRESS" && finalBooking.status === "CANCELLED").toBe(false);
+    }
   });
 });
