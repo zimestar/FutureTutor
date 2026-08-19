@@ -4,7 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { recordSessionCheckInAction } from "@/lib/actions/session";
-import { sessionCheckInControls, studentCheckInLabelKind } from "@/lib/sessionPresentation";
+import { sessionCheckInControls, shouldRefreshSessionAfterCheckIn, studentCheckInLabelKind } from "@/lib/sessionPresentation";
 
 export function SessionCheckInPanel({
   bookingId,
@@ -24,8 +24,8 @@ export function SessionCheckInPanel({
   const [state, action, pending] = useActionState(recordSessionCheckInAction, undefined);
 
   useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [router, state?.success]);
+    if (shouldRefreshSessionAfterCheckIn(state)) router.refresh();
+  }, [router, state]);
 
   const { tutor: canCheckInTutor, student: canCheckInStudent } = sessionCheckInControls(allowedActions);
   if (!canCheckInTutor && !canCheckInStudent) return null;

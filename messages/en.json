@@ -1427,6 +1427,7 @@
     "eyebrow": "Session arrival",
     "subtitle": "Session with {name}",
     "viewSession": "View session",
+    "bookingNoShow": "Session did not start",
     "states": {
       "preWindow": {
         "label": "Upcoming",
@@ -1448,16 +1449,76 @@
         "title": "Tutor presence is recorded",
         "description": "Waiting for the learner to arrive. The session remains scheduled to end at {endTime}."
       },
+      "graceReady": {
+        "label": "Grace period",
+        "title": "Check in to join your session",
+        "description": "The scheduled start time has passed, but the grace period is still open. No participant is considered a no-show before the deadline."
+      },
+      "graceWaitingForTutor": {
+        "label": "Grace period",
+        "title": "Waiting for your Tutor",
+        "description": "Learner presence is recorded. The Tutor can still arrive before the grace period ends."
+      },
+      "graceWaitingForStudent": {
+        "label": "Grace period",
+        "title": "Waiting for {name}",
+        "description": "Tutor presence is recorded. {name} can still arrive before the grace period ends."
+      },
+      "deadlinePending": {
+        "label": "Updating session",
+        "title": "The grace period has ended",
+        "description": "We are checking the authoritative session status. Check-in is paused while the latest outcome loads."
+      },
       "inProgress": {
         "label": "In session",
         "title": "The session has started",
         "description": "Both participants are present. The scheduled end time remains {endTime}."
+      },
+      "studentNoShow": {
+        "label": "Session did not start",
+        "title": "Learner presence was not confirmed",
+        "description": "The session did not start because learner presence was not confirmed within the grace period."
+      },
+      "tutorNoShow": {
+        "label": "Session did not start",
+        "title": "Tutor presence was not confirmed",
+        "description": "The session did not start because Tutor presence was not confirmed within the grace period."
+      },
+      "neutralNoShow": {
+        "label": "Session did not start",
+        "title": "The session did not start",
+        "description": "The grace period ended before the required presence was established."
       },
       "unavailable": {
         "label": "Session updated",
         "title": "Check-in is no longer available",
         "description": "This session has changed. Return to your bookings for the latest available details."
       }
+    },
+    "noShow": {
+      "studentAbsentTutor": {
+        "description": "The session did not start because {name}'s presence was not confirmed within the grace period. Normal check-in is now closed."
+      },
+      "studentAbsentLearner": {
+        "description": "Learner presence was not confirmed within the grace period, so the session did not start. Normal check-in is now closed."
+      },
+      "tutorAbsentTutor": {
+        "description": "Tutor presence was not confirmed within the grace period, so the session did not start. Normal check-in is now closed."
+      },
+      "tutorAbsentLearner": {
+        "description": "Your Tutor's presence was not confirmed within the grace period, so the session did not start. Existing support workflows can provide any appropriate next steps."
+      },
+      "neutral": {
+        "description": "The required presence was not established within the grace period, so the session did not start. Normal check-in is now closed."
+      }
+    },
+    "grace": {
+      "regionLabel": "Session grace-period countdown",
+      "remainingLabel": "Time remaining in the grace period",
+      "remainingAccessible": "About {minutes} minutes remain in the grace period.",
+      "expiredAccessible": "The grace period has ended. The session status is updating.",
+      "authorityNote": "This countdown is informational. The server determines the session outcome.",
+      "refreshing": "Checking the latest session status…"
     },
     "presence": {
       "title": "Arrival status",
@@ -1494,6 +1555,7 @@
       "title": "Session details",
       "scheduledStart": "Scheduled start",
       "scheduledEnd": "Scheduled end",
+      "graceDeadline": "Grace-period deadline",
       "mode": "Session format"
     },
     "mode": {

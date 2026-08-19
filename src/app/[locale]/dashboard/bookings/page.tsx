@@ -76,7 +76,7 @@ export default async function StudentBookingsPage({
             tutorProfile: { select: { user: { select: { name: true } } } },
             subject: { select: { slug: true } },
             payment: { select: { status: true, refundedAmountCents: true, amountCents: true, currency: true } },
-            session: { select: { id: true } },
+            session: { select: { id: true, status: true } },
           },
           orderBy: { startAt: "asc" },
         })
@@ -142,6 +142,7 @@ export default async function StudentBookingsPage({
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>
                           {tStatus(booking.status)}
                         </Badge>
+                        {booking.session?.status === "NO_SHOW" && <Badge variant="neutral">{tSession("bookingNoShow")}</Badge>}
                         {booking.session && (
                           <Button href={`/session/${booking.id}`} variant="outline" size="sm">
                             {tSession("viewSession")}

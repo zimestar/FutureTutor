@@ -3,19 +3,40 @@ export type SessionArrivalPresentation =
   | "ready"
   | "waitingForTutor"
   | "waitingForStudent"
+  | "graceReady"
+  | "graceWaitingForTutor"
+  | "graceWaitingForStudent"
+  | "deadlinePending"
   | "inProgress"
+  | "studentNoShow"
+  | "tutorNoShow"
+  | "neutralNoShow"
   | "unavailable";
 
 export function deriveSessionArrivalPresentation(input: {
   status: string;
   now: Date;
   checkInWindowOpensAt: Date;
+  scheduledStartAt: Date;
+  graceDeadlineAt: Date;
   tutorPresenceRecorded: boolean;
   studentPresenceRecorded: boolean;
+  noShowOutcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null;
 }): SessionArrivalPresentation {
   if (input.status === "IN_PROGRESS") return "inProgress";
+  if (input.status === "NO_SHOW") {
+    if (input.noShowOutcome === "STUDENT_NO_SHOW") return "studentNoShow";
+    if (input.noShowOutcome === "TUTOR_NO_SHOW") return "tutorNoShow";
+    return "neutralNoShow";
+  }
   if (input.status !== "SCHEDULED") return "unavailable";
   if (input.now < input.checkInWindowOpensAt) return "preWindow";
+  if (input.now >= input.graceDeadlineAt) return "deadlinePending";
+  if (input.now >= input.scheduledStartAt) {
+    if (input.tutorPresenceRecorded && !input.studentPresenceRecorded) return "graceWaitingForStudent";
+    if (input.studentPresenceRecorded && !input.tutorPresenceRecorded) return "graceWaitingForTutor";
+    return "graceReady";
+  }
   if (input.tutorPresenceRecorded && !input.studentPresenceRecorded) return "waitingForStudent";
   if (input.studentPresenceRecorded && !input.tutorPresenceRecorded) return "waitingForTutor";
   return "ready";
@@ -39,4 +60,34 @@ export function studentCheckInLabelKind(viewerRole: string): "guardian" | "tutor
   if (viewerRole === "GUARDIAN") return "guardian";
   if (viewerRole === "TUTOR_OWNER") return "tutor";
   return "self";
+}
+
+export function isTerminalNoShowPresentation(presentation: SessionArrivalPresentation): boolean {
+  return presentation === "studentNoShow" || presentation === "tutorNoShow" || presentation === "neutralNoShow";
+}
+
+export function noShowCopyKind(
+  viewerRole: string,
+  outcome: "STUDENT_NO_SHOW" | "TUTOR_NO_SHOW" | "NO_SHOW_UNRESOLVED" | null,
+): "studentAbsentTutor" | "studentAbsentLearner" | "tutorAbsentTutor" | "tutorAbsentLearner" | "neutral" {
+  if (outcome === "STUDENT_NO_SHOW") return viewerRole === "TUTOR_OWNER" ? "studentAbsentTutor" : "studentAbsentLearner";
+  if (outcome === "TUTOR_NO_SHOW") return viewerRole === "TUTOR_OWNER" ? "tutorAbsentTutor" : "tutorAbsentLearner";
+  return "neutral";
+}
+
+export function graceRemainingParts(deadlineAt: Date, now: Date): { minutes: number; seconds: number; expired: boolean } {
+  const remainingSeconds = Math.max(0, Math.ceil((deadlineAt.getTime() - now.getTime()) / 1000));
+  return {
+    minutes: Math.floor(remainingSeconds / 60),
+    seconds: remainingSeconds % 60,
+    expired: remainingSeconds === 0,
+  };
+}
+
+export function shouldRefreshSessionAfterCheckIn(state: { success?: boolean; error?: string } | undefined): boolean {
+  return state?.success === true || state?.error === "notEligible";
+}
+
+export function shouldShowSessionCheckIn(presentation: SessionArrivalPresentation, allowedActions: readonly string[]): boolean {
+  return allowedActions.length > 0 && presentation !== "deadlinePending" && !isTerminalNoShowPresentation(presentation);
 }

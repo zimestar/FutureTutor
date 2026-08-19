@@ -9,11 +9,40 @@ import {
   SessionCheckInTooEarlyError,
   SessionNotCheckInEligibleError,
   SessionNotFoundError,
+  getSessionContext,
+  resolveSessionNoShowConvergence,
 } from "@/services/sessionLifecycle";
 
 export interface SessionCheckInActionState {
   success?: boolean;
   error?: "tooEarly" | "notAuthorized" | "notEligible" | "generic";
+}
+
+export interface SessionLifecycleRefreshState {
+  complete?: boolean;
+}
+
+export async function refreshSessionLifecycleAction(
+  _previousState: SessionLifecycleRefreshState | undefined,
+  formData: FormData,
+): Promise<SessionLifecycleRefreshState> {
+  const session = await auth();
+  if (!session?.user) return { complete: true };
+  const bookingId = formData.get("bookingId");
+  const locale = formData.get("locale") === "fr" ? "fr" : "en";
+  if (typeof bookingId !== "string" || !bookingId) return { complete: true };
+
+  try {
+    const freshUser = await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    if (!freshUser) return { complete: true };
+    await getSessionContext(bookingId, session.user.id, freshUser.role);
+    await resolveSessionNoShowConvergence(bookingId);
+  } catch {
+    // Always fail closed and refresh the authorized read model. Never expose
+    // internal lifecycle/authorization errors through this presentation aid.
+  }
+  revalidatePath(`/${locale}/session/${bookingId}`);
+  return { complete: true };
 }
 
 export async function recordSessionCheckInAction(

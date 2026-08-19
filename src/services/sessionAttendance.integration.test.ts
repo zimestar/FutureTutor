@@ -417,7 +417,16 @@ describe("Session Lifecycle Phase 2 — attendance evidence (integration)", () =
 
   it("server time is authoritative: occurredAt equals the injected clock(), not real wall-clock time", async () => {
     const { tutor, booking } = await setupConfirmedCapturedBooking();
-    const fakeNow = new Date("2026-08-20T17:58:00.000Z");
+    // A fixed instant distinct from real wall-clock time, but still BEFORE
+    // Booking.startAt (and therefore well before the Phase 3 T+15 no-show
+    // grace deadline) — derived from the booking's own (dynamically
+    // real-time-based) startAt rather than an unrelated hardcoded literal
+    // date, so this test's intent (prove clock() overrides real time) is
+    // preserved without incidentally landing past the grace deadline (see
+    // the Phase 3 report's "Phase 2 regression" section for why the
+    // original hardcoded literal broke once Phase 3 introduced real
+    // meaning to elapsed time past startAt).
+    const fakeNow = new Date(booking.startAt.getTime() - 60 * 1000);
     const result = await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", {
       actorRole: "TUTOR",
       clock: () => fakeNow,
@@ -448,13 +457,20 @@ describe("Session Lifecycle Phase 2 — attendance evidence (integration)", () =
 
   it("append-only: a second CHECK_IN for the same participant creates a NEW row, never rewrites the first", async () => {
     const { tutor, booking } = await setupConfirmedCapturedBooking();
+    // Two distinct fixed instants, both derived from the booking's own
+    // startAt and both BEFORE it (and therefore before the Phase 3 T+15
+    // grace deadline) — see the sibling "server time is authoritative"
+    // test above for why this is derived rather than an unrelated
+    // hardcoded literal date.
+    const firstClock = new Date(booking.startAt.getTime() - 3 * 60 * 1000);
+    const secondClock = new Date(booking.startAt.getTime() - 2 * 60 * 1000);
     const first = await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", {
       actorRole: "TUTOR",
-      clock: () => new Date("2026-08-20T17:00:00.000Z"),
+      clock: () => firstClock,
     });
     const second = await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", {
       actorRole: "TUTOR",
-      clock: () => new Date("2026-08-20T17:05:00.000Z"),
+      clock: () => secondClock,
     });
 
     expect(first.attendanceEventId).not.toBe(second.attendanceEventId);
@@ -466,7 +482,7 @@ describe("Session Lifecycle Phase 2 — attendance evidence (integration)", () =
     expect(allEvents[0].id).toBe(first.attendanceEventId);
     expect(allEvents[1].id).toBe(second.attendanceEventId);
     // The first row's own occurredAt is untouched by the second check-in.
-    expect(allEvents[0].occurredAt.getTime()).toBe(new Date("2026-08-20T17:00:00.000Z").getTime());
+    expect(allEvents[0].occurredAt.getTime()).toBe(firstClock.getTime());
   });
 
   it("repeat check-in after IN_PROGRESS is recorded as evidence and does not error", async () => {

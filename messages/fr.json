@@ -1427,6 +1427,7 @@
     "eyebrow": "Arrivée à la séance",
     "subtitle": "Séance avec {name}",
     "viewSession": "Voir la séance",
+    "bookingNoShow": "La séance n'a pas commencé",
     "states": {
       "preWindow": {
         "label": "À venir",
@@ -1448,16 +1449,76 @@
         "title": "La présence du tuteur est enregistrée",
         "description": "Nous attendons l'arrivée de l'élève. La séance doit toujours se terminer à {endTime}."
       },
+      "graceReady": {
+        "label": "Période de grâce",
+        "title": "Enregistrez votre présence pour participer à la séance",
+        "description": "L'heure de début prévue est passée, mais la période de grâce est toujours ouverte. Personne n'est considéré comme absent avant l'échéance."
+      },
+      "graceWaitingForTutor": {
+        "label": "Période de grâce",
+        "title": "En attente de votre tuteur",
+        "description": "La présence de l'élève est enregistrée. Le tuteur peut encore arriver avant la fin de la période de grâce."
+      },
+      "graceWaitingForStudent": {
+        "label": "Période de grâce",
+        "title": "En attente de {name}",
+        "description": "La présence du tuteur est enregistrée. {name} peut encore arriver avant la fin de la période de grâce."
+      },
+      "deadlinePending": {
+        "label": "Mise à jour de la séance",
+        "title": "La période de grâce est terminée",
+        "description": "Nous vérifions l'état officiel de la séance. L'enregistrement des présences est suspendu pendant le chargement du résultat."
+      },
       "inProgress": {
         "label": "Séance en cours",
         "title": "La séance a commencé",
         "description": "Les deux participants sont présents. L'heure de fin prévue demeure {endTime}."
+      },
+      "studentNoShow": {
+        "label": "La séance n'a pas commencé",
+        "title": "La présence de l'élève n'a pas été confirmée",
+        "description": "La séance n'a pas pu commencer parce que la présence de l'élève n'a pas été confirmée pendant la période de grâce."
+      },
+      "tutorNoShow": {
+        "label": "La séance n'a pas commencé",
+        "title": "La présence du tuteur n'a pas été confirmée",
+        "description": "La séance n'a pas pu commencer parce que la présence du tuteur n'a pas été confirmée pendant la période de grâce."
+      },
+      "neutralNoShow": {
+        "label": "La séance n'a pas commencé",
+        "title": "La séance n'a pas pu commencer",
+        "description": "La période de grâce s'est terminée avant que les présences requises soient établies."
       },
       "unavailable": {
         "label": "Séance mise à jour",
         "title": "L'enregistrement des présences n'est plus disponible",
         "description": "Cette séance a changé. Consultez vos réservations pour voir les derniers renseignements disponibles."
       }
+    },
+    "noShow": {
+      "studentAbsentTutor": {
+        "description": "La séance n'a pas pu commencer parce que la présence de {name} n'a pas été confirmée pendant la période de grâce. L'enregistrement normal est maintenant fermé."
+      },
+      "studentAbsentLearner": {
+        "description": "La présence de l'élève n'a pas été confirmée pendant la période de grâce; la séance n'a donc pas pu commencer. L'enregistrement normal est maintenant fermé."
+      },
+      "tutorAbsentTutor": {
+        "description": "La présence du tuteur n'a pas été confirmée pendant la période de grâce; la séance n'a donc pas pu commencer. L'enregistrement normal est maintenant fermé."
+      },
+      "tutorAbsentLearner": {
+        "description": "La présence de votre tuteur n'a pas été confirmée pendant la période de grâce; la séance n'a donc pas pu commencer. Les mécanismes de soutien existants pourront indiquer les prochaines étapes appropriées."
+      },
+      "neutral": {
+        "description": "Les présences requises n'ont pas été établies pendant la période de grâce; la séance n'a donc pas pu commencer. L'enregistrement normal est maintenant fermé."
+      }
+    },
+    "grace": {
+      "regionLabel": "Compte à rebours de la période de grâce",
+      "remainingLabel": "Temps restant dans la période de grâce",
+      "remainingAccessible": "Il reste environ {minutes} minutes à la période de grâce.",
+      "expiredAccessible": "La période de grâce est terminée. L'état de la séance est en cours de mise à jour.",
+      "authorityNote": "Ce compte à rebours est fourni à titre indicatif. Le serveur détermine le résultat de la séance.",
+      "refreshing": "Vérification du dernier état de la séance…"
     },
     "presence": {
       "title": "État des arrivées",
@@ -1494,6 +1555,7 @@
       "title": "Détails de la séance",
       "scheduledStart": "Début prévu",
       "scheduledEnd": "Fin prévue",
+      "graceDeadline": "Échéance de la période de grâce",
       "mode": "Format de la séance"
     },
     "mode": {
