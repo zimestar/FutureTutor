@@ -1092,7 +1092,35 @@
       "PENDING_ELIGIBLE": "En attente",
       "ELIGIBLE": "Prêt — complétez la configuration des paiements pour recevoir les fonds",
       "TRANSFERRED": "Payé",
-      "CANCELLED": "Annulé"
+      "CANCELLED": "Annulé",
+      "HELD": "En suspens"
+    },
+    "earningPresentation": {
+      "pendingOutcome": {
+        "label": "Résultat de la séance en attente",
+        "description": "Ce gain attend que la séance produise un résultat admissible. Aucune date d'admissibilité n'est encore disponible."
+      },
+      "pendingEligibility": {
+        "label": "Admissibilité en attente",
+        "description": "Ce gain a une date d'admissibilité et attend la fin du délai prévu.",
+        "eligibleAt": "Admissible le {date}"
+      },
+      "eligible": {
+        "label": "Admissible",
+        "description": "Ce gain est admissible au traitement du paiement. Il n'a pas nécessairement encore été transféré."
+      },
+      "held": {
+        "label": "En suspens",
+        "description": "Ce gain ne progresse pas automatiquement vers le paiement pour le moment."
+      },
+      "transferred": {
+        "label": "Transféré",
+        "description": "Le transfert de ce gain a été effectué."
+      },
+      "cancelled": {
+        "label": "Annulé",
+        "description": "Ce gain a été annulé et ne progresse pas vers le paiement."
+      }
     },
     "transfersTitle": "Historique des transferts",
     "transfersEmptyTitle": "Aucun transfert",

@@ -1092,7 +1092,35 @@
       "PENDING_ELIGIBLE": "Pending",
       "ELIGIBLE": "Ready — complete payout setup to receive funds",
       "TRANSFERRED": "Paid",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Cancelled",
+      "HELD": "On hold"
+    },
+    "earningPresentation": {
+      "pendingOutcome": {
+        "label": "Pending session outcome",
+        "description": "This earning is waiting for the session to produce an eligible outcome. No eligibility date is available yet."
+      },
+      "pendingEligibility": {
+        "label": "Pending eligibility",
+        "description": "This earning has an eligibility date and is waiting for the eligibility window.",
+        "eligibleAt": "Eligible on {date}"
+      },
+      "eligible": {
+        "label": "Eligible",
+        "description": "This earning is eligible for payout processing. It has not necessarily been transferred yet."
+      },
+      "held": {
+        "label": "On hold",
+        "description": "This earning is not currently progressing to payout automatically."
+      },
+      "transferred": {
+        "label": "Transferred",
+        "description": "The transfer for this earning has been completed."
+      },
+      "cancelled": {
+        "label": "Cancelled",
+        "description": "This earning was cancelled and is not progressing to payout."
+      }
     },
     "transfersTitle": "Transfer history",
     "transfersEmptyTitle": "No transfers yet",

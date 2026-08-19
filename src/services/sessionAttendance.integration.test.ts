@@ -564,7 +564,11 @@ describe("Session Lifecycle Phase 2 — Session_ transition (integration)", () =
 
     const earningAfter = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
     expect(earningAfter.status).toBe(earningBefore.status);
-    expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+    // Phase 5B: creation now leaves eligibleAt null (Session-outcome-driven
+    // eligibility, not wall-clock) — assert it stays null (unaffected by
+    // check-in) both before and after.
+    expect(earningBefore.eligibleAt).toBeNull();
+    expect(earningAfter.eligibleAt).toBeNull();
     expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
     expect(earningAfter.cancelledAt).toBe(earningBefore.cancelledAt);
     expect(earningAfter.transferredAt).toBe(earningBefore.transferredAt);

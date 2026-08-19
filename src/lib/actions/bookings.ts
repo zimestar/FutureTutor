@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { withSerializableRetry } from "@/lib/serializableRetry";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
 import { createBookingSchema, cancelBookingSchema } from "@/schemas/booking";
@@ -141,24 +142,39 @@ export async function createBookingAction(
 
   try {
     // Step A — reserve the slot, no Stripe call inside this transaction.
-    await db.$transaction(
-      async (tx) => {
-        await reserveBookingPendingPayment(tx, {
-          actorUserId: session.user.id,
-          studentProfileId: studentProfile.id,
-          tutorProfileId,
-          subjectId,
-          academicLevelId: levelId,
-          startAt,
-          endAt,
-          timezone,
-          mode,
-          paymentId,
-          customerPriceQuoteId,
-          tutorPayoutQuoteId,
-        });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    //
+    // P0 booking hardening — bounded retry on a genuine Postgres
+    // Serializable write-conflict, reusing the same withSerializableRetry
+    // primitive already applied around cancelBookingWithRefund (H.8.3) and
+    // convergeTutorEarningFromSession (Phase 5B) for exactly this class of
+    // conflict (src/lib/serializableRetry.ts). Safe because every write
+    // reserveBookingPendingPayment performs goes through the `tx` passed to
+    // it — no ambient `db` writes, no network call inside this closure — so
+    // an aborted attempt commits nothing at all, and each retry opens a
+    // brand-new transaction that re-reads fresh state (a fresh overlap
+    // check, a fresh authority re-check, a fresh quote read) rather than
+    // replaying anything stale. Payment preparation above and capture below
+    // both run exactly once, outside this retry boundary, unchanged.
+    await withSerializableRetry(() =>
+      db.$transaction(
+        async (tx) => {
+          await reserveBookingPendingPayment(tx, {
+            actorUserId: session.user.id,
+            studentProfileId: studentProfile.id,
+            tutorProfileId,
+            subjectId,
+            academicLevelId: levelId,
+            startAt,
+            endAt,
+            timezone,
+            mode,
+            paymentId,
+            customerPriceQuoteId,
+            tutorPayoutQuoteId,
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      )
     );
   } catch (error) {
     if (error instanceof SlotTakenError) return { error: t("slotTaken") };
@@ -169,6 +185,19 @@ export async function createBookingAction(
     // never distinguishing the reason for an unauthorized caller.
     if (error instanceof NotAuthorizedForLearnerError) return { error: t("notAStudent") };
     if (error instanceof QuoteLearnerMismatchError) return { error: t("invalidInput") };
+    // Defense-in-depth only, matching the same post-hardening shape already
+    // established by cancelBookingAction below: withSerializableRetry now
+    // absorbs both known-retryable Serializable-conflict error shapes
+    // (P2034-coded PrismaClientKnownRequestError and the raw
+    // DriverAdapterError/"TransactionWriteConflict" shape — see that file's
+    // own doc comment) internally, so a P2034 reaching this catch should be
+    // rare. Genuine retry-budget exhaustion after sustained contention
+    // instead throws withSerializableRetry's own plain Error (not
+    // P2034-coded), which is deliberately NOT special-cased here — it falls
+    // through to the generic branch below, exactly like cancelBookingAction
+    // already does for its own (internally-retried) P2034 case. This keeps
+    // both call sites' error handling consistent rather than inventing new,
+    // one-off "retry exhausted" copy.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return { error: t("slotTaken") };
     }

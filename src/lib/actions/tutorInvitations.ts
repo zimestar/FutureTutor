@@ -8,6 +8,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { withSerializableRetry } from "@/lib/serializableRetry";
 import { respondTutorInvitationSchema, declineTutorInvitationSchema } from "@/schemas/tutoringRequest";
 import { isTutorEligibleForRequest } from "@/services/tutorEligibility";
 import {
@@ -76,7 +77,26 @@ export async function acceptTutorInvitationAction(
   let claimed: { bookingId: string; paymentId: string } | null = null;
 
   try {
-    claimed = await db.$transaction(
+    // P0 booking hardening — bounded retry on a genuine Postgres
+    // Serializable write-conflict, reusing the same withSerializableRetry
+    // primitive already applied around cancelBookingWithRefund (H.8.3) and
+    // convergeTutorEarningFromSession (Phase 5B) for exactly this class of
+    // conflict (src/lib/serializableRetry.ts). Safe because every read/write
+    // in this closure goes through the `tx` passed to it — the invitation
+    // read, the atomic MATCHING -> PAYMENT_PENDING claim,
+    // acceptTutorPayoutQuote, reserveBookingPendingPayment,
+    // notifyUser(tx, ...), and writeAuditLog(..., tx) all write only via
+    // `tx`, with no ambient `db` writes and no network call anywhere in this
+    // closure. An aborted attempt therefore rolls back atomically — the
+    // claim, the payout-quote transition, the booking row, the
+    // superseded-invitation updates, and the audit/notification rows all
+    // undo together — so a from-scratch retry re-reads fresh state (a fresh
+    // invitation/request status, a fresh eligibility check, a fresh
+    // overlap check) rather than replaying anything stale. Step B/C
+    // (Stripe capture/convergence) still run exactly once, outside this
+    // retry boundary, unchanged.
+    claimed = await withSerializableRetry(() =>
+      db.$transaction(
       async (tx) => {
         const invitation = await tx.tutorInvitation.findUnique({ where: { id: parsed.data.tutorInvitationId } });
         if (!invitation || invitation.tutorProfileId !== tutorProfile.id || invitation.status !== "PENDING") {
@@ -189,6 +209,7 @@ export async function acceptTutorInvitationAction(
         return { bookingId: booking.id, paymentId: payment.id };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      )
     );
   } catch (error) {
     if (
@@ -221,6 +242,18 @@ export async function acceptTutorInvitationAction(
       if (preflight?.tutoringRequestId) await advanceDispatch(preflight.tutoringRequestId);
       return { error: t("invitationNoLongerAvailable") };
     }
+    // Defense-in-depth only, matching the same post-hardening shape used in
+    // createBookingAction (src/lib/actions/bookings.ts): withSerializableRetry
+    // now absorbs both known-retryable Serializable-conflict error shapes
+    // (P2034-coded PrismaClientKnownRequestError and the raw
+    // DriverAdapterError/"TransactionWriteConflict" shape) internally, so a
+    // P2034 reaching this catch should be rare. Genuine retry-budget
+    // exhaustion after sustained contention instead throws
+    // withSerializableRetry's own plain Error (not P2034-coded), which is
+    // deliberately NOT special-cased here — it falls through to the generic
+    // branch below, kept consistent with createBookingAction's equivalent
+    // choice rather than inventing new, one-off "retry exhausted" copy or
+    // messaging.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return { error: t("invitationNoLongerAvailable") };
     }

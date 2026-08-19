@@ -611,7 +611,13 @@ describe("Session Lifecycle Phase 3 — no-show convergence at T+15", () => {
       expect(paymentAfter.refundedAmountCents).toBe(paymentBefore.refundedAmountCents);
       expect(earningAfter.status).toBe(earningBefore.status);
       expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
-      expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+      // Phase 5B: creation now leaves eligibleAt null (Session-outcome-driven
+      // eligibility, not wall-clock) — assert it stays null and unchanged.
+      // No-show convergence itself (resolveSessionNoShowConvergence) never
+      // touches TutorEarning — the separate financial convergence engine
+      // (tutorEarningConvergence.ts) is not invoked here.
+      expect(earningBefore.eligibleAt).toBeNull();
+      expect(earningAfter.eligibleAt).toBeNull();
       expect(refunds.length).toBe(0);
     });
 
@@ -643,6 +649,174 @@ describe("Session Lifecycle Phase 3 — no-show convergence at T+15", () => {
 
       const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
       expect(session.status).toBe("NO_SHOW");
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Phase 5A — Financial Schema Foundation. Permanent regression coverage
+  // for the two additive schema changes (Session_.noShowConvergedAt,
+  // TutorEarningStatus.HELD) and the eligibleAt-nullability decision. No
+  // new financial convergence logic is exercised here — only the schema
+  // foundation and the single writer change (the SAME guarded updateMany
+  // that flips Session_.status -> NO_SHOW now also writes
+  // noShowConvergedAt, atomically).
+  // ---------------------------------------------------------------------
+  describe("PHASE 5A — Session_.noShowConvergedAt", () => {
+    it("20. NO_SHOW transition writes noShowConvergedAt, and it is exactly the injected server clock value (not real wall-clock time)", async () => {
+      const { tutor, booking } = await setupConfirmedCapturedBooking();
+      await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+      const deadline = computeNoShowGraceDeadline(booking.startAt);
+
+      const preSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(preSession.noShowConvergedAt).toBeNull();
+
+      const result = await resolveSessionNoShowConvergence(booking.id, { clock: () => deadline });
+      expect(result.transitioned).toBe(true);
+
+      const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(session.status).toBe("NO_SHOW");
+      expect(session.noShowConvergedAt).not.toBeNull();
+      // Server-generated: equals the injected clock() value used inside the
+      // SAME transaction as the status write, never a client-supplied time
+      // and never merely "close to now."
+      expect(session.noShowConvergedAt!.getTime()).toBe(deadline.getTime());
+    });
+
+    it("21. Repeated convergence never overwrites the original noShowConvergedAt (sequential calls, second call uses a DIFFERENT later clock)", async () => {
+      const { tutor, booking } = await setupConfirmedCapturedBooking();
+      await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+      const deadline = computeNoShowGraceDeadline(booking.startAt);
+      const muchLater = new Date(deadline.getTime() + 60 * 60 * 1000);
+
+      const first = await resolveSessionNoShowConvergence(booking.id, { clock: () => deadline });
+      expect(first.transitioned).toBe(true);
+      const afterFirst = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(afterFirst.noShowConvergedAt!.getTime()).toBe(deadline.getTime());
+
+      // Second call is a clean no-op (status already NO_SHOW) even though
+      // it uses a materially different clock value — if the write were not
+      // guarded by the same `where: { status: "SCHEDULED" }` as the status
+      // transition, this would incorrectly bump the timestamp forward.
+      const second = await resolveSessionNoShowConvergence(booking.id, { clock: () => muchLater });
+      expect(second.transitioned).toBe(false);
+
+      const afterSecond = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(afterSecond.noShowConvergedAt!.getTime()).toBe(deadline.getTime());
+      expect(afterSecond.noShowConvergedAt!.getTime()).not.toBe(muchLater.getTime());
+    });
+
+    it("22. Racing convergence workers never produce two different noShowConvergedAt values — exactly one write wins", async () => {
+      const { tutor, booking } = await setupConfirmedCapturedBooking();
+      await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+      const deadlineA = computeNoShowGraceDeadline(booking.startAt);
+      const deadlineB = new Date(deadlineA.getTime() + 5000);
+
+      await Promise.all([
+        resolveSessionNoShowConvergence(booking.id, { clock: () => deadlineA }),
+        resolveSessionNoShowConvergence(booking.id, { clock: () => deadlineB }),
+      ]);
+
+      const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(session.status).toBe("NO_SHOW");
+      expect(session.noShowConvergedAt).not.toBeNull();
+      // Whichever call's updateMany actually won, the committed timestamp
+      // must be exactly one of the two candidate clock values — never a
+      // hybrid, never both writes applied.
+      expect([deadlineA.getTime(), deadlineB.getTime()]).toContain(session.noShowConvergedAt!.getTime());
+    });
+
+    it("23. NOT_YET_DUE convergence never fabricates noShowConvergedAt", async () => {
+      const { tutor, booking } = await setupConfirmedCapturedBooking();
+      await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+      const deadline = computeNoShowGraceDeadline(booking.startAt);
+      const oneMsBefore = new Date(deadline.getTime() - 1);
+
+      const result = await resolveSessionNoShowConvergence(booking.id, { clock: () => oneMsBefore });
+      expect(result.decision).toBe("NOT_YET_DUE");
+      expect(result.transitioned).toBe(false);
+
+      const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(session.noShowConvergedAt).toBeNull();
+    });
+
+    it("24. NOT_APPLICABLE convergence (dual presence, IN_PROGRESS) never fabricates noShowConvergedAt", async () => {
+      const { tutor, student, booking } = await setupConfirmedCapturedBooking();
+      await recordSessionCheckIn(booking.id, tutor.user.id, "TUTOR", { actorRole: "TUTOR" });
+      await recordSessionCheckIn(booking.id, student.user.id, "STUDENT", { actorRole: "STUDENT" });
+      const deadline = computeNoShowGraceDeadline(booking.startAt);
+
+      const result = await resolveSessionNoShowConvergence(booking.id, { clock: () => deadline });
+      expect(result.decision).toBe("NOT_APPLICABLE");
+
+      const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(session.status).toBe("IN_PROGRESS");
+      expect(session.noShowConvergedAt).toBeNull();
+    });
+
+    it("25. H.8 cancellation's own Session_.status -> CANCELLED write never sets noShowConvergedAt", async () => {
+      const { student, booking } = await setupConfirmedCapturedBooking();
+      await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
+
+      const session = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(session.status).toBe("CANCELLED");
+      expect(session.noShowConvergedAt).toBeNull();
+    });
+  });
+
+  describe("PHASE 5A — TutorEarningStatus.HELD", () => {
+    it("26. Prisma/Postgres accept TutorEarningStatus.HELD as a valid TutorEarning.status value (schema-level acceptance only — no writer sets it in Phase 5A)", async () => {
+      const { booking } = await setupConfirmedCapturedBooking();
+      const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(earning.status).toBe("PENDING_ELIGIBLE");
+
+      // No production writer sets HELD in Phase 5A (per the spec's explicit
+      // scope limit) — this directly exercises the new enum value the same
+      // way the DB itself will store/read it, independent of any future
+      // Phase 5B writer.
+      const held = await db.tutorEarning.update({ where: { id: earning.id }, data: { status: "HELD" } });
+      expect(held.status).toBe("HELD");
+
+      const reread = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });
+      expect(reread.status).toBe("HELD");
+    });
+
+    it("27. H.8 cancellation still produces CANCELLED, never HELD — the two statuses remain distinct domains", async () => {
+      const { student, booking } = await setupConfirmedCapturedBooking();
+      const earningBefore = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(earningBefore.status).toBe("PENDING_ELIGIBLE");
+
+      await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
+
+      const earningAfter = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(earningAfter.status).toBe("CANCELLED");
+      expect(earningAfter.status).not.toBe("HELD");
+      expect(earningAfter.cancelledAt).not.toBeNull();
+    });
+  });
+
+  describe("PHASE 5A/5B — TutorEarning.eligibleAt nullability", () => {
+    it("28. Creation writes a null eligibleAt, and markEligibleEarnings() fails closed (never treats a null eligibleAt as due/eligible)", async () => {
+      const { booking } = await setupConfirmedCapturedBooking();
+      const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      // Phase 5B: the production writer (payments.ts, TutorEarning creation
+      // inside convergeToCaptured) now leaves eligibleAt null at creation —
+      // this is no longer a simulated/manual schema-level exercise, it is
+      // the actual, real production behavior for a Session still SCHEDULED.
+      expect(earning.status).toBe("PENDING_ELIGIBLE");
+      expect(earning.eligibleAt).toBeNull();
+
+      const { markEligibleEarnings } = await import("./tutorTransfers");
+      await markEligibleEarnings();
+
+      const reread = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });
+      // A null eligibleAt must never satisfy `eligibleAt: { lte: now }` —
+      // SQL NULL comparisons are never true, so markEligibleEarnings' own
+      // guarded updateMany already fails closed by construction. Assert the
+      // actual observed behavior for THIS earning specifically (not a
+      // global promoted-count, which could be perturbed by unrelated rows
+      // elsewhere in the test database).
+      expect(reread.status).toBe("PENDING_ELIGIBLE");
+      expect(reread.eligibleAt).toBeNull();
     });
   });
 });

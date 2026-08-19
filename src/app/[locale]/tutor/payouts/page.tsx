@@ -11,6 +11,8 @@ import { paymentsUseStripe } from "@/lib/paymentMode";
 import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
+import { TutorEarningStatus } from "@/components/dashboard/TutorEarningStatus";
+import { presentTutorEarning } from "@/lib/tutorEarningPresentation";
 
 const STATUS_BADGE: Record<string, "mint" | "outline" | "blue" | "neutral"> = {
   NOT_STARTED: "outline",
@@ -69,6 +71,7 @@ export default async function TutorPayoutsPage({
 
   const status = tutorProfile?.stripeConnectStatus ?? "NOT_STARTED";
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "CAD" });
+  const eligibilityDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
   return (
     <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
@@ -111,17 +114,27 @@ export default async function TutorPayoutsPage({
           <EmptyState title={t("earningsEmptyTitle")} description={t("earningsEmpty")} />
         ) : (
           <div className="flex flex-col gap-2">
-            {earnings.map((earning) => (
-              <Surface key={earning.id} padding="sm" className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <span className="font-semibold text-navy">
-                  {tSubjects(earning.booking.subject.slug)} — {new Date(earning.booking.startAt).toLocaleDateString(locale)}
-                </span>
-                <div className="flex items-center gap-3">
-                  <span className="text-navy">{currencyFormatter.format(earning.amountCents / 100)}</span>
-                  <Badge variant={earning.status === "TRANSFERRED" ? "mint" : "outline"}>{t(`earningStatus.${earning.status}`)}</Badge>
-                </div>
-              </Surface>
-            ))}
+            {earnings.map((earning) => {
+              const presentation = presentTutorEarning(earning.status, earning.eligibleAt);
+              return (
+                <Surface key={earning.id} padding="sm" className="flex flex-col gap-4 text-sm sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-navy">
+                      {tSubjects(earning.booking.subject.slug)} — {new Date(earning.booking.startAt).toLocaleDateString(locale)}
+                    </p>
+                    <p className="mt-1 text-base font-bold text-navy">{currencyFormatter.format(earning.amountCents / 100)}</p>
+                  </div>
+                  <TutorEarningStatus
+                    presentation={presentation}
+                    label={t(`earningPresentation.${presentation.key}.label`)}
+                    description={t(`earningPresentation.${presentation.key}.description`)}
+                    eligibilityDateLabel={presentation.showEligibilityDate && earning.eligibleAt
+                      ? t("earningPresentation.pendingEligibility.eligibleAt", { date: eligibilityDateFormatter.format(earning.eligibleAt) })
+                      : undefined}
+                  />
+                </Surface>
+              );
+            })}
           </div>
         )}
       </section>

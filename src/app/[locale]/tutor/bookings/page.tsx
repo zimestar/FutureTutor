@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
 import { Button } from "@/components/ui/Button";
+import { TutorEarningStatus } from "@/components/dashboard/TutorEarningStatus";
+import { presentTutorEarning } from "@/lib/tutorEarningPresentation";
 
 export default async function TutorBookingsPage({
   params,
@@ -43,7 +45,7 @@ export default async function TutorBookingsPage({
         include: {
           studentProfile: { select: { firstName: true, lastName: true } },
           subject: { select: { slug: true } },
-          earning: { select: { status: true, amountCents: true, currency: true } },
+          earning: { select: { status: true, amountCents: true, currency: true, eligibleAt: true } },
           session: { select: { id: true, status: true } },
         },
         orderBy: { startAt: "asc" },
@@ -51,6 +53,7 @@ export default async function TutorBookingsPage({
     : [];
 
   const now = new Date();
+  const eligibilityDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
   const upcoming = bookings.filter((b) => b.endAt >= now);
   const past = bookings.filter((b) => b.endAt < now);
 
@@ -92,12 +95,23 @@ export default async function TutorBookingsPage({
                         <p className="mt-1 text-sm text-slate">
                           {formatBookingTime(booking.startAt, booking.timezone, locale)}
                         </p>
-                        {booking.earning && (
-                          <p className="mt-1 text-xs font-semibold text-slate" data-testid="earning-status">
-                            {t("earning", { amount: (booking.earning.amountCents / 100).toFixed(2), currency: booking.earning.currency })} —{" "}
-                            {tPayouts(`earningStatus.${booking.earning.status}`)}
-                          </p>
-                        )}
+                        {booking.earning && (() => {
+                          const presentation = presentTutorEarning(booking.earning.status, booking.earning.eligibleAt);
+                          return (
+                            <p className="mt-1 text-xs font-semibold text-slate" data-testid="earning-status">
+                              {t("earning", { amount: (booking.earning.amountCents / 100).toFixed(2), currency: booking.earning.currency })} —{" "}
+                              <TutorEarningStatus
+                                compact
+                                presentation={presentation}
+                                label={tPayouts(`earningPresentation.${presentation.key}.label`)}
+                                description={tPayouts(`earningPresentation.${presentation.key}.description`)}
+                                eligibilityDateLabel={presentation.showEligibilityDate && booking.earning.eligibleAt
+                                  ? tPayouts("earningPresentation.pendingEligibility.eligibleAt", { date: eligibilityDateFormatter.format(booking.earning.eligibleAt) })
+                                  : undefined}
+                              />
+                            </p>
+                          );
+                        })()}
                         {booking.status === "PENDING_PAYMENT" && (
                           <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
                         )}
