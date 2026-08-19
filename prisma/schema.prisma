@@ -984,6 +984,23 @@ model Session_ {
   // from endedAt (the separate INTERRUPTED-only terminal timestamp above) —
   // never overload either to mean this.
   completedAt       DateTime?
+  // Phase 5A (Financial Schema Foundation): the authoritative, server-
+  // generated timestamp of when FutureTutor actually DETERMINED a no-show
+  // outcome — written ONLY by the same guarded updateMany inside
+  // applyNoShowConvergenceIfDue (src/services/sessionLifecycle.ts) that
+  // performs the SCHEDULED -> NO_SHOW transition, atomically with it. Never
+  // written when convergence is not yet due, not applicable, or the Session
+  // already reached another terminal state; never overwritten by a
+  // subsequent no-op convergence call (the same `where: { status:
+  // "SCHEDULED" }` guard that protects the status write also protects this
+  // field, since both are set in the same `data` object of the same
+  // `updateMany`). Conceptually distinct from graceDeadlineAt (Booking.
+  // startAt + 15min — a computed threshold, not a recorded event) and from
+  // completedAt/endedAt above — never overload any of them to mean this.
+  // Intended future eligibility anchor for STUDENT_NO_SHOW compensation:
+  // noShowConvergedAt + 24h (see TutorEarning.eligibleAt's comment) — not
+  // yet implemented as of Phase 5A.
+  noShowConvergedAt DateTime?
 
   booking          Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   attendanceEvents SessionAttendanceEvent[]
@@ -1596,6 +1613,14 @@ enum TutorEarningStatus {
   ELIGIBLE
   TRANSFERRED
   CANCELLED
+  // Phase 5A (Financial Schema Foundation): distinct from CANCELLED, which
+  // remains EXCLUSIVELY the H.8 booking-cancellation outcome (written only
+  // by cancellationPolicy.ts). HELD means the TutorEarning exists but
+  // automatic eligibility/transfer is blocked pending a future authorized
+  // operational/financial resolution — intended (not yet implemented as of
+  // Phase 5A; see Phase 5B) for TUTOR_NO_SHOW, NO_SHOW_UNRESOLVED, and
+  // INTERRUPTED Session outcomes. No writer sets this value in Phase 5A.
+  HELD
 }
 
 model TutorEarning {
@@ -1608,7 +1633,25 @@ model TutorEarning {
   // [YOUR IDEA — RECOMMENDED PAYOUT TIMING] booking.endAt + 24h — a
   // temporary rule pending the future Session Completion phase. Never
   // gated on Stripe Connect readiness (see the domain comment above).
-  eligibleAt     DateTime
+  //
+  // Phase 5A (Financial Schema Foundation): made NULLABLE as a forward-
+  // compatible schema evolution only — the correct post-Phase-5 semantic is
+  // "the authoritative earliest time this earning may become eligible,"
+  // which for an earning whose Session outcome is not yet resolved should
+  // be null rather than a fabricated Booking.endAt-derived date. The
+  // WRITER above (src/services/payments.ts, TutorEarning creation inside
+  // convergeToCaptured) is UNCHANGED in Phase 5A and still always writes
+  // booking.endAt + 24h at creation — so this column is never actually null
+  // yet at runtime. Phase 5B is expected to change the writer so that
+  // creation leaves this null and the authoritative Session outcome sets it
+  // later (COMPLETED -> completedAt + 24h; STUDENT_NO_SHOW ->
+  // noShowConvergedAt + 24h; TUTOR_NO_SHOW / NO_SHOW_UNRESOLVED /
+  // INTERRUPTED -> status = HELD, eligibleAt stays null). Readers MUST fail
+  // closed on null (never treat null as "already eligible") — the existing
+  // markEligibleEarnings() `eligibleAt: { lte: now }` filter already does
+  // this correctly by construction (SQL NULL never satisfies `<=`), so no
+  // reader code changed in Phase 5A.
+  eligibleAt     DateTime?
   transferredAt  DateTime?
   cancelledAt    DateTime?
   createdAt      DateTime           @default(now())

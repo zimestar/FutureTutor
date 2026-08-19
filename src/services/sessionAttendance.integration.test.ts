@@ -564,7 +564,13 @@ describe("Session Lifecycle Phase 2 — Session_ transition (integration)", () =
 
     const earningAfter = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
     expect(earningAfter.status).toBe(earningBefore.status);
-    expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+    // Phase 5A: eligibleAt is now nullable in the schema, but the writer
+    // (payments.ts, TutorEarning creation) is unchanged in this phase and
+    // still always populates a concrete Date at creation — assert it stays
+    // non-null (unaffected by check-in) rather than merely non-null-asserting.
+    expect(earningBefore.eligibleAt).not.toBeNull();
+    expect(earningAfter.eligibleAt).not.toBeNull();
+    expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
     expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
     expect(earningAfter.cancelledAt).toBe(earningBefore.cancelledAt);
     expect(earningAfter.transferredAt).toBe(earningBefore.transferredAt);

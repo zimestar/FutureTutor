@@ -340,9 +340,16 @@ async function applyNoShowConvergenceIfDue(
   // exactly): a concurrent duplicate convergence attempt racing to the
   // same outcome will have its updateMany match count===0 and no-op
   // cleanly under Postgres Serializable isolation.
+  //
+  // Phase 5A: noShowConvergedAt is written atomically in this SAME
+  // updateMany, keyed on the SAME `where: { status: "SCHEDULED" }` guard —
+  // never a second write. That guard is exactly what makes the timestamp
+  // immutable-once-written: a repeated/racing convergence call only ever
+  // observes status already NO_SHOW, so its updateMany matches count===0
+  // and neither status nor noShowConvergedAt is touched again.
   const updated = await tx.session_.updateMany({
     where: { id: facts.sessionId, status: "SCHEDULED" },
-    data: { status: "NO_SHOW" },
+    data: { status: "NO_SHOW", noShowConvergedAt: now },
   });
   const transitioned = updated.count === 1;
 

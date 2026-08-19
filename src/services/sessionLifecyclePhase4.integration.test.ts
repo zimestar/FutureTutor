@@ -469,8 +469,29 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
       // TutorEarning.eligibleAt is driven purely by Booking.endAt + a fixed
       // offset (see the model's own schema comment) — never by
       // Session_.status. Completion must not change it.
-      expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
+      // (payments.ts) is unchanged in this phase and always populates a
+      // concrete Date at creation — assert it stays non-null and unchanged.
+      expect(earningBefore.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
       expect(refunds.length).toBe(0);
+    });
+
+    it("Phase 5A — COMPLETED convergence never writes Session_.noShowConvergedAt (distinct field, no-show-only writer)", async () => {
+      const { tutor, student, booking } = await setupConfirmedCapturedBooking();
+      await bringToInProgress(tutor, student, null, booking);
+
+      const preSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(preSession.noShowConvergedAt).toBeNull();
+
+      const result = await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+      expect(result.sessionStatus).toBe("COMPLETED");
+
+      const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(finalSession.status).toBe("COMPLETED");
+      expect(finalSession.completedAt).not.toBeNull();
+      expect(finalSession.noShowConvergedAt).toBeNull();
     });
 
     it("SCHEDULER — sweepDueSessionCompletionConvergence sweeps a genuinely-due (real past endAt) IN_PROGRESS session to COMPLETED", async () => {
@@ -643,8 +664,29 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
 
       expect(paymentAfter.status).toBe(paymentBefore.status);
       expect(earningAfter.status).toBe(earningBefore.status);
-      expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
+      // (payments.ts) is unchanged in this phase and always populates a
+      // concrete Date at creation — assert it stays non-null and unchanged.
+      expect(earningBefore.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
       expect(refunds.length).toBe(0);
+    });
+
+    it("Phase 5A — INTERRUPTED never writes Session_.noShowConvergedAt (distinct field, no-show-only writer)", async () => {
+      const { tutor, student, booking } = await setupConfirmedCapturedBooking();
+      await bringToInProgress(tutor, student, null, booking);
+
+      const preSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(preSession.noShowConvergedAt).toBeNull();
+
+      const result = await requestSessionInterruption(booking.id, tutor.user.id, { actorRole: "TUTOR" });
+      expect(result.sessionStatus).toBe("INTERRUPTED");
+
+      const finalSession = await db.session_.findUniqueOrThrow({ where: { bookingId: booking.id } });
+      expect(finalSession.status).toBe("INTERRUPTED");
+      expect(finalSession.endedAt).not.toBeNull();
+      expect(finalSession.noShowConvergedAt).toBeNull();
     });
 
     it("Reason is capped/trimmed and empty/whitespace-only is normalized to null", async () => {
@@ -1050,7 +1092,12 @@ describe("Session Lifecycle Phase 4 — completion & interruption", () => {
       expect(paymentAfter.refundedAmountCents).toBe(paymentBefore.refundedAmountCents);
       expect(earningAfter.status).toBe(earningBefore.status);
       expect(earningAfter.amountCents).toBe(earningBefore.amountCents);
-      expect(earningAfter.eligibleAt.getTime()).toBe(earningBefore.eligibleAt.getTime());
+      // Phase 5A: eligibleAt is now nullable in the schema, but the writer
+      // (payments.ts) is unchanged in this phase and always populates a
+      // concrete Date at creation — assert it stays non-null and unchanged.
+      expect(earningBefore.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt).not.toBeNull();
+      expect(earningAfter.eligibleAt!.getTime()).toBe(earningBefore.eligibleAt!.getTime());
       expect(refunds.length).toBe(0);
     });
   });
