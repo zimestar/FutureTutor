@@ -82,6 +82,27 @@ export class SessionAlreadyStartedError extends Error {}
  * support-facing message; the Server Action still maps it to the same
  * generic user-facing denial copy as any other authorization failure. */
 export class GuardianAuthorityRevokedError extends NotAuthorizedToCancelError {}
+/**
+ * Pre-Phase-4 H.8 hardening — raised when a Session_ row EXISTS for this
+ * booking but was NOT in SCHEDULED status at the instant this transaction's
+ * guarded Session_ write ran (see step 9 below). A MISSING Session_ row
+ * (every DRAFT/PENDING_PAYMENT booking — Session_ is only ever created once
+ * a Booking reaches CONFIRMED, see payments.ts's tx.session_.create gated
+ * on that transition) is NOT this error and never was — that remains the
+ * existing, benign, common case, and cancellation proceeds exactly as
+ * before. This error is reserved for the genuinely inconsistent case: a
+ * Session_ row exists and has already moved off SCHEDULED (e.g.
+ * recordSessionCheckIn's own SCHEDULED -> IN_PROGRESS transition, which has
+ * no upper time bound tied to Booking.startAt and can fire from an early
+ * dual check-in inside the pre-start check-in window — see the H.8 Session
+ * Writer Hardening report §2/§4 for the concrete, currently-reachable
+ * scenario this closes — or a concurrent no-show/cancellation writer having
+ * already resolved it). Thrown INSIDE the same Serializable transaction as
+ * every other write in cancelBookingWithRefund, so raising it rolls back
+ * the WHOLE attempt: the Booking status change, BookingStatusHistory row,
+ * AuditLog rows, and TutorEarning void from steps 4-8 above never commit.
+ */
+export class SessionNotCancellableError extends Error {}
 
 const AUDIT_ACTION_BY_ROLE: Record<Exclude<CancellationActorRole, "DENIED">, string> = {
   SELF_MANAGED_STUDENT: "booking.cancelled_by_customer",
@@ -274,8 +295,51 @@ export async function cancelBookingWithRefund(
         );
       }
 
-      // 9. Session_ — SCHEDULED -> CANCELLED only, contained (§T).
-      await tx.session_.updateMany({ where: { bookingId: booking.id, status: "SCHEDULED" }, data: { status: "CANCELLED" } });
+      // 9. Session_ — SCHEDULED -> CANCELLED only, contained (§T). Pre-Phase-4
+      // hardening: the returned match count is now checked, mirroring
+      // sessionLifecycle.ts's own guarded-updateMany + count-check
+      // convention (applyNoShowConvergenceIfDue / recordSessionCheckIn's
+      // SCHEDULED -> IN_PROGRESS write) and this SAME function's own step 4
+      // (Booking updateMany, guard + throw on count===0) — the established
+      // local precedent for a write with real financial consequences, not
+      // sessionLifecycle.ts's silent-branch precedent (appropriate there
+      // because no-show convergence is a deliberately idempotent
+      // re-evaluation; cancellation is a one-shot action with a refund
+      // attached, so a zero-row match must never be silently treated as
+      // "cancellation succeeded").
+      //
+      // A zero-row match has exactly two possible causes, and they are NOT
+      // equivalent:
+      //  (a) No Session_ row exists at all for this booking. This is the
+      //      common, entirely benign case: Session_ rows are only ever
+      //      created once a Booking reaches CONFIRMED (payments.ts's
+      //      tx.session_.create, gated on that exact transition) — a
+      //      DRAFT/PENDING_PAYMENT booking (both CANCELLABLE_STATUSES
+      //      members) legitimately has no Session_ row yet. Cancellation
+      //      must proceed normally here, exactly as before this hardening.
+      //  (b) A Session_ row EXISTS but is no longer SCHEDULED. This is a
+      //      genuine domain-consistency violation — most concretely,
+      //      recordSessionCheckIn's own SCHEDULED -> IN_PROGRESS transition
+      //      has no upper time bound tied to Booking.startAt (only a lower
+      //      bound, startAt - 15min): an early dual check-in can legitimately
+      //      move Session_ to IN_PROGRESS while Booking.status is still
+      //      CONFIRMED and `now` is still < startAt — i.e. still inside
+      //      THIS function's own cancellable window (step 3). Proceeding
+      //      here would cancel the Booking and compute/issue a refund for a
+      //      session that has already started with both parties present —
+      //      never a benign no-op. This must abort the whole transaction.
+      const sessionCancellation = await tx.session_.updateMany({
+        where: { bookingId: booking.id, status: "SCHEDULED" },
+        data: { status: "CANCELLED" },
+      });
+      if (sessionCancellation.count === 0) {
+        const existingSession = await tx.session_.findUnique({ where: { bookingId: booking.id }, select: { id: true } });
+        if (existingSession) {
+          throw new SessionNotCancellableError();
+        }
+        // else: no Session_ row exists yet (DRAFT/PENDING_PAYMENT) — the
+        // benign case (a) above; fall through, cancellation proceeds.
+      }
 
       // 10. TutoringRequest — make a Quick-Match-originated booking's
       // request terminal, never automatically rematched (§U).
