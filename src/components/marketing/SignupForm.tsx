@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { registerAction } from "@/lib/actions/auth";
@@ -87,7 +88,7 @@ export function SignupForm() {
         <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-navy">
           {t("passwordLabel")}
         </label>
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+        <PasswordInput id="password" name="password" autoComplete="new-password" minLength={8} maxLength={72} required />
         <p className="mt-1.5 text-xs text-slate">{t("passwordHint")}</p>
         {state?.fieldErrors?.password && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.password}</p>}
       </div>

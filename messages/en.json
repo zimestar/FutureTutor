@@ -415,6 +415,8 @@
   "metadata": {
     "login": { "title": "Log In", "description": "Log in to your FutureTutor account." },
     "signup": { "title": "Sign Up", "description": "Create your FutureTutor account." },
+    "forgotPassword": { "title": "Forgot Password", "description": "Request a secure password reset link for your FutureTutor account." },
+    "resetPassword": { "title": "Reset Password", "description": "Choose a new password for your FutureTutor account." },
     "about": { "title": "About", "description": "Learn about FutureTutor's mission to make personalized academic support accessible." },
     "contact": { "title": "Contact", "description": "Get in touch with the FutureTutor team." },
     "careers": { "title": "Careers", "description": "Careers at FutureTutor." },
@@ -425,6 +427,10 @@
     "subjects": { "title": "Subjects", "description": "Browse every subject FutureTutor tutors can help with, from math to exam preparation." }
   },
   "auth": {
+    "passwordVisibility": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
     "login": {
       "title": "Welcome back",
       "subtitle": "Log in to your FutureTutor account.",
@@ -432,6 +438,7 @@
       "passwordLabel": "Password",
       "submit": "Log In",
       "submitting": "Logging in...",
+      "forgotPasswordLink": "Forgot password?",
       "noAccount": "Don't have an account?",
       "signupLink": "Sign up"
     },
@@ -453,6 +460,35 @@
       "haveAccount": "Already have an account?",
       "loginLink": "Log in"
     },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send instructions if an account is associated with it.",
+      "emailLabel": "Email address",
+      "submit": "Send reset link",
+      "submitting": "Sending reset link...",
+      "submittedTitle": "Check your email",
+      "submittedDescription": "If an account exists for this email, you'll receive a password reset link.",
+      "submittedPrivacy": "For your privacy, this confirmation is the same for every email address.",
+      "backToLogin": "Back to login"
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "subtitle": "Enter a new password for your FutureTutor account.",
+      "passwordLabel": "New password",
+      "confirmationLabel": "Confirm new password",
+      "loading": "Loading secure reset form...",
+      "submit": "Reset password",
+      "submitting": "Resetting password...",
+      "passwordMismatch": "The passwords do not match.",
+      "passwordPolicyError": "Use a password between 8 and 72 characters.",
+      "genericError": "We couldn't reset your password. Please try again.",
+      "successTitle": "Password reset successfully",
+      "successDescription": "Your password has been changed successfully. You can now log in with your new password.",
+      "loginAction": "Log in with your new password",
+      "invalidTitle": "This reset link is no longer valid",
+      "invalidDescription": "The link is invalid, expired, or has already been used. Request a new link to continue.",
+      "requestAnother": "Request another reset link"
+    },
     "errors": {
       "invalidInput": "Please check your information and try again.",
       "emailTaken": "An account with this email already exists.",
@@ -466,6 +502,17 @@
       "signupFailed": "We couldn't create your account. Please try again.",
       "accountCreatedSignInFailed": "Your account was created, but we couldn't sign you in automatically. Please log in with your new account."
     }
+  },
+  "passwordResetEmail": {
+    "subject": "Reset your FutureTutor password",
+    "heading": "Reset your password",
+    "greeting": "Hello,",
+    "intro": "We received a request to reset the password for your FutureTutor account. Click the button below to choose a new password.",
+    "buttonLabel": "Reset Password",
+    "expiryNotice": "This link will expire in {hours, plural, one {# hour} other {# hours}} and can only be used once.",
+    "ignoreNotice": "If you didn't request a password reset, you can safely ignore this email — your password will not be changed.",
+    "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
+    "footer": "FutureTutor — helping students learn with the right tutor."
   },
   "dashboard": {
     "logOut": "Log Out",

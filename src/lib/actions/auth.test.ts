@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => {
     requestPasswordReset: vi.fn(),
     resetPassword: vi.fn(),
     getAppBaseUrl: vi.fn(),
+    resolveSendPasswordResetEmail: vi.fn(),
+    consoleDevSendPasswordResetEmail: vi.fn(),
     InvalidOrExpiredResetTokenError,
     ResetPasswordPolicyError,
   };
@@ -39,9 +41,17 @@ vi.mock("@/services/signup", () => ({ createUserForSignup: mocks.createUserForSi
 vi.mock("@/services/passwordReset", () => ({
   requestPasswordReset: mocks.requestPasswordReset,
   resetPassword: mocks.resetPassword,
-  consoleDevSendPasswordResetEmail: vi.fn(),
+  consoleDevSendPasswordResetEmail: mocks.consoleDevSendPasswordResetEmail,
   InvalidOrExpiredResetTokenError: mocks.InvalidOrExpiredResetTokenError,
   ResetPasswordPolicyError: mocks.ResetPasswordPolicyError,
+}));
+// L1-01B — resolveSendPasswordResetEmail() picks the production (Resend) vs.
+// dev (console) SendPasswordResetEmail implementation based on environment;
+// mocked here so these action-layer tests can assert forgotPasswordAction
+// wires WHATEVER it returns straight into requestPasswordReset's deps,
+// without this test file depending on real env-var state.
+vi.mock("@/lib/email/sendPasswordResetEmail", () => ({
+  resolveSendPasswordResetEmail: mocks.resolveSendPasswordResetEmail,
 }));
 vi.mock("bcryptjs", () => ({ default: { hash: mocks.hash } }));
 
@@ -131,10 +141,13 @@ describe("signInResultHasError", () => {
 // src/services/passwordReset.integration.test.ts.
 
 describe("forgotPasswordAction", () => {
+  const resolvedSendEmail = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
     mocks.requestPasswordReset.mockResolvedValue(undefined);
+    mocks.resolveSendPasswordResetEmail.mockReturnValue(resolvedSendEmail);
   });
 
   function form(email: string) {
@@ -166,6 +179,24 @@ describe("forgotPasswordAction", () => {
     const deps = mocks.requestPasswordReset.mock.calls[0][2];
     expect(deps.buildResetUrl("raw-token-abc")).toBe("http://localhost:3100/en/reset-password?token=raw-token-abc");
     expect(deps.locale).toBe("en");
+  });
+
+  // L1-01B — production password-reset email delivery wiring.
+
+  it("passes whatever resolveSendPasswordResetEmail() returns straight through as the sendEmail dependency", async () => {
+    await forgotPasswordAction(undefined, form("someone@example.com"));
+    expect(mocks.resolveSendPasswordResetEmail).toHaveBeenCalledTimes(1);
+    const deps = mocks.requestPasswordReset.mock.calls[0][2];
+    expect(deps.sendEmail).toBe(resolvedSendEmail);
+  });
+
+  it("returns the SAME generic outcome when resolveSendPasswordResetEmail() itself throws (e.g. production misconfiguration) — never leaks a distinct outcome", async () => {
+    mocks.resolveSendPasswordResetEmail.mockImplementation(() => {
+      throw new Error("EMAIL_FROM is required in production but is not set.");
+    });
+    const result = await forgotPasswordAction(undefined, form("someone@example.com"));
+    expect(result).toEqual({ submitted: true });
+    expect(mocks.requestPasswordReset).not.toHaveBeenCalled();
   });
 });
 
