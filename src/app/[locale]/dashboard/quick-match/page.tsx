@@ -12,16 +12,18 @@ import { paymentsUseStripe } from "@/lib/paymentMode";
 import { resolveStudentAccountActivationState } from "@/services/familyManagement";
 import { listBookableStudentsForActor } from "@/services/learnerSelection";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
+import { quickMatchCustomerView } from "@/lib/quickMatchCustomerFlow";
+import { ACTIVE_TUTORING_REQUEST_STATUSES } from "@/services/tutoringRequestCreation";
 
 export default async function StudentQuickMatchPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ studentProfileId?: string }>;
+  searchParams: Promise<{ studentProfileId?: string; newRequest?: string }>;
 }) {
   const { locale } = await params;
-  const { studentProfileId: requestedStudentProfileId } = await searchParams;
+  const { studentProfileId: requestedStudentProfileId, newRequest } = await searchParams;
   setRequestLocale(locale);
 
   const session = await auth();
@@ -114,9 +116,14 @@ export default async function StudentQuickMatchPage({
     );
   }
 
-  const [subjects, levels, latestRequest] = await Promise.all([
+  const [subjects, levels, activeRequest, latestRequest] = await Promise.all([
     db.subject.findMany({ orderBy: { sortOrder: "asc" } }),
     db.academicLevel.findMany({ orderBy: { sortOrder: "asc" } }),
+    db.tutoringRequest.findFirst({
+      where: { studentProfileId: selectedStudentProfileId, status: { in: [...ACTIVE_TUTORING_REQUEST_STATUSES] } },
+      orderBy: { createdAt: "desc" },
+      include: { customerPriceQuote: true },
+    }),
     db.tutoringRequest.findFirst({
       where: { studentProfileId: selectedStudentProfileId },
       orderBy: { createdAt: "desc" },
@@ -127,6 +134,9 @@ export default async function StudentQuickMatchPage({
   const subjectOptions = subjects.map((s) => ({ id: s.id, label: tSubjects(s.slug) }));
   const levelOptions = levels.map((l) => ({ id: l.id, label: tLevels(l.slug) }));
   const selectedStudent = bookableStudents.find((s) => s.id === selectedStudentProfileId)!;
+  const view = quickMatchCustomerView(activeRequest?.status ?? null, latestRequest?.status ?? null, newRequest === "1");
+  const displayedRequest = activeRequest ?? latestRequest;
+  const startNewHref = `/dashboard/quick-match?newRequest=1${bookableStudents.length > 1 ? `&studentProfileId=${selectedStudentProfileId}` : ""}`;
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
@@ -149,33 +159,40 @@ export default async function StudentQuickMatchPage({
         </div>
       )}
 
-      {latestRequest?.status === "PRICED" && latestRequest.customerPriceQuote && (
+      {view === "price-review" && activeRequest?.status === "PRICED" && activeRequest.customerPriceQuote && (
         <QuickMatchPriceReview
-          tutoringRequestId={latestRequest.id}
-          customerPriceQuoteId={latestRequest.customerPriceQuote.id}
-          basePriceCents={latestRequest.customerPriceQuote.basePriceCents}
-          subtotalCents={latestRequest.customerPriceQuote.subtotalCents}
-          taxCents={latestRequest.customerPriceQuote.taxCents}
-          totalCents={latestRequest.customerPriceQuote.totalCents}
-          currency={latestRequest.customerPriceQuote.currency}
+          tutoringRequestId={activeRequest.id}
+          customerPriceQuoteId={activeRequest.customerPriceQuote.id}
+          basePriceCents={activeRequest.customerPriceQuote.basePriceCents}
+          subtotalCents={activeRequest.customerPriceQuote.subtotalCents}
+          taxCents={activeRequest.customerPriceQuote.taxCents}
+          totalCents={activeRequest.customerPriceQuote.totalCents}
+          currency={activeRequest.customerPriceQuote.currency}
           useStripe={paymentsUseStripe()}
           stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
         />
       )}
 
-      {(latestRequest?.status === "MATCHING" ||
-        latestRequest?.status === "PAYMENT_PENDING" ||
-        latestRequest?.status === "BOOKED" ||
-        latestRequest?.status === "PAYMENT_FAILED") && (
+      {(view === "active-status" || view === "terminal-status") && displayedRequest &&
+        ["MATCHING", "PAYMENT_PENDING", "BOOKED", "PAYMENT_FAILED"].includes(displayedRequest.status) && (
         <QuickMatchStatusView
-          tutoringRequestId={latestRequest.id}
-          status={latestRequest.status}
-          dispatchRound={latestRequest.dispatchRound}
+          tutoringRequestId={displayedRequest.id}
+          status={displayedRequest.status === "CONFIRMED" ? "MATCHING" : displayedRequest.status as "MATCHING" | "PAYMENT_PENDING" | "BOOKED" | "PAYMENT_FAILED"}
+          dispatchRound={displayedRequest.dispatchRound}
         />
       )}
 
-      {(!latestRequest ||
-        !["PRICED", "MATCHING", "PAYMENT_PENDING", "BOOKED", "PAYMENT_FAILED"].includes(latestRequest.status)) && (
+      {view === "terminal-status" && (
+        <Link
+          href={startNewHref}
+          data-testid="start-new-quick-match"
+          className="mt-4 inline-flex min-h-11 items-center rounded-md bg-blue px-5 text-sm font-bold text-white hover:bg-blue/90"
+        >
+          {t("startNewCta")}
+        </Link>
+      )}
+
+      {view === "form" && (
         <>
           {latestRequest?.status === "NO_TUTOR_FOUND" && (
             <p className="mt-6 rounded-md bg-off-white px-4 py-3 text-sm text-slate" data-testid="no-tutor-found-banner">

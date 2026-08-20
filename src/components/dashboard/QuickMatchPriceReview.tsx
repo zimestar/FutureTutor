@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { confirmTutoringRequestAction, cancelTutoringRequestAction, preparePaymentForRequestAction } from "@/lib/actions/tutoringRequests";
+import { confirmTutoringRequestAction, cancelTutoringRequestAction, preparePaymentForRequestAction, type PreparePaymentState } from "@/lib/actions/tutoringRequests";
 import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
+import { acquirePreparationLock, paymentPreparationView } from "@/lib/paymentPreparation";
 
 export function QuickMatchPriceReview({
   tutoringRequestId,
@@ -36,21 +37,27 @@ export function QuickMatchPriceReview({
   // nothing for the UI to render).
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
-  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [prepareResult, setPrepareResult] = useState<PreparePaymentState | null>(null);
   const [preparing, startPreparing] = useTransition();
+  const activePreparations = useRef(new Set<string>());
 
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency });
   const formatCents = (cents: number) => currencyFormatter.format(cents / 100);
 
-  const needsPaymentSetup = useStripe && !clientSecret && !prepareError;
+  const preparationView = paymentPreparationView(preparing, prepareResult);
+  const needsPaymentSetup = useStripe && !clientSecret && !stripePaymentIntentId;
 
   const handleStartPayment = () => {
+    if (!acquirePreparationLock(activePreparations.current, tutoringRequestId)) return;
     startPreparing(async () => {
-      const result = await preparePaymentForRequestAction(tutoringRequestId);
-      if (result.success) {
-        setClientSecret(result.clientSecret);
-      } else {
-        setPrepareError(result.error);
+      try {
+        const result = await preparePaymentForRequestAction(tutoringRequestId);
+        setPrepareResult(result);
+        if (result.success) setClientSecret(result.clientSecret);
+      } catch {
+        setPrepareResult({ success: false, error: t("errors.paymentPreparationFailed"), retryable: true });
+      } finally {
+        activePreparations.current.delete(tutoringRequestId);
       }
     });
   };
@@ -93,22 +100,36 @@ export function QuickMatchPriceReview({
           {cancelState.error}
         </p>
       )}
-      {prepareError && (
-        <p role="alert" className="mt-3 rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
-          {prepareError}
-        </p>
-      )}
-
       {needsPaymentSetup ? (
-        <button
-          type="button"
-          data-testid="start-payment"
-          onClick={handleStartPayment}
-          disabled={preparing}
-          className="mt-5 h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {preparing ? t("review.confirming") : t("review.enterPaymentCta")}
-        </button>
+        <div className="mt-5" aria-live="polite">
+          {(preparationView.state === "failed-retryable" || preparationView.state === "failed-terminal") && (
+            <div className="mb-3 rounded-md bg-error-light p-3">
+              <p role="alert" className="text-sm font-semibold text-error">{preparationView.error}</p>
+              {preparationView.state === "failed-terminal" && (
+                <p className="mt-2 text-sm text-text-secondary">{t("review.restartPaymentFlow")}</p>
+              )}
+            </div>
+          )}
+          {preparationView.state !== "failed-terminal" && (
+            <button
+              type="button"
+              data-testid={preparationView.state === "failed-retryable" ? "retry-quick-match-payment" : "start-payment"}
+              onClick={handleStartPayment}
+              disabled={preparing}
+              className="min-h-11 w-full rounded-md bg-blue px-4 text-[15px] font-bold text-white transition-colors hover:bg-blue/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {preparing ? t("review.preparingPayment") : preparationView.state === "failed-retryable" ? t("review.retryPaymentCta") : t("review.enterPaymentCta")}
+            </button>
+          )}
+          {preparationView.state === "failed-terminal" && (
+            <form action={cancelActionFn}>
+              <input type="hidden" name="tutoringRequestId" value={tutoringRequestId} />
+              <button type="submit" disabled={cancelPending} className="min-h-11 rounded-md border border-neutral-300 px-5 text-sm font-semibold text-slate disabled:opacity-50">
+                {t("review.cancelCta")}
+              </button>
+            </form>
+          )}
+        </div>
       ) : useStripe && clientSecret && stripePublishableKey && !stripePaymentIntentId ? (
         <div className="mt-5">
           <StripePaymentForm
@@ -117,6 +138,7 @@ export function QuickMatchPriceReview({
             onAuthorized={setStripePaymentIntentId}
             submitLabel={t("review.confirmCta")}
             pendingLabel={t("review.confirming")}
+            errorMessage={t("review.paymentErrorFallback")}
           />
         </div>
       ) : (

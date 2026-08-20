@@ -9,7 +9,7 @@ import { canPayForStudent } from "@/services/studentAuthorization";
 
 export type PreparePaymentState =
   | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
-  | { success: false; error: string };
+  | { success: false; error: string; retryable: boolean };
 
 /** Direct booking's equivalent of tutoringRequests.ts's
  * preparePaymentForRequestAction — same shape, anchored on a
@@ -23,18 +23,18 @@ export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: 
   // authoritative learner) is the real gate; this is only the coarse role
   // filter.
   if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
-    return { success: false, error: t("notAStudent") };
+    return { success: false, error: t("notAStudent"), retryable: false };
   }
 
   const quote = await db.customerPriceQuote.findUnique({ where: { id: customerPriceQuoteId } });
-  if (!quote || quote.createdByUserId !== session.user.id) return { success: false, error: t("invalidInput") };
-  if (quote.status !== "ACTIVE") return { success: false, error: t("pricingUnavailable") };
+  if (!quote || quote.createdByUserId !== session.user.id) return { success: false, error: t("invalidInput"), retryable: false };
+  if (quote.status !== "ACTIVE") return { success: false, error: t("pricingUnavailable"), retryable: false };
 
   // Phase H.5 security correction: previously only createdByUserId
   // self-match, no H.2 involvement. Unchanged for every existing
   // SELF_MANAGED student.
   const authorized = await canPayForStudent(db, session.user.id, quote.studentProfileId);
-  if (!authorized) return { success: false, error: t("notAStudent") };
+  if (!authorized) return { success: false, error: t("notAStudent"), retryable: false };
 
   try {
     if (paymentsUseStripe()) {
@@ -45,6 +45,6 @@ export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: 
     const payment = await preparePaymentForQuote(customerPriceQuoteId, session.user.id);
     return { success: true, paymentId: payment.id, clientSecret: null, usesStripe: false };
   } catch {
-    return { success: false, error: t("pricingUnavailable") };
+    return { success: false, error: t("paymentPreparationFailed"), retryable: true };
   }
 }

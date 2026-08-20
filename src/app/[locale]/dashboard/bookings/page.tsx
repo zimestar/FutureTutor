@@ -123,7 +123,7 @@ export default async function StudentBookingsPage({
                         </p>
                         {user.role === "PARENT" && childProfilesById.get(booking.studentProfileId) && (
                           <p className="mt-0.5 text-xs font-semibold text-slate">
-                            For {childProfilesById.get(booking.studentProfileId)!.firstName}
+                            {t("forLearner", { name: childProfilesById.get(booking.studentProfileId)!.firstName })}
                           </p>
                         )}
                         <p className="mt-1 text-sm text-slate">
@@ -131,11 +131,13 @@ export default async function StudentBookingsPage({
                         </p>
                         {booking.payment && booking.payment.refundedAmountCents > 0 && (
                           <p className="mt-1 text-xs font-semibold text-slate" data-testid="refund-note">
-                            Refunded {(booking.payment.refundedAmountCents / 100).toFixed(2)} {booking.payment.currency}
+                            {t("refundedAmount", {
+                              amount: new Intl.NumberFormat(locale, { style: "currency", currency: booking.payment.currency }).format(booking.payment.refundedAmountCents / 100),
+                            })}
                           </p>
                         )}
                         {booking.status === "PENDING_PAYMENT" && (
-                          <p className="mt-1 text-xs font-semibold text-slate">Payment processing…</p>
+                          <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">

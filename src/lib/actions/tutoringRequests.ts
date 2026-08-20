@@ -30,6 +30,7 @@ import { advanceDispatch, closeTutoringRequest } from "@/services/quickMatchDisp
 import {
   createTutoringRequestForLearnerInOwnTransaction,
   NotAuthorizedForLearnerError,
+  ActiveTutoringRequestExistsError,
 } from "@/services/tutoringRequestCreation";
 
 export type CreateTutoringRequestState =
@@ -150,13 +151,28 @@ export async function createTutoringRequestAction(
     // only ever be consumed by the same createdByUserId that requested
     // it), only a minor, accepted resource-cleanliness gap.
     if (error instanceof NotAuthorizedForLearnerError) return { success: false, error: t("notAStudent") };
+    // Golden Path P0 — the transaction-bound duplicate-active-request guard
+    // (src/services/tutoringRequestCreation.ts) rejected this create because
+    // the learner already has an in-flight Quick Match. No existing
+    // quickMatch.errors translation key names this specific case (the
+    // frontend firewall for this backend-only phase forbids adding one —
+    // see messages/en.json's quickMatch.errors), so this deliberately falls
+    // through to the same generic message every other unnamed rejection
+    // uses; the request itself is expected to steer a well-behaved client
+    // away from ever hitting this in practice (see the Quick Match page's
+    // own status-aware rendering), this is defense-in-depth against a
+    // concurrent/duplicate submission slipping past that. The
+    // CustomerPriceQuote created just before this point is left
+    // ACTIVE/orphaned, same accepted minor gap already documented for
+    // NotAuthorizedForLearnerError above.
+    if (error instanceof ActiveTutoringRequestExistsError) return { success: false, error: t("generic") };
     return { success: false, error: t("generic") };
   }
 }
 
 export type PreparePaymentState =
   | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
-  | { success: false; error: string };
+  | { success: false; error: string; retryable: boolean };
 
 /** Called once the price is shown, before the student clicks confirm — in
  * live mode this is what lets the client render the Payment Element; in
@@ -171,19 +187,19 @@ export async function preparePaymentForRequestAction(tutoringRequestId: string):
   // authoritative learner — never re-derived from the actor) is the real
   // gate; this is only the coarse role filter.
   if (!session?.user || (session.user.role !== "STUDENT" && session.user.role !== "PARENT")) {
-    return { success: false, error: t("notAStudent") };
+    return { success: false, error: t("notAStudent"), retryable: false };
   }
 
   const request = await db.tutoringRequest.findUnique({ where: { id: tutoringRequestId } });
-  if (!request || !request.customerPriceQuoteId) return { success: false, error: t("notFound") };
-  if (request.createdByUserId !== session.user.id) return { success: false, error: t("notYours") };
-  if (request.status !== "PRICED") return { success: false, error: t("invalidState") };
+  if (!request || !request.customerPriceQuoteId) return { success: false, error: t("notFound"), retryable: false };
+  if (request.createdByUserId !== session.user.id) return { success: false, error: t("notYours"), retryable: false };
+  if (request.status !== "PRICED") return { success: false, error: t("invalidState"), retryable: false };
 
   // Phase H.5 security correction: initiating Stripe PaymentIntent
   // preparation previously only checked createdByUserId self-match, no H.2
   // involvement. Unchanged for every existing SELF_MANAGED student.
   const authorized = await canPayForStudent(db, session.user.id, request.studentProfileId);
-  if (!authorized) return { success: false, error: t("notAStudent") };
+  if (!authorized) return { success: false, error: t("notAStudent"), retryable: false };
 
   try {
     if (paymentsUseStripe()) {
@@ -194,7 +210,7 @@ export async function preparePaymentForRequestAction(tutoringRequestId: string):
     const payment = await preparePaymentForQuote(request.customerPriceQuoteId, session.user.id);
     return { success: true, paymentId: payment.id, clientSecret: null, usesStripe: false };
   } catch {
-    return { success: false, error: t("pricingUnavailable") };
+    return { success: false, error: t("paymentPreparationFailed"), retryable: true };
   }
 }
 

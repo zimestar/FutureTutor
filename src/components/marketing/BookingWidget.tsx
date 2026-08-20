@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Select } from "@/components/ui/Input";
@@ -8,6 +8,7 @@ import { createBookingAction } from "@/lib/actions/bookings";
 import { createPriceQuoteAction, type PriceQuoteResult } from "@/lib/actions/pricing";
 import { preparePaymentForBookingQuoteAction, type PreparePaymentState } from "@/lib/actions/payments";
 import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
+import { acquirePreparationLock, paymentPreparationView } from "@/lib/paymentPreparation";
 
 export interface BookingWidgetDaySlot {
   date: string;
@@ -75,10 +76,27 @@ export function BookingWidget({
   // the selection invalidates a stale client secret/authorization.
   const [paymentState, setPaymentState] = useState<{ key: string; result: PreparePaymentState } | null>(null);
   const [preparingPayment, startPreparingPayment] = useTransition();
+  const activePaymentPreparations = useRef(new Set<string>());
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<{ key: string; id: string } | null>(null);
   const payment = paymentState && paymentState.key === quoteKey ? paymentState.result : null;
   const authorizedPiId =
     stripePaymentIntentId && stripePaymentIntentId.key === quoteKey ? stripePaymentIntentId.id : null;
+  const paymentView = paymentPreparationView(preparingPayment, payment);
+  const paymentPreparationError = t("errors.paymentPreparationFailed");
+
+  const preparePayment = useCallback((key: string, customerPriceQuoteId: string, fallbackError: string) => {
+    if (!acquirePreparationLock(activePaymentPreparations.current, key)) return;
+    startPreparingPayment(async () => {
+      try {
+        const result = await preparePaymentForBookingQuoteAction(customerPriceQuoteId);
+        setPaymentState({ key, result });
+      } catch {
+        setPaymentState({ key, result: { success: false, error: fallbackError, retryable: true } });
+      } finally {
+        activePaymentPreparations.current.delete(key);
+      }
+    });
+  }, []);
 
   const dayFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }),
@@ -121,15 +139,8 @@ export function BookingWidget({
   // + PaymentIntent for it so the card form can render.
   useEffect(() => {
     if (!useStripe || !quoteKey || !quote?.success) return;
-    let cancelled = false;
-    startPreparingPayment(async () => {
-      const result = await preparePaymentForBookingQuoteAction(quote.customerPriceQuoteId);
-      if (!cancelled) setPaymentState({ key: quoteKey, result });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [useStripe, quoteKey, quote]);
+    preparePayment(quoteKey, quote.customerPriceQuoteId, paymentPreparationError);
+  }, [useStripe, quoteKey, quote, preparePayment, paymentPreparationError]);
 
   if (state?.success) {
     return (
@@ -315,12 +326,27 @@ export function BookingWidget({
       )}
 
       {useStripe && quote?.success && !authorizedPiId && (
-        <div>
-          {preparingPayment && <p className="text-sm text-slate">{t("calculatingPrice")}</p>}
-          {!preparingPayment && payment && !payment.success && (
-            <p role="alert" className="text-sm font-semibold text-error">
-              {payment.error}
-            </p>
+        <div aria-live="polite">
+          {paymentView.state === "preparing" && <p className="text-sm text-slate">{t("preparingPayment")}</p>}
+          {(paymentView.state === "failed-retryable" || paymentView.state === "failed-terminal") && (
+            <div className="rounded-md bg-error-light p-3">
+              <p role="alert" className="text-sm font-semibold text-error">{paymentView.error}</p>
+              {paymentView.state === "failed-retryable" ? (
+                <button
+                  type="button"
+                  data-testid="retry-booking-payment"
+                  onClick={() =>
+                    quoteKey && preparePayment(quoteKey, quote.customerPriceQuoteId, paymentPreparationError)
+                  }
+                  disabled={preparingPayment}
+                  className="mt-3 min-h-11 rounded-md border border-error px-4 text-sm font-bold text-error transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t("retryPaymentCta")}
+                </button>
+              ) : (
+                <p className="mt-2 text-sm text-text-secondary">{t("restartPaymentFlow")}</p>
+              )}
+            </div>
           )}
           {!preparingPayment && payment?.success && payment.clientSecret && stripePublishableKey && (
             <StripePaymentForm
@@ -329,6 +355,7 @@ export function BookingWidget({
               onAuthorized={(id) => quoteKey && setStripePaymentIntentId({ key: quoteKey, id })}
               submitLabel={t("confirmCta")}
               pendingLabel={t("confirming")}
+              errorMessage={t("paymentErrorFallback")}
             />
           )}
         </div>

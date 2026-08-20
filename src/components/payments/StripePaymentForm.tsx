@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -19,19 +19,23 @@ function InnerForm({
   onAuthorized,
   submitLabel,
   pendingLabel,
+  errorMessage,
 }: {
   onAuthorized: (stripePaymentIntentId: string) => void;
   submitLabel: string;
   pendingLabel: string;
+  errorMessage: string;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submissionInFlight = useRef(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || submissionInFlight.current) return;
+    submissionInFlight.current = true;
     setSubmitting(true);
     setError(null);
 
@@ -41,8 +45,9 @@ function InnerForm({
     });
 
     if (confirmError) {
+      submissionInFlight.current = false;
       setSubmitting(false);
-      setError(confirmError.message ?? "Payment failed — please try again.");
+      setError(errorMessage);
       return;
     }
     if (paymentIntent && (paymentIntent.status === "requires_capture" || paymentIntent.status === "succeeded")) {
@@ -50,7 +55,8 @@ function InnerForm({
       return;
     }
     setSubmitting(false);
-    setError("Payment could not be authorized — please try again.");
+    submissionInFlight.current = false;
+    setError(errorMessage);
   };
 
   return (
@@ -79,16 +85,18 @@ export function StripePaymentForm({
   onAuthorized,
   submitLabel,
   pendingLabel,
+  errorMessage,
 }: {
   clientSecret: string;
   publishableKey: string;
   onAuthorized: (stripePaymentIntentId: string) => void;
   submitLabel: string;
   pendingLabel: string;
+  errorMessage: string;
 }) {
   return (
     <Elements stripe={getStripePromise(publishableKey)} options={{ clientSecret }}>
-      <InnerForm onAuthorized={onAuthorized} submitLabel={submitLabel} pendingLabel={pendingLabel} />
+      <InnerForm onAuthorized={onAuthorized} submitLabel={submitLabel} pendingLabel={pendingLabel} errorMessage={errorMessage} />
     </Elements>
   );
 }

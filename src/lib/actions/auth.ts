@@ -5,10 +5,18 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
+import { getAppBaseUrl } from "@/lib/appUrl";
 import { homePathForRole } from "@/lib/authorization";
-import { loginSchema, registerSchema } from "@/schemas/auth";
+import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/schemas/auth";
 import { createUserForSignup } from "@/services/signup";
 import { signInResultHasError } from "@/services/signupAuthResult";
+import {
+  requestPasswordReset,
+  resetPassword,
+  consoleDevSendPasswordResetEmail,
+  InvalidOrExpiredResetTokenError,
+  ResetPasswordPolicyError,
+} from "@/services/passwordReset";
 
 type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth";
 
@@ -52,7 +60,7 @@ export async function registerAction(
   try {
     existing = await db.user.findUnique({ where: { email } });
   } catch (error) {
-    logRegisterFailure("duplicate-email-check", error);
+    logAuthFailure("duplicate-email-check", error);
     return { error: t("signupFailed") };
   }
   if (existing) {
@@ -63,7 +71,7 @@ export async function registerAction(
   try {
     passwordHash = await bcrypt.hash(password, 12);
   } catch (error) {
-    logRegisterFailure("password-hash", error);
+    logAuthFailure("password-hash", error);
     return { error: t("signupFailed") };
   }
 
@@ -78,18 +86,18 @@ export async function registerAction(
       tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
     });
   } catch (error) {
-    logRegisterFailure("user-profile-create", error);
+    logAuthFailure("user-profile-create", error);
     return { error: t("signupFailed") };
   }
 
   try {
     const signInResult = await signIn("credentials", { email, password, redirect: false });
     if (signInResultHasError(signInResult)) {
-      logRegisterFailure("automatic-sign-in", new Error("Auth.js returned an error URL"));
+      logAuthFailure("automatic-sign-in", new Error("Auth.js returned an error URL"));
       return { error: t("accountCreatedSignInFailed"), accountCreated: true };
     }
   } catch (error) {
-    logRegisterFailure("automatic-sign-in", error);
+    logAuthFailure("automatic-sign-in", error);
     return { error: t("accountCreatedSignInFailed"), accountCreated: true };
   }
   redirect({ href: homePathForRole(role), locale });
@@ -130,6 +138,95 @@ export async function signOutAction() {
   redirect({ href: "/", locale });
 }
 
+// ---------------------------------------------------------------------------
+// L1-01A — Secure Account Recovery (Golden Path P0). Backend-only: no page
+// at /reset-password exists yet in this task's scope, these two Server
+// Actions are the authoritative recovery contract a future frontend task
+// wires a form to. See src/services/passwordReset.ts for the real logic —
+// these are thin wrappers (parse input, resolve locale/origin, translate
+// domain errors into a generic outcome), same division of labor as every
+// other action in this file.
+// ---------------------------------------------------------------------------
+
+export type ForgotPasswordActionState = { submitted: true } | undefined;
+
+/**
+ * §7. ALWAYS resolves to the same `{ submitted: true }` outcome regardless
+ * of whether the submitted email is validly formatted, belongs to a real
+ * account, or belongs to no account at all — contract §A, "must NOT reveal
+ * whether the email exists," with no exception carved out for "obviously
+ * malformed input" either, so this invariant can never accidentally leak a
+ * distinguishing branch in the future.
+ */
+export async function forgotPasswordAction(
+  _prevState: ForgotPasswordActionState,
+  formData: FormData
+): Promise<ForgotPasswordActionState> {
+  const locale = await getLocale();
+  const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
+
+  if (parsed.success) {
+    try {
+      const appBaseUrl = await getAppBaseUrl();
+      await requestPasswordReset(db, parsed.data.email, {
+        locale,
+        sendEmail: consoleDevSendPasswordResetEmail,
+        buildResetUrl: (rawToken) =>
+          `${appBaseUrl}/${locale}/reset-password?token=${encodeURIComponent(rawToken)}`,
+      });
+    } catch (error) {
+      // A genuine infrastructure failure (DB unreachable, etc.) — logged
+      // server-side only; the browser-facing outcome below is unchanged
+      // either way, preserving the no-enumeration invariant even on error.
+      logAuthFailure("forgot-password-request", error);
+    }
+  }
+
+  return { submitted: true };
+}
+
+export type ResetPasswordActionState =
+  | { error: "invalid_request" | "invalid_or_expired_token" | "invalid_password" | "reset_failed" }
+  | { success: true }
+  | undefined;
+
+/**
+ * §8. Validates the token + new password server-side (client input is only
+ * ever a raw token string and a plaintext password — contract §I: never a
+ * userId, target hash, expiry, or token state), then delegates to
+ * resetPassword's guarded transactional core.
+ */
+export async function resetPasswordAction(
+  _prevState: ResetPasswordActionState,
+  formData: FormData
+): Promise<ResetPasswordActionState> {
+  const parsed = resetPasswordSchema.safeParse({
+    token: formData.get("token"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { error: "invalid_request" };
+  }
+
+  try {
+    await resetPassword(db, parsed.data.token, parsed.data.password, {
+      hashPassword: (password) => bcrypt.hash(password, 12),
+    });
+  } catch (error) {
+    if (error instanceof InvalidOrExpiredResetTokenError) {
+      return { error: "invalid_or_expired_token" };
+    }
+    if (error instanceof ResetPasswordPolicyError) {
+      return { error: "invalid_password" };
+    }
+    logAuthFailure("reset-password", error);
+    return { error: "reset_failed" };
+  }
+
+  return { success: true };
+}
+
 const DIACRITIC_MARKS = new RegExp("[\\u0300-\\u036f]", "g");
 
 const REGISTER_FIELDS = new Set<RegisterField>([
@@ -145,9 +242,13 @@ function isRegisterField(value: string): value is RegisterField {
   return REGISTER_FIELDS.has(value as RegisterField);
 }
 
-function logRegisterFailure(stage: string, error: unknown) {
+// Renamed from the original registerAction-only `logRegisterFailure` (L1-01A
+// reuses it for the password-reset actions too) — same safe shape:
+// name/code only, never the raw error object or any secret value (password,
+// hash, or — for password-reset callers — the raw reset token).
+function logAuthFailure(stage: string, error: unknown) {
   const safeError = error as { name?: unknown; code?: unknown };
-  console.error("registerAction failed", {
+  console.error("auth action failed", {
     stage,
     errorName: typeof safeError?.name === "string" ? safeError.name : "UnknownError",
     errorCode: typeof safeError?.code === "string" ? safeError.code : undefined,

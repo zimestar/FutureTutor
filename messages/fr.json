@@ -537,6 +537,9 @@
         "empty": "Vous n'avez pas encore réservé de séance.",
         "findTutorCta": "Trouver un tuteur",
         "withTutor": "avec {name}",
+        "forLearner": "Pour {name}",
+        "refundedAmount": "Remboursement de {amount}",
+        "paymentProcessing": "Traitement du paiement…",
         "cancelCta": "Annuler la séance",
         "cancelling": "Annulation…"
       }
@@ -916,6 +919,10 @@
     "anyLevel": "Tous les niveaux",
     "confirmCta": "Confirmer la réservation",
     "confirming": "Réservation…",
+    "preparingPayment": "Préparation du paiement sécurisé…",
+    "retryPaymentCta": "Réessayer la configuration du paiement",
+    "restartPaymentFlow": "Cette configuration de paiement ne peut plus être réessayée. Modifiez votre sélection pour demander un nouveau prix.",
+    "paymentErrorFallback": "Le paiement n'a pas pu être autorisé. Veuillez réessayer.",
     "success": "Votre séance est réservée!",
     "viewBookings": "Voir vos réservations",
     "signInToBook": "Connectez-vous comme élève pour réserver une séance.",
@@ -953,6 +960,7 @@
       "notFound": "Cette réservation est introuvable.",
       "notYours": "Vous ne pouvez pas gérer cette réservation.",
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
+      "paymentPreparationFailed": "La configuration du paiement n'a pas pu être complétée. Veuillez réessayer.",
       "alreadyStarted": "Cette séance a déjà commencé et ne peut plus être annulée."
     }
   },
@@ -961,6 +969,7 @@
     "description": "Dites-nous ce dont vous avez besoin et nous trouverons et enverrons automatiquement le meilleur tuteur disponible.",
     "noBookableChildren": "Vous n'avez aucun enfant lié pour qui vous pouvez démarrer un jumelage rapide actuellement. Ajoutez un enfant ou vérifiez votre statut de parent/tuteur d'abord.",
     "manageFamilyCta": "Aller à Mes élèves",
+    "startNewCta": "Commencer un nouveau jumelage rapide",
     "chooseChildPrompt": "Choisissez pour quel enfant cette demande est destinée.",
     "bookingForLabel": "Jumelage rapide pour {name}",
     "changeChildCta": "Changer d'enfant",
@@ -996,6 +1005,10 @@
       "confirming": "Confirmation…",
       "confirmCta": "Confirmer et chercher un tuteur",
       "enterPaymentCta": "Entrer les informations de paiement",
+      "preparingPayment": "Préparation du paiement sécurisé…",
+      "retryPaymentCta": "Réessayer la configuration du paiement",
+      "restartPaymentFlow": "Cette demande ne peut plus utiliser la configuration de paiement actuelle. Annulez-la et créez une nouvelle demande.",
+      "paymentErrorFallback": "Le paiement n'a pas pu être autorisé. Veuillez réessayer.",
       "cancelCta": "Annuler"
     },
     "status": {
@@ -1065,6 +1078,7 @@
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
       "invitationNoLongerAvailable": "Cette demande n'est plus disponible — elle a peut-être expiré ou été prise par un autre tuteur.",
       "paymentFailed": "Cette séance n'a pas pu être confirmée car le paiement n'a pas pu être complété.",
+      "paymentPreparationFailed": "La configuration du paiement n'a pas pu être complétée. Veuillez réessayer.",
       "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },

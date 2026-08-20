@@ -537,6 +537,9 @@
         "empty": "You haven't booked any sessions yet.",
         "findTutorCta": "Find a Tutor",
         "withTutor": "with {name}",
+        "forLearner": "For {name}",
+        "refundedAmount": "Refunded {amount}",
+        "paymentProcessing": "Payment processing…",
         "cancelCta": "Cancel session",
         "cancelling": "Cancelling…"
       }
@@ -916,6 +919,10 @@
     "anyLevel": "Any level",
     "confirmCta": "Confirm Booking",
     "confirming": "Booking…",
+    "preparingPayment": "Preparing secure payment…",
+    "retryPaymentCta": "Retry payment setup",
+    "restartPaymentFlow": "This payment setup can no longer be retried. Update your selection to request a new quote.",
+    "paymentErrorFallback": "Payment could not be authorized. Please try again.",
     "success": "Your session is booked!",
     "viewBookings": "View your bookings",
     "signInToBook": "Sign in as a student to book a session.",
@@ -953,6 +960,7 @@
       "notFound": "This booking could not be found.",
       "notYours": "You can't manage this booking.",
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
+      "paymentPreparationFailed": "Payment setup could not be completed. Please try again.",
       "alreadyStarted": "This session has already started and can no longer be cancelled."
     }
   },
@@ -961,6 +969,7 @@
     "description": "Tell us what you need and we'll find and dispatch the best available tutor automatically.",
     "noBookableChildren": "You don't have a linked child you can currently start Quick Match for. Add a child or check your guardian status first.",
     "manageFamilyCta": "Go to My Students",
+    "startNewCta": "Start a new Quick Match",
     "chooseChildPrompt": "Choose which child this request is for.",
     "bookingForLabel": "Quick Match for {name}",
     "changeChildCta": "Change child",
@@ -996,6 +1005,10 @@
       "confirming": "Confirming…",
       "confirmCta": "Confirm & find a tutor",
       "enterPaymentCta": "Enter payment details",
+      "preparingPayment": "Preparing secure payment…",
+      "retryPaymentCta": "Retry payment setup",
+      "restartPaymentFlow": "This request can no longer use the current payment setup. Cancel it and start a new request.",
+      "paymentErrorFallback": "Payment could not be authorized. Please try again.",
       "cancelCta": "Cancel"
     },
     "status": {
@@ -1065,6 +1078,7 @@
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
       "invitationNoLongerAvailable": "This request is no longer available — it may have expired or been taken by another tutor.",
       "paymentFailed": "This session could not be confirmed because the payment could not be completed.",
+      "paymentPreparationFailed": "Payment setup could not be completed. Please try again.",
       "generic": "Something went wrong. Please try again."
     }
   },
