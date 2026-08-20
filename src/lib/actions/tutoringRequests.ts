@@ -30,6 +30,7 @@ import { advanceDispatch, closeTutoringRequest } from "@/services/quickMatchDisp
 import {
   createTutoringRequestForLearnerInOwnTransaction,
   NotAuthorizedForLearnerError,
+  ActiveTutoringRequestExistsError,
 } from "@/services/tutoringRequestCreation";
 
 export type CreateTutoringRequestState =
@@ -150,6 +151,21 @@ export async function createTutoringRequestAction(
     // only ever be consumed by the same createdByUserId that requested
     // it), only a minor, accepted resource-cleanliness gap.
     if (error instanceof NotAuthorizedForLearnerError) return { success: false, error: t("notAStudent") };
+    // Golden Path P0 — the transaction-bound duplicate-active-request guard
+    // (src/services/tutoringRequestCreation.ts) rejected this create because
+    // the learner already has an in-flight Quick Match. No existing
+    // quickMatch.errors translation key names this specific case (the
+    // frontend firewall for this backend-only phase forbids adding one —
+    // see messages/en.json's quickMatch.errors), so this deliberately falls
+    // through to the same generic message every other unnamed rejection
+    // uses; the request itself is expected to steer a well-behaved client
+    // away from ever hitting this in practice (see the Quick Match page's
+    // own status-aware rendering), this is defense-in-depth against a
+    // concurrent/duplicate submission slipping past that. The
+    // CustomerPriceQuote created just before this point is left
+    // ACTIVE/orphaned, same accepted minor gap already documented for
+    // NotAuthorizedForLearnerError above.
+    if (error instanceof ActiveTutoringRequestExistsError) return { success: false, error: t("generic") };
     return { success: false, error: t("generic") };
   }
 }
