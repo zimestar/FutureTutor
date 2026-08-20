@@ -13,10 +13,10 @@ import { signInResultHasError } from "@/services/signupAuthResult";
 import {
   requestPasswordReset,
   resetPassword,
-  consoleDevSendPasswordResetEmail,
   InvalidOrExpiredResetTokenError,
   ResetPasswordPolicyError,
 } from "@/services/passwordReset";
+import { resolveSendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 
 type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth";
 
@@ -168,9 +168,15 @@ export async function forgotPasswordAction(
   if (parsed.success) {
     try {
       const appBaseUrl = await getAppBaseUrl();
+      // L1-01B — resolveSendPasswordResetEmail() picks the Resend-backed
+      // production adapter or the dev-only console adapter based on
+      // environment (see src/lib/email/emailDeliveryConfig.ts); a
+      // misconfigured-production EmailConfigurationError is a "genuine
+      // infrastructure failure" and is caught by the try/catch below like
+      // any other, preserving the generic {submitted:true} outcome.
       await requestPasswordReset(db, parsed.data.email, {
         locale,
-        sendEmail: consoleDevSendPasswordResetEmail,
+        sendEmail: resolveSendPasswordResetEmail(),
         buildResetUrl: (rawToken) =>
           `${appBaseUrl}/${locale}/reset-password?token=${encodeURIComponent(rawToken)}`,
       });
