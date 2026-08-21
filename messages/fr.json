@@ -1129,6 +1129,12 @@
       "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },
+  "runtimeError": {
+    "eyebrow": "Problème temporaire",
+    "title": "Nous n'avons pas pu charger cette page",
+    "description": "Essayez de charger la page de nouveau. Si le problème persiste, veuillez revenir plus tard.",
+    "retry": "Réessayer"
+  },
   "tutorPayouts": {
     "title": "Paiements",
     "description": "Configurez Stripe pour recevoir le paiement de vos séances et suivez vos gains.",
@@ -1144,6 +1150,7 @@
     },
     "setUpPayoutsCta": "Configurer les paiements",
     "continueSetupCta": "Continuer la configuration",
+    "onboardingPending": "Ouverture de Stripe…",
     "onboardingError": "Nous n'avons pas pu démarrer la configuration Stripe — veuillez réessayer.",
     "devModeNotice": "Les paiements fonctionnent en mode développement — aucun compte Stripe réel n'est encore requis.",
     "earningsTitle": "Vos gains",

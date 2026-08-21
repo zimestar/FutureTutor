@@ -1129,6 +1129,12 @@
       "generic": "Something went wrong. Please try again."
     }
   },
+  "runtimeError": {
+    "eyebrow": "Temporary issue",
+    "title": "We couldn't load this page",
+    "description": "Try loading the page again. If the problem continues, please return later.",
+    "retry": "Try again"
+  },
   "tutorPayouts": {
     "title": "Payouts",
     "description": "Set up Stripe to receive payment for your sessions, and track what you've earned.",
@@ -1144,6 +1150,7 @@
     },
     "setUpPayoutsCta": "Set up payouts",
     "continueSetupCta": "Continue setup",
+    "onboardingPending": "Opening Stripe…",
     "onboardingError": "We couldn't start Stripe onboarding — please try again.",
     "devModeNotice": "Payments are running in development mode — no real Stripe account is required yet.",
     "earningsTitle": "Your earnings",

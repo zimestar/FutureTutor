@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
 import { TutorEarningStatus } from "@/components/dashboard/TutorEarningStatus";
+import { StripeOnboardingSubmitButton } from "@/components/dashboard/StripeOnboardingSubmitButton";
 import { presentTutorEarning } from "@/lib/tutorEarningPresentation";
 
 const STATUS_BADGE: Record<string, "mint" | "outline" | "blue" | "neutral"> = {
@@ -94,13 +95,10 @@ export default async function TutorPayoutsPage({
           {status !== "ACTIVE" && status !== "DISABLED" && (
             <form action={startStripeOnboardingAction}>
               <input type="hidden" name="locale" value={locale} />
-              <button
-                type="submit"
-                data-testid="start-stripe-onboarding"
-                className="h-11 rounded-md bg-blue px-5 text-sm font-bold text-white transition-colors hover:bg-blue/90"
-              >
-                {status === "NOT_STARTED" ? t("setUpPayoutsCta") : t("continueSetupCta")}
-              </button>
+              <StripeOnboardingSubmitButton
+                label={status === "NOT_STARTED" ? t("setUpPayoutsCta") : t("continueSetupCta")}
+                pendingLabel={t("onboardingPending")}
+              />
             </form>
           )}
         </div>
