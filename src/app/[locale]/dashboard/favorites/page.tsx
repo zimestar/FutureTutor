@@ -84,7 +84,7 @@ export default async function FavoritesPage({
           ))}
         </div>
       ) : (
-        <EmptyState className="mt-8" icon={Heart} title={t("emptyTitle")} description={t("empty")} action={<Button href="/find-tutors">{t("findTutorCta")}</Button>} />
+        <EmptyState className="mt-8" icon={Heart} title={t("emptyTitle")} description={t("empty")} action={<Button href="/dashboard/find-tutors">{t("findTutorCta")}</Button>} />
       )}
     </DashboardShell>
   );

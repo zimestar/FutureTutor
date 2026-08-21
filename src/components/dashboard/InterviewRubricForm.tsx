@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Input";
 import { saveInterviewRubricAction } from "@/lib/actions/tutorInterview";
 
 const CRITERIA = [
@@ -33,10 +34,11 @@ export function InterviewRubricForm({
         <div key={criterion} className="rounded-lg border border-neutral-200 p-3">
           <p className="mb-2 text-sm font-semibold text-navy">{t(`criteria.${criterion}`)}</p>
           <div className="flex items-center gap-4">
-            <select
+            <Select
               name={`criterion-${criterion}-score`}
               defaultValue={existingScores[criterion]?.score ?? ""}
-              className="h-10 rounded-md border border-neutral-300 px-2 text-sm"
+              className="h-10 text-sm"
+              containerClassName="w-auto"
             >
               <option value="" disabled>
                 {t("selectScore")}
@@ -46,7 +48,7 @@ export function InterviewRubricForm({
                   {n}
                 </option>
               ))}
-            </select>
+            </Select>
             <input
               type="text"
               name={`criterion-${criterion}-notes`}

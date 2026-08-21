@@ -99,7 +99,7 @@ export function postSessionNavigationActions(
 export function postSessionNavigationHref(action: PostSessionNavigationAction, viewerRole: string): string {
   if (action === "bookings") return viewerRole === "TUTOR_OWNER" ? "/tutor/bookings" : "/dashboard/bookings";
   if (action === "tutorDashboard") return "/tutor/dashboard";
-  return "/find-tutors";
+  return "/dashboard/find-tutors";
 }
 
 export function noShowCopyKind(

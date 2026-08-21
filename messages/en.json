@@ -342,7 +342,8 @@
     "bookingNote": "Booking opens once accounts launch.",
     "pricingNote": "FutureTutor calculates the session price based on subject, level and timing — you'll see it before confirming.",
     "noBookableChildren": "You don't have a linked child you can currently book for. Add a child or check your guardian status first.",
-    "manageFamilyCta": "Go to My Students"
+    "manageFamilyCta": "Go to My Students",
+    "backToTutorSearch": "Back to Find a Tutor"
   },
   "tutorProfileForm": {
     "title": "Your tutor profile",

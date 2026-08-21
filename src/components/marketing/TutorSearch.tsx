@@ -19,7 +19,7 @@ const gradeLevelKeys: GradeLevelKey[] = [
   "adultLearner",
 ];
 
-export function TutorSearch({ className }: { className?: string }) {
+export function TutorSearch({ className, resultsPath = "/find-tutors" }: { className?: string; resultsPath?: string }) {
   const router = useRouter();
   const t = useTranslations("search");
   const tLevels = useTranslations("gradeLevels");
@@ -37,7 +37,7 @@ export function TutorSearch({ className }: { className?: string }) {
     if (level) params.set("level", level);
     if (mode) params.set("mode", mode);
 
-    router.push(`/find-tutors?${params.toString()}`);
+    router.push(`${resultsPath}?${params.toString()}`);
   }
 
   return (

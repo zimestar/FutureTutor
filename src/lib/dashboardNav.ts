@@ -15,7 +15,7 @@ export function getStudentDashboardNavItems(
 ): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
     { label: tNav("overview"), href: "/dashboard", group: tNav("learningGroup") },
-    { label: tNav("findTutor"), href: "/find-tutors", group: tNav("learningGroup") },
+    { label: tNav("findTutor"), href: "/dashboard/find-tutors", group: tNav("learningGroup") },
     { label: tNav("quickMatch"), href: "/dashboard/quick-match", group: tNav("learningGroup") },
     { label: tNav("bookings"), href: "/dashboard/bookings", group: tNav("learningGroup") },
     { label: tNav("favorites"), href: "/dashboard/favorites", group: tNav("learningGroup") },

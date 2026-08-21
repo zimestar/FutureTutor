@@ -100,7 +100,7 @@ export default async function StudentBookingsPage({
         <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
           <p className="text-slate">{t("empty")}</p>
           <div className="mt-6 flex justify-center">
-            <Button href="/find-tutors">{t("findTutorCta")}</Button>
+            <Button href="/dashboard/find-tutors">{t("findTutorCta")}</Button>
           </div>
         </div>
       ) : (

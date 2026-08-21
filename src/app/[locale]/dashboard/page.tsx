@@ -69,7 +69,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
             </div>
             <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:shrink-0">
               <Button href="/dashboard/quick-match" size="lg" className="w-full sm:w-auto"><Sparkles className="size-4" aria-hidden="true" />{t("quickMatchCta")}</Button>
-              <Button href="/find-tutors" size="lg" variant="ghost-inverse" className="w-full border border-white/25 sm:w-auto">{t("findTutorCta")}</Button>
+              <Button href="/dashboard/find-tutors" size="lg" variant="ghost-inverse" className="w-full border border-white/25 sm:w-auto">{t("findTutorCta")}</Button>
             </div>
           </div>
         </section>
@@ -80,7 +80,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
               <div><h2 id="student-schedule-heading" className="text-xl font-bold text-text-primary">{t("schedule.title")}</h2><p className="mt-1 text-sm text-text-secondary">{t("schedule.description")}</p></div>
               <Button href="/dashboard/bookings" variant="ghost" size="sm" className="shrink-0">{t("schedule.viewCta")}<ArrowRight className="size-4" aria-hidden="true" /></Button>
             </div>
-            <EmptyState icon={CalendarDays} title={t("schedule.emptyTitle")} description={t("schedule.emptyDescription")} action={<Button href="/find-tutors" variant="outline">{t("findTutorCta")}</Button>} />
+            <EmptyState icon={CalendarDays} title={t("schedule.emptyTitle")} description={t("schedule.emptyDescription")} action={<Button href="/dashboard/find-tutors" variant="outline">{t("findTutorCta")}</Button>} />
           </section>
 
           <aside aria-labelledby="student-saved-heading">
@@ -117,7 +117,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
           <div><h2 id="parent-actions-heading" className="text-xl font-bold">{t("actions.title")}</h2><p className="mt-1 text-sm leading-6 text-white/70">{t("actions.description")}</p></div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Button href="/dashboard/quick-match"><Sparkles className="size-4" aria-hidden="true" />{t("actions.quickMatch")}</Button>
-            <Button href="/find-tutors" variant="ghost-inverse" className="border border-white/25">{t("actions.findTutor")}</Button>
+            <Button href="/dashboard/find-tutors" variant="ghost-inverse" className="border border-white/25">{t("actions.findTutor")}</Button>
             <Button href="/dashboard/family" variant="ghost-inverse" className="border border-white/25"><UsersRound className="size-4" aria-hidden="true" />{t("actions.family")}</Button>
           </div>
         </div>

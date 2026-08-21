@@ -342,7 +342,8 @@
     "bookingNote": "La réservation sera possible dès le lancement des comptes.",
     "pricingNote": "FutureTutor calcule le prix de la séance selon la matière, le niveau et l'horaire — vous le verrez avant de confirmer.",
     "noBookableChildren": "Vous n'avez aucun enfant lié pour qui vous pouvez réserver actuellement. Ajoutez un enfant ou vérifiez votre statut de parent/tuteur d'abord.",
-    "manageFamilyCta": "Aller à Mes élèves"
+    "manageFamilyCta": "Aller à Mes élèves",
+    "backToTutorSearch": "Retour à Trouver un tuteur"
   },
   "tutorProfileForm": {
     "title": "Votre profil de tuteur",

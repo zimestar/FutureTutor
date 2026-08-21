@@ -35,7 +35,7 @@ export function CustomerBasePriceRuleForm({
     <form action={formAction} className="grid grid-cols-2 gap-3 rounded-lg border border-neutral-200 p-4 md:grid-cols-6">
       {state?.error && <p className="col-span-full text-sm font-semibold text-error">{state.error}</p>}
       {state?.success && <p className="col-span-full text-sm font-semibold text-success">Saved.</p>}
-      <Select name="subjectId" defaultValue={initial?.subjectId ?? ""} className="col-span-2">
+      <Select name="subjectId" defaultValue={initial?.subjectId ?? ""} containerClassName="col-span-2">
         <option value="">Any subject</option>
         {subjects.map((s) => (
           <option key={s.id} value={s.id}>
@@ -43,7 +43,7 @@ export function CustomerBasePriceRuleForm({
           </option>
         ))}
       </Select>
-      <Select name="academicLevelId" defaultValue={initial?.academicLevelId ?? ""} className="col-span-2">
+      <Select name="academicLevelId" defaultValue={initial?.academicLevelId ?? ""} containerClassName="col-span-2">
         <option value="">Any level</option>
         {levels.map((l) => (
           <option key={l.id} value={l.id}>

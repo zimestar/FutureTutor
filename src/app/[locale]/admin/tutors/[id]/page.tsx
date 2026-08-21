@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Input";
 import { InterviewRubricForm } from "@/components/dashboard/InterviewRubricForm";
 import { TutorPayoutTierSelect } from "@/components/dashboard/TutorPayoutTierSelect";
 import {
@@ -223,14 +224,14 @@ export default async function AdminTutorDetailPage({
                 {edu.fieldOfStudy && <p className="text-sm text-slate">{edu.fieldOfStudy}</p>}
                 {edu.verificationStatus === "UNVERIFIED" && approvedDocuments.length > 0 && (
                   <form action={verifyEducationAction.bind(null, edu.id)} className="mt-3 flex flex-wrap items-center gap-2">
-                    <select name="documentId" required className="h-9 rounded-md border border-neutral-300 px-2 text-sm">
+                    <Select name="documentId" required className="h-9 text-sm" containerClassName="w-auto max-w-full">
                       <option value="">{t("selectDocument")}</option>
                       {approvedDocuments.map((doc) => (
                         <option key={doc.id} value={doc.id}>
                           {tDocType(doc.type)} — {doc.originalFileName}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <label className="flex items-center gap-1.5 text-sm text-navy">
                       <input type="checkbox" name="isRelevantToSubjects" />
                       {t("relevantToSubjects")}
@@ -267,14 +268,14 @@ export default async function AdminTutorDetailPage({
                     action={verifyCertificationAction.bind(null, cert.id)}
                     className="mt-3 flex flex-wrap items-center gap-2"
                   >
-                    <select name="documentId" required className="h-9 rounded-md border border-neutral-300 px-2 text-sm">
+                    <Select name="documentId" required className="h-9 text-sm" containerClassName="w-auto max-w-full">
                       <option value="">{t("selectDocument")}</option>
                       {approvedDocuments.map((doc) => (
                         <option key={doc.id} value={doc.id}>
                           {tDocType(doc.type)} — {doc.originalFileName}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <label className="flex items-center gap-1.5 text-sm text-navy">
                       <input type="checkbox" name="isRelevantToSubjects" />
                       {t("relevantToSubjects")}

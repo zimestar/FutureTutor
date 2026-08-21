@@ -22,6 +22,7 @@ export interface DashboardNavItem {
 const navIcons: Record<string, typeof LayoutDashboard> = {
   "/dashboard": LayoutDashboard,
   "/find-tutors": Search,
+  "/dashboard/find-tutors": Search,
   "/dashboard/favorites": Heart,
   "/dashboard/quick-match": Sparkles,
   "/dashboard/bookings": CalendarDays,

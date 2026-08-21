@@ -101,7 +101,7 @@ describe("SUI-1 Session arrival presentation", () => {
     expect(postSessionNavigationHref("bookings", "TUTOR_OWNER")).toBe("/tutor/bookings");
     expect(postSessionNavigationHref("bookings", "GUARDIAN")).toBe("/dashboard/bookings");
     expect(postSessionNavigationHref("tutorDashboard", "TUTOR_OWNER")).toBe("/tutor/dashboard");
-    expect(postSessionNavigationHref("findTutor", "SELF_MANAGED_STUDENT")).toBe("/find-tutors");
+    expect(postSessionNavigationHref("findTutor", "SELF_MANAGED_STUDENT")).toBe("/dashboard/find-tutors");
   });
 
   for (const [locale, messages] of [["en", en], ["fr", fr]] as const) {

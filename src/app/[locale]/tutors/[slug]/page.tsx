@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Star, MapPin, Laptop, Languages, GraduationCap } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Laptop, Languages, GraduationCap } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { Section } from "@/components/ui/Section";
 import { Badge } from "@/components/ui/Badge";
@@ -88,6 +88,17 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
   return (
     <MarketingShell>
       <Section className="bg-off-white">
+        {(session?.user?.role === "STUDENT" || session?.user?.role === "PARENT") && (
+          <Button
+            href="/dashboard/find-tutors"
+            variant="ghost"
+            className="mb-5 min-h-11 px-2 lg:hidden"
+            aria-label={tProfile("backToTutorSearch")}
+          >
+            <ArrowLeft className="size-5" aria-hidden="true" />
+            {tProfile("backToTutorSearch")}
+          </Button>
+        )}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr]">
           <div>
             <div className="flex items-start gap-5">
