@@ -67,13 +67,27 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   if (adminEmail && adminPassword) {
     await seedUser(adminEmail, adminPassword, "FutureTutor Admin", "SUPER_ADMIN");
-    console.log(`Seeded SUPER_ADMIN: ${adminEmail} / ${adminPassword}`);
+    console.log(`Seeded SUPER_ADMIN: ${adminEmail}`);
   } else {
     console.warn("SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD not set — skipping admin seed.");
   }
 
+  // INFRA-1B — staging is remotely reachable, so these can no longer be an
+  // unconditional, source-visible hardcoded password: SEED_STUDENT_PASSWORD /
+  // SEED_TUTOR_PASSWORD override the local-dev default when set (staging
+  // deploys should always set them), and the password value itself is never
+  // logged unless the caller-provided override was used (a plain warning
+  // that a non-secret local-dev default is in effect is safe to print; the
+  // password itself is not).
+  const DEV_ONLY_DEFAULT_PASSWORD = "TestPass123!";
+
   const studentEmail = "student@futuretutor.local";
-  const studentPassword = "TestPass123!";
+  const studentPassword = process.env.SEED_STUDENT_PASSWORD || DEV_ONLY_DEFAULT_PASSWORD;
+  if (!process.env.SEED_STUDENT_PASSWORD) {
+    console.warn(
+      "SEED_STUDENT_PASSWORD not set — using the local-dev-only default password. Set SEED_STUDENT_PASSWORD before seeding any remotely reachable database."
+    );
+  }
   const studentUser = await seedUser(studentEmail, studentPassword, "Sam Student", "STUDENT");
   await prisma.studentProfile.upsert({
     where: { userId: studentUser.id },
@@ -90,10 +104,15 @@ async function main() {
       managementMode: "SELF_MANAGED",
     },
   });
-  console.log(`Seeded STUDENT: ${studentEmail} / ${studentPassword}`);
+  console.log(`Seeded STUDENT: ${studentEmail}${process.env.SEED_STUDENT_PASSWORD ? "" : ` / ${studentPassword} (local-dev default)`}`);
 
   const tutorEmail = "tutor@futuretutor.local";
-  const tutorPassword = "TestPass123!";
+  const tutorPassword = process.env.SEED_TUTOR_PASSWORD || DEV_ONLY_DEFAULT_PASSWORD;
+  if (!process.env.SEED_TUTOR_PASSWORD) {
+    console.warn(
+      "SEED_TUTOR_PASSWORD not set — using the local-dev-only default password. Set SEED_TUTOR_PASSWORD before seeding any remotely reachable database."
+    );
+  }
   const tutorUser = await seedUser(tutorEmail, tutorPassword, "Taylor Tutor", "TUTOR");
   const [mathId, physicsId] = await Promise.all([
     prisma.subject.findUniqueOrThrow({ where: { slug: "math" } }),
@@ -142,7 +161,9 @@ async function main() {
     data: [{ tutorProfileId: tutorProfile.id, language: "en" }],
     skipDuplicates: true,
   });
-  console.log(`Seeded TUTOR (pre-approved): ${tutorEmail} / ${tutorPassword}`);
+  console.log(
+    `Seeded TUTOR (pre-approved): ${tutorEmail}${process.env.SEED_TUTOR_PASSWORD ? "" : ` / ${tutorPassword} (local-dev default)`}`
+  );
 
   // --- Phase D: Tutor Validation Depth — required training modules + the
   // single seeded platform exam. Content lives here (not an authoring UI)
