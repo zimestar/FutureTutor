@@ -9,6 +9,7 @@ import { createPriceQuoteAction, type PriceQuoteResult } from "@/lib/actions/pri
 import { preparePaymentForBookingQuoteAction, type PreparePaymentState } from "@/lib/actions/payments";
 import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
 import { acquirePreparationLock, paymentPreparationView } from "@/lib/paymentPreparation";
+import { shouldAutoFinalizeBooking } from "@/lib/bookingAutoFinalize";
 
 export interface BookingWidgetDaySlot {
   date: string;
@@ -83,6 +84,25 @@ export function BookingWidget({
     stripePaymentIntentId && stripePaymentIntentId.key === quoteKey ? stripePaymentIntentId.id : null;
   const paymentView = paymentPreparationView(preparingPayment, payment);
   const paymentPreparationError = t("errors.paymentPreparationFailed");
+
+  // Single-confirmation flow (P1 fix) — once Stripe authorization succeeds
+  // (onAuthorized below), the booking-finalization <form> is submitted
+  // programmatically via requestSubmit() instead of requiring a second user
+  // click on a second, identically-labeled "Confirm Booking" button. This
+  // reuses createBookingAction exactly as-is (no client-side duplication of
+  // its logic) — requestSubmit() triggers the same Server Action path
+  // useActionState already wires up. Keyed by quoteKey (not a bare
+  // boolean) so a genuinely new selection can auto-finalize again, while a
+  // stray effect re-run for the SAME authorization can never double-submit.
+  const bookingFormRef = useRef<HTMLFormElement>(null);
+  const autoFinalizedForKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!shouldAutoFinalizeBooking({ useStripe, authorizedPiId, quoteKey, alreadyFinalizedForKey: autoFinalizedForKey.current })) {
+      return;
+    }
+    autoFinalizedForKey.current = quoteKey;
+    bookingFormRef.current?.requestSubmit();
+  }, [useStripe, authorizedPiId, quoteKey]);
 
   const preparePayment = useCallback((key: string, customerPriceQuoteId: string, fallbackError: string) => {
     if (!acquirePreparationLock(activePaymentPreparations.current, key)) return;
@@ -361,7 +381,11 @@ export function BookingWidget({
         </div>
       )}
 
-      {(!useStripe || authorizedPiId) && (
+      {/* Non-Stripe / dev-bypass path — unchanged single manual click, as
+          it already was before this fix (there was never a two-stage
+          problem here, since no separate Stripe authorization step
+          exists in this mode). */}
+      {!useStripe && (
         <form action={formAction}>
           <input type="hidden" name="studentProfileId" value={studentProfileId} />
           <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
@@ -370,7 +394,6 @@ export function BookingWidget({
           <input type="hidden" name="academicLevelId" value={academicLevelId} />
           <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
           <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
-          {authorizedPiId && <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />}
           <button
             type="submit"
             data-testid="confirm-booking"
@@ -380,6 +403,46 @@ export function BookingWidget({
             {pending ? t("confirming") : t("confirmCta")}
           </button>
         </form>
+      )}
+
+      {/* Stripe path, post-authorization — no second user-facing CTA. The
+          form below exists only as requestSubmit()'s target (see the
+          effect above) and is never presented as something to click; while
+          it runs, a distinct "Finalizing…" status replaces the payment UI
+          entirely. On failure, the existing top-of-widget error banner
+          already shows state.error — this block only adds a way to safely
+          retry the SAME already-authorized PaymentIntent (idempotent per
+          verifyAndAuthorizePaymentIntent's own guard), never a way to
+          create a second one. */}
+      {useStripe && authorizedPiId && (
+        <div aria-live="polite">
+          {!state?.error && (
+            <p className="text-sm font-semibold text-navy" data-testid="finalizing-booking">
+              {t("finalizingBooking")}
+            </p>
+          )}
+          {state?.error && (
+            <button
+              type="button"
+              data-testid="retry-booking-finalization"
+              onClick={() => bookingFormRef.current?.requestSubmit()}
+              disabled={pending}
+              className="min-h-11 rounded-md border border-error px-4 text-sm font-bold text-error transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t("retryFinalizationCta")}
+            </button>
+          )}
+          <form ref={bookingFormRef} action={formAction} data-testid="direct-booking-finalize-form">
+            <input type="hidden" name="studentProfileId" value={studentProfileId} />
+            <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
+            <input type="hidden" name="startAt" value={selectedSlot} />
+            <input type="hidden" name="subjectId" value={subjectId} />
+            <input type="hidden" name="academicLevelId" value={academicLevelId} />
+            <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
+            <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
+            <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />
+          </form>
+        </div>
       )}
     </div>
   );

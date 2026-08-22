@@ -971,6 +971,8 @@
     "retryPaymentCta": "Retry payment setup",
     "restartPaymentFlow": "This payment setup can no longer be retried. Update your selection to request a new quote.",
     "paymentErrorFallback": "Payment could not be authorized. Please try again.",
+    "finalizingBooking": "Finalizing your booking…",
+    "retryFinalizationCta": "Try again",
     "success": "Your session is booked!",
     "viewBookings": "View your bookings",
     "signInToBook": "Sign in as a student to book a session.",

@@ -40,8 +40,23 @@ test("Direct Booking payment step renders no nested form", async ({ page }) => {
   const stripeFormAncestorForms = await stripeForm.locator("xpath=ancestor::form").count();
   expect(stripeFormAncestorForms).toBe(0);
 
+  // Single-confirmation contract (a second P1: a real Stripe authorization
+  // succeeded but the app then silently required a SECOND, identically-
+  // labeled "Confirm Booking" click the user had no reason to expect).
+  // Before Stripe authorization, exactly one user-facing confirm affordance
+  // may exist at a time: the Stripe form's own submit button. The separate
+  // non-Stripe "confirm-booking" button and the post-authorization
+  // finalization form/status must NOT exist yet — proving there is no
+  // premature second CTA competing for the user's attention.
+  await expect(page.locator('[data-testid="confirm-booking"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="direct-booking-finalize-form"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="finalizing-booking"]')).toHaveCount(0);
+
   // Intentionally stop here — no card details are entered and no payment
-  // is confirmed. runtimeAudit (auto-applied via the qaTest fixture)
-  // asserts no console/page errors occurred, which would catch React's own
+  // is confirmed (completing a real Stripe test-mode confirmation is
+  // exactly what the E2E_FINANCIAL guard in helpers/target.ts exists to
+  // keep out of the normal suite; this test does not touch that boundary).
+  // runtimeAudit (auto-applied via the qaTest fixture) asserts no
+  // console/page errors occurred, which would catch React's own
   // validateDOMNesting warning if a nested form ever regressed.
 });

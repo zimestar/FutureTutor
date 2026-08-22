@@ -971,6 +971,8 @@
     "retryPaymentCta": "Réessayer la configuration du paiement",
     "restartPaymentFlow": "Cette configuration de paiement ne peut plus être réessayée. Modifiez votre sélection pour demander un nouveau prix.",
     "paymentErrorFallback": "Le paiement n'a pas pu être autorisé. Veuillez réessayer.",
+    "finalizingBooking": "Finalisation de votre réservation…",
+    "retryFinalizationCta": "Réessayer",
     "success": "Votre séance est réservée!",
     "viewBookings": "Voir vos réservations",
     "signInToBook": "Connectez-vous comme élève pour réserver une séance.",
