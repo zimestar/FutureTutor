@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { runStripePaymentConfirmation } from "./stripePaymentConfirmation";
 
 // Module-level cache — loadStripe should only ever be called once per
 // publishable key for the lifetime of the page.
@@ -39,24 +40,14 @@ function InnerForm({
     setSubmitting(true);
     setError(null);
 
-    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required",
-    });
-
-    if (confirmError) {
-      submissionInFlight.current = false;
-      setSubmitting(false);
-      setError(errorMessage);
+    const result = await runStripePaymentConfirmation(stripe, elements);
+    if (result.outcome === "authorized") {
+      onAuthorized(result.paymentIntentId);
       return;
     }
-    if (paymentIntent && (paymentIntent.status === "requires_capture" || paymentIntent.status === "succeeded")) {
-      onAuthorized(paymentIntent.id);
-      return;
-    }
+    setError(errorMessage);
     setSubmitting(false);
     submissionInFlight.current = false;
-    setError(errorMessage);
   };
 
   return (
