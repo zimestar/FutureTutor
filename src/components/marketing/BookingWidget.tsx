@@ -160,14 +160,16 @@ export function BookingWidget({
   const readyToSubmit = quote?.success && (!useStripe || authorizedPiId);
 
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-4">
-      <input type="hidden" name="studentProfileId" value={studentProfileId} />
-      <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
-      <input type="hidden" name="startAt" value={selectedSlot} />
-      <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
-      <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
-      {authorizedPiId && <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />}
-
+    // Deliberately a <div>, not a <form> — StripePaymentForm below renders
+    // its own <form>, and nesting a form inside another form is invalid
+    // HTML with undefined/inconsistent browser submit-event behavior (this
+    // was the root cause of a P1 where "Confirm Booking" silently failed to
+    // reach Stripe). The actual createBookingAction submission is its own
+    // small, separate <form> further down — a sibling of StripePaymentForm,
+    // not an ancestor — mirroring the pattern QuickMatchPriceReview.tsx
+    // already uses correctly. All the fields that form needs are tracked in
+    // React state already and passed via hidden inputs on that form alone.
+    <div className="mt-6 flex flex-col gap-4">
       {state?.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {state.error}
@@ -258,7 +260,6 @@ export function BookingWidget({
         </label>
         <Select
           id="subjectId"
-          name="subjectId"
           required
           value={subjectId}
           onChange={(e) => setSubjectId(e.target.value)}
@@ -277,7 +278,6 @@ export function BookingWidget({
         </label>
         <Select
           id="academicLevelId"
-          name="academicLevelId"
           value={academicLevelId}
           onChange={(e) => setAcademicLevelId(e.target.value)}
         >
@@ -362,15 +362,25 @@ export function BookingWidget({
       )}
 
       {(!useStripe || authorizedPiId) && (
-        <button
-          type="submit"
-          data-testid="confirm-booking"
-          disabled={pending || quotePending || !readyToSubmit}
-          className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {pending ? t("confirming") : t("confirmCta")}
-        </button>
+        <form action={formAction}>
+          <input type="hidden" name="studentProfileId" value={studentProfileId} />
+          <input type="hidden" name="tutorProfileId" value={tutorProfileId} />
+          <input type="hidden" name="startAt" value={selectedSlot} />
+          <input type="hidden" name="subjectId" value={subjectId} />
+          <input type="hidden" name="academicLevelId" value={academicLevelId} />
+          <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
+          <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
+          {authorizedPiId && <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />}
+          <button
+            type="submit"
+            data-testid="confirm-booking"
+            disabled={pending || quotePending || !readyToSubmit}
+            className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pending ? t("confirming") : t("confirmCta")}
+          </button>
+        </form>
       )}
-    </form>
+    </div>
   );
 }
