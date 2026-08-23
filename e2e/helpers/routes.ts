@@ -24,4 +24,11 @@ export const tutorRoutes = [
   "/tutor/profile",
 ] as const;
 
-export const adminRoutes = ["/admin", "/admin/payments"] as const;
+export const adminRoutes = [
+  "/admin",
+  "/admin/payments",
+  "/admin/tutors",
+  "/admin/quick-match",
+  "/admin/pricing",
+  "/admin/family",
+] as const;

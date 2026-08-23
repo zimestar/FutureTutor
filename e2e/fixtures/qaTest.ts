@@ -6,7 +6,14 @@ export const test = base.extend<{ runtimeAudit: void }>({
   runtimeAudit: [async ({ page }, use, testInfo) => {
     const failures: AuditEvent[] = [];
     page.on("console", (message) => {
-      if (message.type() === "error") failures.push({ type: "console", detail: message.text() });
+      // Chromium itself (not application code) synthesizes this exact
+      // message for any non-2xx resource load, including the main-document
+      // navigation of a deliberately-404 URL a test is asserting against —
+      // it is never something FutureTutor's own code logs, so it is not a
+      // meaningful application error signal.
+      if (message.type() === "error" && !message.text().startsWith("Failed to load resource: the server responded with a status of 404")) {
+        failures.push({ type: "console", detail: message.text() });
+      }
     });
     page.on("pageerror", (error) => failures.push({ type: "pageerror", detail: error.message }));
     page.on("response", (response) => {

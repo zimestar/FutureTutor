@@ -25,6 +25,14 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
+  // QA-2: the default 30s Playwright test timeout was tuned against a local
+  // dev server (near-zero round-trip latency). Against the real remote
+  // staging target, multi-navigation golden-path tests legitimately land in
+  // the 25-32s range purely from real network round trips, not from any
+  // hang or application defect (confirmed by re-running the exact same
+  // failing tests with a raised timeout — they passed cleanly). Only widen
+  // this for staging; local runs keep Playwright's default.
+  timeout: target.kind === "staging" ? 60_000 : undefined,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   use: {
     baseURL: target.origin,

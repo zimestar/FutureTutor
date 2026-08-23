@@ -17,7 +17,7 @@ export async function login(page: Page, role: E2ERole, email: string, password: 
 
 export async function logout(page: Page, locale = "en") {
   const visibleLogout = page.locator('form button[type="submit"]:visible').filter({
-    hasText: locale === "fr" ? "Se déconnecter" : "Log out",
+    hasText: locale === "fr" ? "Déconnexion" : "Log out",
   });
 
   if (await visibleLogout.count() === 0) {

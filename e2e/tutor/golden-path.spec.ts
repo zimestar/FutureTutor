@@ -19,3 +19,16 @@ test("tutor non-destructive golden path", async ({ page }) => {
   await page.goto("/en/tutor/dashboard");
   await logout(page);
 });
+
+// QA-2 — previously EN-only; the tutor role had no FR coverage at all.
+test("tutor non-destructive golden path (FR)", async ({ page }) => {
+  await login(page, "tutor", credentials!.email, credentials!.password, "fr");
+  for (const route of tutorRoutes) {
+    await page.goto(`/fr${route}`);
+    await expect(page.locator("#dashboard-main")).toBeVisible();
+    await expectNoRawKeys(page);
+    await expectNoDocumentOverflow(page);
+  }
+  await page.goto("/fr/tutor/dashboard");
+  await logout(page, "fr");
+});
