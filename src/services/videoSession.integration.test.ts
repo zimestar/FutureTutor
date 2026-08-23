@@ -232,6 +232,7 @@ function makeFakeProvider(opts: { onCreateRoom?: () => { providerRoomId: string 
     async createParticipantToken() {
       return { token: "fake-token", expiresAt: new Date() };
     },
+    async revokeRoomAccess() {},
     get __createRoomCalls() {
       return calls;
     },

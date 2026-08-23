@@ -265,6 +265,7 @@ function makeFakeProvider(): VideoProviderAdapter & { __tokenCalls: Array<{ role
       tokenCalls.push({ role: input.role, participantExternalId: input.participantExternalId });
       return { token: `fake-token-${randomUUID()}`, expiresAt: input.expiresAt };
     },
+    async revokeRoomAccess() {},
     get __tokenCalls() {
       return tokenCalls;
     },

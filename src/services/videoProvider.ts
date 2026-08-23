@@ -64,10 +64,31 @@ export interface CreateParticipantTokenResult {
   expiresAt: Date;
 }
 
+export interface RevokeRoomAccessInput {
+  providerRoomId: string;
+  /** FutureTutor User.ids of everyone who could ever have legitimately
+   * held a token for this room (student, tutor, any ACTIVE guardian
+   * observer) — the exact same population VIDEO-1A's join authorization
+   * would ever grant a token to. Passed explicitly rather than relying on
+   * an "eject everyone" provider default (VIDEO-1B — Daily's own docs do
+   * not clearly specify that omitting participant ids ejects all connected
+   * participants, so this interface never assumes it). */
+  knownParticipantUserIds: string[];
+}
+
 export interface VideoProviderAdapter {
   readonly name: VideoProviderName;
   createRoom(input: CreateRoomInput): Promise<CreateRoomResult>;
   createParticipantToken(input: CreateParticipantTokenInput): Promise<CreateParticipantTokenResult>;
+  /** VIDEO-1B — best-effort access revocation for a cancelled booking.
+   * Never coupled to payment/refund success by any caller (see
+   * cancellationPolicy.ts) — a failure here must never block or roll back
+   * a cancellation that has already committed. Implementations should
+   * both (a) attempt to eject anyone currently connected and (b) close the
+   * room so a previously-issued, still-cryptographically-valid token
+   * cannot be used to (re)join — see dailyVideoProvider.ts's doc comment
+   * for the honest limits of what this can guarantee. */
+  revokeRoomAccess(input: RevokeRoomAccessInput): Promise<void>;
 }
 
 export class VideoProviderUnavailableError extends Error {}

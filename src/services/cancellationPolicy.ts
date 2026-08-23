@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import type { Role } from "@/generated/prisma/enums";
 import { resolveCancellationAuthority, type CancellationActorRole } from "@/services/cancellationAuthorization";
 import { convergeCancelledBookingPayment } from "@/services/payments";
+import { revokeVideoAccessForCancelledBooking } from "@/services/videoSession";
+import { createDailyVideoProvider } from "@/services/dailyVideoProvider";
 import { writeAuditLog } from "@/lib/audit";
 import { notifyUser } from "@/lib/notify";
 import { withSerializableRetry } from "@/lib/serializableRetry";
@@ -380,5 +382,27 @@ export async function cancelBookingWithRefund(
     await convergeCancelledBookingPayment(result.bookingId);
   } catch (error) {
     console.error("convergeCancelledBookingPayment failed after a successful cancellation (non-fatal, retried by the reconciliation sweep)", result.bookingId, error);
+  }
+
+  // VIDEO-1B — best-effort video-access revocation, same non-blocking
+  // shape as the payment convergence above and deliberately independent of
+  // it: never awaited together, never allowed to influence whether the
+  // OTHER succeeds, and never coupled to payment/refund outcome (a booking
+  // whose video access failed to revoke is still genuinely cancelled and
+  // still gets whatever refund tier it was entitled to, and vice versa).
+  // Skipped entirely (not even attempted) when DAILY_API_KEY is unset,
+  // mirroring /api/cron/session-noshow-tick's own graceful-skip — this
+  // function is a no-op for the common case anyway (most cancellations
+  // happen before any room was ever provisioned), so there is no retry
+  // sweep for this specific step the way there is for payment convergence:
+  // an already-cancelled booking's video access, if somehow left
+  // unrevoked, is still bounded by Daily's own room `exp` deadline (see
+  // videoSession.ts's provisioning doc comments), never an open-ended risk.
+  if (process.env.DAILY_API_KEY) {
+    try {
+      await revokeVideoAccessForCancelledBooking(result.bookingId, createDailyVideoProvider());
+    } catch (error) {
+      console.error("revokeVideoAccessForCancelledBooking failed after a successful cancellation (non-fatal)", result.bookingId, error);
+    }
   }
 }

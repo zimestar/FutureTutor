@@ -164,18 +164,21 @@ export async function ensureVideoRoomForSession(
       // reclaim, per above, or — in the narrower case of a hard process
       // kill landing between the provider call returning and this converge
       // — nothing at all, until a later sweep/join-time attempt reclaims
-      // the still-stuck placeholder and provisions a distinct new room).
-      // Either way, THIS provider room is now unreferenced by FutureTutor:
-      // no client was ever given its id (no token was issued against it, no
-      // DB row points at it), so it cannot be joined and is not a
-      // double-booking hazard. It is not actively reaped by any code this
-      // phase (room names include a random suffix, not a deterministic key,
-      // so a later attempt cannot rediscover/reuse it) — it is left to
-      // Daily's own `properties.exp` deadline (the same booking-derived
-      // expiry passed to createRoom above) to naturally stop being usable.
-      // Accepted as a bounded, non-security residual limitation for VIDEO-1A;
-      // deterministic room naming would close it fully and is a candidate
-      // refinement for a later phase, not required for this one.
+      // the still-stuck placeholder and provisions a room again). THIS
+      // provider room is unreferenced by FutureTutor's DB for now: no
+      // client was ever given its id (no token was issued against it), so
+      // it cannot be joined and is not a double-booking hazard. VIDEO-1B —
+      // it is also no longer a true orphan: dailyVideoProvider.ts's
+      // createRoom uses a DETERMINISTIC name derived from this same
+      // sessionId, so whichever later attempt actually converges (the
+      // sweep, or a just-in-time join-time call) will independently compute
+      // the identical Daily room name and discover-and-reuse THIS exact
+      // room rather than minting a distinct second one — closing VIDEO-1A's
+      // documented duplicate-room risk. The only remaining residual case is
+      // a session whose join window fully closes before any later attempt
+      // ever runs (no sweep candidate, nobody ever calls join), where this
+      // room is simply left to Daily's own `properties.exp` deadline —
+      // harmless, since nobody could join a closed-window session anyway.
       return null;
     }
 
@@ -256,4 +259,66 @@ export async function sweepDueVideoRoomProvisioning(
     }
   }
   return { attempted: candidates.length, provisioned, failed };
+}
+
+/**
+ * VIDEO-1B — best-effort video-access revocation for a booking that just
+ * became CANCELLED. Called from cancellationPolicy.ts EXACTLY like
+ * convergeCancelledBookingPayment: OUTSIDE the cancellation's own
+ * Serializable transaction, AFTER it has already committed, wrapped in the
+ * caller's own try/catch that logs and never rethrows. This function itself
+ * also never throws for the "nothing to revoke" cases below — only a
+ * genuine provider failure (surfaced by revokeRoomAccess) propagates, and
+ * even that is explicitly non-fatal to the caller by construction (the
+ * caller's try/catch), never by this function silently swallowing it.
+ *
+ * A cancelled booking's video access must never be coupled to payment/
+ * refund outcome — this function reads no Payment/TutorEarning state and
+ * writes none; a Daily outage here cannot block or unwind a cancellation
+ * that has already committed, and a cancellation never waits on this
+ * function's provider call to decide whether the booking is cancelled.
+ */
+export async function revokeVideoAccessForCancelledBooking(
+  bookingId: string,
+  provider: VideoProviderAdapter
+): Promise<void> {
+  const session = await db.session_.findUnique({
+    where: { bookingId },
+    select: { id: true, providerRoomId: true },
+  });
+  // No Session_ row (booking never reached CONFIRMED) or no room ever
+  // provisioned (IN_PERSON booking, or the join window never opened before
+  // cancellation — by far the common case) — nothing to revoke.
+  if (!session || !session.providerRoomId || isPlaceholder(session.providerRoomId)) return;
+
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      studentProfileId: true,
+      studentProfile: { select: { userId: true } },
+      tutorProfile: { select: { userId: true } },
+    },
+  });
+  if (!booking) return;
+
+  const guardianRelationships = await db.parentStudentRelationship.findMany({
+    where: { studentProfileId: booking.studentProfileId, status: "ACTIVE" },
+    select: { parentProfile: { select: { userId: true } } },
+  });
+
+  const knownParticipantUserIds = [
+    booking.tutorProfile.userId,
+    booking.studentProfile?.userId,
+    ...guardianRelationships.map((r) => r.parentProfile.userId),
+  ].filter((id): id is string => id !== null && id !== undefined);
+
+  await provider.revokeRoomAccess({ providerRoomId: session.providerRoomId, knownParticipantUserIds });
+
+  await writeAuditLog({
+    actorUserId: null,
+    action: "video_session.access_revoked_on_cancellation",
+    entityType: "Session_",
+    entityId: session.id,
+    metadata: { bookingId, provider: provider.name },
+  });
 }

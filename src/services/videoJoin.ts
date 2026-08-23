@@ -1,7 +1,14 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Role } from "@/generated/prisma/enums";
-import { CHECK_IN_WINDOW_MS_BEFORE_START, recordSessionCheckIn, type RecordSessionCheckInResult } from "@/services/sessionLifecycle";
+import {
+  CHECK_IN_WINDOW_MS_BEFORE_START,
+  recordSessionCheckIn,
+  SessionCheckInNotAuthorizedError,
+  SessionNotCheckInEligibleError,
+  SessionCheckInTooEarlyError,
+  type RecordSessionCheckInResult,
+} from "@/services/sessionLifecycle";
 import { VIDEO_ACCESS_GRACE_MS_AFTER_END, ensureVideoRoomForSession } from "@/services/videoSession";
 import {
   resolveVideoJoinAuthority,
@@ -192,9 +199,44 @@ export async function requestVideoJoinToken(
  * their presence as either would be exactly the "financially dangerous
  * approximation" VIDEO-0 §10 warns against (attendance evidence here feeds
  * the existing no-show/TutorEarning-eligibility machinery unchanged).
- * Returns null (a safe no-op) for an OBSERVER or an unauthorized actor,
- * rather than throwing — this function is called from a confirmation path,
- * not a user-facing action a denial needs to be reported for.
+ * Returns null (a safe no-op) for an OBSERVER, an unauthorized actor, a
+ * participant role that has already recorded a CHECK_IN for this session
+ * (see the VIDEO-1B idempotency guard below), or a session/booking that is
+ * no longer check-in eligible (e.g. CANCELLED — see the try/catch around
+ * recordSessionCheckIn below) — rather than throwing, since this function
+ * is called from a confirmation path (in VIDEO-1B, the signed Daily webhook
+ * receiver), not a user-facing action a denial needs to be reported for.
+ *
+ * VIDEO-1B idempotency guard: sessionLifecycle.ts's recordSessionCheckIn is
+ * intentionally NOT modified to add this guard itself — it is an existing,
+ * already-tested core function whose append-only-evidence-write semantics
+ * (Session Lifecycle Phase 2) must stay exactly as they are for every other
+ * caller (in-person manual check-in has never needed "only once" behavior
+ * enforced at the write layer, since a human tapping "check in" twice is
+ * not the same failure mode as an at-least-once webhook delivery). Instead,
+ * this function checks for existing evidence BEFORE calling
+ * recordSessionCheckIn at all — a duplicate Daily participant.joined
+ * delivery for the same participant/session finds the prior CHECK_IN row
+ * and returns null without writing a second one. This keeps "one CHECK_IN
+ * row per intended participant/session semantic" (VIDEO-1B §11) true
+ * without touching the Phase 2 write path other callers depend on.
+ *
+ * Scope of this guard, stated honestly: it closes the realistic duplicate-
+ * delivery case (a webhook retry arriving after the first delivery's
+ * recordSessionCheckIn call has already committed — Daily's own retries are
+ * seconds-to-minutes apart, never sub-millisecond). A genuinely simultaneous
+ * double-delivery racing this function's own check-then-write window could
+ * still theoretically create two CHECK_IN rows for the same participant;
+ * even then, the state machine stays correct — recordSessionCheckIn's own
+ * transition guard (facts.sessionStatus === "SCHEDULED") ensures
+ * SCHEDULED -> IN_PROGRESS fires at most once regardless of how many
+ * CHECK_IN rows exist, and no-show/TutorEarning eligibility read that
+ * status, not a row count. Closing this narrow window fully would require
+ * either a new unique DB constraint (schema change not justified for this
+ * likelihood) or moving the check inside recordSessionCheckIn's own
+ * Serializable transaction (a change to that function's boundary, avoided
+ * per the paragraph above) — accepted as a bounded, non-financial residual
+ * risk rather than solved with disproportionate machinery.
  */
 export async function confirmVideoParticipantJoined(
   bookingId: string,
@@ -212,9 +254,41 @@ export async function confirmVideoParticipantJoined(
   const participantRole = toVideoParticipantRole(authorityRole);
   if (participantRole === null || participantRole === "OBSERVER") return null;
 
-  return recordSessionCheckIn(bookingId, actorUserId, participantRole, {
-    actorRole,
-    clock: options.clock,
-    source: "ONLINE_ACTIVITY",
+  const alreadyCheckedIn = await db.sessionAttendanceEvent.findFirst({
+    where: { sessionId: facts.sessionId, participantRole, eventType: "CHECK_IN" },
+    select: { id: true },
   });
+  if (alreadyCheckedIn) return null;
+
+  try {
+    return await recordSessionCheckIn(bookingId, actorUserId, participantRole, {
+      actorRole,
+      clock: options.clock,
+      source: "ONLINE_ACTIVITY",
+    });
+  } catch (error) {
+    // VIDEO-1B — a join signal (real or, in principle, a late/out-of-order
+    // one) can legitimately arrive for a booking/session that is no longer
+    // check-in eligible by the time it's processed — most concretely, a
+    // Booking that became CANCELLED between token issuance and this signal
+    // arriving (see cancellationPolicy.ts's best-effort revocation — it
+    // reduces but does not guarantee this never happens; see its own doc
+    // comment). Treated as a safe no-op, same as OBSERVER/unauthorized/
+    // already-checked-in above, rather than propagating — otherwise a
+    // caller like the Daily webhook receiver would see a genuine exception
+    // for a condition that will NEVER resolve on retry, and (depending on
+    // how that caller maps errors to an HTTP status) could cause Daily to
+    // retry a webhook delivery indefinitely for something that can never
+    // succeed. A truly unexpected error (SessionNotFoundError, or anything
+    // not one of these three known "no longer eligible" reasons) still
+    // propagates — this function does not become a universal error sink.
+    if (
+      error instanceof SessionCheckInNotAuthorizedError ||
+      error instanceof SessionNotCheckInEligibleError ||
+      error instanceof SessionCheckInTooEarlyError
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }
