@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
-import type { Role, SessionParticipantRole, SessionStatus, TutoringMode } from "@/generated/prisma/enums";
+import type { Role, SessionParticipantRole, SessionStatus, TutoringMode, SessionAttendanceSource } from "@/generated/prisma/enums";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { writeAuditLog } from "@/lib/audit";
 import {
@@ -181,6 +181,17 @@ export interface RecordSessionCheckInOptions {
    * each comparison and immediately before the persisted occurredAt is
    * derived. NEVER a client-supplied timestamp — see the Phase 2 report §7. */
   clock?: () => Date;
+  /** VIDEO-1A — which SessionAttendanceEvent.source this check-in's
+   * evidence row is recorded under. Defaults to "IN_PERSON_MANUAL",
+   * preserving every existing caller's behavior unchanged. A video-join
+   * confirmation (src/services/videoJoin.ts's confirmVideoParticipantJoined
+   * — never token issuance itself) is the only caller expected to pass
+   * "ONLINE_ACTIVITY", the source value the schema already reserved for
+   * exactly this integration (see SessionAttendanceSource's doc comment).
+   * Passing this never changes WHAT check-in does — same dual-presence/
+   * no-show/authorization logic either way — only which evidence source is
+   * recorded. */
+  source?: SessionAttendanceSource;
 }
 
 export interface RecordSessionCheckInResult {
@@ -410,6 +421,7 @@ export async function recordSessionCheckIn(
   options: RecordSessionCheckInOptions
 ): Promise<RecordSessionCheckInResult> {
   const clock = options.clock ?? (() => new Date());
+  const source: SessionAttendanceSource = options.source ?? "IN_PERSON_MANUAL";
 
   // Layer 1 — fast pre-check, may use a slightly-stale `now`; never the
   // authoritative decision.
@@ -506,7 +518,7 @@ export async function recordSessionCheckIn(
             recordedByUserId: actorUserId,
             eventType: "CHECK_IN",
             occurredAt: now,
-            source: "IN_PERSON_MANUAL",
+            source,
           },
         });
 

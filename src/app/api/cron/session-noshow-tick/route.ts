@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { sweepDueNoShowConvergence, sweepDueSessionCompletionConvergence } from "@/services/sessionLifecycle";
+import { sweepDueVideoRoomProvisioning } from "@/services/videoSession";
+import { createDailyVideoProvider } from "@/services/dailyVideoProvider";
 
 /**
  * Session Lifecycle Phase 3 (no-show) + Phase 4 (completion) — same
@@ -47,5 +49,15 @@ export async function POST(request: Request) {
   const noShow = await sweepDueNoShowConvergence();
   const completion = await sweepDueSessionCompletionConvergence();
 
-  return NextResponse.json({ ok: true, noShow, completion });
+  // VIDEO-1A — room provisioning joins this same sweep family (see
+  // videoSession.ts's own doc comment for why: it's the identical
+  // "session lifecycle time-boundary convergence" shape as the two sweeps
+  // above, keyed off the same CHECK_IN_WINDOW_MS_BEFORE_START boundary).
+  // Skips gracefully (never fails the whole route) when DAILY_API_KEY isn't
+  // configured — e.g. local dev without video credentials.
+  const video = process.env.DAILY_API_KEY
+    ? await sweepDueVideoRoomProvisioning(createDailyVideoProvider())
+    : { attempted: 0, provisioned: 0, failed: 0, skipped: "DAILY_API_KEY not configured" };
+
+  return NextResponse.json({ ok: true, noShow, completion, video });
 }

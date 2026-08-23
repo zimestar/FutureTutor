@@ -940,6 +940,18 @@ model BookingStatusHistory {
   changedByUser User?   @relation("BookingStatusChangedBy", fields: [changedByUserId], references: [id])
 }
 
+// VIDEO-1A — the video-call provider a Session_'s room (if any) was
+// provisioned through. A typed enum rather than an arbitrary String: today
+// there is exactly one implemented adapter (Daily), but the whole point of
+// the provider-abstraction layer (src/services/videoProvider.ts) is that a
+// future provider swap must not require rewriting session authorization/
+// business logic — an enum keeps that swap a one-line addition here plus a
+// new adapter, rather than an unconstrained string every call site would
+// need to defensively re-validate.
+enum VideoProvider {
+  DAILY
+}
+
 enum SessionStatus {
   SCHEDULED
   IN_PROGRESS
@@ -1001,6 +1013,22 @@ model Session_ {
   // noShowConvergedAt + 24h (see TutorEarning.eligibleAt's comment) — not
   // yet implemented as of Phase 5A.
   noShowConvergedAt DateTime?
+
+  // VIDEO-1A — provider-room persistence. Deliberately NOT a new
+  // TutoringSession model: Session_ already IS the 1:1-with-Booking session-
+  // lifecycle entity a video room belongs to (see the VIDEO-0 architecture
+  // report). All three fields are nullable together — null until the
+  // provisioning sweep (src/services/videoSession.ts) creates the room at
+  // Booking.startAt - 15min, matching CHECK_IN_WINDOW_MINUTES_BEFORE_START.
+  // providerRoomId is an internal reference only — NEVER an authorization
+  // mechanism on its own (see videoJoinAuthorization.ts); knowing it grants
+  // nothing without a server-issued, participant-scoped token. Deliberately
+  // does NOT repurpose the pre-existing onlineMeetingUrl field below, which
+  // is the wrong shape for this (a raw client-facing URL would itself become
+  // a bearer credential) and stays unused/legacy.
+  videoProvider  VideoProvider?
+  providerRoomId String?        @unique
+  roomCreatedAt  DateTime?
 
   booking          Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   attendanceEvents SessionAttendanceEvent[]
