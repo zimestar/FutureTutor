@@ -323,7 +323,8 @@
     },
     "notFound": {
       "title": "Page introuvable",
-      "description": "La page que vous cherchez n'existe pas ou a été déplacée."
+      "description": "La page que vous cherchez n'existe pas ou a été déplacée.",
+      "findTutorCta": "Trouver un tuteur"
     }
   },
   "findTutorsPage": {
