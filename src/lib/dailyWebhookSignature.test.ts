@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createHmac } from "crypto";
 import {
   verifyDailyWebhookSignature,
+  isBareReachabilityProbe,
   DailyWebhookSecretMissingError,
   DailyWebhookSignatureInvalidError,
   DailyWebhookTimestampInvalidError,
@@ -136,5 +137,31 @@ describe("verifyDailyWebhookSignature", () => {
     expect(() =>
       verifyDailyWebhookSignature({ rawBody, signatureHeader: "anything", timestampHeader })
     ).toThrow(DailyWebhookSecretMissingError);
+  });
+});
+
+describe("isBareReachabilityProbe", () => {
+  it("classifies true only when BOTH headers are absent", () => {
+    expect(isBareReachabilityProbe(null, null)).toBe(true);
+  });
+
+  it("classifies false when only the signature header is present", () => {
+    expect(isBareReachabilityProbe("some-signature", null)).toBe(false);
+  });
+
+  it("classifies false when only the timestamp header is present", () => {
+    expect(isBareReachabilityProbe(null, "1700000000")).toBe(false);
+  });
+
+  it("classifies false when both headers are present, regardless of validity", () => {
+    expect(isBareReachabilityProbe("garbage-signature", "not-a-real-timestamp")).toBe(false);
+  });
+
+  it("classifies false for empty-string headers (distinct from absent/null)", () => {
+    // A header explicitly sent as an empty string is not the same as the
+    // header being entirely absent — Daily's real probe omits the headers
+    // outright, per the observed evidence; this function's contract is
+    // deliberately narrow (both strictly null), not "falsy".
+    expect(isBareReachabilityProbe("", "")).toBe(false);
   });
 });

@@ -25,6 +25,37 @@ export class DailyWebhookSecretMissingError extends Error {}
 export class DailyWebhookSignatureInvalidError extends Error {}
 export class DailyWebhookTimestampInvalidError extends Error {}
 
+/**
+ * VIDEO-1B — creation-time probe compatibility. Daily's own POST /webhooks
+ * endpoint synchronously sends an unsigned reachability check to the target
+ * URL before finalizing a webhook subscription (confirmed empirically
+ * against the real Daily API and independently corroborated via Railway's
+ * own HTTP proxy logs — Daily's infrastructure hit this receiver and
+ * received a 400, which Daily's docs confirm causes it to refuse to create
+ * the webhook: "if a non-200 status code is received... Daily will consider
+ * the endpoint faulty"). A receiver that fails closed on every unsigned
+ * request can therefore never pass Daily's own setup-time health check.
+ *
+ * This function classifies EXACTLY the "no signature envelope presented at
+ * all" shape (both headers absent) as a bare liveness probe — nothing else.
+ * It does not inspect the body, the User-Agent, or the source IP (VIDEO-1B
+ * §3 — those are all attacker-controllable and never used for this
+ * decision). A request presenting only one of the two headers, or invalid/
+ * stale values for either, is NOT this case — see verifyDailyWebhookSignature
+ * below, which continues to reject those the same as before this change.
+ *
+ * The caller (the route handler) is responsible for the actual security
+ * invariant: this function only classifies; it performs no I/O and cannot
+ * itself cause any mutation. A request classified true here must be
+ * answered with a bare 200 and MUST NOT reach processDailyWebhookEvent,
+ * any DB read/write, or any provider call — enforced by the route handler
+ * returning immediately on this classification, before parsing the body as
+ * an event or importing anything from dailyWebhooks.ts.
+ */
+export function isBareReachabilityProbe(signatureHeader: string | null, timestampHeader: string | null): boolean {
+  return signatureHeader === null && timestampHeader === null;
+}
+
 function getDailyWebhookSecret(): string {
   const secret = process.env.DAILY_WEBHOOK_SECRET;
   if (!secret) throw new DailyWebhookSecretMissingError("DAILY_WEBHOOK_SECRET is not configured");
