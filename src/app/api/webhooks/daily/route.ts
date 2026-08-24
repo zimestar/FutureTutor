@@ -36,11 +36,48 @@ import {
  * else (a genuinely seconds-shaped timestamp, whether validly signed,
  * stale, or forged) falls through unchanged to full verification below.
  */
+/**
+ * TEMPORARY — VIDEO-1B route-level diagnostic. Real Student/Tutor joins were
+ * proven to produce real, correctly-signed Daily webhook deliveries (200
+ * responses, confirmed via Railway HTTP logs), yet processDailyWebhookEvent
+ * was never reached (no correlation-diagnostic output, no AuditLog entry) —
+ * the only known path that returns 200 without ever calling it is
+ * isLivenessProbe(...) === true. This logs a single atomic line, BEFORE the
+ * branch below, capturing only header presence + the liveness classifier's
+ * own boolean result + a coarse timestamp shape label — never a raw header
+ * value, never the body, never any payload/room/user_id/token/secret. To be
+ * removed once root cause is confirmed.
+ */
+type DiagnosticTimestampShape = "seconds" | "milliseconds" | "other" | "unknown";
+
+const DIAGNOSTIC_PLAUSIBLE_SECONDS_MIN = 946684800; // 2000-01-01T00:00:00Z
+const DIAGNOSTIC_PLAUSIBLE_SECONDS_MAX = 4102444800; // 2100-01-01T00:00:00Z
+
+function classifyDiagnosticTimestampShape(timestampHeader: string | null): DiagnosticTimestampShape {
+  if (timestampHeader === null || timestampHeader.length === 0) return "unknown";
+  const value = Number(timestampHeader);
+  if (!Number.isFinite(value) || !Number.isInteger(value)) return "other";
+  if (value >= DIAGNOSTIC_PLAUSIBLE_SECONDS_MIN && value <= DIAGNOSTIC_PLAUSIBLE_SECONDS_MAX) return "seconds";
+  if (value >= DIAGNOSTIC_PLAUSIBLE_SECONDS_MIN * 1000 && value <= DIAGNOSTIC_PLAUSIBLE_SECONDS_MAX * 1000) return "milliseconds";
+  return "other";
+}
+
 export async function POST(request: Request) {
   const signatureHeader = request.headers.get("x-webhook-signature");
   const timestampHeader = request.headers.get("x-webhook-timestamp");
 
-  if (isLivenessProbe(signatureHeader, timestampHeader)) {
+  const livenessProbeResult = isLivenessProbe(signatureHeader, timestampHeader);
+  console.log(
+    "VIDEO-1B ROUTE DIAGNOSTIC " +
+      JSON.stringify({
+        hasSignatureHeader: signatureHeader !== null,
+        hasTimestampHeader: timestampHeader !== null,
+        livenessProbe: livenessProbeResult,
+        timestampShape: classifyDiagnosticTimestampShape(timestampHeader),
+      })
+  );
+
+  if (livenessProbeResult) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 

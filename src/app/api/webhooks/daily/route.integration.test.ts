@@ -436,3 +436,82 @@ describe("POST /api/webhooks/daily — final liveness-probe compatibility classi
     expect(await responseConfigured.json()).toEqual({ received: true });
   });
 });
+
+// TEMPORARY — VIDEO-1B route-level diagnostic coverage. Proves exactly one
+// atomic "VIDEO-1B ROUTE DIAGNOSTIC" line is emitted per request, its
+// livenessProbe field matches the route's own classification decision (never
+// a separate/divergent computation), no raw header value or body ever
+// appears in the logged line, and existing route behavior (status codes,
+// response bodies) is unchanged. Remove this block along with the diagnostic
+// itself once root cause is confirmed.
+describe("TEMPORARY VIDEO-1B route liveness diagnostic logging", () => {
+  function diagnosticLines(logSpy: { mock: { calls: unknown[][] } }): unknown[] {
+    return logSpy.mock.calls
+      .filter((c: unknown[]) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))
+      .map((c: unknown[]) => JSON.parse((c[0] as string).replace("VIDEO-1B ROUTE DIAGNOSTIC ", "")));
+  }
+
+  it("no headers at all: one diagnostic line, livenessProbe=true, timestampShape=unknown, behavior unchanged (200)", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: null }));
+
+    expect(response.status).toBe(200);
+    const lines = diagnosticLines(logSpy);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toEqual({ hasSignatureHeader: false, hasTimestampHeader: false, livenessProbe: true, timestampShape: "unknown" });
+    logSpy.mockRestore();
+  });
+
+  it("milliseconds-shaped probe: one diagnostic line, livenessProbe=true, timestampShape=milliseconds, behavior unchanged (200)", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const timestampHeader = String(Date.now());
+    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader }));
+
+    expect(response.status).toBe(200);
+    const lines = diagnosticLines(logSpy);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, livenessProbe: true, timestampShape: "milliseconds" });
+    const rawLine = logSpy.mock.calls.find((c) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))?.[0] as string;
+    expect(rawLine).not.toContain(timestampHeader); // raw timestamp value never logged
+    expect(rawLine).not.toContain("some-signature"); // raw signature value never logged
+    logSpy.mockRestore();
+  });
+
+  it("current seconds timestamp + VALID signature (a real signed event): one diagnostic line, livenessProbe=false, timestampShape=seconds, normal processing unaffected", async () => {
+    const { session, tutorUser } = await setupConfirmedBookingWithRoom();
+    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
+    const timestampHeader = String(Math.floor(Date.now() / 1000));
+    const signatureHeader = sign(timestampHeader, body);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true, handled: true });
+    const lines = diagnosticLines(logSpy);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, livenessProbe: false, timestampShape: "seconds" });
+    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+    expect(events).toHaveLength(1); // real processing still happened, diagnostic didn't interfere
+    logSpy.mockRestore();
+  });
+
+  it("diagnostic line contains only the four allowed fields — no room/user_id/body/token/secret ever appears", async () => {
+    const { tutorUser } = await setupConfirmedBookingWithRoom();
+    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
+    const timestampHeader = String(Math.floor(Date.now() / 1000));
+    const signatureHeader = sign(timestampHeader, body);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+
+    const lines = diagnosticLines(logSpy) as Array<Record<string, unknown>>;
+    expect(Object.keys(lines[0]).sort()).toEqual(["hasSignatureHeader", "hasTimestampHeader", "livenessProbe", "timestampShape"].sort());
+    const rawLine = logSpy.mock.calls.find((c) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))?.[0] as string;
+    expect(rawLine).not.toContain(REAL_ROOM_NAME);
+    expect(rawLine).not.toContain(tutorUser.id);
+    expect(rawLine).not.toContain(TEST_SECRET_BASE64);
+    expect(rawLine).not.toContain(signatureHeader);
+    logSpy.mockRestore();
+  });
+});
