@@ -19,7 +19,19 @@ import type { StripeConnectStatus } from "@/generated/prisma/enums";
  */
 export function deriveTutorStripeConnectStatus(account: Stripe.Account): StripeConnectStatus {
   const requirements = account.requirements;
-  if (requirements?.disabled_reason) return "DISABLED";
+  // A freshly-created (or still-incomplete) Express account normally has
+  // requirements.disabled_reason populated (typically
+  // "requirements.past_due") purely because onboarding hasn't been
+  // completed yet — Stripe sets this on essentially every not-yet-
+  // submitted account, not only ones that have genuinely been restricted
+  // after being active. Trusting it unconditionally here misclassified a
+  // brand-new account as DISABLED, which the payouts page treats exactly
+  // like ACTIVE (no "continue setup" action shown) — permanently hiding
+  // the tutor's only way back into onboarding. disabled_reason is only a
+  // meaningful DISABLED signal once the tutor has actually submitted their
+  // details; before that, an outstanding-requirements account falls
+  // through to the ordinary PENDING/RESTRICTED handling below.
+  if (requirements?.disabled_reason && account.details_submitted) return "DISABLED";
 
   const transfersActive = account.capabilities?.transfers === "active";
   if (transfersActive && account.payouts_enabled) return "ACTIVE";
