@@ -46,4 +46,37 @@ describe("Tutor photo surface coverage", () => {
     "src/app/[locale]/admin/tutors/[id]/page.tsx",
     "src/components/dashboard/DashboardShell.tsx",
   ])("renders the shared initials-safe Avatar on %s", (file) => expect(readFileSync(file, "utf8")).toContain("<Avatar"));
+  it.each([
+    "src/app/[locale]/tutor/dashboard/page.tsx",
+    "src/app/[locale]/tutor/bookings/page.tsx",
+    "src/app/[locale]/tutor/payouts/page.tsx",
+    "src/app/[locale]/tutor/profile/page.tsx",
+  ])("threads the authenticated Tutor's photo into the DashboardShell on %s", (file) => {
+    const source = readFileSync(file, "utf8");
+    expect(source).toContain("userImage=");
+    expect(source).toMatch(/image:\s*true/);
+  });
+});
+
+describe("Admin navigation translation keys", () => {
+  const referencedKeys = ["students", "sessions", "users"];
+
+  it.each(["messages/en.json", "messages/fr.json"])(
+    "defines every dashboard.nav key adminNav.ts references, in %s",
+    (file) => {
+      const catalog = JSON.parse(readFileSync(file, "utf8"));
+      for (const key of referencedKeys) {
+        expect(catalog.dashboard.nav).toHaveProperty(key);
+        expect(typeof catalog.dashboard.nav[key]).toBe("string");
+        expect(catalog.dashboard.nav[key].length).toBeGreaterThan(0);
+      }
+    }
+  );
+});
+
+describe("Admin Users row layout", () => {
+  it("lets the user row shrink so name/email truncation can take effect", () => {
+    const source = readFileSync("src/app/[locale]/admin/users/page.tsx", "utf8");
+    expect(source).toMatch(/className="flex min-w-0 items-center gap-4/);
+  });
 });

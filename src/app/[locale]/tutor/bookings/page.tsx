@@ -37,7 +37,10 @@ export default async function TutorBookingsPage({
   const tPayouts = await getTranslations({ locale, namespace: "tutorPayouts" });
   const tSession = await getTranslations({ locale, namespace: "sessionExperience" });
 
-  const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
+  const tutorProfile = await db.tutorProfile.findUnique({
+    where: { userId: user.id },
+    include: { user: { select: { image: true } } },
+  });
 
   const bookings = tutorProfile
     ? await db.booking.findMany({
@@ -63,7 +66,7 @@ export default async function TutorBookingsPage({
   ];
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""} userImage={tutorProfile?.user.image}>
       <PageHeader
         title={t("title")}
         description={t("description")}

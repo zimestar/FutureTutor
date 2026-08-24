@@ -38,16 +38,17 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
 
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true, applicationStatus: true },
+    select: { id: true, applicationStatus: true, user: { select: { image: true } } },
   });
   const status = tutorProfile?.applicationStatus ?? "DRAFT";
+  const userImage = tutorProfile?.user.image;
 
   if (status !== "APPROVED") {
     const experience = getTutorExperience(status);
     const stateKey = `experience.states.${status}` as const;
 
     return (
-      <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""}>
+      <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""} userImage={userImage}>
         <PageHeader
           eyebrow={t("experience.modeApproval")}
           title={t(`${stateKey}.title`)}
@@ -139,7 +140,7 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
     : null;
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""}>
+    <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""} userImage={userImage}>
       <PageHeader
         eyebrow={t("experience.modeTutoring")}
         title={t("approved.title", { name: user.name?.split(" ")[0] ?? "" })}

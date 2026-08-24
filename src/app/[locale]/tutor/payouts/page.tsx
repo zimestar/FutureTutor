@@ -45,13 +45,19 @@ export default async function TutorPayoutsPage({
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
 
-  let tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
+  let tutorProfile = await db.tutorProfile.findUnique({
+    where: { userId: user.id },
+    include: { user: { select: { image: true } } },
+  });
 
   // Returning from Stripe onboarding — re-sync status from Stripe before
   // rendering, rather than waiting for the next account.updated webhook.
   if (tutorProfile?.stripeConnectAccountId && onboarding === "return" && paymentsUseStripe()) {
     await syncTutorConnectStatusFromStripe(tutorProfile.id).catch(() => {});
-    tutorProfile = await db.tutorProfile.findUnique({ where: { userId: user.id } });
+    tutorProfile = await db.tutorProfile.findUnique({
+      where: { userId: user.id },
+      include: { user: { select: { image: true } } },
+    });
   }
 
   const [earnings, transfers] = tutorProfile
@@ -75,7 +81,7 @@ export default async function TutorPayoutsPage({
   const eligibilityDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""}>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile?.applicationStatus ?? "DRAFT")} userName={user.name ?? ""} userImage={tutorProfile?.user.image}>
       <PageHeader
         title={t("title")}
         description={t("description")}
