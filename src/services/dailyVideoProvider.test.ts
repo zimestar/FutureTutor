@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const dailyApiRequest = vi.fn();
 const dailyApiGetRoom = vi.fn();
+const dailyApiGetRoomStrict = vi.fn();
 const dailyApiEjectParticipants = vi.fn();
 const dailyApiDeleteRoom = vi.fn();
 
@@ -19,6 +20,7 @@ vi.mock("@/lib/dailyClient", async () => {
     ...actual,
     dailyApiRequest: (...args: unknown[]) => dailyApiRequest(...args),
     dailyApiGetRoom: (...args: unknown[]) => dailyApiGetRoom(...args),
+    dailyApiGetRoomStrict: (...args: unknown[]) => dailyApiGetRoomStrict(...args),
     dailyApiEjectParticipants: (...args: unknown[]) => dailyApiEjectParticipants(...args),
     dailyApiDeleteRoom: (...args: unknown[]) => dailyApiDeleteRoom(...args),
   };
@@ -31,6 +33,7 @@ import { VideoProviderUnavailableError } from "./videoProvider";
 beforeEach(() => {
   dailyApiRequest.mockReset();
   dailyApiGetRoom.mockReset();
+  dailyApiGetRoomStrict.mockReset();
   dailyApiEjectParticipants.mockReset();
   dailyApiDeleteRoom.mockReset();
 });
@@ -135,6 +138,28 @@ describe("createRoom — check-then-create reuse", () => {
     dailyApiRequest.mockRejectedValue(new Error("network blip"));
 
     await expect(provider.createRoom(roomInput)).rejects.toThrow(VideoProviderUnavailableError);
+  });
+});
+
+describe("roomExists — stale-reference fix", () => {
+  it("returns true when Daily confirms the room exists", async () => {
+    dailyApiGetRoomStrict.mockResolvedValue({ outcome: "found", room: { id: "daily-id", name: "ft-someroom0000000000000" } });
+    await expect(provider.roomExists("ft-someroom0000000000000")).resolves.toBe(true);
+  });
+
+  it("returns false ONLY for an authoritative not_found", async () => {
+    dailyApiGetRoomStrict.mockResolvedValue({ outcome: "not_found" });
+    await expect(provider.roomExists("ft-someroom0000000000000")).resolves.toBe(false);
+  });
+
+  it("throws VideoProviderUnavailableError for an unknown outcome (5xx) — never returns false", async () => {
+    dailyApiGetRoomStrict.mockResolvedValue({ outcome: "unknown", error: new DailyApiError("server error", 500) });
+    await expect(provider.roomExists("ft-someroom0000000000000")).rejects.toThrow(VideoProviderUnavailableError);
+  });
+
+  it("throws VideoProviderUnavailableError for an unknown outcome (network failure) — never returns false", async () => {
+    dailyApiGetRoomStrict.mockResolvedValue({ outcome: "unknown", error: new DailyApiError("network error", 0) });
+    await expect(provider.roomExists("ft-someroom0000000000000")).rejects.toThrow(VideoProviderUnavailableError);
   });
 });
 

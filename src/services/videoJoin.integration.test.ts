@@ -261,6 +261,9 @@ function makeFakeProvider(): VideoProviderAdapter & { __tokenCalls: Array<{ role
     async createRoom() {
       return { providerRoomId: `ft-fake-room-${nextId++}` };
     },
+    async roomExists() {
+      return true;
+    },
     async createParticipantToken(input) {
       tokenCalls.push({ role: input.role, participantExternalId: input.participantExternalId });
       return { token: `fake-token-${randomUUID()}`, expiresAt: input.expiresAt };

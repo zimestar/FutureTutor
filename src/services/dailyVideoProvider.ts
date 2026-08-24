@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "crypto";
-import { dailyApiRequest, dailyApiGetRoom, dailyApiEjectParticipants, dailyApiDeleteRoom, DailyApiError } from "@/lib/dailyClient";
+import { dailyApiRequest, dailyApiGetRoom, dailyApiGetRoomStrict, dailyApiEjectParticipants, dailyApiDeleteRoom, DailyApiError } from "@/lib/dailyClient";
 import { VideoProviderUnavailableError } from "@/services/videoProvider";
 import type {
   VideoProviderAdapter,
@@ -105,6 +105,20 @@ export function createDailyVideoProvider(): VideoProviderAdapter {
         }
         throw new VideoProviderUnavailableError("Daily room creation failed: unknown error");
       }
+    },
+
+    /**
+     * VIDEO-1B stale-reference fix — see VideoProviderAdapter.roomExists's
+     * doc comment for the required contract. dailyApiGetRoomStrict (unlike
+     * dailyApiGetRoom, used by createRoom's check-then-create reuse above)
+     * preserves the found/not_found/unknown distinction all the way here,
+     * which is exactly what this method needs to satisfy that contract.
+     */
+    async roomExists(providerRoomId: string): Promise<boolean> {
+      const result = await dailyApiGetRoomStrict(providerRoomId);
+      if (result.outcome === "found") return true;
+      if (result.outcome === "not_found") return false;
+      throw new VideoProviderUnavailableError(`Daily room existence check failed (status ${result.error.status})`);
     },
 
     async createParticipantToken(input: CreateParticipantTokenInput): Promise<CreateParticipantTokenResult> {

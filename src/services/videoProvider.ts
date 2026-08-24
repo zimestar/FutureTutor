@@ -79,6 +79,17 @@ export interface RevokeRoomAccessInput {
 export interface VideoProviderAdapter {
   readonly name: VideoProviderName;
   createRoom(input: CreateRoomInput): Promise<CreateRoomResult>;
+  /** VIDEO-1B stale-reference fix — confirms whether a previously-recorded
+   * providerRoomId still exists at the provider. Returns `false` ONLY for an
+   * authoritative "not found" (the provider positively confirms the room is
+   * gone). Any other failure (network error, timeout, 5xx, unexpected
+   * response) MUST throw VideoProviderUnavailableError rather than return
+   * false — an ambiguous failure is never treated as "the room is gone,"
+   * since doing so could abandon/re-provision a room that is actually still
+   * perfectly valid, just temporarily unreachable. Used by
+   * ensureVideoRoomForSession (videoSession.ts) before trusting an existing
+   * Session_.providerRoomId. */
+  roomExists(providerRoomId: string): Promise<boolean>;
   createParticipantToken(input: CreateParticipantTokenInput): Promise<CreateParticipantTokenResult>;
   /** VIDEO-1B — best-effort access revocation for a cancelled booking.
    * Never coupled to payment/refund success by any caller (see

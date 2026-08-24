@@ -5,6 +5,7 @@ import {
   dailyApiCreateWebhook,
   dailyApiEjectParticipants,
   dailyApiDeleteRoom,
+  dailyApiGetRoomStrict,
   DailyApiError,
   DailyApiKeyMissingError,
 } from "./dailyClient";
@@ -96,6 +97,34 @@ describe("dailyApiEjectParticipants", () => {
   it("throws DailyApiError on failure", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: "bad request" }, false, 400));
     await expect(dailyApiEjectParticipants("ft-room-1", ["user-a"])).rejects.toThrow(DailyApiError);
+  });
+});
+
+describe("dailyApiGetRoomStrict", () => {
+  it("returns found for a 200 response", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: "daily-id-1", name: "ft-room-1" }));
+    const result = await dailyApiGetRoomStrict("ft-room-1");
+    expect(result).toEqual({ outcome: "found", room: { id: "daily-id-1", name: "ft-room-1" } });
+  });
+
+  it("returns not_found for an authoritative 404 — distinct from any other failure", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: "not-found" }, false, 404));
+    const result = await dailyApiGetRoomStrict("ft-room-1");
+    expect(result).toEqual({ outcome: "not_found" });
+  });
+
+  it("returns unknown (never not_found) for a 500", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: "server error" }, false, 500));
+    const result = await dailyApiGetRoomStrict("ft-room-1");
+    expect(result.outcome).toBe("unknown");
+    if (result.outcome === "unknown") expect(result.error).toBeInstanceOf(DailyApiError);
+  });
+
+  it("returns unknown (never not_found) for a network error before any response", async () => {
+    fetchMock.mockRejectedValue(new TypeError("network unreachable"));
+    const result = await dailyApiGetRoomStrict("ft-room-1");
+    expect(result.outcome).toBe("unknown");
+    if (result.outcome === "unknown") expect(result.error).toBeInstanceOf(DailyApiError);
   });
 });
 

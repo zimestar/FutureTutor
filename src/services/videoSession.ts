@@ -89,6 +89,14 @@ async function loadSessionForProvisioning(sessionId: string): Promise<SessionFor
  * earlier one) or null if provisioning was skipped because a concurrent
  * attempt currently holds the claim (the caller should simply try again
  * later — this is not an error).
+ *
+ * VIDEO-1B stale-reference fix — an existing, non-placeholder
+ * providerRoomId is no longer trusted blindly: the provider is asked to
+ * confirm it still exists before this function short-circuits. An
+ * authoritative not-found reclaims the row and re-enters Step A/B/C exactly
+ * as a first-time provisioning attempt would; any ambiguous provider
+ * failure propagates as VideoProviderUnavailableError, leaving the existing
+ * reference untouched (see provider.roomExists's own doc comment).
  */
 export async function ensureVideoRoomForSession(
   sessionId: string,
@@ -100,7 +108,42 @@ export async function ensureVideoRoomForSession(
   if (!session) throw new SessionNotFoundForVideoError();
 
   if (session.providerRoomId && !isPlaceholder(session.providerRoomId)) {
-    return session.providerRoomId; // already provisioned — idempotent short-circuit
+    const stillExists = await provider.roomExists(session.providerRoomId);
+    if (stillExists) {
+      return session.providerRoomId; // still provisioned — idempotent short-circuit
+    }
+    // Authoritative not-found — a stale provider reference (the room was
+    // removed/expired provider-side after FutureTutor last recorded it).
+    // provider.roomExists throws VideoProviderUnavailableError for any
+    // non-authoritative failure (network/5xx/timeout) — that exception
+    // propagates out of THIS function untouched, before any DB write below,
+    // so a transient provider outage can never clear a possibly-still-valid
+    // providerRoomId or trigger an unnecessary re-provision.
+    //
+    // Reclaim via compare-and-swap on the exact stale value — mirrors the
+    // stale-placeholder recovery below, so a second concurrent detector
+    // can't also "win" this reclaim. Only the winner falls through into the
+    // SAME claim/create/converge path used for first-time provisioning
+    // (providerRoomId is now null in the DB); the loser correctly no-ops
+    // (returns null — try again later), exactly like every other race this
+    // function already guards.
+    const reclaimStaleRoom = await db.session_.updateMany({
+      where: { id: sessionId, providerRoomId: session.providerRoomId },
+      data: { providerRoomId: null },
+    });
+    if (reclaimStaleRoom.count === 0) {
+      // Someone else already reclaimed/re-provisioned this stale reference.
+      return null;
+    }
+    await writeAuditLog({
+      actorUserId: null,
+      action: "video_session.stale_provider_room_reclaimed",
+      entityType: "Session_",
+      entityId: sessionId,
+      metadata: { staleProviderRoomId: session.providerRoomId, provider: provider.name },
+    });
+    // Falls through to the claim step below, exactly like first-time
+    // provisioning — providerRoomId is now null in the DB.
   }
 
   if (session.providerRoomId && isPlaceholder(session.providerRoomId)) {

@@ -243,6 +243,9 @@ async function setupConfirmedBookingWithRoom() {
     async createRoom() {
       return { providerRoomId: `ft-fake-room-${randomUUID().slice(0, 8)}` };
     },
+    async roomExists() {
+      return true;
+    },
     async createParticipantToken() {
       return { token: "fake-token", expiresAt: new Date() };
     },

@@ -256,6 +256,9 @@ function makeFakeProvider(opts: { onCreateRoom?: () => { providerRoomId: string 
       if (opts.onCreateRoom) return opts.onCreateRoom();
       return { providerRoomId: `ft-fake-room-${nextId++}` };
     },
+    async roomExists() {
+      return true;
+    },
     async createParticipantToken() {
       return { token: "fake-token", expiresAt: new Date() };
     },

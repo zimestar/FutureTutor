@@ -108,6 +108,38 @@ export async function dailyApiGetRoom(roomName: string): Promise<{ id: string; n
   return (await response.json()) as { id: string; name: string };
 }
 
+export type DailyRoomLookupResult =
+  | { outcome: "found"; room: { id: string; name: string } }
+  | { outcome: "not_found" }
+  | { outcome: "unknown"; error: DailyApiError };
+
+/**
+ * VIDEO-1B — strict room lookup, unlike dailyApiGetRoom above: that function
+ * deliberately collapses EVERY failure (network error, 404, 500, timeout) to
+ * a single `null`, which is safe for its own check-then-create caller (an
+ * ambiguous failure there only costs one extra, self-correcting create
+ * attempt). This function exists for a caller that instead needs to decide
+ * whether a PREVIOUSLY-PROVISIONED room reference is stale — for that
+ * decision, an ambiguous failure must never be treated as "the room is
+ * gone," or a transient outage could cause a perfectly valid room to be
+ * abandoned/re-provisioned. Only an authoritative HTTP 404 is reported as
+ * `not_found`; every other failure (network error before any response, a
+ * non-404 non-2xx status) is reported as `unknown`, carrying the underlying
+ * DailyApiError for the caller to surface rather than silently swallow.
+ */
+export async function dailyApiGetRoomStrict(roomName: string): Promise<DailyRoomLookupResult> {
+  let response: Response;
+  try {
+    response = await rawDailyFetch(`/rooms/${encodeURIComponent(roomName)}`, { method: "GET" });
+  } catch (error) {
+    return { outcome: "unknown", error: error instanceof DailyApiError ? error : new DailyApiError("Daily room lookup failed before receiving a response", 0) };
+  }
+  if (response.status === 404) return { outcome: "not_found" };
+  if (!response.ok) return { outcome: "unknown", error: await sanitizedErrorFromResponse(`/rooms/${roomName}`, response) };
+  const room = (await response.json()) as { id: string; name: string };
+  return { outcome: "found", room };
+}
+
 /**
  * VIDEO-1B — best-effort participant removal, used by revokeRoomAccess
  * (dailyVideoProvider.ts) before deleting the room. POSTs explicit

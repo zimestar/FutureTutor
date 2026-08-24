@@ -213,10 +213,14 @@ async function setupConfirmedBooking(overrides: { startAt?: Date } = {}) {
   return { tutor, student, booking, session };
 }
 
-function makeFakeProvider(opts: { onCreateRoom?: () => { providerRoomId: string } | "throw" } = {}): VideoProviderAdapter & {
-  __createRoomCalls: number;
-} {
+function makeFakeProvider(
+  opts: {
+    onCreateRoom?: () => { providerRoomId: string } | "throw";
+    onRoomExists?: (providerRoomId: string) => boolean | "throw";
+  } = {}
+): VideoProviderAdapter & { __createRoomCalls: number; __roomExistsCalls: number } {
   let calls = 0;
+  let existsCalls = 0;
   let nextId = 1;
   return {
     name: "DAILY",
@@ -229,12 +233,26 @@ function makeFakeProvider(opts: { onCreateRoom?: () => { providerRoomId: string 
       }
       return { providerRoomId: `ft-fake-room-${nextId++}` };
     },
+    async roomExists(providerRoomId: string) {
+      existsCalls++;
+      if (opts.onRoomExists) {
+        const result = opts.onRoomExists(providerRoomId);
+        if (result === "throw") {
+          throw new VideoProviderUnavailableError("simulated Daily room existence check failure");
+        }
+        return result;
+      }
+      return true; // default: any previously-recorded room is still valid
+    },
     async createParticipantToken() {
       return { token: "fake-token", expiresAt: new Date() };
     },
     async revokeRoomAccess() {},
     get __createRoomCalls() {
       return calls;
+    },
+    get __roomExistsCalls() {
+      return existsCalls;
     },
   };
 }
@@ -321,6 +339,106 @@ describe("ensureVideoRoomForSession", () => {
     expect(sessionAfter.status).toBe("SCHEDULED"); // provisioning a room is not attendance/completion
     const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
     expect(earning?.status).toBe("PENDING_ELIGIBLE"); // unchanged by video provisioning
+  });
+
+  describe("stale provider room detection", () => {
+    it("existing room still exists at the provider — reused, no re-provisioning", async () => {
+      const { session } = await setupConfirmedBooking();
+      const provider = makeFakeProvider();
+      await ensureVideoRoomForSession(session.id, provider); // first-time provisioning
+      expect(provider.__createRoomCalls).toBe(1);
+
+      const roomId = await ensureVideoRoomForSession(session.id, provider);
+
+      expect(roomId).toBe("ft-fake-room-1");
+      expect(provider.__roomExistsCalls).toBe(1);
+      expect(provider.__createRoomCalls).toBe(1); // still just the one, original create
+    });
+
+    it("existing room is authoritatively gone at the provider — reclaimed and re-provisioned", async () => {
+      const { session } = await setupConfirmedBooking();
+      await db.session_.update({ where: { id: session.id }, data: { videoProvider: "DAILY", providerRoomId: "ft-stale-dead-room", roomCreatedAt: new Date(0) } });
+      const provider = makeFakeProvider({ onRoomExists: () => false });
+
+      const roomId = await ensureVideoRoomForSession(session.id, provider);
+
+      expect(roomId).toBe("ft-fake-room-1");
+      expect(provider.__createRoomCalls).toBe(1);
+      const updated = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(updated.providerRoomId).toBe("ft-fake-room-1");
+      expect(updated.providerRoomId).not.toBe("ft-stale-dead-room");
+      const audit = await db.auditLog.findFirst({
+        where: { entityId: session.id, action: "video_session.stale_provider_room_reclaimed" },
+      });
+      expect(audit).not.toBeNull();
+      expect((audit?.metadata as { staleProviderRoomId?: string } | null)?.staleProviderRoomId).toBe("ft-stale-dead-room");
+    });
+
+    it("stale reference re-provisioning converges providerRoomId/roomCreatedAt and leaves everything else untouched (no attendance, Session_/Booking status, financial rows)", async () => {
+      const { session, booking } = await setupConfirmedBooking();
+      const originalRoomCreatedAt = new Date(0);
+      await db.session_.update({ where: { id: session.id }, data: { videoProvider: "DAILY", providerRoomId: "ft-stale-dead-room", roomCreatedAt: originalRoomCreatedAt } });
+      const provider = makeFakeProvider({ onRoomExists: () => false });
+
+      await ensureVideoRoomForSession(session.id, provider);
+
+      const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(sessionAfter.providerRoomId).toBe("ft-fake-room-1");
+      expect(sessionAfter.roomCreatedAt?.getTime()).toBeGreaterThan(originalRoomCreatedAt.getTime());
+      expect(sessionAfter.status).toBe("SCHEDULED");
+
+      const bookingAfter = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+      expect(bookingAfter.status).toBe("CONFIRMED");
+
+      const attendanceCount = await db.sessionAttendanceEvent.count({ where: { sessionId: session.id } });
+      expect(attendanceCount).toBe(0);
+
+      const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
+      expect(earning?.status).toBe("PENDING_ELIGIBLE");
+    });
+
+    it("re-provisioning reuses whatever the provider's own createRoom returns, even if it's the same deterministic name recreated concurrently", async () => {
+      const { session } = await setupConfirmedBooking();
+      await db.session_.update({ where: { id: session.id }, data: { videoProvider: "DAILY", providerRoomId: "ft-stale-dead-room" } });
+      // Simulates dailyVideoProvider.ts's own check-then-create discovering
+      // that a concurrent process already recreated the SAME deterministic
+      // room name — createRoom legitimately returns it without minting a
+      // new one.
+      const provider = makeFakeProvider({ onRoomExists: () => false, onCreateRoom: () => ({ providerRoomId: "ft-deterministic-recreated" }) });
+
+      const roomId = await ensureVideoRoomForSession(session.id, provider);
+
+      expect(roomId).toBe("ft-deterministic-recreated");
+      const updated = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(updated.providerRoomId).toBe("ft-deterministic-recreated");
+    });
+
+    it("provider existence-check failure (transient/unavailable) does NOT clear or re-provision — preserves the existing reference", async () => {
+      const { session } = await setupConfirmedBooking();
+      await db.session_.update({ where: { id: session.id }, data: { videoProvider: "DAILY", providerRoomId: "ft-maybe-still-there" } });
+      const provider = makeFakeProvider({ onRoomExists: () => "throw" });
+
+      await expect(ensureVideoRoomForSession(session.id, provider)).rejects.toThrow(VideoProviderUnavailableError);
+
+      expect(provider.__createRoomCalls).toBe(0);
+      const unchanged = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(unchanged.providerRoomId).toBe("ft-maybe-still-there"); // untouched — never cleared on an ambiguous failure
+    });
+
+    it("concurrent stale-reference recovery: only one worker re-provisions, producing exactly one logical room", async () => {
+      const { session } = await setupConfirmedBooking();
+      await db.session_.update({ where: { id: session.id }, data: { videoProvider: "DAILY", providerRoomId: "ft-stale-dead-room" } });
+      const provider = makeFakeProvider({ onRoomExists: () => false });
+
+      const results = await Promise.all(Array.from({ length: 5 }, () => ensureVideoRoomForSession(session.id, provider)));
+
+      expect(provider.__createRoomCalls).toBe(1); // exactly one real re-provision, never a duplicate
+      const nonNullResults = results.filter((r): r is string => r !== null);
+      expect(nonNullResults.length).toBeGreaterThan(0);
+      for (const roomId of nonNullResults) expect(roomId).toBe("ft-fake-room-1");
+      const updated = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(updated.providerRoomId).toBe("ft-fake-room-1");
+    });
   });
 
   describe("stale claim recovery", () => {
