@@ -38,12 +38,34 @@ import {
 export async function POST(request: Request) {
   const signatureHeader = request.headers.get("x-webhook-signature");
   const timestampHeader = request.headers.get("x-webhook-timestamp");
+  const rawBody = await request.text();
+
+  // VIDEO-1B — TEMPORARY diagnostic (to be removed once Daily's real
+  // creation-time probe shape is confirmed; see the probe-shape mission).
+  // Logs ONLY header presence booleans and the body's top-level "type"
+  // field, never a header value, the body itself, or any part of a
+  // payload. This is purely observational — it changes no status-code
+  // behavior and precedes the exact same classification/verification logic
+  // that already existed.
+  let diagnosticEventType: string | null = null;
+  try {
+    const parsed = JSON.parse(rawBody) as unknown;
+    if (typeof parsed === "object" && parsed !== null && "type" in parsed && typeof (parsed as { type: unknown }).type === "string") {
+      diagnosticEventType = (parsed as { type: string }).type;
+    }
+  } catch {
+    // Body did not parse as JSON — diagnosticEventType stays null. Never
+    // logged, never inspected further here.
+  }
+  console.log("VIDEO-1B DIAGNOSTIC", {
+    hasSignatureHeader: signatureHeader !== null,
+    hasTimestampHeader: timestampHeader !== null,
+    eventType: diagnosticEventType,
+  });
 
   if (isBareReachabilityProbe(signatureHeader, timestampHeader)) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
-
-  const rawBody = await request.text();
 
   try {
     verifyDailyWebhookSignature({ rawBody, signatureHeader, timestampHeader });

@@ -316,3 +316,61 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
     expect(sessionAfter.status).toBe("SCHEDULED"); // one-sided join — not IN_PROGRESS yet
   });
 });
+
+describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging", () => {
+  it("logs only hasSignatureHeader/hasTimestampHeader/eventType — never a header value or the body", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const sensitiveSignature = "definitely-a-secret-looking-signature-value";
+    const sensitiveTimestamp = "1700000000";
+    const sensitiveBody = JSON.stringify({
+      type: "participant.joined",
+      payload: { room: "some-secret-room-name", user_id: "some-secret-user-id", session_id: randomUUID() },
+    });
+
+    await POST(buildRequest({ body: sensitiveBody, signatureHeader: sensitiveSignature, timestampHeader: sensitiveTimestamp }));
+
+    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
+    expect(diagnosticCall).toBeDefined();
+    const loggedPayload = diagnosticCall?.[1];
+    expect(loggedPayload).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, eventType: "participant.joined" });
+
+    // Every logged call, across all arguments, must never contain the raw
+    // signature/timestamp values or any fragment of the sensitive body
+    // (room name, user id) — not just the one call we asserted the shape of.
+    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
+    expect(allLoggedText).not.toContain(sensitiveSignature);
+    expect(allLoggedText).not.toContain(sensitiveTimestamp);
+    expect(allLoggedText).not.toContain("some-secret-room-name");
+    expect(allLoggedText).not.toContain("some-secret-user-id");
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it("logs eventType: null for an unparseable body, without throwing or logging the raw body", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const garbageBody = "this is not json {{{";
+
+    const response = await POST(buildRequest({ body: garbageBody, signatureHeader: null, timestampHeader: null }));
+
+    expect(response.status).toBe(200); // still a bare probe by header shape — unaffected by body content
+    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
+    expect(diagnosticCall?.[1]).toEqual({ hasSignatureHeader: false, hasTimestampHeader: false, eventType: null });
+    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
+    expect(allLoggedText).not.toContain(garbageBody);
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it("business behavior (status codes and processing) is unchanged by the diagnostic — full classification matrix still holds", async () => {
+    const bareProbe = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: null }));
+    expect(bareProbe.status).toBe(200);
+
+    const partialHeaders = await POST(buildRequest({ body: "{}", signatureHeader: "x", timestampHeader: null }));
+    expect(partialHeaders.status).toBe(400);
+
+    const invalidSignature = await POST(
+      buildRequest({ body: "{}", signatureHeader: "invalid", timestampHeader: String(Math.floor(Date.now() / 1000)) })
+    );
+    expect(invalidSignature.status).toBe(400);
+  });
+});
