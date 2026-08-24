@@ -27,114 +27,77 @@ export class DailyWebhookTimestampInvalidError extends Error {}
 
 /**
  * VIDEO-1B — creation-time probe compatibility. Daily's own POST /webhooks
- * endpoint synchronously sends an unsigned reachability check to the target
- * URL before finalizing a webhook subscription (confirmed empirically
- * against the real Daily API and independently corroborated via Railway's
- * own HTTP proxy logs — Daily's infrastructure hit this receiver and
- * received a 400, which Daily's docs confirm causes it to refuse to create
- * the webhook: "if a non-200 status code is received... Daily will consider
- * the endpoint faulty"). A receiver that fails closed on every unsigned
- * request can therefore never pass Daily's own setup-time health check.
+ * endpoint synchronously sends a reachability check to the target URL
+ * before finalizing a webhook subscription, and treats any non-200
+ * response as a faulty endpoint (Daily's own docs: "if a non-200 status
+ * code is received... Daily will consider the endpoint faulty"). This was
+ * proven against the real Daily API and independently corroborated via
+ * Railway's own HTTP proxy logs across several real creation attempts.
  *
- * This function classifies EXACTLY the "no signature envelope presented at
- * all" shape (both headers absent) as a bare liveness probe — nothing else.
- * It does not inspect the body, the User-Agent, or the source IP (VIDEO-1B
- * §3 — those are all attacker-controllable and never used for this
- * decision). A request presenting only one of the two headers, or invalid/
- * stale values for either, is NOT this case — see verifyDailyWebhookSignature
- * below, which continues to reject those the same as before this change.
+ * The real probe's exact shape was captured directly (a single, atomic,
+ * unambiguous log line — see the VIDEO-1B probe-shape diagnostic mission
+ * for the full investigation): BOTH X-Webhook-Signature and
+ * X-Webhook-Timestamp headers ARE present, but the timestamp value is in
+ * Unix MILLISECONDS rather than the seconds this receiver's signing scheme
+ * (and Daily's own documented scheme for real signed events) expects — a
+ * value that, compared as seconds, is always ~1000x too large to ever
+ * fall inside any real replay-tolerance window. It cannot be a real signed
+ * event by construction: real events use seconds.
  *
- * The caller (the route handler) is responsible for the actual security
- * invariant: this function only classifies; it performs no I/O and cannot
- * itself cause any mutation. A request classified true here must be
- * answered with a bare 200 and MUST NOT reach processDailyWebhookEvent,
- * any DB read/write, or any provider call — enforced by the route handler
- * returning immediately on this classification, before parsing the body as
- * an event or importing anything from dailyWebhooks.ts.
+ * isLivenessProbe classifies EXACTLY two shapes as a safe liveness probe:
+ *   A. both headers absent entirely (no signature envelope at all), or
+ *   B. both headers present, AND the timestamp is non-empty, numeric, an
+ *      integer, structurally plausible as Unix milliseconds, and
+ *      structurally NOT plausible as Unix seconds.
+ * Every other shape (exactly one header, empty/non-numeric/fractional
+ * timestamp, numeric garbage matching neither range, or — critically — any
+ * plausible-SECONDS timestamp, whether validly signed, staled, or forged)
+ * returns false and falls through to full verifyDailyWebhookSignature
+ * verification unchanged. A plausible-seconds timestamp is NEVER
+ * classified as a liveness probe, even if invalid or stale — only
+ * verifyDailyWebhookSignature is allowed to decide that case, exactly as
+ * before this change.
+ *
+ * This function does not inspect the body, User-Agent, or source IP
+ * (VIDEO-1B §3 — all attacker-controllable, never used for this decision).
+ * It performs no I/O and cannot itself cause any mutation — it only
+ * classifies. Critically, a millisecond-shaped timestamp is NEVER
+ * normalized/divided and passed on for verification or processing: the
+ * caller (the route handler) must return a bare 200 immediately for any
+ * request this function classifies true, before reading the body, before
+ * verifyDailyWebhookSignature, before processDailyWebhookEvent, before any
+ * DB or provider call. An attacker who mimics this exact shape can obtain
+ * a 200 — that is accepted and intentional (Daily's own probe can't do
+ * better than mimic-able header/timestamp shape either) — but that 200
+ * grants no capability: it is a dead end, never a path to any state
+ * mutation, because DAILY_WEBHOOK_SECRET is never consulted and no event
+ * is ever parsed for a request that takes this path.
  */
-export function isBareReachabilityProbe(signatureHeader: string | null, timestampHeader: string | null): boolean {
-  return signatureHeader === null && timestampHeader === null;
-}
-
-/**
- * VIDEO-1B — TEMPORARY diagnostic-only classification of the
- * X-Webhook-Timestamp header's SHAPE, never its value. Every returned field
- * is a boolean, an enum, or null — no raw or parsed timestamp number is
- * ever included in the result, so a caller logging this object cannot leak
- * the actual value no matter what it prints. To be removed once Daily's
- * real creation-time probe's timestamp shape is fully understood (see the
- * probe-shape diagnostic mission).
- *
- * Plausible-seconds/milliseconds ranges are deliberately wide and
- * unremarkable (roughly year 2000 to year 2100) — wide enough to classify
- * any real, sane timestamp Daily could plausibly send, without being tuned
- * to any specific observed value.
- */
-export interface DiagnosticTimestampShape {
-  timestampPresent: boolean;
-  timestampNonEmpty: boolean;
-  timestampNumeric: boolean;
-  timestampInteger: boolean;
-  timestampUnitClassification: "seconds" | "milliseconds" | "other" | "unknown";
-  timestampWithinReplayTolerance: boolean | null;
-}
-
 const PLAUSIBLE_SECONDS_MIN = 946684800; // 2000-01-01T00:00:00Z
 const PLAUSIBLE_SECONDS_MAX = 4102444800; // 2100-01-01T00:00:00Z
 
-export function classifyDiagnosticTimestampShape(
-  timestampHeader: string | null,
-  now: Date = new Date()
-): DiagnosticTimestampShape {
-  const timestampPresent = timestampHeader !== null;
-  const timestampNonEmpty = timestampPresent && timestampHeader.length > 0;
+export function isLivenessProbe(signatureHeader: string | null, timestampHeader: string | null): boolean {
+  // Case A — no signature envelope at all.
+  if (signatureHeader === null && timestampHeader === null) return true;
 
-  if (!timestampNonEmpty) {
-    return {
-      timestampPresent,
-      timestampNonEmpty,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    };
-  }
+  // Anything else requires BOTH headers present to even be considered for
+  // Case B — a single missing header is never liveness, it's rejected by
+  // verifyDailyWebhookSignature exactly as before this change.
+  if (signatureHeader === null || timestampHeader === null) return false;
+  if (timestampHeader.length === 0) return false;
 
   const value = Number(timestampHeader);
-  const timestampNumeric = Number.isFinite(value);
-  if (!timestampNumeric) {
-    return {
-      timestampPresent,
-      timestampNonEmpty,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    };
-  }
+  if (!Number.isFinite(value)) return false;
+  if (!Number.isInteger(value)) return false;
 
-  const timestampInteger = Number.isInteger(value);
   const isPlausibleSeconds = value >= PLAUSIBLE_SECONDS_MIN && value <= PLAUSIBLE_SECONDS_MAX;
+  // A plausible-seconds value is NEVER liveness, even if it will go on to
+  // fail verification (stale/wrong signature) — only verifyDailyWebhookSignature
+  // may reject those; this function must not shortcut that decision.
+  if (isPlausibleSeconds) return false;
+
   const isPlausibleMilliseconds = value >= PLAUSIBLE_SECONDS_MIN * 1000 && value <= PLAUSIBLE_SECONDS_MAX * 1000;
-
-  let timestampUnitClassification: DiagnosticTimestampShape["timestampUnitClassification"] = "other";
-  if (isPlausibleSeconds) timestampUnitClassification = "seconds";
-  else if (isPlausibleMilliseconds) timestampUnitClassification = "milliseconds";
-
-  let timestampWithinReplayTolerance: boolean | null = null;
-  if (timestampUnitClassification === "seconds") {
-    const driftSeconds = Math.abs(now.getTime() / 1000 - value);
-    timestampWithinReplayTolerance = driftSeconds <= DAILY_WEBHOOK_REPLAY_TOLERANCE_SECONDS;
-  }
-
-  return {
-    timestampPresent,
-    timestampNonEmpty,
-    timestampNumeric,
-    timestampInteger,
-    timestampUnitClassification,
-    timestampWithinReplayTolerance,
-  };
+  return isPlausibleMilliseconds;
 }
 
 function getDailyWebhookSecret(): string {

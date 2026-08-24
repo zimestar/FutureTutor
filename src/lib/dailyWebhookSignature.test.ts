@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createHmac } from "crypto";
 import {
   verifyDailyWebhookSignature,
-  isBareReachabilityProbe,
-  classifyDiagnosticTimestampShape,
+  isLivenessProbe,
   DailyWebhookSecretMissingError,
   DailyWebhookSignatureInvalidError,
   DailyWebhookTimestampInvalidError,
@@ -141,121 +140,53 @@ describe("verifyDailyWebhookSignature", () => {
   });
 });
 
-describe("isBareReachabilityProbe", () => {
-  it("classifies true only when BOTH headers are absent", () => {
-    expect(isBareReachabilityProbe(null, null)).toBe(true);
-  });
-
-  it("classifies false when only the signature header is present", () => {
-    expect(isBareReachabilityProbe("some-signature", null)).toBe(false);
-  });
-
-  it("classifies false when only the timestamp header is present", () => {
-    expect(isBareReachabilityProbe(null, "1700000000")).toBe(false);
-  });
-
-  it("classifies false when both headers are present, regardless of validity", () => {
-    expect(isBareReachabilityProbe("garbage-signature", "not-a-real-timestamp")).toBe(false);
-  });
-
-  it("classifies false for empty-string headers (distinct from absent/null)", () => {
-    // A header explicitly sent as an empty string is not the same as the
-    // header being entirely absent — Daily's real probe omits the headers
-    // outright, per the observed evidence; this function's contract is
-    // deliberately narrow (both strictly null), not "falsy".
-    expect(isBareReachabilityProbe("", "")).toBe(false);
-  });
-});
-
-describe("classifyDiagnosticTimestampShape", () => {
+describe("isLivenessProbe", () => {
   const now = new Date("2026-08-24T12:00:00.000Z");
   const nowSeconds = Math.floor(now.getTime() / 1000);
+  const nowMilliseconds = now.getTime();
 
-  it("header absent", () => {
-    const result = classifyDiagnosticTimestampShape(null, now);
-    expect(result).toEqual({
-      timestampPresent: false,
-      timestampNonEmpty: false,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    });
+  it("Case A: both headers absent — true", () => {
+    expect(isLivenessProbe(null, null)).toBe(true);
   });
 
-  it("empty string", () => {
-    const result = classifyDiagnosticTimestampShape("", now);
-    expect(result).toEqual({
-      timestampPresent: true,
-      timestampNonEmpty: false,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    });
+  it("current plausible Unix milliseconds with both headers present — true (the real Daily probe's confirmed shape)", () => {
+    expect(isLivenessProbe("some-signature", String(nowMilliseconds))).toBe(true);
   });
 
-  it("non-numeric / malformed", () => {
-    const result = classifyDiagnosticTimestampShape("not-a-number", now);
-    expect(result).toEqual({
-      timestampPresent: true,
-      timestampNonEmpty: true,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    });
+  it("only the signature header present — false", () => {
+    expect(isLivenessProbe("some-signature", null)).toBe(false);
   });
 
-  it("numeric but not an integer", () => {
-    const result = classifyDiagnosticTimestampShape(String(nowSeconds + 0.5), now);
-    expect(result.timestampNumeric).toBe(true);
-    expect(result.timestampInteger).toBe(false);
+  it("only the timestamp header present — false", () => {
+    expect(isLivenessProbe(null, "1700000000")).toBe(false);
   });
 
-  it("plausible Unix seconds, current — within tolerance", () => {
-    const result = classifyDiagnosticTimestampShape(String(nowSeconds), now);
-    expect(result).toEqual({
-      timestampPresent: true,
-      timestampNonEmpty: true,
-      timestampNumeric: true,
-      timestampInteger: true,
-      timestampUnitClassification: "seconds",
-      timestampWithinReplayTolerance: true,
-    });
+  it("empty-string timestamp with signature present — false", () => {
+    expect(isLivenessProbe("some-signature", "")).toBe(false);
   });
 
-  it("plausible Unix seconds, stale — outside tolerance", () => {
+  it("non-numeric timestamp with signature present — false", () => {
+    expect(isLivenessProbe("some-signature", "not-a-real-timestamp")).toBe(false);
+  });
+
+  it("fractional numeric timestamp — false, even at millisecond magnitude", () => {
+    expect(isLivenessProbe("some-signature", String(nowMilliseconds + 0.5))).toBe(false);
+  });
+
+  it("numeric garbage matching neither the seconds nor milliseconds range — false", () => {
+    expect(isLivenessProbe("some-signature", "42")).toBe(false);
+  });
+
+  it("plausible Unix SECONDS timestamp — false, even though both headers are present (never shortcuts verifyDailyWebhookSignature's own decision)", () => {
+    expect(isLivenessProbe("some-signature", String(nowSeconds))).toBe(false);
+  });
+
+  it("a STALE plausible Unix seconds timestamp — still false (liveness classification never depends on staleness, only unit)", () => {
     const staleSeconds = nowSeconds - (DAILY_WEBHOOK_REPLAY_TOLERANCE_SECONDS + 60);
-    const result = classifyDiagnosticTimestampShape(String(staleSeconds), now);
-    expect(result.timestampUnitClassification).toBe("seconds");
-    expect(result.timestampWithinReplayTolerance).toBe(false);
+    expect(isLivenessProbe("some-signature", String(staleSeconds))).toBe(false);
   });
 
-  it("plausible Unix milliseconds (a common off-by-1000 mistake)", () => {
-    const nowMilliseconds = now.getTime();
-    const result = classifyDiagnosticTimestampShape(String(nowMilliseconds), now);
-    expect(result.timestampUnitClassification).toBe("milliseconds");
-    // Tolerance is only meaningfully evaluated for the "seconds" classification.
-    expect(result.timestampWithinReplayTolerance).toBeNull();
-  });
-
-  it("numeric but implausible as either seconds or milliseconds", () => {
-    const result = classifyDiagnosticTimestampShape("42", now);
-    expect(result.timestampNumeric).toBe(true);
-    expect(result.timestampUnitClassification).toBe("other");
-    expect(result.timestampWithinReplayTolerance).toBeNull();
-  });
-
-  it("the returned object never contains the raw or parsed timestamp value in any field", () => {
-    const rawValue = "1734000000";
-    const result = classifyDiagnosticTimestampShape(rawValue, now);
-    const serialized = JSON.stringify(result);
-    expect(serialized).not.toContain(rawValue);
-    // Every value in the result is a boolean, null, or one of the four
-    // fixed enum strings — never a number.
-    for (const value of Object.values(result)) {
-      expect(typeof value === "boolean" || value === null || typeof value === "string").toBe(true);
-    }
+  it("empty-string headers (distinct from absent/null) with no timestamp — false", () => {
+    expect(isLivenessProbe("", "")).toBe(false);
   });
 });

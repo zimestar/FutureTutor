@@ -230,8 +230,9 @@ function buildRequest(opts: { body: string; signatureHeader?: string | null; tim
   return new Request("https://staging.futuretutor.ca/api/webhooks/daily", { method: "POST", headers, body: opts.body });
 }
 
-describe("POST /api/webhooks/daily — probe compatibility classification", () => {
-  it("Case A — no signature headers at all: 200, zero DB mutation, even with a participant.joined-shaped body targeting a real room", async () => {
+describe("POST /api/webhooks/daily — final liveness-probe compatibility classification", () => {
+  // 1. no signature + no timestamp -> 200 no-op
+  it("1. no signature + no timestamp: 200, zero DB mutation, even with a participant.joined-shaped body targeting a real room", async () => {
     const { session, studentUser } = await setupConfirmedBookingWithRoom();
     const attackerBody = JSON.stringify({
       type: "participant.joined",
@@ -241,35 +242,96 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
     const response = await POST(buildRequest({ body: attackerBody, signatureHeader: null, timestampHeader: null }));
 
     expect(response.status).toBe(200);
+    const responseBody = await response.json();
+    expect(responseBody).toEqual({ received: true });
     const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
     expect(events).toHaveLength(0);
     const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
     expect(sessionAfter.status).toBe("SCHEDULED");
   });
 
-  it("Case A response body is minimal and non-sensitive", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: null }));
-    const body = await response.json();
-    expect(body).toEqual({ received: true });
+  // 2. both headers + plausible current Unix milliseconds -> 200 no-op
+  it("2. both headers present, plausible current Unix milliseconds: 200 no-op", async () => {
+    const response = await POST(
+      buildRequest({ body: "{}", signatureHeader: "some-signature-value", timestampHeader: String(Date.now()) })
+    );
+    expect(response.status).toBe(200);
+    const responseBody = await response.json();
+    expect(responseBody).toEqual({ received: true });
   });
 
-  it("Case B — signature header only (timestamp absent): 400, no processing", async () => {
+  // 3. both headers + plausible millisecond timestamp + participant.joined-shaped
+  //    malicious body targeting a REAL fixture -> 200, zero attendance/session/financial mutation
+  it("3. milliseconds probe with an attacker-shaped body targeting a REAL fixture: 200, zero attendance, zero Session_ mutation, zero financial mutation", async () => {
+    const { session, booking, tutorUser } = await setupConfirmedBookingWithRoom();
+    const maliciousBody = JSON.stringify({
+      type: "participant.joined",
+      payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() },
+    });
+
+    const response = await POST(
+      buildRequest({ body: maliciousBody, signatureHeader: "attacker-controlled-signature", timestampHeader: String(Date.now()) })
+    );
+
+    expect(response.status).toBe(200);
+    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+    expect(events).toHaveLength(0);
+    const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+    expect(sessionAfter.status).toBe("SCHEDULED");
+    const bookingAfter = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { payment: true } });
+    expect(bookingAfter.status).toBe("CONFIRMED");
+    expect(bookingAfter.payment?.status).toBe("CAPTURED"); // unchanged
+    const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
+    expect(earning?.status).toBe("PENDING_ELIGIBLE"); // unchanged
+  });
+
+  // 4. signature only -> 400
+  it("4. signature header only (timestamp absent): 400, no processing", async () => {
     const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: null }));
     expect(response.status).toBe(400);
   });
 
-  it("Case B — timestamp header only (signature absent): 400, no processing", async () => {
+  // 5. timestamp only -> 400
+  it("5. timestamp header only (signature absent): 400, no processing", async () => {
     const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: String(Math.floor(Date.now() / 1000)) }));
     expect(response.status).toBe(400);
   });
 
-  it("Case C — both headers present, invalid signature: 400, no processing", async () => {
+  // 6. empty timestamp -> 400
+  it("6. both headers present, empty-string timestamp: 400, no processing", async () => {
+    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "" }));
+    expect(response.status).toBe(400);
+  });
+
+  // 7. non-numeric timestamp -> 400
+  it("7. both headers present, non-numeric timestamp: 400, no processing", async () => {
+    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "not-a-real-timestamp" }));
+    expect(response.status).toBe(400);
+  });
+
+  // 8. fractional numeric timestamp -> 400
+  it("8. both headers present, fractional numeric timestamp (even at millisecond magnitude): 400, no processing", async () => {
+    const response = await POST(
+      buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now() + 0.5) })
+    );
+    expect(response.status).toBe(400);
+  });
+
+  // 9. numeric garbage that is neither plausible seconds nor milliseconds -> 400
+  it("9. both headers present, numeric garbage matching neither plausible range: 400, no processing", async () => {
+    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "42" }));
+    expect(response.status).toBe(400);
+  });
+
+  // 10. current seconds timestamp + invalid signature -> 400
+  it("10. current plausible Unix SECONDS timestamp with an invalid signature: 400, never classified as liveness", async () => {
     const timestampHeader = String(Math.floor(Date.now() / 1000));
     const response = await POST(buildRequest({ body: "{}", signatureHeader: "not-a-valid-signature", timestampHeader }));
     expect(response.status).toBe(400);
   });
 
-  it("Case C — both headers present, stale timestamp (valid signature for that timestamp): 400, no processing", async () => {
+  // 11. stale seconds timestamp even with correctly-computed signature -> 400
+  it("11. stale plausible Unix SECONDS timestamp, even with a correctly-computed signature for that timestamp: 400", async () => {
     const staleTimestamp = String(Math.floor(Date.now() / 1000) - 10 * 60); // 10 min old, beyond the 5-min tolerance
     const body = "{}";
     const signatureHeader = sign(staleTimestamp, body);
@@ -277,7 +339,9 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
     expect(response.status).toBe(400);
   });
 
-  it("Case D — both headers present and valid: existing signed processing still works end-to-end through the route", async () => {
+  // 12. current seconds timestamp + valid signature -> normal signed-event processing
+  // 13. valid signed participant.joined -> ONLINE_ACTIVITY still works
+  it("12+13. current plausible Unix SECONDS timestamp with a VALID signature: normal signed-event processing, ONLINE_ACTIVITY recorded", async () => {
     const { session, tutorUser } = await setupConfirmedBookingWithRoom();
     const body = JSON.stringify({
       type: "participant.joined",
@@ -296,7 +360,25 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
     expect(events[0]).toMatchObject({ participantRole: "TUTOR", source: "ONLINE_ACTIVITY" });
   });
 
-  it("financial firewall: even the Case D signed-processing path never mutates Booking/Payment/TutorEarning", async () => {
+  // 14. duplicate signed event -> existing idempotency unchanged
+  it("14. a duplicate valid signed event does not create a second attendance row (existing idempotency unchanged)", async () => {
+    const { session, tutorUser } = await setupConfirmedBookingWithRoom();
+    const body = JSON.stringify({
+      type: "participant.joined",
+      payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() },
+    });
+    const timestampHeader = String(Math.floor(Date.now() / 1000));
+    const signatureHeader = sign(timestampHeader, body);
+
+    await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+    await POST(buildRequest({ body, signatureHeader, timestampHeader })); // exact redelivery
+
+    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id, participantRole: "TUTOR" } });
+    expect(events).toHaveLength(1);
+  });
+
+  // 15. financial firewall -> unchanged
+  it("15. financial firewall: the real signed-processing path never mutates Booking/Payment/TutorEarning", async () => {
     const { session, booking, studentUser } = await setupConfirmedBookingWithRoom();
     const body = JSON.stringify({
       type: "participant.joined",
@@ -315,154 +397,42 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
     const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
     expect(sessionAfter.status).toBe("SCHEDULED"); // one-sided join — not IN_PROGRESS yet
   });
-});
 
-const DIAGNOSTIC_PREFIX = "VIDEO-1B DIAGNOSTIC ";
+  // 16. parent observer behavior -> unchanged (full guardian-authorization
+  // matrix, including REVOKED/unrelated/ADMIN, is exhaustively covered at
+  // the service layer by dailyWebhooks.integration.test.ts and
+  // videoJoin.integration.test.ts — not duplicated here; this route-level
+  // file's job is the classification behavior itself).
+  it("16. a milliseconds-shaped liveness probe never reaches guardian/observer logic at all — 200 before any authorization resolution", async () => {
+    const { session } = await setupConfirmedBookingWithRoom();
+    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: "any-user-id" } });
 
-/** Extracts the single-line diagnostic payload logged by the route — the
- * log call is now exactly ONE string argument (`prefix + JSON.stringify`),
- * never an object passed as a second console.log argument, so there is
- * exactly one line to find and parse. */
-function findDiagnosticPayload(consoleLogSpy: { mock: { calls: unknown[][] } }): Record<string, unknown> | undefined {
-  const call = consoleLogSpy.mock.calls.find(
-    (c: unknown[]) => typeof c[0] === "string" && c[0].startsWith(DIAGNOSTIC_PREFIX)
-  );
-  if (!call) return undefined;
-  return JSON.parse((call[0] as string).slice(DIAGNOSTIC_PREFIX.length)) as Record<string, unknown>;
-}
+    const response = await POST(buildRequest({ body, signatureHeader: "sig", timestampHeader: String(Date.now()) }));
 
-describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging", () => {
-  it("emits exactly one diagnostic log call, as a single serialized line", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await POST(buildRequest({ body: "{}", signatureHeader: "x", timestampHeader: "123" }));
-
-    const diagnosticCalls = consoleLogSpy.mock.calls.filter(
-      (c) => typeof c[0] === "string" && c[0].startsWith(DIAGNOSTIC_PREFIX)
-    );
-    expect(diagnosticCalls).toHaveLength(1);
-    expect(diagnosticCalls[0]).toHaveLength(1); // exactly one argument to console.log
-
-    consoleLogSpy.mockRestore();
+    expect(response.status).toBe(200);
+    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+    expect(events).toHaveLength(0);
   });
 
-  it("logs only the allowed classification fields — never a header value or the body", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const sensitiveSignature = "definitely-a-secret-looking-signature-value";
-    const sensitiveTimestamp = String(Math.floor(Date.now() / 1000));
-    const sensitiveBody = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: "some-secret-room-name", user_id: "some-secret-user-id", session_id: randomUUID() },
-    });
-
-    await POST(buildRequest({ body: sensitiveBody, signatureHeader: sensitiveSignature, timestampHeader: sensitiveTimestamp }));
-
-    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
-    expect(loggedPayload).toEqual({
-      hasSignatureHeader: true,
-      hasTimestampHeader: true,
-      eventType: "participant.joined",
-      timestampPresent: true,
-      timestampNonEmpty: true,
-      timestampNumeric: true,
-      timestampInteger: true,
-      timestampUnitClassification: "seconds",
-      timestampWithinReplayTolerance: true,
-    });
-    // No field's value is (or contains) the raw timestamp string itself.
-    for (const value of Object.values(loggedPayload ?? {})) {
-      expect(String(value)).not.toBe(sensitiveTimestamp);
+  // 17. DAILY_WEBHOOK_SECRET unset vs. configured — the milliseconds
+  // liveness path must behave identically either way (Section 6).
+  it("17. the milliseconds liveness path behaves identically whether DAILY_WEBHOOK_SECRET is unset or configured", async () => {
+    const savedSecret = process.env.DAILY_WEBHOOK_SECRET;
+    delete process.env.DAILY_WEBHOOK_SECRET;
+    try {
+      const responseUnset = await POST(
+        buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now()) })
+      );
+      expect(responseUnset.status).toBe(200);
+      expect(await responseUnset.json()).toEqual({ received: true });
+    } finally {
+      process.env.DAILY_WEBHOOK_SECRET = savedSecret;
     }
 
-    // Every logged call, across all arguments, must never contain the raw
-    // signature/timestamp values or any fragment of the sensitive body
-    // (room name, user id) — not just the one call we asserted the shape of.
-    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
-    expect(allLoggedText).not.toContain(sensitiveSignature);
-    expect(allLoggedText).not.toContain(sensitiveTimestamp);
-    expect(allLoggedText).not.toContain("some-secret-room-name");
-    expect(allLoggedText).not.toContain("some-secret-user-id");
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it("logs eventType: null for an unparseable body, without throwing or logging the raw body", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const garbageBody = "this is not json {{{";
-
-    const response = await POST(buildRequest({ body: garbageBody, signatureHeader: null, timestampHeader: null }));
-
-    expect(response.status).toBe(200); // still a bare probe by header shape — unaffected by body content
-    expect(findDiagnosticPayload(consoleLogSpy)).toEqual({
-      hasSignatureHeader: false,
-      hasTimestampHeader: false,
-      eventType: null,
-      timestampPresent: false,
-      timestampNonEmpty: false,
-      timestampNumeric: false,
-      timestampInteger: false,
-      timestampUnitClassification: "unknown",
-      timestampWithinReplayTolerance: null,
-    });
-    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
-    expect(allLoggedText).not.toContain(garbageBody);
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it("timestamp classification: milliseconds-shaped value is classified as such, never logged raw", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const millisecondsTimestamp = String(Date.now());
-
-    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: millisecondsTimestamp }));
-
-    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
-    expect(loggedPayload?.timestampUnitClassification).toBe("milliseconds");
-    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
-    expect(allLoggedText).not.toContain(millisecondsTimestamp);
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it("timestamp classification: stale (but well-formed) seconds value is classified as outside tolerance, never logged raw", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const staleTimestamp = String(Math.floor(Date.now() / 1000) - 10 * 60);
-
-    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: staleTimestamp }));
-
-    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
-    expect(loggedPayload?.timestampUnitClassification).toBe("seconds");
-    expect(loggedPayload?.timestampWithinReplayTolerance).toBe(false);
-    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
-    expect(allLoggedText).not.toContain(staleTimestamp);
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it("timestamp classification: malformed (non-numeric) value is classified as unknown, never logged raw", async () => {
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const malformedTimestamp = "not-a-real-timestamp-value";
-
-    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: malformedTimestamp }));
-
-    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
-    expect(loggedPayload?.timestampNumeric).toBe(false);
-    expect(loggedPayload?.timestampUnitClassification).toBe("unknown");
-    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
-    expect(allLoggedText).not.toContain(malformedTimestamp);
-
-    consoleLogSpy.mockRestore();
-  });
-
-  it("business behavior (status codes and processing) is unchanged by the diagnostic — full classification matrix still holds", async () => {
-    const bareProbe = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: null }));
-    expect(bareProbe.status).toBe(200);
-
-    const partialHeaders = await POST(buildRequest({ body: "{}", signatureHeader: "x", timestampHeader: null }));
-    expect(partialHeaders.status).toBe(400);
-
-    const invalidSignature = await POST(
-      buildRequest({ body: "{}", signatureHeader: "invalid", timestampHeader: String(Math.floor(Date.now() / 1000)) })
+    const responseConfigured = await POST(
+      buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now()) })
     );
-    expect(invalidSignature.status).toBe(400);
+    expect(responseConfigured.status).toBe(200);
+    expect(await responseConfigured.json()).toEqual({ received: true });
   });
 });

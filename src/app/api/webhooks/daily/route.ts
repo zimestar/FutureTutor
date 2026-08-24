@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   verifyDailyWebhookSignature,
-  isBareReachabilityProbe,
-  classifyDiagnosticTimestampShape,
+  isLivenessProbe,
   DailyWebhookSecretMissingError,
   DailyWebhookSignatureInvalidError,
   DailyWebhookTimestampInvalidError,
@@ -26,61 +25,26 @@ import {
  * the caller.
  *
  * VIDEO-1B probe-compatibility fix — checked FIRST, on headers alone,
- * before the body is even read: Daily's own POST /webhooks sends an
- * unsigned reachability probe to this URL before finalizing a webhook
- * subscription (see isBareReachabilityProbe's own doc comment for the
- * real-provider evidence). A request presenting NEITHER signature header
- * gets a bare 200 here and returns immediately — never reaching
- * request.text(), JSON.parse, processDailyWebhookEvent, any DB call, or
- * any provider call. This is the ONLY new behavior: a request presenting
- * exactly one header, or both but invalid, still falls through to
- * verifyDailyWebhookSignature below and is rejected exactly as before.
+ * before the body is even read: Daily's own POST /webhooks sends a
+ * reachability probe to this URL before finalizing a webhook subscription,
+ * with a signature envelope that can never be a real signed event (see
+ * isLivenessProbe's own doc comment for the full real-provider evidence
+ * and exact classification rules). A request classified as a liveness
+ * probe gets a bare 200 here and returns immediately — never reaching
+ * request.text(), JSON.parse, verifyDailyWebhookSignature,
+ * processDailyWebhookEvent, any DB call, or any provider call. Everything
+ * else (a genuinely seconds-shaped timestamp, whether validly signed,
+ * stale, or forged) falls through unchanged to full verification below.
  */
 export async function POST(request: Request) {
   const signatureHeader = request.headers.get("x-webhook-signature");
   const timestampHeader = request.headers.get("x-webhook-timestamp");
-  const rawBody = await request.text();
 
-  // VIDEO-1B — TEMPORARY diagnostic (to be removed once Daily's real
-  // creation-time probe shape is confirmed; see the probe-shape mission).
-  // Logs ONLY: header presence booleans, the body's top-level "type" field,
-  // and a SHAPE classification of the timestamp header (numeric? integer?
-  // plausible seconds vs. milliseconds range? within replay tolerance?) via
-  // classifyDiagnosticTimestampShape — never the raw or parsed timestamp
-  // value itself, never a header value, never the body. This is purely
-  // observational — it changes no status-code behavior and precedes the
-  // exact same classification/verification logic that already existed.
-  //
-  // Logged as ONE pre-serialized string, not an object passed as a second
-  // console.log argument — a prior attempt using the object form was
-  // pretty-printed across multiple lines by the runtime and fragmented by
-  // Railway's log pipeline (adjacent near-simultaneous log entries lost
-  // trailing lines), making one specific real-probe capture ambiguous.
-  // JSON.stringify + a single string argument makes fragmentation
-  // structurally impossible — there is exactly one line to fragment.
-  let diagnosticEventType: string | null = null;
-  try {
-    const parsed = JSON.parse(rawBody) as unknown;
-    if (typeof parsed === "object" && parsed !== null && "type" in parsed && typeof (parsed as { type: unknown }).type === "string") {
-      diagnosticEventType = (parsed as { type: string }).type;
-    }
-  } catch {
-    // Body did not parse as JSON — diagnosticEventType stays null. Never
-    // logged, never inspected further here.
-  }
-  console.log(
-    "VIDEO-1B DIAGNOSTIC " +
-      JSON.stringify({
-        hasSignatureHeader: signatureHeader !== null,
-        hasTimestampHeader: timestampHeader !== null,
-        eventType: diagnosticEventType,
-        ...classifyDiagnosticTimestampShape(timestampHeader),
-      })
-  );
-
-  if (isBareReachabilityProbe(signatureHeader, timestampHeader)) {
+  if (isLivenessProbe(signatureHeader, timestampHeader)) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
+
+  const rawBody = await request.text();
 
   try {
     verifyDailyWebhookSignature({ rawBody, signatureHeader, timestampHeader });
