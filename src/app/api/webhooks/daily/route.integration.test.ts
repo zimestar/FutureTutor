@@ -317,7 +317,34 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
   });
 });
 
+const DIAGNOSTIC_PREFIX = "VIDEO-1B DIAGNOSTIC ";
+
+/** Extracts the single-line diagnostic payload logged by the route — the
+ * log call is now exactly ONE string argument (`prefix + JSON.stringify`),
+ * never an object passed as a second console.log argument, so there is
+ * exactly one line to find and parse. */
+function findDiagnosticPayload(consoleLogSpy: { mock: { calls: unknown[][] } }): Record<string, unknown> | undefined {
+  const call = consoleLogSpy.mock.calls.find(
+    (c: unknown[]) => typeof c[0] === "string" && c[0].startsWith(DIAGNOSTIC_PREFIX)
+  );
+  if (!call) return undefined;
+  return JSON.parse((call[0] as string).slice(DIAGNOSTIC_PREFIX.length)) as Record<string, unknown>;
+}
+
 describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging", () => {
+  it("emits exactly one diagnostic log call, as a single serialized line", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    await POST(buildRequest({ body: "{}", signatureHeader: "x", timestampHeader: "123" }));
+
+    const diagnosticCalls = consoleLogSpy.mock.calls.filter(
+      (c) => typeof c[0] === "string" && c[0].startsWith(DIAGNOSTIC_PREFIX)
+    );
+    expect(diagnosticCalls).toHaveLength(1);
+    expect(diagnosticCalls[0]).toHaveLength(1); // exactly one argument to console.log
+
+    consoleLogSpy.mockRestore();
+  });
+
   it("logs only the allowed classification fields — never a header value or the body", async () => {
     const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const sensitiveSignature = "definitely-a-secret-looking-signature-value";
@@ -329,9 +356,7 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     await POST(buildRequest({ body: sensitiveBody, signatureHeader: sensitiveSignature, timestampHeader: sensitiveTimestamp }));
 
-    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    expect(diagnosticCall).toBeDefined();
-    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
+    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
     expect(loggedPayload).toEqual({
       hasSignatureHeader: true,
       hasTimestampHeader: true,
@@ -344,7 +369,7 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
       timestampWithinReplayTolerance: true,
     });
     // No field's value is (or contains) the raw timestamp string itself.
-    for (const value of Object.values(loggedPayload)) {
+    for (const value of Object.values(loggedPayload ?? {})) {
       expect(String(value)).not.toBe(sensitiveTimestamp);
     }
 
@@ -367,8 +392,7 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
     const response = await POST(buildRequest({ body: garbageBody, signatureHeader: null, timestampHeader: null }));
 
     expect(response.status).toBe(200); // still a bare probe by header shape — unaffected by body content
-    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    expect(diagnosticCall?.[1]).toEqual({
+    expect(findDiagnosticPayload(consoleLogSpy)).toEqual({
       hasSignatureHeader: false,
       hasTimestampHeader: false,
       eventType: null,
@@ -391,9 +415,8 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: millisecondsTimestamp }));
 
-    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
-    expect(loggedPayload.timestampUnitClassification).toBe("milliseconds");
+    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
+    expect(loggedPayload?.timestampUnitClassification).toBe("milliseconds");
     const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
     expect(allLoggedText).not.toContain(millisecondsTimestamp);
 
@@ -406,10 +429,9 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: staleTimestamp }));
 
-    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
-    expect(loggedPayload.timestampUnitClassification).toBe("seconds");
-    expect(loggedPayload.timestampWithinReplayTolerance).toBe(false);
+    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
+    expect(loggedPayload?.timestampUnitClassification).toBe("seconds");
+    expect(loggedPayload?.timestampWithinReplayTolerance).toBe(false);
     const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
     expect(allLoggedText).not.toContain(staleTimestamp);
 
@@ -422,10 +444,9 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: malformedTimestamp }));
 
-    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
-    expect(loggedPayload.timestampNumeric).toBe(false);
-    expect(loggedPayload.timestampUnitClassification).toBe("unknown");
+    const loggedPayload = findDiagnosticPayload(consoleLogSpy);
+    expect(loggedPayload?.timestampNumeric).toBe(false);
+    expect(loggedPayload?.timestampUnitClassification).toBe("unknown");
     const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
     expect(allLoggedText).not.toContain(malformedTimestamp);
 

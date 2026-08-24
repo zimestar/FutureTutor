@@ -50,6 +50,14 @@ export async function POST(request: Request) {
   // value itself, never a header value, never the body. This is purely
   // observational — it changes no status-code behavior and precedes the
   // exact same classification/verification logic that already existed.
+  //
+  // Logged as ONE pre-serialized string, not an object passed as a second
+  // console.log argument — a prior attempt using the object form was
+  // pretty-printed across multiple lines by the runtime and fragmented by
+  // Railway's log pipeline (adjacent near-simultaneous log entries lost
+  // trailing lines), making one specific real-probe capture ambiguous.
+  // JSON.stringify + a single string argument makes fragmentation
+  // structurally impossible — there is exactly one line to fragment.
   let diagnosticEventType: string | null = null;
   try {
     const parsed = JSON.parse(rawBody) as unknown;
@@ -60,12 +68,15 @@ export async function POST(request: Request) {
     // Body did not parse as JSON — diagnosticEventType stays null. Never
     // logged, never inspected further here.
   }
-  console.log("VIDEO-1B DIAGNOSTIC", {
-    hasSignatureHeader: signatureHeader !== null,
-    hasTimestampHeader: timestampHeader !== null,
-    eventType: diagnosticEventType,
-    ...classifyDiagnosticTimestampShape(timestampHeader),
-  });
+  console.log(
+    "VIDEO-1B DIAGNOSTIC " +
+      JSON.stringify({
+        hasSignatureHeader: signatureHeader !== null,
+        hasTimestampHeader: timestampHeader !== null,
+        eventType: diagnosticEventType,
+        ...classifyDiagnosticTimestampShape(timestampHeader),
+      })
+  );
 
   if (isBareReachabilityProbe(signatureHeader, timestampHeader)) {
     return NextResponse.json({ received: true }, { status: 200 });
