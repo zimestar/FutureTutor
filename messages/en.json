@@ -1523,10 +1523,32 @@
       "save": "Save Changes"
     }
   },
+  "videoClassroom": {
+    "eyebrow": "FutureTutor classroom",
+    "prejoin": { "title": "Ready to join?", "description": "Check your setup before joining {name}.", "you": "You", "previewUnavailable": "Camera preview is off" },
+    "actions": { "back": "Back to session", "join": "Join classroom", "joinObserver": "Join as observer", "retry": "Try again" },
+    "devices": { "microphone": "Microphone", "camera": "Camera", "noneMicrophone": "No microphone detected", "noneCamera": "No camera detected" },
+    "permissions": { "ready": "Camera and microphone are ready.", "checking": "Checking camera and microphone…", "partial": "One device is unavailable. You can still join with the available controls.", "denied": "Camera or microphone access is blocked. Update your browser permissions, or join with them off.", "unsupported": "This browser cannot access camera or microphone here. Try a current Chromium-based browser." },
+    "controls": { "label": "Classroom controls", "micOn": "Microphone on", "micOff": "Microphone off", "cameraOn": "Camera on", "cameraOff": "Camera off", "mute": "Mute microphone", "unmute": "Unmute microphone", "stopCamera": "Turn camera off", "startCamera": "Turn camera on", "leave": "Leave" },
+    "observer": { "title": "Observer mode", "description": "You can watch and listen. Your camera, microphone, and screen sharing stay disabled.", "controlsNote": "Observer audio and video are disabled" },
+    "classroom": { "videoRegion": "Video classroom", "waiting": "Waiting for {name}", "waitingDescription": "You are connected. The classroom will update when the other participant joins.", "cameraOff": "Camera is off" },
+    "connection": { "connecting": "Joining classroom…", "reconnecting": "Reconnecting…", "failedTitle": "Connection interrupted", "failedDescription": "We could not keep the classroom connected. Check your network and try again." },
+    "errors": { "tooEarly": "The classroom is not open yet.", "cancelled": "This booking has been cancelled.", "ended": "The classroom access window has ended.", "denied": "You do not have access to this classroom.", "unavailable": "Video is temporarily unavailable. Please try again.", "generic": "Something went wrong while preparing the classroom. Please try again." },
+    "leave": { "title": "Leave the classroom?", "description": "You can return while the session access window remains open. Leaving does not change the official session status.", "stay": "Stay in classroom", "confirm": "Leave classroom" },
+    "entry": {
+      "tooEarly": { "label": "Classroom not open", "title": "Come back closer to the session", "description": "Your session is scheduled for {time}. The classroom opens shortly before it starts." },
+      "cancelled": { "label": "Booking cancelled", "title": "This classroom is closed", "description": "The booking for {time} was cancelled, so video access is unavailable." },
+      "ended": { "label": "Access ended", "title": "The classroom is closed", "description": "The access window for the session scheduled at {time} has ended." },
+      "unavailable": { "label": "Video unavailable", "title": "This classroom is unavailable", "description": "Video is not available for this session. Return to the session details for current information." }
+    },
+    "timer": { "label": "Time in classroom" },
+    "postCall": { "title": "You left the classroom", "description": "You can review the session details or return while access remains open.", "authorityNote": "Leaving the call does not decide the official session outcome.", "return": "Return to session details" }
+  },
   "sessionExperience": {
     "eyebrow": "Tutoring session",
     "subtitle": "Session with {name}",
     "viewSession": "View session",
+    "video": { "title": "Video classroom", "ready": "Your secure classroom is ready.", "tooEarly": "The classroom opens at {opensAt}.", "cancelled": "This booking was cancelled and the classroom is closed.", "ended": "The classroom access window has ended.", "unavailable": "Video is not available for this session.", "observer": "You will join in observer mode with camera and microphone disabled.", "action": "Open classroom" },
     "bookingNoShow": "Session did not start",
     "bookingCompleted": "Session completed",
     "bookingInterrupted": "Session ended early",

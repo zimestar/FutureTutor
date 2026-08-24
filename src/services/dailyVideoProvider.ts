@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "crypto";
-import { dailyApiRequest, dailyApiGetRoom, dailyApiGetRoomStrict, dailyApiEjectParticipants, dailyApiDeleteRoom, DailyApiError } from "@/lib/dailyClient";
+import { dailyApiRequest, dailyApiGetRoom, dailyApiGetRoomStrict, dailyApiEjectParticipants, dailyApiDeleteRoom, dailyApiGetDomainConfig, DailyApiError } from "@/lib/dailyClient";
 import { VideoProviderUnavailableError } from "@/services/videoProvider";
 import type {
   VideoProviderAdapter,
@@ -146,7 +146,13 @@ export function createDailyVideoProvider(): VideoProviderAdapter {
               : undefined,
           },
         });
-        return { token: result.token, expiresAt: input.expiresAt };
+        const domain = await dailyApiGetDomainConfig();
+        const host = domain.domain_name.includes(".") ? domain.domain_name : `${domain.domain_name}.daily.co`;
+        return {
+          token: result.token,
+          expiresAt: input.expiresAt,
+          joinUrl: `https://${host}/${encodeURIComponent(input.providerRoomId)}`,
+        };
       } catch (error) {
         if (error instanceof DailyApiError) {
           throw new VideoProviderUnavailableError(`Daily token creation failed (status ${error.status})`);

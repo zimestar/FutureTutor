@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock3, LayoutDashboard, MapPin, Monitor, Search, UsersRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, LayoutDashboard, MapPin, Monitor, Search, UsersRound, Video } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
@@ -16,6 +16,8 @@ import { db } from "@/lib/db";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { deriveSessionArrivalPresentation, isTerminalNoShowPresentation, isTerminalSessionPresentation, noShowCopyKind, postSessionNavigationActions, postSessionNavigationHref, sessionStateTranslationKeys, shouldShowSessionCheckIn } from "@/lib/sessionPresentation";
+import { deriveVideoEntryState } from "@/lib/videoClassroomPresentation";
+import { VIDEO_ACCESS_GRACE_MS_AFTER_END } from "@/services/videoSession";
 import {
   getSessionContext,
   SessionNotFoundError,
@@ -93,6 +95,13 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
   const stateKeys = sessionStateTranslationKeys(presentation);
   const terminalSession = isTerminalSessionPresentation(presentation);
   const postSessionActions = postSessionNavigationActions(presentation, context.viewerRole);
+  const videoEntryState = deriveVideoEntryState({
+    mode: context.mode,
+    status: context.status,
+    now: new Date(),
+    opensAt: context.checkInWindowOpensAt,
+    closesAt: new Date(context.scheduledEndAt.getTime() + VIDEO_ACCESS_GRACE_MS_AFTER_END),
+  });
 
   return (
     <DashboardShell navItems={navItems} userName={session.user.name ?? ""}>
@@ -105,6 +114,25 @@ export default async function SessionPage({ params }: { params: Promise<{ locale
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <div className="space-y-6">
+          {context.mode === "ONLINE" && !terminalSession && (
+            <Surface aria-labelledby="video-classroom-title">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue/10 text-blue"><Video className="size-5" aria-hidden="true" /></div>
+                  <div>
+                    <h2 id="video-classroom-title" className="text-lg font-extrabold text-text-primary">{t("video.title")}</h2>
+                    <p className="mt-1 text-sm leading-6 text-text-secondary">{t(`video.${videoEntryState}`, { opensAt: dateTime(context.checkInWindowOpensAt) })}</p>
+                    {context.viewerRole === "GUARDIAN" && <p className="mt-2 text-xs font-semibold text-text-muted">{t("video.observer")}</p>}
+                  </div>
+                </div>
+                {videoEntryState === "ready" && (
+                  <Button href={`/session/${bookingId}/classroom`} className="w-full shrink-0 sm:w-auto">
+                    <Video className="size-4" aria-hidden="true" />{t("video.action")}
+                  </Button>
+                )}
+              </div>
+            </Surface>
+          )}
           {!activeSession && (
             <Alert tone={statusTone} title={t(stateKeys.title)}>
               <p>{terminalNoShow

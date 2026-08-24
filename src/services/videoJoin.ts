@@ -104,6 +104,7 @@ export interface RequestVideoJoinTokenResult {
   token: string;
   expiresAt: Date;
   participantRole: VideoParticipantRole;
+  joinUrl?: string;
 }
 
 /**
@@ -175,7 +176,7 @@ export async function requestVideoJoinToken(
     expiresAt: tokenExpiresAt,
   });
 
-  return { token: tokenResult.token, expiresAt: tokenResult.expiresAt, participantRole };
+  return { token: tokenResult.token, expiresAt: tokenResult.expiresAt, participantRole, joinUrl: tokenResult.joinUrl };
 }
 
 /**

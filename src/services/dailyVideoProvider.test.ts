@@ -13,6 +13,7 @@ const dailyApiGetRoom = vi.fn();
 const dailyApiGetRoomStrict = vi.fn();
 const dailyApiEjectParticipants = vi.fn();
 const dailyApiDeleteRoom = vi.fn();
+const dailyApiGetDomainConfig = vi.fn();
 
 vi.mock("@/lib/dailyClient", async () => {
   const actual = await vi.importActual<typeof import("@/lib/dailyClient")>("@/lib/dailyClient");
@@ -23,6 +24,7 @@ vi.mock("@/lib/dailyClient", async () => {
     dailyApiGetRoomStrict: (...args: unknown[]) => dailyApiGetRoomStrict(...args),
     dailyApiEjectParticipants: (...args: unknown[]) => dailyApiEjectParticipants(...args),
     dailyApiDeleteRoom: (...args: unknown[]) => dailyApiDeleteRoom(...args),
+    dailyApiGetDomainConfig: (...args: unknown[]) => dailyApiGetDomainConfig(...args),
   };
 });
 
@@ -36,6 +38,8 @@ beforeEach(() => {
   dailyApiGetRoomStrict.mockReset();
   dailyApiEjectParticipants.mockReset();
   dailyApiDeleteRoom.mockReset();
+  dailyApiGetDomainConfig.mockReset();
+  dailyApiGetDomainConfig.mockResolvedValue({ domain_name: "futuretutor.daily.co", domain_id: "domain-1" });
 });
 
 const provider = createDailyVideoProvider();
@@ -205,10 +209,11 @@ describe("createParticipantToken — per-role permission shape", () => {
   });
 
   it("every token request sets eject_at_token_exp and an exp matching the caller-supplied expiresAt", async () => {
-    await provider.createParticipantToken({ ...tokenInput, role: "STUDENT" });
+    const result = await provider.createParticipantToken({ ...tokenInput, role: "STUDENT" });
     const [, body] = dailyApiRequest.mock.calls[0] as [string, { properties: Record<string, unknown> }];
     expect(body.properties.eject_at_token_exp).toBe(true);
     expect(body.properties.exp).toBe(Math.floor(tokenInput.expiresAt.getTime() / 1000));
+    expect(result.joinUrl).toBe(`https://futuretutor.daily.co/${tokenInput.providerRoomId}`);
   });
 
   it("wraps a token-creation failure as VideoProviderUnavailableError, never leaking the raw Daily error", async () => {

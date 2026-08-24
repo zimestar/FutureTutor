@@ -1523,10 +1523,32 @@
       "save": "Enregistrer les modifications"
     }
   },
+  "videoClassroom": {
+    "eyebrow": "Classe FutureTutor",
+    "prejoin": { "title": "Prêt à vous joindre?", "description": "Vérifiez votre configuration avant de rejoindre {name}.", "you": "Vous", "previewUnavailable": "L’aperçu de la caméra est désactivé" },
+    "actions": { "back": "Retour à la séance", "join": "Rejoindre la classe", "joinObserver": "Rejoindre comme observateur", "retry": "Réessayer" },
+    "devices": { "microphone": "Microphone", "camera": "Caméra", "noneMicrophone": "Aucun microphone détecté", "noneCamera": "Aucune caméra détectée" },
+    "permissions": { "ready": "La caméra et le microphone sont prêts.", "checking": "Vérification de la caméra et du microphone…", "partial": "Un appareil n’est pas disponible. Vous pouvez tout de même rejoindre la classe avec les commandes disponibles.", "denied": "L’accès à la caméra ou au microphone est bloqué. Modifiez les autorisations du navigateur ou rejoignez la classe sans ces appareils.", "unsupported": "Ce navigateur ne peut pas accéder à la caméra ou au microphone ici. Essayez un navigateur récent basé sur Chromium." },
+    "controls": { "label": "Commandes de la classe", "micOn": "Microphone activé", "micOff": "Microphone désactivé", "cameraOn": "Caméra activée", "cameraOff": "Caméra désactivée", "mute": "Couper le microphone", "unmute": "Activer le microphone", "stopCamera": "Désactiver la caméra", "startCamera": "Activer la caméra", "leave": "Quitter" },
+    "observer": { "title": "Mode observateur", "description": "Vous pouvez regarder et écouter. Votre caméra, votre microphone et le partage d’écran restent désactivés.", "controlsNote": "Audio et vidéo désactivés en mode observateur" },
+    "classroom": { "videoRegion": "Classe vidéo", "waiting": "En attente de {name}", "waitingDescription": "Vous êtes connecté. La classe se mettra à jour quand l’autre personne se joindra.", "cameraOff": "La caméra est désactivée" },
+    "connection": { "connecting": "Connexion à la classe…", "reconnecting": "Reconnexion…", "failedTitle": "Connexion interrompue", "failedDescription": "La connexion à la classe a été interrompue. Vérifiez votre réseau et réessayez." },
+    "errors": { "tooEarly": "La classe n’est pas encore ouverte.", "cancelled": "Cette réservation a été annulée.", "ended": "La période d’accès à la classe est terminée.", "denied": "Vous n’avez pas accès à cette classe.", "unavailable": "La vidéo est temporairement indisponible. Veuillez réessayer.", "generic": "Un problème est survenu pendant la préparation de la classe. Veuillez réessayer." },
+    "leave": { "title": "Quitter la classe?", "description": "Vous pouvez revenir pendant que la période d’accès demeure ouverte. Quitter ne change pas le statut officiel de la séance.", "stay": "Rester dans la classe", "confirm": "Quitter la classe" },
+    "entry": {
+      "tooEarly": { "label": "Classe non ouverte", "title": "Revenez à l’approche de la séance", "description": "Votre séance est prévue à {time}. La classe ouvre peu avant le début." },
+      "cancelled": { "label": "Réservation annulée", "title": "Cette classe est fermée", "description": "La réservation prévue à {time} a été annulée; l’accès vidéo est donc indisponible." },
+      "ended": { "label": "Accès terminé", "title": "La classe est fermée", "description": "La période d’accès à la séance prévue à {time} est terminée." },
+      "unavailable": { "label": "Vidéo indisponible", "title": "Cette classe est indisponible", "description": "La vidéo n’est pas offerte pour cette séance. Consultez les détails de la séance pour obtenir l’information actuelle." }
+    },
+    "timer": { "label": "Temps dans la classe" },
+    "postCall": { "title": "Vous avez quitté la classe", "description": "Vous pouvez consulter les détails de la séance ou revenir pendant que l’accès demeure ouvert.", "authorityNote": "Quitter l’appel ne détermine pas le résultat officiel de la séance.", "return": "Retour aux détails de la séance" }
+  },
   "sessionExperience": {
     "eyebrow": "Séance de tutorat",
     "subtitle": "Séance avec {name}",
     "viewSession": "Voir la séance",
+    "video": { "title": "Classe vidéo", "ready": "Votre classe sécurisée est prête.", "tooEarly": "La classe ouvre à {opensAt}.", "cancelled": "Cette réservation a été annulée et la classe est fermée.", "ended": "La période d’accès à la classe est terminée.", "unavailable": "La vidéo n’est pas offerte pour cette séance.", "observer": "Vous rejoindrez la classe en mode observateur, avec la caméra et le microphone désactivés.", "action": "Ouvrir la classe" },
     "bookingNoShow": "La séance n'a pas commencé",
     "bookingCompleted": "Séance terminée",
     "bookingInterrupted": "Séance terminée plus tôt",

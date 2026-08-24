@@ -62,6 +62,10 @@ export interface CreateParticipantTokenInput {
 export interface CreateParticipantTokenResult {
   token: string;
   expiresAt: Date;
+  /** Provider join address required by the browser SDK. This is connection
+   * metadata, not authorization: private rooms still require the short-lived
+   * token above. It is never persisted by FutureTutor. */
+  joinUrl?: string;
 }
 
 export interface RevokeRoomAccessInput {
