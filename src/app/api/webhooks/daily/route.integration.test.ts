@@ -6,13 +6,17 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 
-// VIDEO-1B — route-level integration coverage for the Daily probe-
-// compatibility fix (Section 1 of the mission). Mirrors the exact DB-
-// target-redirection technique used throughout this codebase's other
-// integration tests. Calls the route's own exported POST handler directly
-// with a constructed Web-standard Request — Next.js App Router route
-// handlers are plain functions over Request/Response, so no Next dev
-// server is needed. Never calls a real Daily API.
+// VIDEO-1B — route-level integration coverage for the Daily webhook
+// authentication redesign (authenticity decided ONLY by HMAC verification,
+// never by timestamp unit — see route.ts's and dailyWebhookSignature.ts's
+// own doc comments for the full evidence trail: a real, genuinely-signed
+// participant.joined delivery was directly observed in staging carrying a
+// Unix-MILLISECONDS timestamp). Mirrors the exact DB-target-redirection
+// technique used throughout this codebase's other integration tests. Calls
+// the route's own exported POST handler directly with a constructed
+// Web-standard Request — Next.js App Router route handlers are plain
+// functions over Request/Response, so no Next dev server is needed. Never
+// calls a real Daily API.
 
 vi.mock("@/lib/stripe", () => ({ getStripeClient: vi.fn() }));
 
@@ -230,288 +234,213 @@ function buildRequest(opts: { body: string; signatureHeader?: string | null; tim
   return new Request("https://staging.futuretutor.ca/api/webhooks/daily", { method: "POST", headers, body: opts.body });
 }
 
-describe("POST /api/webhooks/daily — final liveness-probe compatibility classification", () => {
-  // 1. no signature + no timestamp -> 200 no-op
-  it("1. no signature + no timestamp: 200, zero DB mutation, even with a participant.joined-shaped body targeting a real room", async () => {
-    const { session, studentUser } = await setupConfirmedBookingWithRoom();
-    const attackerBody = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() },
+describe("POST /api/webhooks/daily — authentication-first classification (VIDEO-1B webhook auth redesign)", () => {
+  describe("A. creation-time reachability / bare requests", () => {
+    it("1. secret NOT configured + a non-actionable body (Daily's creation-time probe shape): 200 no-op", async () => {
+      const savedSecret = process.env.DAILY_WEBHOOK_SECRET;
+      delete process.env.DAILY_WEBHOOK_SECRET;
+      try {
+        const response = await POST(
+          buildRequest({ body: JSON.stringify({ type: "some.other.event" }), signatureHeader: "probe-signature", timestampHeader: String(Date.now()) })
+        );
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ received: true });
+      } finally {
+        process.env.DAILY_WEBHOOK_SECRET = savedSecret;
+      }
     });
 
-    const response = await POST(buildRequest({ body: attackerBody, signatureHeader: null, timestampHeader: null }));
-
-    expect(response.status).toBe(200);
-    const responseBody = await response.json();
-    expect(responseBody).toEqual({ received: true });
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
-    expect(events).toHaveLength(0);
-    const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
-    expect(sessionAfter.status).toBe("SCHEDULED");
-  });
-
-  // 2. both headers + plausible current Unix milliseconds -> 200 no-op
-  it("2. both headers present, plausible current Unix milliseconds: 200 no-op", async () => {
-    const response = await POST(
-      buildRequest({ body: "{}", signatureHeader: "some-signature-value", timestampHeader: String(Date.now()) })
-    );
-    expect(response.status).toBe(200);
-    const responseBody = await response.json();
-    expect(responseBody).toEqual({ received: true });
-  });
-
-  // 3. both headers + plausible millisecond timestamp + participant.joined-shaped
-  //    malicious body targeting a REAL fixture -> 200, zero attendance/session/financial mutation
-  it("3. milliseconds probe with an attacker-shaped body targeting a REAL fixture: 200, zero attendance, zero Session_ mutation, zero financial mutation", async () => {
-    const { session, booking, tutorUser } = await setupConfirmedBookingWithRoom();
-    const maliciousBody = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() },
+    it("1b. secret NOT configured + an unparseable body: 200 no-op (treated as harmless, never an error)", async () => {
+      const savedSecret = process.env.DAILY_WEBHOOK_SECRET;
+      delete process.env.DAILY_WEBHOOK_SECRET;
+      try {
+        const response = await POST(buildRequest({ body: "not json at all", signatureHeader: "probe-signature", timestampHeader: String(Date.now()) }));
+        expect(response.status).toBe(200);
+      } finally {
+        process.env.DAILY_WEBHOOK_SECRET = savedSecret;
+      }
     });
 
-    const response = await POST(
-      buildRequest({ body: maliciousBody, signatureHeader: "attacker-controlled-signature", timestampHeader: String(Date.now()) })
-    );
-
-    expect(response.status).toBe(200);
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
-    expect(events).toHaveLength(0);
-    const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
-    expect(sessionAfter.status).toBe("SCHEDULED");
-    const bookingAfter = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { payment: true } });
-    expect(bookingAfter.status).toBe("CONFIRMED");
-    expect(bookingAfter.payment?.status).toBe("CAPTURED"); // unchanged
-    const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
-    expect(earning?.status).toBe("PENDING_ELIGIBLE"); // unchanged
-  });
-
-  // 4. signature only -> 400
-  it("4. signature header only (timestamp absent): 400, no processing", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: null }));
-    expect(response.status).toBe(400);
-  });
-
-  // 5. timestamp only -> 400
-  it("5. timestamp header only (signature absent): 400, no processing", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: String(Math.floor(Date.now() / 1000)) }));
-    expect(response.status).toBe(400);
-  });
-
-  // 6. empty timestamp -> 400
-  it("6. both headers present, empty-string timestamp: 400, no processing", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "" }));
-    expect(response.status).toBe(400);
-  });
-
-  // 7. non-numeric timestamp -> 400
-  it("7. both headers present, non-numeric timestamp: 400, no processing", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "not-a-real-timestamp" }));
-    expect(response.status).toBe(400);
-  });
-
-  // 8. fractional numeric timestamp -> 400
-  it("8. both headers present, fractional numeric timestamp (even at millisecond magnitude): 400, no processing", async () => {
-    const response = await POST(
-      buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now() + 0.5) })
-    );
-    expect(response.status).toBe(400);
-  });
-
-  // 9. numeric garbage that is neither plausible seconds nor milliseconds -> 400
-  it("9. both headers present, numeric garbage matching neither plausible range: 400, no processing", async () => {
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "42" }));
-    expect(response.status).toBe(400);
-  });
-
-  // 10. current seconds timestamp + invalid signature -> 400
-  it("10. current plausible Unix SECONDS timestamp with an invalid signature: 400, never classified as liveness", async () => {
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "not-a-valid-signature", timestampHeader }));
-    expect(response.status).toBe(400);
-  });
-
-  // 11. stale seconds timestamp even with correctly-computed signature -> 400
-  it("11. stale plausible Unix SECONDS timestamp, even with a correctly-computed signature for that timestamp: 400", async () => {
-    const staleTimestamp = String(Math.floor(Date.now() / 1000) - 10 * 60); // 10 min old, beyond the 5-min tolerance
-    const body = "{}";
-    const signatureHeader = sign(staleTimestamp, body);
-    const response = await POST(buildRequest({ body, signatureHeader, timestampHeader: staleTimestamp }));
-    expect(response.status).toBe(400);
-  });
-
-  // 12. current seconds timestamp + valid signature -> normal signed-event processing
-  // 13. valid signed participant.joined -> ONLINE_ACTIVITY still works
-  it("12+13. current plausible Unix SECONDS timestamp with a VALID signature: normal signed-event processing, ONLINE_ACTIVITY recorded", async () => {
-    const { session, tutorUser } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() },
+    it("2. secret NOT configured + a participant.joined-shaped body: safe failure (500), zero processing, zero DB mutation", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const savedSecret = process.env.DAILY_WEBHOOK_SECRET;
+      delete process.env.DAILY_WEBHOOK_SECRET;
+      try {
+        const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+        const response = await POST(buildRequest({ body, signatureHeader: "attacker-or-probe-signature", timestampHeader: String(Date.now()) }));
+        expect(response.status).toBe(500);
+        const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+        expect(events).toHaveLength(0);
+      } finally {
+        process.env.DAILY_WEBHOOK_SECRET = savedSecret;
+      }
     });
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const signatureHeader = sign(timestampHeader, body);
 
-    const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
-
-    expect(response.status).toBe(200);
-    const responseBody = await response.json();
-    expect(responseBody).toEqual({ received: true, handled: true });
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
-    expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({ participantRole: "TUTOR", source: "ONLINE_ACTIVITY" });
-  });
-
-  // 14. duplicate signed event -> existing idempotency unchanged
-  it("14. a duplicate valid signed event does not create a second attendance row (existing idempotency unchanged)", async () => {
-    const { session, tutorUser } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() },
+    it("3. bare request (no headers at all): 200 no-op, zero DB mutation even with a participant.joined-shaped body targeting a real room", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const attackerBody = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+      const response = await POST(buildRequest({ body: attackerBody, signatureHeader: null, timestampHeader: null }));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true });
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
     });
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const signatureHeader = sign(timestampHeader, body);
 
-    await POST(buildRequest({ body, signatureHeader, timestampHeader }));
-    await POST(buildRequest({ body, signatureHeader, timestampHeader })); // exact redelivery
-
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id, participantRole: "TUTOR" } });
-    expect(events).toHaveLength(1);
-  });
-
-  // 15. financial firewall -> unchanged
-  it("15. financial firewall: the real signed-processing path never mutates Booking/Payment/TutorEarning", async () => {
-    const { session, booking, studentUser } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({
-      type: "participant.joined",
-      payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() },
+    it("4a. signature header only (timestamp absent): 400, no processing", async () => {
+      const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: null }));
+      expect(response.status).toBe(400);
     });
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const signatureHeader = sign(timestampHeader, body);
 
-    await POST(buildRequest({ body, signatureHeader, timestampHeader }));
-
-    const bookingAfter = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { payment: true } });
-    expect(bookingAfter.status).toBe("CONFIRMED");
-    expect(bookingAfter.payment?.status).toBe("CAPTURED");
-    const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
-    expect(earning?.status).toBe("PENDING_ELIGIBLE");
-    const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
-    expect(sessionAfter.status).toBe("SCHEDULED"); // one-sided join — not IN_PROGRESS yet
+    it("4b. timestamp header only (signature absent): 400, no processing", async () => {
+      const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: String(Math.floor(Date.now() / 1000)) }));
+      expect(response.status).toBe(400);
+    });
   });
 
-  // 16. parent observer behavior -> unchanged (full guardian-authorization
-  // matrix, including REVOKED/unrelated/ADMIN, is exhaustively covered at
-  // the service layer by dailyWebhooks.integration.test.ts and
-  // videoJoin.integration.test.ts — not duplicated here; this route-level
-  // file's job is the classification behavior itself).
-  it("16. a milliseconds-shaped liveness probe never reaches guardian/observer logic at all — 200 before any authorization resolution", async () => {
-    const { session } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: "any-user-id" } });
+  describe("B. real millisecond-timestamped events (the actually-observed production shape)", () => {
+    it("5. current MILLISECONDS timestamp + VALID HMAC computed from the RAW millisecond header: processed, not treated as liveness", async () => {
+      const { session, tutorUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
+      const timestampHeader = String(Date.now()); // milliseconds, matching real observed Daily behavior
+      const signatureHeader = sign(timestampHeader, body); // HMAC over the RAW millisecond string, never normalized
 
-    const response = await POST(buildRequest({ body, signatureHeader: "sig", timestampHeader: String(Date.now()) }));
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
 
-    expect(response.status).toBe(200);
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
-    expect(events).toHaveLength(0);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, handled: true });
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ participantRole: "TUTOR", source: "ONLINE_ACTIVITY" });
+    });
+
+    it("6. current MILLISECONDS timestamp + INVALID HMAC: 400, zero processing", async () => {
+      const { session } = await setupConfirmedBookingWithRoom();
+      const body = "{}";
+      const timestampHeader = String(Date.now());
+      const response = await POST(buildRequest({ body, signatureHeader: "not-a-valid-signature", timestampHeader }));
+      expect(response.status).toBe(400);
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+    });
+
+    it("7. STALE milliseconds timestamp, even with an otherwise-correctly-computed signature: 400", async () => {
+      const staleMs = Date.now() - (5 * 60 + 60) * 1000; // ~6 min old, beyond the 5-min tolerance
+      const body = "{}";
+      const timestampHeader = String(staleMs);
+      const signatureHeader = sign(timestampHeader, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(400);
+    });
+
+    it("8. a valid millisecond-timestamped participant.joined records ONLINE_ACTIVITY exactly like a seconds one", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+      const timestampHeader = String(Date.now());
+      const signatureHeader = sign(timestampHeader, body);
+
+      await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ participantRole: "STUDENT", source: "ONLINE_ACTIVITY", eventType: "CHECK_IN" });
+    });
   });
 
-  // 17. DAILY_WEBHOOK_SECRET unset vs. configured — the milliseconds
-  // liveness path must behave identically either way (Section 6).
-  it("17. the milliseconds liveness path behaves identically whether DAILY_WEBHOOK_SECRET is unset or configured", async () => {
-    const savedSecret = process.env.DAILY_WEBHOOK_SECRET;
-    delete process.env.DAILY_WEBHOOK_SECRET;
-    try {
-      const responseUnset = await POST(
-        buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now()) })
-      );
-      expect(responseUnset.status).toBe(200);
-      expect(await responseUnset.json()).toEqual({ received: true });
-    } finally {
-      process.env.DAILY_WEBHOOK_SECRET = savedSecret;
-    }
+  describe("C. seconds compatibility (unchanged, still fully supported)", () => {
+    it("9. current SECONDS timestamp + valid signature: processed", async () => {
+      const { session, tutorUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
 
-    const responseConfigured = await POST(
-      buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: String(Date.now()) })
-    );
-    expect(responseConfigured.status).toBe(200);
-    expect(await responseConfigured.json()).toEqual({ received: true });
-  });
-});
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
 
-// TEMPORARY — VIDEO-1B route-level diagnostic coverage. Proves exactly one
-// atomic "VIDEO-1B ROUTE DIAGNOSTIC" line is emitted per request, its
-// livenessProbe field matches the route's own classification decision (never
-// a separate/divergent computation), no raw header value or body ever
-// appears in the logged line, and existing route behavior (status codes,
-// response bodies) is unchanged. Remove this block along with the diagnostic
-// itself once root cause is confirmed.
-describe("TEMPORARY VIDEO-1B route liveness diagnostic logging", () => {
-  function diagnosticLines(logSpy: { mock: { calls: unknown[][] } }): unknown[] {
-    return logSpy.mock.calls
-      .filter((c: unknown[]) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))
-      .map((c: unknown[]) => JSON.parse((c[0] as string).replace("VIDEO-1B ROUTE DIAGNOSTIC ", "")));
-  }
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, handled: true });
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(1);
+    });
 
-  it("no headers at all: one diagnostic line, livenessProbe=true, timestampShape=unknown, behavior unchanged (200)", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: null, timestampHeader: null }));
+    it("10. current SECONDS timestamp + invalid signature: 400", async () => {
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const response = await POST(buildRequest({ body: "{}", signatureHeader: "not-a-valid-signature", timestampHeader }));
+      expect(response.status).toBe(400);
+    });
 
-    expect(response.status).toBe(200);
-    const lines = diagnosticLines(logSpy);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toEqual({ hasSignatureHeader: false, hasTimestampHeader: false, livenessProbe: true, timestampShape: "unknown" });
-    logSpy.mockRestore();
+    it("11. stale SECONDS timestamp, even with a correctly-computed signature: 400", async () => {
+      const staleTimestamp = String(Math.floor(Date.now() / 1000) - 10 * 60);
+      const body = "{}";
+      const signatureHeader = sign(staleTimestamp, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader: staleTimestamp }));
+      expect(response.status).toBe(400);
+    });
   });
 
-  it("milliseconds-shaped probe: one diagnostic line, livenessProbe=true, timestampShape=milliseconds, behavior unchanged (200)", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const timestampHeader = String(Date.now());
-    const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader }));
+  describe("D. security / regression", () => {
+    it("12. malformed (non-numeric) timestamp: 400", async () => {
+      const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "not-a-real-timestamp" }));
+      expect(response.status).toBe(400);
+    });
 
-    expect(response.status).toBe(200);
-    const lines = diagnosticLines(logSpy);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, livenessProbe: true, timestampShape: "milliseconds" });
-    const rawLine = logSpy.mock.calls.find((c) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))?.[0] as string;
-    expect(rawLine).not.toContain(timestampHeader); // raw timestamp value never logged
-    expect(rawLine).not.toContain("some-signature"); // raw signature value never logged
-    logSpy.mockRestore();
-  });
+    it("13. numeric garbage matching neither plausible seconds nor milliseconds range: 400", async () => {
+      const response = await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: "42" }));
+      expect(response.status).toBe(400);
+    });
 
-  it("current seconds timestamp + VALID signature (a real signed event): one diagnostic line, livenessProbe=false, timestampShape=seconds, normal processing unaffected", async () => {
-    const { session, tutorUser } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const signatureHeader = sign(timestampHeader, body);
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    it("14. a validly-signed but UNSUPPORTED event type: no business processing (400), never silently accepted", async () => {
+      const body = JSON.stringify({ type: "meeting.ended", payload: { room: REAL_ROOM_NAME } });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(400);
+    });
 
-    const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+    it("15. UNSIGNED participant.joined targeting a real fixture: 400, zero attendance", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+      const response = await POST(buildRequest({ body, signatureHeader: null, timestampHeader: String(Math.floor(Date.now() / 1000)) }));
+      expect(response.status).toBe(400);
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+    });
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ received: true, handled: true });
-    const lines = diagnosticLines(logSpy);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, livenessProbe: false, timestampShape: "seconds" });
-    const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
-    expect(events).toHaveLength(1); // real processing still happened, diagnostic didn't interfere
-    logSpy.mockRestore();
-  });
+    it("16. INVALID-signature participant.joined targeting a real fixture: 400, zero attendance", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+      const response = await POST(buildRequest({ body, signatureHeader: "attacker-controlled-signature", timestampHeader: String(Math.floor(Date.now() / 1000)) }));
+      expect(response.status).toBe(400);
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+    });
 
-  it("diagnostic line contains only the four allowed fields — no room/user_id/body/token/secret ever appears", async () => {
-    const { tutorUser } = await setupConfirmedBookingWithRoom();
-    const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
-    const timestampHeader = String(Math.floor(Date.now() / 1000));
-    const signatureHeader = sign(timestampHeader, body);
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    it("17. a duplicate valid participant.joined delivery does not create a second attendance row", async () => {
+      const { session, tutorUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: tutorUser.id, session_id: randomUUID() } });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
 
-    await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      await POST(buildRequest({ body, signatureHeader, timestampHeader })); // exact redelivery
 
-    const lines = diagnosticLines(logSpy) as Array<Record<string, unknown>>;
-    expect(Object.keys(lines[0]).sort()).toEqual(["hasSignatureHeader", "hasTimestampHeader", "livenessProbe", "timestampShape"].sort());
-    const rawLine = logSpy.mock.calls.find((c) => typeof c[0] === "string" && (c[0] as string).startsWith("VIDEO-1B ROUTE DIAGNOSTIC"))?.[0] as string;
-    expect(rawLine).not.toContain(REAL_ROOM_NAME);
-    expect(rawLine).not.toContain(tutorUser.id);
-    expect(rawLine).not.toContain(TEST_SECRET_BASE64);
-    expect(rawLine).not.toContain(signatureHeader);
-    logSpy.mockRestore();
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id, participantRole: "TUTOR" } });
+      expect(events).toHaveLength(1);
+    });
+
+    it("18. financial firewall: a fully successful signed-event path never mutates Booking/Payment/TutorEarning", async () => {
+      const { session, booking, studentUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({ type: "participant.joined", payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() } });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+
+      await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+
+      const bookingAfter = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { payment: true } });
+      expect(bookingAfter.status).toBe("CONFIRMED");
+      expect(bookingAfter.payment?.status).toBe("CAPTURED");
+      const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
+      expect(earning?.status).toBe("PENDING_ELIGIBLE");
+      const sessionAfter = await db.session_.findUniqueOrThrow({ where: { id: session.id } });
+      expect(sessionAfter.status).toBe("SCHEDULED"); // one-sided join — not IN_PROGRESS yet
+    });
   });
 });

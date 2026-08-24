@@ -63,6 +63,26 @@ export interface ProcessDailyWebhookEventResult {
 }
 
 /**
+ * VIDEO-1B webhook authentication redesign — used ONLY by the route
+ * handler's DAILY_WEBHOOK_SECRET-not-configured branch, where no
+ * cryptographic verification is possible and body SHAPE is the only
+ * available signal to distinguish a harmless reachability probe (Daily's
+ * own webhook-creation-time check, sent before the secret has been taken
+ * from the creation response and configured here) from an attempted real
+ * business event. Reuses parseParticipantJoinedEvent's own shape/type
+ * checking rather than duplicating it — "supported" here means exactly
+ * what processDailyWebhookEvent would go on to accept once verified.
+ */
+export function isSupportedDailyWebhookEventShape(rawEvent: unknown): boolean {
+  try {
+    parseParticipantJoinedEvent(rawEvent);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Server-authoritative correlation (VIDEO-1B §10) — a valid, signed
  * participant.joined event is proof Daily saw SOMEONE join a room it
  * manages; it is NOT, on its own, proof of who that is or that they are
@@ -86,33 +106,6 @@ export interface ProcessDailyWebhookEventResult {
  * for OBSERVER without writing anything — dual-presence attendance is
  * unaffected, unchanged from VIDEO-1A.
  */
-/**
- * TEMPORARY — VIDEO-1B correlation diagnostic. Logs a single, atomic,
- * pre-serialized JSON line (never an object passed as a separate console.log
- * arg — see dailyWebhookSignature.ts's own doc comment for why that
- * fragments under Railway's log pipeline) whenever processDailyWebhookEvent
- * cannot correlate an otherwise validly-signed participant.joined event to a
- * known Session_/User. Never logs the complete participant id, a token, a
- * signature, a secret, or any other payload/header field — only the room
- * name (a synthetic identifier, not a credential) and a shape summary of the
- * participant id (presence/length/first 6 chars). To be removed once root
- * cause is confirmed.
- */
-function logCorrelationDiagnostic(reason: "unknown_room" | "unknown_participant", room: string, actorUserId: string) {
-  console.log(
-    "VIDEO-1B CORRELATION DIAGNOSTIC " +
-      JSON.stringify({
-        reason,
-        room,
-        participantIdShape: {
-          present: actorUserId.length > 0,
-          length: actorUserId.length > 0 ? actorUserId.length : null,
-          prefix: actorUserId.length > 0 ? actorUserId.slice(0, 6) : null,
-        },
-      })
-  );
-}
-
 export async function processDailyWebhookEvent(rawEvent: unknown): Promise<ProcessDailyWebhookEventResult> {
   const { room: providerRoomId, user_id: actorUserId } = parseParticipantJoinedEvent(rawEvent);
 
@@ -121,13 +114,11 @@ export async function processDailyWebhookEvent(rawEvent: unknown): Promise<Proce
     select: { id: true, booking: { select: { id: true } } },
   });
   if (!session) {
-    logCorrelationDiagnostic("unknown_room", providerRoomId, actorUserId);
     return { handled: false, reason: "unknown_room" };
   }
 
   const user = await db.user.findUnique({ where: { id: actorUserId }, select: { id: true, role: true } });
   if (!user) {
-    logCorrelationDiagnostic("unknown_participant", providerRoomId, actorUserId);
     return { handled: false, reason: "unknown_participant" };
   }
 
