@@ -39,6 +39,7 @@ export interface TutorCardData {
   id: string;
   slug: string;
   firstName: string;
+  image?: string | null;
   headline: string;
   bio: string;
   subjectLabels: string[];

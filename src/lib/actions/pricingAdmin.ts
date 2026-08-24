@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
@@ -44,15 +45,16 @@ export async function saveCustomerBasePriceRuleAction(
   _prevState: PricingAdminActionState,
   formData: FormData
 ): Promise<PricingAdminActionState> {
+  const t = await getTranslations("admin.shared");
   const admin = await requireAdmin();
-  if (!admin) return { error: "Unauthorized" };
+  if (!admin) return { error: t("errorDescription") };
 
   const parsed = customerBasePriceRuleSchema.safeParse({
     ...readRuleFormData(formData),
     basePriceCents: formData.get("basePriceCents"),
     pricingVersion: formData.get("pricingVersion") || "CUSTOMER_PRICING_V1",
   });
-  if (!parsed.success) return { error: "Invalid input" };
+  if (!parsed.success) return { error: t("errorDescription") };
 
   try {
     if (ruleId) {
@@ -61,7 +63,7 @@ export async function saveCustomerBasePriceRuleAction(
       await createCustomerBasePriceRule(parsed.data, admin.id);
     }
   } catch {
-    return { error: "Could not save this rule" };
+    return { error: t("errorDescription") };
   }
 
   revalidatePath("/admin/pricing");
@@ -80,8 +82,9 @@ export async function saveTutorBasePayoutRuleAction(
   _prevState: PricingAdminActionState,
   formData: FormData
 ): Promise<PricingAdminActionState> {
+  const t = await getTranslations("admin.shared");
   const admin = await requireAdmin();
-  if (!admin) return { error: "Unauthorized" };
+  if (!admin) return { error: t("errorDescription") };
 
   const parsed = tutorBasePayoutRuleSchema.safeParse({
     ...readRuleFormData(formData),
@@ -89,7 +92,7 @@ export async function saveTutorBasePayoutRuleAction(
     payoutCents: formData.get("payoutCents"),
     payoutVersion: formData.get("payoutVersion") || "TUTOR_PAYOUT_V1",
   });
-  if (!parsed.success) return { error: "Invalid input" };
+  if (!parsed.success) return { error: t("errorDescription") };
 
   try {
     if (ruleId) {
@@ -98,7 +101,7 @@ export async function saveTutorBasePayoutRuleAction(
       await createTutorBasePayoutRule(parsed.data, admin.id);
     }
   } catch {
-    return { error: "Could not save this rule" };
+    return { error: t("errorDescription") };
   }
 
   revalidatePath("/admin/pricing");
@@ -116,8 +119,9 @@ export async function saveMarketplacePricingSettingsAction(
   _prevState: PricingAdminActionState,
   formData: FormData
 ): Promise<PricingAdminActionState> {
+  const t = await getTranslations("admin.shared");
   const admin = await requireAdmin();
-  if (!admin) return { error: "Unauthorized" };
+  if (!admin) return { error: t("errorDescription") };
 
   const parsed = marketplacePricingSettingsSchema.safeParse({
     quoteTtlMinutes: formData.get("quoteTtlMinutes"),
@@ -131,12 +135,12 @@ export async function saveMarketplacePricingSettingsAction(
     minimumGrossSpreadCents: formData.get("minimumGrossSpreadCents"),
     configVersion: formData.get("configVersion") || "MARKETPLACE_SETTINGS_V1",
   });
-  if (!parsed.success) return { error: "Invalid input" };
+  if (!parsed.success) return { error: t("errorDescription") };
 
   try {
     await updateMarketplacePricingSettings(parsed.data, admin.id);
   } catch {
-    return { error: "Could not save settings" };
+    return { error: t("errorDescription") };
   }
 
   revalidatePath("/admin/pricing");

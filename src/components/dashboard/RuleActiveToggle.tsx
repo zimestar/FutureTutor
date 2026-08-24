@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 
 export function RuleActiveToggle({
   ruleId,
@@ -11,6 +12,7 @@ export function RuleActiveToggle({
   isActive: boolean;
   toggleAction: (ruleId: string, isActive: boolean) => Promise<void>;
 }) {
+  const t = useTranslations("admin.pricing");
   const [pending, startTransition] = useTransition();
 
   return (
@@ -22,7 +24,7 @@ export function RuleActiveToggle({
         isActive ? "bg-success-light text-success" : "bg-neutral-100 text-neutral-600"
       }`}
     >
-      {isActive ? "Active" : "Inactive"}
+      {isActive ? t("active") : t("inactive")}
     </button>
   );
 }

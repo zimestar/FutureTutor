@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { saveTutorBasePayoutRuleAction } from "@/lib/actions/pricingAdmin";
@@ -27,22 +28,24 @@ export function TutorBasePayoutRuleForm({
   subjects: RuleFormOption[];
   levels: RuleFormOption[];
 }) {
+  const t = useTranslations("admin.pricing");
+  const tStatus = useTranslations("admin.statuses");
   const boundAction = saveTutorBasePayoutRuleAction.bind(null, ruleId);
   const [state, formAction, pending] = useActionState(boundAction, undefined);
 
   return (
     <form action={formAction} className="grid grid-cols-2 gap-3 rounded-lg border border-neutral-200 p-4 md:grid-cols-7">
       {state?.error && <p className="col-span-full text-sm font-semibold text-error">{state.error}</p>}
-      {state?.success && <p className="col-span-full text-sm font-semibold text-success">Saved.</p>}
+      {state?.success && <p className="col-span-full text-sm font-semibold text-success">{t("saved")}</p>}
       <Select name="tutorTier" defaultValue={initial?.tutorTier ?? "NEW"}>
         {TIERS.map((tier) => (
           <option key={tier} value={tier}>
-            {tier}
+            {tStatus(tier)}
           </option>
         ))}
       </Select>
       <Select name="subjectId" defaultValue={initial?.subjectId ?? ""}>
-        <option value="">Any subject</option>
+        <option value="">{t("anySubject")}</option>
         {subjects.map((s) => (
           <option key={s.id} value={s.id}>
             {s.label}
@@ -50,7 +53,7 @@ export function TutorBasePayoutRuleForm({
         ))}
       </Select>
       <Select name="academicLevelId" defaultValue={initial?.academicLevelId ?? ""}>
-        <option value="">Any level</option>
+        <option value="">{t("anyLevel")}</option>
         {levels.map((l) => (
           <option key={l.id} value={l.id}>
             {l.label}
@@ -62,7 +65,7 @@ export function TutorBasePayoutRuleForm({
         type="number"
         min={15}
         step={15}
-        placeholder="Duration (min)"
+        placeholder={t("duration")}
         defaultValue={initial?.baseDurationMinutes ?? 60}
         required
       />
@@ -70,14 +73,14 @@ export function TutorBasePayoutRuleForm({
         name="payoutCents"
         type="number"
         min={0}
-        placeholder="Payout (cents)"
+        placeholder={t("payoutCents")}
         defaultValue={initial?.payoutCents ?? ""}
         required
       />
       <input type="hidden" name="currency" value={initial?.currency ?? "CAD"} />
       <Input name="payoutVersion" defaultValue={initial?.payoutVersion ?? "TUTOR_PAYOUT_V1"} />
       <Button type="submit" size="sm" disabled={pending}>
-        {ruleId ? "Save" : "Add rule"}
+        {ruleId ? t("save") : t("addRule")}
       </Button>
     </form>
   );

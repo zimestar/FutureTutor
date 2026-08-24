@@ -3,7 +3,21 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+const supabaseHostname = (() => {
+  try {
+    const url = process.env.SUPABASE_URL;
+    return url ? new URL(url).hostname : null;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: supabaseHostname
+      ? [{ protocol: "https", hostname: supabaseHostname, pathname: "/storage/v1/object/public/tutor-profile-images/**" }]
+      : [],
+  },
   turbopack: {
     root: __dirname,
   },

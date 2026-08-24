@@ -24,16 +24,22 @@ export default async function AdminDashboardPage({
   const t = await getTranslations({ locale, namespace: "dashboard.admin" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
 
-  const [userCount, tutorCount, pendingTutorCount] = await Promise.all([
+  const [userCount, tutorCount, pendingTutorCount, studentCount, upcomingBookingCount, activeSessionCount] = await Promise.all([
     db.user.count(),
     db.tutorProfile.count(),
     db.tutorProfile.count({ where: { applicationStatus: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
+    db.studentProfile.count(),
+    db.booking.count({ where: { status: "CONFIRMED", startAt: { gte: new Date() } } }),
+    db.session_.count({ where: { status: "IN_PROGRESS" } }),
   ]);
 
   const stats = [
     { label: t("stats.totalUsers"), value: userCount, href: undefined },
     { label: t("stats.totalTutors"), value: tutorCount, href: "/admin/tutors?status=all" },
     { label: t("stats.pendingApplications"), value: pendingTutorCount, href: "/admin/tutors" },
+    { label: t("stats.totalStudents"), value: studentCount, href: "/admin/students" },
+    { label: t("stats.upcomingBookings"), value: upcomingBookingCount, href: "/admin/bookings?status=CONFIRMED" },
+    { label: t("stats.activeSessions"), value: activeSessionCount, href: "/admin/sessions?status=IN_PROGRESS" },
   ];
 
   return (
@@ -41,7 +47,7 @@ export default async function AdminDashboardPage({
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat) => {
           const card = (
             <div className="rounded-xl border border-neutral-200 bg-white p-6 transition-colors hover:border-blue/30">

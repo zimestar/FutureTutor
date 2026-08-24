@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
 import { adminNavItems } from "@/lib/adminNav";
+import { Avatar } from "@/components/ui/Avatar";
 
 const PENDING_STATUSES: TutorApplicationStatus[] = [
   "SUBMITTED",
@@ -49,7 +50,7 @@ export default async function AdminTutorsPage({
   const tutors = await db.tutorProfile.findMany({
     where: showAll ? {} : { applicationStatus: { in: PENDING_STATUSES } },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, image: true } },
       subjects: { select: { subject: { select: { slug: true } } } },
     },
     orderBy: { updatedAt: "desc" },
@@ -84,7 +85,9 @@ export default async function AdminTutorsPage({
               href={`/admin/tutors/${tutor.id}`}
               className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 transition-colors hover:border-blue/40 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-start gap-4">
+                <Avatar name={tutor.user.name ?? tutor.user.email} src={tutor.user.image ?? undefined} size={56} />
+                <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-bold text-navy">{tutor.user.name}</p>
                   <Badge variant={tutor.applicationStatus === "APPROVED" ? "mint" : "outline"}>
@@ -102,6 +105,7 @@ export default async function AdminTutorsPage({
                     ))}
                   </div>
                 )}
+                </div>
               </div>
               <span className="shrink-0 text-sm font-semibold text-blue">{t("viewApplication")} →</span>
             </Link>

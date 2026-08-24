@@ -26,6 +26,8 @@ export default async function AdminQuickMatchPage({
 
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
+  const t = await getTranslations({ locale, namespace: "admin.quickMatch" });
+  const tStatus = await getTranslations({ locale, namespace: "admin.statuses" });
 
   await expireStaleInvitationsAndAdvance();
 
@@ -45,13 +47,13 @@ export default async function AdminQuickMatchPage({
   return (
     <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
       <AutoRefresh />
-      <h1 className="text-2xl font-bold text-navy">Quick Match</h1>
+      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-slate">
-        Dispatch/ranking configuration and a live view of in-flight requests, for support/debugging visibility.
+        {t("description")}
       </p>
 
       <section className="mt-8">
-        <h2 className="mb-3 text-lg font-bold text-navy">Ranking &amp; dispatch settings</h2>
+        <h2 className="mb-3 text-lg font-bold text-navy">{t("settings")}</h2>
         {settings && (
           <TutorRankingSettingsForm
             values={{
@@ -71,9 +73,9 @@ export default async function AdminQuickMatchPage({
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-3 text-lg font-bold text-navy">In-flight requests ({liveRequests.length})</h2>
+        <h2 className="mb-3 text-lg font-bold text-navy">{t("requests", { count: liveRequests.length })}</h2>
         {liveRequests.length === 0 ? (
-          <p className="text-sm text-slate">No requests are currently being priced or matched.</p>
+          <p className="text-sm text-slate">{t("empty")}</p>
         ) : (
           <div className="flex flex-col gap-2">
             {liveRequests.map((request) => (
@@ -82,11 +84,10 @@ export default async function AdminQuickMatchPage({
                   <span className="font-semibold text-navy">
                     {tSubjects(request.subject.slug)} — {request.studentProfile.firstName} {request.studentProfile.lastName}
                   </span>
-                  <Badge variant={request.status === "MATCHING" ? "blue" : "outline"}>{request.status}</Badge>
+                  <Badge variant={request.status === "MATCHING" ? "blue" : "outline"}>{tStatus(request.status)}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-slate">
-                  Round {request.dispatchRound} · {request.invitations.length} pending invitation
-                  {request.invitations.length === 1 ? "" : "s"}
+                  {t("roundInvitations", { round: request.dispatchRound, count: request.invitations.length })}
                   {request.invitations.length > 0 &&
                     ` (${request.invitations.map((i) => i.tutorProfile.user.name ?? "?").join(", ")})`}
                 </p>

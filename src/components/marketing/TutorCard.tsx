@@ -16,7 +16,7 @@ export function TutorCard({ tutor }: { tutor: TutorCardData }) {
   return (
     <Card className="flex h-full flex-col p-5 hover:shadow-card-hover">
       <div className="flex items-start gap-4">
-        <Avatar name={tutor.firstName} size={56} />
+        <Avatar name={tutor.firstName} src={tutor.image ?? undefined} size={56} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-lg font-bold text-navy">{tutor.firstName}</h3>
           <p className="text-sm font-semibold text-slate">{tutor.headline}</p>

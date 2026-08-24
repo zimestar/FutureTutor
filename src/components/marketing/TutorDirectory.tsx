@@ -50,7 +50,7 @@ export async function TutorDirectory({ locale, searchParams, authenticated = fal
         ...(modeKey ? { OR: [{ learningMode: displayModeToDb(modeKey) }, { learningMode: "BOTH" }] } : {}),
       },
       include: {
-        user: { select: { name: true } },
+        user: { select: { name: true, image: true } },
         subjects: { select: { subject: { select: { slug: true } } } },
       },
       orderBy: { createdAt: "desc" },

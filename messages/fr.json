@@ -268,6 +268,9 @@
     "columns": {
       "students": "Élèves",
       "tutors": "Tuteurs",
+      "students": "Élèves",
+      "sessions": "Séances",
+      "users": "Utilisateurs",
       "company": "Entreprise",
       "legal": "Mentions légales"
     },
@@ -368,6 +371,18 @@
         "title": "Ce que les familles peuvent voir",
         "description": "Les tuteurs approuvés peuvent continuer à mettre ces renseignements à jour. L'enregistrement d'une modification ne signifie pas qu'une nouvelle évaluation a commencé."
       }
+    },
+    "photo": {
+      "title": "Photo de profil",
+      "description": "Utilisez une photo claire et accueillante que les élèves et les familles pourront reconnaître.",
+      "change": "Choisir une photo",
+      "hint": "JPEG, PNG ou WebP. Maximum de 5 Mo.",
+      "upload": "Téléverser la photo",
+      "uploading": "Téléversement…",
+      "remove": "Retirer la photo",
+      "uploaded": "Photo de profil mise à jour.",
+      "removed": "Photo de profil retirée.",
+      "errors": { "denied": "Vous ne pouvez pas modifier cette photo de profil.", "empty": "Choisissez une image à téléverser.", "tooLarge": "L’image doit avoir une taille maximale de 5 Mo.", "unsupported": "Utilisez une image JPEG, PNG ou WebP.", "invalidContent": "Le fichier sélectionné n’est pas une image valide.", "storage": "Le service de photos est temporairement indisponible. Votre photo actuelle n’a pas été modifiée.", "generic": "La photo n’a pas pu être mise à jour. Veuillez réessayer." }
     },
     "headlineLabel": "Titre professionnel",
     "bioLabel": "À propos de vous",
@@ -823,6 +838,9 @@
         "totalUsers": "Utilisateurs au total",
         "totalTutors": "Profils de tuteurs",
         "pendingApplications": "Demandes en attente"
+        ,"totalStudents": "Profils d’élèves",
+        "upcomingBookings": "Réservations à venir",
+        "activeSessions": "Séances en cours"
       },
       "familyInvitations": {
         "title": "Invitations familiales nécessitant une attention",
@@ -845,6 +863,20 @@
     }
   },
   "admin": {
+    "shared": { "errorTitle": "Cette vue d’administration n’a pas pu être chargée", "errorDescription": "Aucune modification n’a été apportée. Essayez de charger les données actuelles de nouveau.", "retry": "Réessayer" },
+    "statuses": { "PENDING": "En attente", "REQUIRES_ACTION": "Action requise", "AUTHORIZED": "Autorisé", "CAPTURED": "Capturé", "CAPTURE_FAILED": "Échec de la capture", "FAILED": "Échoué", "CANCELLED": "Annulé", "PARTIALLY_REFUNDED": "Partiellement remboursé", "REFUNDED": "Remboursé", "PRICED": "Tarif établi", "MATCHING": "Jumelage en cours", "NEW": "Nouveau", "VERIFIED": "Vérifié", "SENIOR": "Expérimenté", "ELITE": "Élite", "DRAFT": "Brouillon", "PENDING_PAYMENT": "Paiement en attente", "CONFIRMED": "Confirmée", "COMPLETED": "Terminée", "SCHEDULED": "Planifiée", "IN_PROGRESS": "En cours", "NO_SHOW": "Absence", "INTERRUPTED": "Terminée plus tôt", "ONLINE": "En ligne", "IN_PERSON": "En personne" },
+    "quickMatch": { "title": "Jumelage rapide", "description": "Configuration de la répartition et du classement avec une vue en direct des demandes en cours de jumelage.", "settings": "Paramètres de classement et de répartition", "requests": "Demandes en cours ({count})", "empty": "Aucune demande n’est actuellement en tarification ou en jumelage.", "roundInvitations": "Ronde {round} · {count, plural, one {# invitation en attente} other {# invitations en attente}}", "saved": "Enregistré.", "rankingVersion": "Version du classement", "saveSettings": "Enregistrer les paramètres", "fields": { "responseWindowMinutes": "Délai de réponse (minutes)", "sequentialInvitationCount": "Invitations séquentielles", "parallelBatchSize": "Taille du lot parallèle", "maxDispatchAttempts": "Nombre maximal de tentatives", "tutorScoreWeight": "Pondération du score du tuteur", "bookingReliabilityWeight": "Pondération de la fiabilité des réservations", "invitationResponsivenessWeight": "Pondération de la réactivité aux invitations", "tutorTierWeight": "Pondération du palier du tuteur", "minInvitationsForReliabilityData": "Nombre minimal d’invitations pour les données de fiabilité" } },
+    "payments": { "title": "Paiements", "description": "Consultez les paiements, l’état des PaymentIntent Stripe, les remboursements, les litiges et la rémunération liée du tuteur. Le rapprochement vérifie uniquement l’état de référence de Stripe; il ne remplace jamais un état manuellement.", "empty": "Aucun paiement.", "dispute": "Litige : {status}", "bookingWith": "{subject} avec {tutor}", "refunded": "(remboursé : {amount})", "earning": "rémunération : {status}", "checking": "Vérification…", "reconcile": "Revérifier avec Stripe" },
+    "pricing": { "title": "Tarification et rémunération", "description": "FutureTutor établit indépendamment les prix clients et la rémunération des tuteurs. Modifier une règle déjà utilisée par un devis crée une nouvelle version sans réécrire l’historique.", "customerRules": "Règles de prix de base des clients", "tutorRules": "Règles de rémunération de base des tuteurs", "marketplaceSettings": "Paramètres de tarification de la plateforme", "anySubject": "Toutes les matières", "anyLevel": "Tous les niveaux", "addNewRule": "Ajouter une nouvelle règle", "saved": "Enregistré.", "active": "Active", "inactive": "Inactive", "duration": "Durée (min)", "priceCents": "Prix (cents)", "payoutCents": "Rémunération (cents)", "save": "Enregistrer", "addRule": "Ajouter la règle", "configVersion": "Version de configuration", "saveSettings": "Enregistrer les paramètres", "fields": { "quoteTtlMinutes": "Durée de validité du devis (minutes)", "urgencyShortNoticeThresholdHours": "Seuil de court préavis (heures)", "urgencyShortNoticeAmountCents": "Supplément de court préavis (cents)", "urgencyUrgentThresholdHours": "Seuil d’urgence (heures)", "urgencyUrgentAmountCents": "Supplément d’urgence (cents)", "lowSupplyThresholdCount": "Seuil de faible disponibilité des tuteurs", "lowSupplyAmountCents": "Supplément de faible disponibilité (cents)", "tutorUrgencyBonusCents": "Prime d’urgence du tuteur (cents)", "minimumGrossSpreadCents": "Marge brute minimale (cents)" } },
+    "operations": {
+      "students": { "title": "Élèves", "description": "Recherchez les profils d’apprentissage et consultez leur contexte opérationnel.", "search": "Rechercher un nom ou courriel", "management": "Gestion", "all": "Tous", "selfManaged": "Autogéré", "guardianManaged": "Géré par un parent", "apply": "Appliquer les filtres", "empty": "Aucun élève ne correspond à ces filtres.", "noLogin": "Aucun compte lié", "summary": "{bookings} réservations · {guardians} relations parentales" },
+      "studentDetail": { "noLogin": "Aucun compte lié", "selfManaged": "Autogéré", "guardianManaged": "Géré par un parent", "academic": "Profil scolaire", "level": "Niveau scolaire", "location": "Emplacement", "mode": "Mode de tutorat", "notProvided": "Non indiqué", "guardians": "Relations parentales", "noGuardians": "Aucune relation parentale.", "goals": "Objectifs d’apprentissage", "noGoals": "Aucun objectif enregistré.", "recentBookings": "Réservations récentes", "noBookings": "Aucune réservation enregistrée." },
+      "bookings": { "title": "Réservations", "description": "Consultez les engagements de tutorat sans modifier le cycle de vie ni l’état du paiement.", "search": "Élève ou tuteur", "status": "Statut de réservation", "mode": "Mode", "all": "Tous", "apply": "Appliquer les filtres", "empty": "Aucune réservation ne correspond à ces filtres.", "details": "Voir les détails de la réservation" },
+      "bookingDetail": { "title": "Détails de la réservation", "back": "Retour aux réservations", "bookingId": "ID de réservation", "student": "Élève", "tutor": "Tuteur", "subject": "Matière", "level": "Niveau", "mode": "Mode", "scheduled": "Plage prévue", "created": "Créée", "session": "Séance", "noSession": "Aucun dossier de séance", "notProvided": "Non indiqué" },
+      "sessionDetail": { "title": "Détails de la séance", "back": "Retour aux séances", "sessionId": "ID de séance", "booking": "ID de réservation", "student": "Élève", "tutor": "Tuteur", "mode": "Mode", "scheduled": "Plage prévue", "started": "Commencée", "completed": "Terminée", "ended": "Terminée plus tôt", "noShow": "Absence déterminée", "studentCheckIn": "Présence de l’élève", "tutorCheckIn": "Présence du tuteur", "attendanceCount": "Événements de présence", "notRecorded": "Non enregistré" },
+      "sessions": { "title": "Séances", "description": "Vue opérationnelle de l’état des séances et des présences enregistrées.", "status": "Statut de séance", "all": "Tous", "apply": "Appliquer le filtre", "empty": "Aucune séance ne correspond à ce filtre.", "attendance": "Tuteur : {tutor} · Élève : {student}", "present": "présent", "absent": "non enregistrée", "details": "Voir les détails" },
+      "users": { "title": "Utilisateurs", "description": "Répertoire de comptes en lecture seule. Les mots de passe, jetons et données d’authentification privées ne sont jamais affichés.", "search": "Nom ou courriel", "role": "Rôle", "state": "État du compte", "all": "Tous", "active": "Actif", "deactivated": "Désactivé", "apply": "Appliquer les filtres", "empty": "Aucun utilisateur ne correspond à ces filtres.", "unnamed": "Utilisateur sans nom" }
+    },
     "tutors": {
       "title": "Demandes de tuteurs",
       "description": "Examinez et approuvez les demandes de tuteurs avant qu'ils deviennent visibles dans les recherches publiques.",

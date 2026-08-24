@@ -12,6 +12,7 @@ import { Logo } from "@/components/marketing/Logo";
 import { Drawer } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
+import { Avatar } from "@/components/ui/Avatar";
 
 export interface DashboardNavItem {
   label: string;
@@ -39,6 +40,10 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/tutor/payouts": WalletCards,
   "/admin": LayoutDashboard,
   "/admin/tutors": UsersRound,
+  "/admin/students": GraduationCap,
+  "/admin/bookings": CalendarDays,
+  "/admin/sessions": BookOpenCheck,
+  "/admin/users": UserRound,
   "/admin/pricing": SlidersHorizontal,
   "/admin/quick-match": Sparkles,
   "/admin/payments": CreditCard,
@@ -91,12 +96,11 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
   );
 }
 
-function AccountArea({ userName, compact = false }: { userName: string; compact?: boolean }) {
+function AccountArea({ userName, userImage, compact = false }: { userName: string; userImage?: string | null; compact?: boolean }) {
   const t = useTranslations("dashboard");
-  const initial = userName.trim().charAt(0).toUpperCase() || "F";
   return (
     <div className={cn("flex items-center gap-3", compact ? "min-w-0" : "rounded-lg border border-border bg-surface-subtle p-3")}>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white" aria-hidden="true">{initial}</span>
+      <Avatar name={userName || "FutureTutor"} src={userImage ?? undefined} size={36} className="shrink-0" />
       <div className="min-w-0 flex-1">
         {!compact && <p className="text-xs text-text-muted">{t("signedInAs")}</p>}
         <p className="truncate text-sm font-bold text-text-primary">{userName}</p>
@@ -105,7 +109,7 @@ function AccountArea({ userName, compact = false }: { userName: string; compact?
   );
 }
 
-export function DashboardShell({ navItems, userName, children }: { navItems: DashboardNavItem[]; userName: string; children: ReactNode }) {
+export function DashboardShell({ navItems, userName, userImage, children }: { navItems: DashboardNavItem[]; userName: string; userImage?: string | null; children: ReactNode }) {
   const t = useTranslations("dashboard");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const closeNavigation = useCallback(() => setNavigationOpen(false), []);
@@ -116,7 +120,7 @@ export function DashboardShell({ navItems, userName, children }: { navItems: Das
         <div className="flex min-h-20 items-center border-b border-border px-6"><Logo className="h-9" /></div>
         <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} /></div>
         <div className="border-t border-border p-4">
-          <AccountArea userName={userName} />
+          <AccountArea userName={userName} userImage={userImage} />
           <form action={signOutAction} className="mt-2">
             <button type="submit" className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary">
               <LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}
@@ -131,7 +135,7 @@ export function DashboardShell({ navItems, userName, children }: { navItems: Das
             <Menu className="size-5" aria-hidden="true" />
           </button>
           <Logo className="h-8" />
-          <div className="ml-auto min-w-0"><AccountArea userName={userName} compact /></div>
+          <div className="ml-auto min-w-0"><AccountArea userName={userName} userImage={userImage} compact /></div>
         </header>
 
         <main id="dashboard-main" className="min-h-screen px-(--spacing-page-x) py-(--spacing-page-y)">{children}</main>
@@ -140,7 +144,7 @@ export function DashboardShell({ navItems, userName, children }: { navItems: Das
       <Drawer open={navigationOpen} onClose={closeNavigation} id="dashboard-mobile-navigation" title={<Logo className="h-8" />} closeLabel={t("closeNavigation")}>
         <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} onNavigate={closeNavigation} /></div>
         <div className="border-t border-border p-4">
-          <AccountArea userName={userName} />
+          <AccountArea userName={userName} userImage={userImage} />
           <form action={signOutAction} className="mt-2">
             <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary"><LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}</button>
           </form>

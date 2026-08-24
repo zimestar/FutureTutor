@@ -23,7 +23,7 @@ async function findApprovedTutor(slug: string) {
   return db.tutorProfile.findFirst({
     where: { slug, applicationStatus: "APPROVED" },
     include: {
-      user: { select: { name: true } },
+      user: { select: { name: true, image: true } },
       subjects: { select: { subject: { select: { id: true, slug: true } } } },
       levels: { select: { academicLevel: { select: { id: true, slug: true } } } },
       languages: { select: { language: true } },
@@ -102,7 +102,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr]">
           <div>
             <div className="flex items-start gap-5">
-              <Avatar name={firstName} size={80} />
+              <Avatar name={firstName} src={tutor.user.image ?? undefined} size={80} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-3xl font-bold text-navy">{firstName}</h1>

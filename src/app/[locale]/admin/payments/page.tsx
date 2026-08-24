@@ -39,6 +39,8 @@ export default async function AdminPaymentsPage({
   }
 
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
+  const t = await getTranslations({ locale, namespace: "admin.payments" });
+  const tStatus = await getTranslations({ locale, namespace: "admin.statuses" });
 
   const payments = await db.payment.findMany({
     orderBy: { createdAt: "desc" },
@@ -60,16 +62,12 @@ export default async function AdminPaymentsPage({
 
   return (
     <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">Payments</h1>
-      <p className="mt-2 max-w-2xl text-slate">
-        Every Payment, its Stripe PaymentIntent status, refunds, dispute status, and the linked booking&apos;s tutor
-        earning. The only manual action is a strictly-scoped re-check against Stripe&apos;s own authoritative
-        state — never a raw status override.
-      </p>
+      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+      <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
 
       <div className="mt-8 flex flex-col gap-2">
         {payments.length === 0 ? (
-          <p className="text-sm text-slate">No payments yet.</p>
+          <p className="text-sm text-slate">{t("empty")}</p>
         ) : (
           payments.map((payment) => (
             <div key={payment.id} className="rounded-lg border border-neutral-200 bg-white p-3 text-sm">
@@ -81,21 +79,21 @@ export default async function AdminPaymentsPage({
                   {payment.booking && (
                     <span className="text-slate">
                       {" "}
-                      — {payment.booking.subject.slug} with {payment.booking.tutorProfile.user.name}
+                      — {t("bookingWith", { subject: payment.booking.subject.slug, tutor: payment.booking.tutorProfile.user.name ?? "" })}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={STATUS_BADGE[payment.status] ?? "outline"}>{payment.status}</Badge>
-                  {payment.disputeStatus && <Badge variant="outline">Dispute: {payment.disputeStatus}</Badge>}
+                  <Badge variant={STATUS_BADGE[payment.status] ?? "outline"}>{tStatus(payment.status)}</Badge>
+                  {payment.disputeStatus && <Badge variant="outline">{t("dispute", { status: payment.disputeStatus })}</Badge>}
                 </div>
               </div>
               <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate">
                 <span>
                   {currencyFormatter.format(payment.amountCents / 100)}
                   {payment.refundedAmountCents > 0 &&
-                    ` (refunded ${currencyFormatter.format(payment.refundedAmountCents / 100)})`}
-                  {payment.booking?.earning && ` · earning: ${payment.booking.earning.status}`}
+                    ` ${t("refunded", { amount: currencyFormatter.format(payment.refundedAmountCents / 100) })}`}
+                  {payment.booking?.earning && ` · ${t("earning", { status: payment.booking.earning.status })}`}
                 </span>
                 {RECONCILABLE_STATUSES.has(payment.status) && payment.stripePaymentIntentId && (
                   <ReconcilePaymentButton paymentId={payment.id} />

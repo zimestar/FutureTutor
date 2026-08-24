@@ -30,6 +30,7 @@ import { scheduleInterviewAction } from "@/lib/actions/tutorInterview";
 import { requireTrainingAction } from "@/lib/actions/tutorTraining";
 import { requireExamAction } from "@/lib/actions/tutorExam";
 import { adminNavItems } from "@/lib/adminNav";
+import { Avatar } from "@/components/ui/Avatar";
 
 export default async function AdminTutorDetailPage({
   params,
@@ -55,7 +56,7 @@ export default async function AdminTutorDetailPage({
   const tutor = await db.tutorProfile.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, image: true } },
       education: true,
       certifications: true,
       documents: { orderBy: { uploadedAt: "desc" } },
@@ -85,12 +86,15 @@ export default async function AdminTutorDetailPage({
       navItems={adminNavItems(tNav)}
       userName={user.name ?? ""}
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar name={tutor.user.name ?? tutor.user.email} src={tutor.user.image ?? undefined} size={72} />
+        <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-navy">{tutor.user.name}</h1>
         <Badge variant={status === "APPROVED" ? "mint" : "outline"}>{tStatus(status)}</Badge>
         {tutor.validationVersion && (
           <span className="text-xs text-slate">{t("validationVersion", { version: tutor.validationVersion })}</span>
         )}
+        </div>
       </div>
       <p className="mt-1 text-sm text-slate">{tutor.user.email}</p>
 

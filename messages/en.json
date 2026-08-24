@@ -268,6 +268,9 @@
     "columns": {
       "students": "Students",
       "tutors": "Tutors",
+      "students": "Students",
+      "sessions": "Sessions",
+      "users": "Users",
       "company": "Company",
       "legal": "Legal"
     },
@@ -368,6 +371,18 @@
         "title": "What families can see",
         "description": "Approved Tutors remain able to update this information. Saving a change does not imply that a new review has started."
       }
+    },
+    "photo": {
+      "title": "Profile photo",
+      "description": "Use a clear, friendly photo that students and families can recognize.",
+      "change": "Choose photo",
+      "hint": "JPEG, PNG or WebP. Maximum 5 MB.",
+      "upload": "Upload photo",
+      "uploading": "Uploading…",
+      "remove": "Remove photo",
+      "uploaded": "Profile photo updated.",
+      "removed": "Profile photo removed.",
+      "errors": { "denied": "You cannot update this profile photo.", "empty": "Choose an image to upload.", "tooLarge": "The image must be 5 MB or smaller.", "unsupported": "Use a JPEG, PNG or WebP image.", "invalidContent": "The selected file is not a valid image.", "storage": "The photo service is temporarily unavailable. Your current photo was not changed.", "generic": "The photo could not be updated. Please try again." }
     },
     "headlineLabel": "Professional headline",
     "bioLabel": "About you",
@@ -823,6 +838,9 @@
         "totalUsers": "Total Users",
         "totalTutors": "Tutor Profiles",
         "pendingApplications": "Pending Applications"
+        ,"totalStudents": "Student profiles",
+        "upcomingBookings": "Upcoming bookings",
+        "activeSessions": "Sessions in progress"
       },
       "familyInvitations": {
         "title": "Family Invitations Requiring Attention",
@@ -845,6 +863,20 @@
     }
   },
   "admin": {
+    "shared": { "errorTitle": "This Admin view could not load", "errorDescription": "No changes were made. Try loading the current data again.", "retry": "Try again" },
+    "statuses": { "PENDING": "Pending", "REQUIRES_ACTION": "Action required", "AUTHORIZED": "Authorized", "CAPTURED": "Captured", "CAPTURE_FAILED": "Capture failed", "FAILED": "Failed", "CANCELLED": "Cancelled", "PARTIALLY_REFUNDED": "Partially refunded", "REFUNDED": "Refunded", "PRICED": "Priced", "MATCHING": "Matching", "NEW": "New", "VERIFIED": "Verified", "SENIOR": "Senior", "ELITE": "Elite", "DRAFT": "Draft", "PENDING_PAYMENT": "Pending payment", "CONFIRMED": "Confirmed", "COMPLETED": "Completed", "SCHEDULED": "Scheduled", "IN_PROGRESS": "In progress", "NO_SHOW": "No-show", "INTERRUPTED": "Ended early", "ONLINE": "Online", "IN_PERSON": "In person" },
+    "quickMatch": { "title": "Quick Match", "description": "Dispatch and ranking configuration with a live view of requests currently being matched.", "settings": "Ranking and dispatch settings", "requests": "In-flight requests ({count})", "empty": "No requests are currently being priced or matched.", "roundInvitations": "Round {round} · {count, plural, one {# pending invitation} other {# pending invitations}}", "saved": "Saved.", "rankingVersion": "Ranking version", "saveSettings": "Save settings", "fields": { "responseWindowMinutes": "Response window (minutes)", "sequentialInvitationCount": "Sequential invitations", "parallelBatchSize": "Parallel batch size", "maxDispatchAttempts": "Maximum dispatch attempts", "tutorScoreWeight": "Tutor Score weight", "bookingReliabilityWeight": "Booking reliability weight", "invitationResponsivenessWeight": "Invitation responsiveness weight", "tutorTierWeight": "Tutor tier weight", "minInvitationsForReliabilityData": "Minimum invitations for reliability data" } },
+    "payments": { "title": "Payments", "description": "Review payments, Stripe PaymentIntent status, refunds, disputes, and linked Tutor earnings. Reconciliation only re-checks Stripe's authoritative state; it never overrides status manually.", "empty": "No payments yet.", "dispute": "Dispute: {status}", "bookingWith": "{subject} with {tutor}", "refunded": "(refunded {amount})", "earning": "earning: {status}", "checking": "Checking…", "reconcile": "Re-check with Stripe" },
+    "pricing": { "title": "Pricing & Payouts", "description": "FutureTutor sets customer prices and Tutor payouts independently. Editing a rule already used by a quote creates a new version instead of rewriting history.", "customerRules": "Customer base price rules", "tutorRules": "Tutor base payout rules", "marketplaceSettings": "Marketplace pricing settings", "anySubject": "Any subject", "anyLevel": "Any level", "addNewRule": "Add a new rule", "saved": "Saved.", "active": "Active", "inactive": "Inactive", "duration": "Duration (min)", "priceCents": "Price (cents)", "payoutCents": "Payout (cents)", "save": "Save", "addRule": "Add rule", "configVersion": "Config version", "saveSettings": "Save settings", "fields": { "quoteTtlMinutes": "Quote TTL (minutes)", "urgencyShortNoticeThresholdHours": "Short-notice threshold (hours)", "urgencyShortNoticeAmountCents": "Short-notice surcharge (cents)", "urgencyUrgentThresholdHours": "Urgent threshold (hours)", "urgencyUrgentAmountCents": "Urgent surcharge (cents)", "lowSupplyThresholdCount": "Low-supply Tutor count threshold", "lowSupplyAmountCents": "Low-supply surcharge (cents)", "tutorUrgencyBonusCents": "Tutor urgency bonus (cents)", "minimumGrossSpreadCents": "Minimum gross spread (cents)" } },
+    "operations": {
+      "students": { "title": "Students", "description": "Find learner profiles and review their operational context.", "search": "Search name or email", "management": "Management", "all": "All", "selfManaged": "Self-managed", "guardianManaged": "Guardian-managed", "apply": "Apply filters", "empty": "No students match these filters.", "noLogin": "No linked login", "summary": "{bookings} bookings · {guardians} guardian relationships" },
+      "studentDetail": { "noLogin": "No linked login", "selfManaged": "Self-managed", "guardianManaged": "Guardian-managed", "academic": "Academic profile", "level": "Academic level", "location": "Location", "mode": "Tutoring mode", "notProvided": "Not provided", "guardians": "Guardian relationships", "noGuardians": "No guardian relationships.", "goals": "Learning goals", "noGoals": "No learning goals recorded.", "recentBookings": "Recent bookings", "noBookings": "No bookings recorded." },
+      "bookings": { "title": "Bookings", "description": "Review scheduled tutoring commitments without changing lifecycle or payment state.", "search": "Student or Tutor", "status": "Booking status", "mode": "Mode", "all": "All", "apply": "Apply filters", "empty": "No bookings match these filters.", "details": "View booking details" },
+      "bookingDetail": { "title": "Booking details", "back": "Back to bookings", "bookingId": "Booking ID", "student": "Student", "tutor": "Tutor", "subject": "Subject", "level": "Level", "mode": "Mode", "scheduled": "Scheduled window", "created": "Created", "session": "Session", "noSession": "No Session record", "notProvided": "Not provided" },
+      "sessionDetail": { "title": "Session details", "back": "Back to sessions", "sessionId": "Session ID", "booking": "Booking ID", "student": "Student", "tutor": "Tutor", "mode": "Mode", "scheduled": "Scheduled window", "started": "Started", "completed": "Completed", "ended": "Ended early", "noShow": "No-show converged", "studentCheckIn": "Student check-in", "tutorCheckIn": "Tutor check-in", "attendanceCount": "Attendance events", "notRecorded": "Not recorded" },
+      "sessions": { "title": "Sessions", "description": "Operational visibility into session state and recorded attendance evidence.", "status": "Session status", "all": "All", "apply": "Apply filter", "empty": "No sessions match this filter.", "attendance": "Tutor: {tutor} · Student: {student}", "present": "present", "absent": "not recorded", "details": "View details" },
+      "users": { "title": "Users", "description": "Read-only account directory. Passwords, tokens and private authentication data are never shown.", "search": "Name or email", "role": "Role", "state": "Account state", "all": "All", "active": "Active", "deactivated": "Deactivated", "apply": "Apply filters", "empty": "No users match these filters.", "unnamed": "Unnamed user" }
+    },
     "tutors": {
       "title": "Tutor applications",
       "description": "Review and approve tutor applications before they become publicly searchable.",

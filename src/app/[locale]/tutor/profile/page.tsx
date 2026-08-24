@@ -9,6 +9,7 @@ import { tutorNavItems } from "@/lib/tutorNav";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
+import { TutorProfileImageForm } from "@/components/dashboard/TutorProfileImageForm";
 
 export default async function TutorProfilePage({
   params,
@@ -31,6 +32,7 @@ export default async function TutorProfilePage({
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { userId: user.id },
     include: {
+      user: { select: { name: true, image: true } },
       subjects: { select: { subject: { select: { slug: true } } } },
       levels: { select: { academicLevel: { select: { slug: true } } } },
       languages: { select: { language: true } },
@@ -45,7 +47,7 @@ export default async function TutorProfilePage({
   }
 
   return (
-    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""}>
+    <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""} userImage={tutorProfile.user.image}>
       <PageHeader
         eyebrow={t("sections.publicProfile.eyebrow")}
         title={t("title")}
@@ -55,7 +57,13 @@ export default async function TutorProfilePage({
           : undefined}
       />
 
-      <Surface className="mt-8 max-w-4xl" padding="lg" aria-labelledby="profile-identity-title">
+      <Surface className="mt-8 max-w-4xl" padding="lg" aria-labelledby="profile-photo-title">
+        <h2 id="profile-photo-title" className="text-lg font-extrabold text-text-primary">{t("photo.title")}</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{t("photo.description")}</p>
+        <TutorProfileImageForm name={tutorProfile.user.name ?? user.name ?? "Tutor"} image={tutorProfile.user.image} />
+      </Surface>
+
+      <Surface className="mt-6 max-w-4xl" padding="lg" aria-labelledby="profile-identity-title">
         <h2 id="profile-identity-title" className="text-lg font-extrabold text-text-primary">{t("sections.identity.title")}</h2>
         <p className="mt-1 text-sm leading-6 text-text-secondary">{t("sections.identity.description")}</p>
         <div className="mt-6">

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
@@ -19,8 +20,9 @@ export async function saveTutorRankingSettingsAction(
   _prevState: QuickMatchAdminActionState,
   formData: FormData
 ): Promise<QuickMatchAdminActionState> {
+  const t = await getTranslations("admin.shared");
   const admin = await requireAdmin();
-  if (!admin) return { error: "Unauthorized" };
+  if (!admin) return { error: t("errorDescription") };
 
   const parsed = tutorRankingSettingsSchema.safeParse({
     responseWindowMinutes: formData.get("responseWindowMinutes"),
@@ -34,10 +36,10 @@ export async function saveTutorRankingSettingsAction(
     minInvitationsForReliabilityData: formData.get("minInvitationsForReliabilityData"),
     rankingVersion: formData.get("rankingVersion") || "QUICK_MATCH_RANKING_V1",
   });
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  if (!parsed.success) return { error: t("errorDescription") };
 
   const existing = await db.tutorRankingSettings.findFirst();
-  if (!existing) return { error: "TutorRankingSettings is not seeded" };
+  if (!existing) return { error: t("errorDescription") };
 
   await db.tutorRankingSettings.update({
     where: { id: existing.id },

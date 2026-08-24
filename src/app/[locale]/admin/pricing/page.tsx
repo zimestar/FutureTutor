@@ -28,6 +28,8 @@ export default async function AdminPricingPage({
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const tLevels = await getTranslations({ locale, namespace: "gradeLevels" });
+  const t = await getTranslations({ locale, namespace: "admin.pricing" });
+  const tStatus = await getTranslations({ locale, namespace: "admin.statuses" });
 
   const [priceRules, payoutRules, settings, subjects, levels] = await Promise.all([
     db.customerBasePriceRule.findMany({
@@ -48,21 +50,20 @@ export default async function AdminPricingPage({
 
   return (
     <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">Pricing &amp; Payouts</h1>
+      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-slate">
-        FutureTutor sets customer prices and tutor payouts independently — tutors no longer set their own rate.
-        Editing a rule that has already been quoted against creates a new version instead of rewriting history.
+        {t("description")}
       </p>
 
       <section className="mt-8">
-        <h2 className="mb-3 text-lg font-bold text-navy">Customer base price rules</h2>
+        <h2 className="mb-3 text-lg font-bold text-navy">{t("customerRules")}</h2>
         <div className="flex flex-col gap-3">
           {priceRules.map((rule) => (
             <div key={rule.id} className="rounded-lg border border-neutral-200 bg-white p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-semibold text-navy">
-                  {rule.subject ? tSubjects(rule.subject.slug) : "Any subject"} ·{" "}
-                  {rule.academicLevel ? tLevels(rule.academicLevel.slug) : "Any level"}
+                  {rule.subject ? tSubjects(rule.subject.slug) : t("anySubject")} ·{" "}
+                  {rule.academicLevel ? tLevels(rule.academicLevel.slug) : t("anyLevel")}
                 </span>
                 <RuleActiveToggle
                   ruleId={rule.id}
@@ -91,20 +92,20 @@ export default async function AdminPricingPage({
           ))}
         </div>
         <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-navy">Add a new rule</p>
+          <p className="mb-2 text-sm font-semibold text-navy">{t("addNewRule")}</p>
           <CustomerBasePriceRuleForm ruleId={null} subjects={subjectOptions} levels={levelOptions} />
         </div>
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-3 text-lg font-bold text-navy">Tutor base payout rules</h2>
+        <h2 className="mb-3 text-lg font-bold text-navy">{t("tutorRules")}</h2>
         <div className="flex flex-col gap-3">
           {payoutRules.map((rule) => (
             <div key={rule.id} className="rounded-lg border border-neutral-200 bg-white p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-semibold text-navy">
-                  {rule.tutorTier} · {rule.subject ? tSubjects(rule.subject.slug) : "Any subject"} ·{" "}
-                  {rule.academicLevel ? tLevels(rule.academicLevel.slug) : "Any level"}
+                  {tStatus(rule.tutorTier)} · {rule.subject ? tSubjects(rule.subject.slug) : t("anySubject")} ·{" "}
+                  {rule.academicLevel ? tLevels(rule.academicLevel.slug) : t("anyLevel")}
                 </span>
                 <RuleActiveToggle
                   ruleId={rule.id}
@@ -134,14 +135,14 @@ export default async function AdminPricingPage({
           ))}
         </div>
         <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-navy">Add a new rule</p>
+          <p className="mb-2 text-sm font-semibold text-navy">{t("addNewRule")}</p>
           <TutorBasePayoutRuleForm ruleId={null} subjects={subjectOptions} levels={levelOptions} />
         </div>
       </section>
 
       {settings && (
         <section className="mt-10">
-          <h2 className="mb-3 text-lg font-bold text-navy">Marketplace pricing settings</h2>
+          <h2 className="mb-3 text-lg font-bold text-navy">{t("marketplaceSettings")}</h2>
           <MarketplacePricingSettingsForm
             values={{
               quoteTtlMinutes: settings.quoteTtlMinutes,

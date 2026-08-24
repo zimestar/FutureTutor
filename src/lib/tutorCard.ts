@@ -11,7 +11,7 @@ interface TutorProfileForCard {
   learningMode: "ONLINE" | "IN_PERSON" | "BOTH" | null;
   city: string | null;
   yearsExperience: number | null;
-  user: { name: string | null };
+  user: { name: string | null; image?: string | null };
   subjects: { subject: { slug: string } }[];
 }
 
@@ -32,6 +32,7 @@ export function tutorProfileToCardData(
     id: tutor.id,
     slug: tutor.slug,
     firstName: tutor.user.name?.split(" ")[0] ?? "",
+    image: tutor.user.image ?? null,
     headline: tutor.headline ?? "",
     bio: tutor.bio ?? "",
     subjectLabels: tutor.subjects.map((s) => translateSubject(s.subject.slug)),
