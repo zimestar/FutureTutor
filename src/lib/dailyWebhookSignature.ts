@@ -56,6 +56,87 @@ export function isBareReachabilityProbe(signatureHeader: string | null, timestam
   return signatureHeader === null && timestampHeader === null;
 }
 
+/**
+ * VIDEO-1B — TEMPORARY diagnostic-only classification of the
+ * X-Webhook-Timestamp header's SHAPE, never its value. Every returned field
+ * is a boolean, an enum, or null — no raw or parsed timestamp number is
+ * ever included in the result, so a caller logging this object cannot leak
+ * the actual value no matter what it prints. To be removed once Daily's
+ * real creation-time probe's timestamp shape is fully understood (see the
+ * probe-shape diagnostic mission).
+ *
+ * Plausible-seconds/milliseconds ranges are deliberately wide and
+ * unremarkable (roughly year 2000 to year 2100) — wide enough to classify
+ * any real, sane timestamp Daily could plausibly send, without being tuned
+ * to any specific observed value.
+ */
+export interface DiagnosticTimestampShape {
+  timestampPresent: boolean;
+  timestampNonEmpty: boolean;
+  timestampNumeric: boolean;
+  timestampInteger: boolean;
+  timestampUnitClassification: "seconds" | "milliseconds" | "other" | "unknown";
+  timestampWithinReplayTolerance: boolean | null;
+}
+
+const PLAUSIBLE_SECONDS_MIN = 946684800; // 2000-01-01T00:00:00Z
+const PLAUSIBLE_SECONDS_MAX = 4102444800; // 2100-01-01T00:00:00Z
+
+export function classifyDiagnosticTimestampShape(
+  timestampHeader: string | null,
+  now: Date = new Date()
+): DiagnosticTimestampShape {
+  const timestampPresent = timestampHeader !== null;
+  const timestampNonEmpty = timestampPresent && timestampHeader.length > 0;
+
+  if (!timestampNonEmpty) {
+    return {
+      timestampPresent,
+      timestampNonEmpty,
+      timestampNumeric: false,
+      timestampInteger: false,
+      timestampUnitClassification: "unknown",
+      timestampWithinReplayTolerance: null,
+    };
+  }
+
+  const value = Number(timestampHeader);
+  const timestampNumeric = Number.isFinite(value);
+  if (!timestampNumeric) {
+    return {
+      timestampPresent,
+      timestampNonEmpty,
+      timestampNumeric: false,
+      timestampInteger: false,
+      timestampUnitClassification: "unknown",
+      timestampWithinReplayTolerance: null,
+    };
+  }
+
+  const timestampInteger = Number.isInteger(value);
+  const isPlausibleSeconds = value >= PLAUSIBLE_SECONDS_MIN && value <= PLAUSIBLE_SECONDS_MAX;
+  const isPlausibleMilliseconds = value >= PLAUSIBLE_SECONDS_MIN * 1000 && value <= PLAUSIBLE_SECONDS_MAX * 1000;
+
+  let timestampUnitClassification: DiagnosticTimestampShape["timestampUnitClassification"] = "other";
+  if (isPlausibleSeconds) timestampUnitClassification = "seconds";
+  else if (isPlausibleMilliseconds) timestampUnitClassification = "milliseconds";
+
+  let timestampWithinReplayTolerance: boolean | null = null;
+  if (timestampUnitClassification === "seconds") {
+    const driftSeconds = Math.abs(now.getTime() / 1000 - value);
+    timestampWithinReplayTolerance = driftSeconds <= DAILY_WEBHOOK_REPLAY_TOLERANCE_SECONDS;
+  }
+
+  return {
+    timestampPresent,
+    timestampNonEmpty,
+    timestampNumeric,
+    timestampInteger,
+    timestampUnitClassification,
+    timestampWithinReplayTolerance,
+  };
+}
+
 function getDailyWebhookSecret(): string {
   const secret = process.env.DAILY_WEBHOOK_SECRET;
   if (!secret) throw new DailyWebhookSecretMissingError("DAILY_WEBHOOK_SECRET is not configured");

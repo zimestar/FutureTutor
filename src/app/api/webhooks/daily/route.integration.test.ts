@@ -318,10 +318,10 @@ describe("POST /api/webhooks/daily — probe compatibility classification", () =
 });
 
 describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging", () => {
-  it("logs only hasSignatureHeader/hasTimestampHeader/eventType — never a header value or the body", async () => {
+  it("logs only the allowed classification fields — never a header value or the body", async () => {
     const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const sensitiveSignature = "definitely-a-secret-looking-signature-value";
-    const sensitiveTimestamp = "1700000000";
+    const sensitiveTimestamp = String(Math.floor(Date.now() / 1000));
     const sensitiveBody = JSON.stringify({
       type: "participant.joined",
       payload: { room: "some-secret-room-name", user_id: "some-secret-user-id", session_id: randomUUID() },
@@ -331,8 +331,22 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
     expect(diagnosticCall).toBeDefined();
-    const loggedPayload = diagnosticCall?.[1];
-    expect(loggedPayload).toEqual({ hasSignatureHeader: true, hasTimestampHeader: true, eventType: "participant.joined" });
+    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
+    expect(loggedPayload).toEqual({
+      hasSignatureHeader: true,
+      hasTimestampHeader: true,
+      eventType: "participant.joined",
+      timestampPresent: true,
+      timestampNonEmpty: true,
+      timestampNumeric: true,
+      timestampInteger: true,
+      timestampUnitClassification: "seconds",
+      timestampWithinReplayTolerance: true,
+    });
+    // No field's value is (or contains) the raw timestamp string itself.
+    for (const value of Object.values(loggedPayload)) {
+      expect(String(value)).not.toBe(sensitiveTimestamp);
+    }
 
     // Every logged call, across all arguments, must never contain the raw
     // signature/timestamp values or any fragment of the sensitive body
@@ -354,9 +368,66 @@ describe("POST /api/webhooks/daily — TEMPORARY probe-shape diagnostic logging"
 
     expect(response.status).toBe(200); // still a bare probe by header shape — unaffected by body content
     const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
-    expect(diagnosticCall?.[1]).toEqual({ hasSignatureHeader: false, hasTimestampHeader: false, eventType: null });
+    expect(diagnosticCall?.[1]).toEqual({
+      hasSignatureHeader: false,
+      hasTimestampHeader: false,
+      eventType: null,
+      timestampPresent: false,
+      timestampNonEmpty: false,
+      timestampNumeric: false,
+      timestampInteger: false,
+      timestampUnitClassification: "unknown",
+      timestampWithinReplayTolerance: null,
+    });
     const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
     expect(allLoggedText).not.toContain(garbageBody);
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it("timestamp classification: milliseconds-shaped value is classified as such, never logged raw", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const millisecondsTimestamp = String(Date.now());
+
+    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: millisecondsTimestamp }));
+
+    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
+    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
+    expect(loggedPayload.timestampUnitClassification).toBe("milliseconds");
+    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
+    expect(allLoggedText).not.toContain(millisecondsTimestamp);
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it("timestamp classification: stale (but well-formed) seconds value is classified as outside tolerance, never logged raw", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const staleTimestamp = String(Math.floor(Date.now() / 1000) - 10 * 60);
+
+    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: staleTimestamp }));
+
+    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
+    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
+    expect(loggedPayload.timestampUnitClassification).toBe("seconds");
+    expect(loggedPayload.timestampWithinReplayTolerance).toBe(false);
+    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
+    expect(allLoggedText).not.toContain(staleTimestamp);
+
+    consoleLogSpy.mockRestore();
+  });
+
+  it("timestamp classification: malformed (non-numeric) value is classified as unknown, never logged raw", async () => {
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const malformedTimestamp = "not-a-real-timestamp-value";
+
+    await POST(buildRequest({ body: "{}", signatureHeader: "some-signature", timestampHeader: malformedTimestamp }));
+
+    const diagnosticCall = consoleLogSpy.mock.calls.find((call) => call[0] === "VIDEO-1B DIAGNOSTIC");
+    const loggedPayload = diagnosticCall?.[1] as Record<string, unknown>;
+    expect(loggedPayload.timestampNumeric).toBe(false);
+    expect(loggedPayload.timestampUnitClassification).toBe("unknown");
+    const allLoggedText = consoleLogSpy.mock.calls.map((call) => JSON.stringify(call)).join("\n");
+    expect(allLoggedText).not.toContain(malformedTimestamp);
 
     consoleLogSpy.mockRestore();
   });

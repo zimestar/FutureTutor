@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   verifyDailyWebhookSignature,
   isBareReachabilityProbe,
+  classifyDiagnosticTimestampShape,
   DailyWebhookSecretMissingError,
   DailyWebhookSignatureInvalidError,
   DailyWebhookTimestampInvalidError,
@@ -42,11 +43,13 @@ export async function POST(request: Request) {
 
   // VIDEO-1B — TEMPORARY diagnostic (to be removed once Daily's real
   // creation-time probe shape is confirmed; see the probe-shape mission).
-  // Logs ONLY header presence booleans and the body's top-level "type"
-  // field, never a header value, the body itself, or any part of a
-  // payload. This is purely observational — it changes no status-code
-  // behavior and precedes the exact same classification/verification logic
-  // that already existed.
+  // Logs ONLY: header presence booleans, the body's top-level "type" field,
+  // and a SHAPE classification of the timestamp header (numeric? integer?
+  // plausible seconds vs. milliseconds range? within replay tolerance?) via
+  // classifyDiagnosticTimestampShape — never the raw or parsed timestamp
+  // value itself, never a header value, never the body. This is purely
+  // observational — it changes no status-code behavior and precedes the
+  // exact same classification/verification logic that already existed.
   let diagnosticEventType: string | null = null;
   try {
     const parsed = JSON.parse(rawBody) as unknown;
@@ -61,6 +64,7 @@ export async function POST(request: Request) {
     hasSignatureHeader: signatureHeader !== null,
     hasTimestampHeader: timestampHeader !== null,
     eventType: diagnosticEventType,
+    ...classifyDiagnosticTimestampShape(timestampHeader),
   });
 
   if (isBareReachabilityProbe(signatureHeader, timestampHeader)) {
