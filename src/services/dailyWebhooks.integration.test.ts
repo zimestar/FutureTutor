@@ -366,6 +366,81 @@ describe("processDailyWebhookEvent — correlation and basic outcomes", () => {
   });
 });
 
+// TEMPORARY — VIDEO-1B correlation diagnostic coverage. Proves the
+// diagnostic log fires on exactly the two silent early-return branches,
+// never leaks the complete participant id (only a shape summary), never
+// leaks any secret/body/header value, and doesn't change the existing
+// unknown_room/unknown_participant business behavior (still a safe 200
+// no-op). Remove this block along with the diagnostic itself once root
+// cause is confirmed and the real fix lands.
+describe("TEMPORARY VIDEO-1B correlation diagnostic logging", () => {
+  it("unknown_room: logs reason=unknown_room with the room name, behavior unchanged", async () => {
+    const { student } = await setupConfirmedBookingWithRoom();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await processDailyWebhookEvent(participantJoinedEvent("ft-totally-unknown-room", student.user.id));
+
+    expect(result).toEqual({ handled: false, reason: "unknown_room" });
+    const diagnosticCalls = logSpy.mock.calls.filter((c) => typeof c[0] === "string" && c[0].startsWith("VIDEO-1B CORRELATION DIAGNOSTIC"));
+    expect(diagnosticCalls).toHaveLength(1);
+    const logged = JSON.parse((diagnosticCalls[0][0] as string).replace("VIDEO-1B CORRELATION DIAGNOSTIC ", ""));
+    expect(logged.reason).toBe("unknown_room");
+    expect(logged.room).toBe("ft-totally-unknown-room");
+    expect(logged.participantIdShape.present).toBe(true);
+    expect(logged.participantIdShape.prefix).toBe(student.user.id.slice(0, 6));
+    expect(logged.participantIdShape.prefix.length).toBeLessThanOrEqual(6);
+
+    logSpy.mockRestore();
+  });
+
+  it("unknown_participant: logs reason=unknown_participant, never the complete participant id", async () => {
+    const { providerRoomId } = await setupConfirmedBookingWithRoom();
+    const fullFakeId = "nonexistent-user-id-that-is-quite-long-for-this-test";
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await processDailyWebhookEvent(participantJoinedEvent(providerRoomId, fullFakeId));
+
+    expect(result).toEqual({ handled: false, reason: "unknown_participant" });
+    const diagnosticCalls = logSpy.mock.calls.filter((c) => typeof c[0] === "string" && c[0].startsWith("VIDEO-1B CORRELATION DIAGNOSTIC"));
+    expect(diagnosticCalls).toHaveLength(1);
+    const rawLine = diagnosticCalls[0][0] as string;
+    expect(rawLine).not.toContain(fullFakeId); // full id never appears
+    const logged = JSON.parse(rawLine.replace("VIDEO-1B CORRELATION DIAGNOSTIC ", ""));
+    expect(logged.reason).toBe("unknown_participant");
+    expect(logged.room).toBe(providerRoomId);
+    expect(logged.participantIdShape).toEqual({ present: true, length: fullFakeId.length, prefix: fullFakeId.slice(0, 6) });
+
+    logSpy.mockRestore();
+  });
+
+  it("a successful correlation (known room + known user) never emits the diagnostic line", async () => {
+    const { student, providerRoomId } = await setupConfirmedBookingWithRoom();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await processDailyWebhookEvent(participantJoinedEvent(providerRoomId, student.user.id));
+
+    const diagnosticCalls = logSpy.mock.calls.filter((c) => typeof c[0] === "string" && c[0].startsWith("VIDEO-1B CORRELATION DIAGNOSTIC"));
+    expect(diagnosticCalls).toHaveLength(0);
+
+    logSpy.mockRestore();
+  });
+
+  it("diagnostic line never contains a token/signature/secret-shaped value (sanity check on the fixed field set)", async () => {
+    const { student } = await setupConfirmedBookingWithRoom();
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await processDailyWebhookEvent(participantJoinedEvent("ft-totally-unknown-room", student.user.id));
+
+    const diagnosticCalls = logSpy.mock.calls.filter((c) => typeof c[0] === "string" && c[0].startsWith("VIDEO-1B CORRELATION DIAGNOSTIC"));
+    const parsed = JSON.parse((diagnosticCalls[0][0] as string).replace("VIDEO-1B CORRELATION DIAGNOSTIC ", ""));
+    const allowedTopLevelKeys = ["reason", "room", "participantIdShape"];
+    expect(Object.keys(parsed).sort()).toEqual(allowedTopLevelKeys.sort());
+    expect(Object.keys(parsed.participantIdShape).sort()).toEqual(["length", "prefix", "present"].sort());
+
+    logSpy.mockRestore();
+  });
+});
+
 describe("processDailyWebhookEvent — idempotency and dual-presence convergence", () => {
   it("duplicate delivery of the same participant.joined event is safe — no duplicate CHECK_IN row", async () => {
     const { session, student, providerRoomId } = await setupConfirmedBookingWithRoom();
