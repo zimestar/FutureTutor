@@ -7,3 +7,29 @@ describe("Admin permission enforcement boundaries",()=>{
   it("guards sensitive mutation entry points by permission",()=>{expect(readFileSync("src/lib/actions/pricingAdmin.ts","utf8")).toContain("ADMIN_PRICING_MANAGE");expect(readFileSync("src/lib/actions/quickMatchAdmin.ts","utf8")).toContain("ADMIN_QUICKMATCH_MANAGE");const tutor=["adminTutorReview","tutorDocuments","tutorEducation","tutorExam","tutorInterview","tutorTraining"].map(f=>readFileSync(`src/lib/actions/${f}.ts`,"utf8")).join("\n");expect(tutor).toContain("requireAdminPermission");});
   it("does not grant ordinary Admins a financial mutation permission",()=>{const schema=readFileSync("prisma/schema.prisma","utf8");expect(schema).not.toMatch(/ADMIN_(PAYMENTS|REFUNDS|TRANSFERS)_(WRITE|MANAGE)/);expect(readFileSync("src/lib/actions/paymentsAdmin.ts","utf8")).toContain('role !== "SUPER_ADMIN"')});
 });
+
+describe("Admin invitation URL origin", () => {
+  const source = readFileSync("src/lib/actions/adminManagement.ts", "utf8");
+
+  it("builds both the initial and resent invitation URL from the real request origin, not an env var fallback", () => {
+    expect(source).toContain('import { getAppBaseUrl } from "@/lib/appUrl"');
+    // Both call sites use the same helper -- appears once per action, twice total.
+    expect(source.match(/await getAppBaseUrl\(\)/g)?.length).toBe(2);
+  });
+
+  it("no longer depends on AUTH_URL/NEXTAUTH_URL or a localhost fallback for invitation links", () => {
+    expect(source).not.toContain("process.env.AUTH_URL");
+    expect(source).not.toContain("process.env.NEXTAUTH_URL");
+    expect(source).not.toContain("localhost:3000");
+  });
+
+  it("preserves the requested locale and setup route path in both invitation URLs", () => {
+    const setupUrlTemplates = source.match(/`\$\{origin\}\/\$\{locale\}\/admin\/setup\/\$\{rawToken\}`/g) ?? [];
+    expect(setupUrlTemplates.length).toBe(2);
+  });
+
+  it("still never logs a raw invitation token or URL", () => {
+    expect(source).not.toMatch(/console\.(log|error|warn|info)\([^)]*rawToken/);
+    expect(source).not.toMatch(/console\.(log|error|warn|info)\([^)]*setupUrl/);
+  });
+});

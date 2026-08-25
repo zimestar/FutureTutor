@@ -6,6 +6,7 @@ import type { AdminPermission, AdminRolePreset } from "@/generated/prisma/enums"
 import { ADMIN_PERMISSIONS, replaceAdminPermissions } from "@/services/adminPermissions";
 import { acceptAdminInvitation, createAdminInvitation, resendAdminInvitation } from "@/services/adminInvitation";
 import { sendAdminInvitationEmail } from "@/lib/email/adminInvitationEmail";
+import { getAppBaseUrl } from "@/lib/appUrl";
 
 export type AdminManagementState = { success: true; email: string; error?: never } | { success?: never; email?: never; error: string } | undefined;
 const strings = (form: FormData, key: string) => typeof form.get(key) === "string" ? String(form.get(key)).trim() : "";
@@ -17,7 +18,7 @@ export async function inviteAdminAction(_state: AdminManagementState, form: Form
   const preset = strings(form,"rolePreset") as AdminRolePreset;
   if (!firstName || !lastName || !/^\S+@\S+\.\S+$/.test(email) || !["FULL_ACCESS","OPERATIONS","TUTOR_SUCCESS","FINANCE_READ_ONLY","CUSTOM"].includes(preset)) return { error: "invalid" };
   if (await db.user.findUnique({ where: { email }, select: { id: true } })) return { error: "emailExists" };
-  try { const { invitation, rawToken } = await createAdminInvitation(db,{ firstName,lastName,email,invitedById:session.user.id,rolePreset:preset,permissions:selectedPermissions(form) }); const origin = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000"; const setupUrl = `${origin}/${locale}/admin/setup/${rawToken}`; await sendAdminInvitationEmail({ email,firstName,preset,setupUrl,locale }); return { success:true,email:invitation.email }; } catch { return { error:"sendFailed" }; }
+  try { const { invitation, rawToken } = await createAdminInvitation(db,{ firstName,lastName,email,invitedById:session.user.id,rolePreset:preset,permissions:selectedPermissions(form) }); const origin = await getAppBaseUrl(); const setupUrl = `${origin}/${locale}/admin/setup/${rawToken}`; await sendAdminInvitationEmail({ email,firstName,preset,setupUrl,locale }); return { success:true,email:invitation.email }; } catch { return { error:"sendFailed" }; }
 }
 
 export async function completeAdminSetupAction(_state: AdminManagementState, form: FormData): Promise<AdminManagementState> {
@@ -33,7 +34,7 @@ export async function revokeInvitationAction(invitationId:string){const session=
 export async function resendInvitationAction(invitationId: string, locale: "en" | "fr") {
   const session = await auth(); if (session?.user.role !== "SUPER_ADMIN") throw new Error("FORBIDDEN");
   const { invitation, rawToken } = await resendAdminInvitation(db, invitationId, session.user.id);
-  const origin = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const origin = await getAppBaseUrl();
   await sendAdminInvitationEmail({ email: invitation.email, firstName: invitation.firstName, preset: invitation.rolePreset, setupUrl: `${origin}/${locale}/admin/setup/${rawToken}`, locale });
   revalidatePath("/admin/admins");
 }
