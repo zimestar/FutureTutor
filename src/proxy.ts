@@ -17,6 +17,9 @@ function protectedSection(pathname: string): "dashboard" | "tutor" | "admin" | n
   // wrongly gate it as the protected tutor-dashboard section.
   if (startsWithSegment(pathname, "/dashboard")) return "dashboard";
   if (startsWithSegment(pathname, "/tutor")) return "tutor";
+  // Invitation activation is intentionally public; the raw single-use token
+  // is its authorization boundary until the new Admin account exists.
+  if (startsWithSegment(pathname, "/admin/setup")) return null;
   if (startsWithSegment(pathname, "/admin")) return "admin";
   return null;
 }
