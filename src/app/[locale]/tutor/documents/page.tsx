@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { TutorDocumentUploadForm } from "@/components/dashboard/TutorDocumentUploadForm";
+import { TutorDocumentRowActions } from "@/components/dashboard/TutorDocumentRowActions";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { Alert, EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -80,7 +81,10 @@ export default async function TutorDocumentsPage({
                   </Alert>
                 )}
               </div>
-              <Badge variant={statusVariant[doc.status]}>{t(`status.${doc.status}`)}</Badge>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <Badge variant={statusVariant[doc.status]}>{t(`status.${doc.status}`)}</Badge>
+                <TutorDocumentRowActions documentId={doc.id} canModify={doc.status !== "APPROVED"} />
+              </div>
             </Surface>
           ))}
         </div>

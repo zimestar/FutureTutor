@@ -1619,6 +1619,13 @@
     "emptyDescription": "Uploaded documents and their review states will appear here.",
     "replacementGuidanceTitle": "Replacement guidance",
     "uploadSuccess": "Document uploaded — it's now pending review.",
+    "replaceSuccess": "Document replaced — it's now pending review.",
+    "removeSuccess": "Document removed.",
+    "view": "View",
+    "replace": "Replace",
+    "replacing": "Replacing…",
+    "remove": "Remove",
+    "removing": "Removing…",
     "typeLabel": "Document type",
     "types": {
       "TRANSCRIPT": "Transcript",
@@ -1644,7 +1651,12 @@
       "invalidInput": "Please choose a document type and a file.",
       "tooManyDocuments": "You've reached the maximum number of documents.",
       "fileTooLarge": "File is too large (10 MB maximum).",
-      "unsupportedFileType": "Only PDF, JPG, and PNG files are accepted."
+      "unsupportedFileType": "Only PDF, JPG, and PNG files are accepted.",
+      "notFound": "Document not found.",
+      "cannotModify": "This document can no longer be changed.",
+      "replaceFailed": "The document could not be uploaded. Your previous document was preserved.",
+      "storage": "The document could not be uploaded. Please try again.",
+      "generic": "Something went wrong. Please try again."
     }
   },
   "tutorTraining": {

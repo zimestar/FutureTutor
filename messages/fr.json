@@ -1619,6 +1619,13 @@
     "emptyDescription": "Les documents téléversés et leur état d'évaluation s'afficheront ici.",
     "replacementGuidanceTitle": "Directives de remplacement",
     "uploadSuccess": "Document téléversé — en attente de révision.",
+    "replaceSuccess": "Document remplacé — en attente de révision.",
+    "removeSuccess": "Document supprimé.",
+    "view": "Voir",
+    "replace": "Remplacer",
+    "replacing": "Remplacement…",
+    "remove": "Supprimer",
+    "removing": "Suppression…",
     "typeLabel": "Type de document",
     "types": {
       "TRANSCRIPT": "Relevé de notes",
@@ -1644,7 +1651,12 @@
       "invalidInput": "Veuillez choisir un type de document et un fichier.",
       "tooManyDocuments": "Vous avez atteint le nombre maximum de documents.",
       "fileTooLarge": "Le fichier est trop volumineux (10 Mo maximum).",
-      "unsupportedFileType": "Seuls les fichiers PDF, JPG et PNG sont acceptés."
+      "unsupportedFileType": "Seuls les fichiers PDF, JPG et PNG sont acceptés.",
+      "notFound": "Document introuvable.",
+      "cannotModify": "Ce document ne peut plus être modifié.",
+      "replaceFailed": "Le document n'a pas pu être téléversé. Votre document précédent a été conservé.",
+      "storage": "Le document n'a pas pu être téléversé. Veuillez réessayer.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },
   "tutorTraining": {
