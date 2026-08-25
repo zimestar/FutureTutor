@@ -100,7 +100,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
           </Button>
         )}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr]">
-          <div>
+          <div className="@container">
             <div className="flex items-start gap-5">
               <Avatar name={firstName} src={tutor.user.image ?? undefined} size={80} />
               <div className="min-w-0 flex-1">
@@ -123,14 +123,28 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
 
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate">{tutor.bio}</p>
 
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <Laptop size={18} className="shrink-0 text-blue" aria-hidden="true" />
+            {/*
+              Two-up presentation is gated on the ACTUAL rendered width of
+              this column (a CSS container query), not the browser viewport.
+              At lg+ viewports the outer grid above splits into a 2fr/1fr
+              layout, and this column's real width can land anywhere from
+              ~250px to ~700px depending on viewport — a viewport-based
+              sm:grid-cols-2 was already "true" long before this column was
+              actually wide enough to hold two cards without cramming long
+              localized phrases (FR mode/level labels) into a narrow card
+              and wrapping them word-by-word. @2xl here means "only go
+              two-up once this column itself has ~42rem to work with" —
+              comfortably wide either at full page width pre-lg, or once
+              the split column itself is genuinely spacious.
+            */}
+            <div className="mt-8 grid grid-cols-1 gap-4 @2xl:grid-cols-2">
+              <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                <Laptop size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
                 <span className="min-w-0 text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</span>
               </div>
               {tutor.city && (
-                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <MapPin size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
                   <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.city}
                     {tutor.province ? `, ${tutor.province}` : ""}
@@ -138,16 +152,16 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                 </div>
               )}
               {tutor.languages.length > 0 && (
-                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <Languages size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <Languages size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
                   <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.languages.map((l) => tLanguages(l.language)).join(", ")}
                   </span>
                 </div>
               )}
               {tutor.levels.length > 0 && (
-                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <GraduationCap size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <GraduationCap size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
                   <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.levels.map((l) => tLevels(l.academicLevel.slug)).join(", ")}
                   </span>
