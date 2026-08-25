@@ -591,6 +591,7 @@
       "sessions": "Sessions",
       "students": "Étudiants",
       "users": "Utilisateurs",
+      "admins": "Administrateurs",
       "documents": "Documents",
       "training": "Formation",
       "exam": "Examen",
@@ -911,11 +912,22 @@
   },
   "adminManagement": {
     "title": "Gestion des administrateurs",
-    "description": "Invitez des administrateurs et gérez leurs accès.",
+    "description": "Invitez des administrateurs et contrôlez leur accès à FutureTutor.",
     "inviteCta": "Inviter un administrateur",
     "view": "Voir",
     "never": "Aucune activité",
     "invitedAndExpires": "Invité le {invited} · Expire le {expires}",
+    "invitedOn": "Invité le {date}",
+    "expiresOn": "Expire le {date}",
+    "activeAdminsTitle": "Administrateurs actifs",
+    "pendingInvitationsTitle": "Invitations en attente",
+    "invitationHistoryTitle": "Historique des invitations",
+    "noActiveAdmins": "Aucun administrateur actif pour le moment.",
+    "noPendingInvitations": "Aucune invitation en attente.",
+    "noInvitationHistory": "Aucune invitation passée.",
+    "superAdminBadge": "Super administrateur",
+    "superAdminBadgeDescription": "Accès complet à la plateforme",
+    "you": "Vous",
     "statuses": {
       "INVITED": "Invité",
       "ACTIVE": "Actif",
@@ -934,11 +946,11 @@
       "sending": "Envoi…",
       "success": "Invitation envoyée à {email}.",
       "presets": {
-        "FULL_ACCESS": "Toutes les permissions",
+        "FULL_ACCESS": "Accès complet",
         "OPERATIONS": "Opérations",
-        "TUTOR_SUCCESS": "Succès tuteurs",
-        "FINANCE_READ_ONLY": "Finance en lecture seule",
-        "CUSTOM": "Personnalisé"
+        "TUTOR_SUCCESS": "Gestion des tuteurs",
+        "FINANCE_READ_ONLY": "Finance — Lecture seule",
+        "CUSTOM": "Accès personnalisé"
       },
       "errors": {
         "forbidden": "Seul un super administrateur peut inviter des administrateurs.",
@@ -948,6 +960,13 @@
       }
     },
     "detail": {
+      "back": "Retour à la gestion des administrateurs",
+      "roleLabel": "Rôle",
+      "presetLabel": "Préréglage d’accès",
+      "statusLabel": "Statut",
+      "permissionsTitle": "Permissions",
+      "permissionsDescription": "Consultez et ajustez ce que cet administrateur peut voir.",
+      "superAdminNotice": "Les super administrateurs ont un accès complet à la plateforme et ne peuvent pas être limités à des permissions individuelles.",
       "savePermissions": "Enregistrer les permissions",
       "suspend": "Suspendre l’administrateur",
       "reactivate": "Réactiver l’administrateur",

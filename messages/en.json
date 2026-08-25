@@ -591,6 +591,7 @@
       "sessions": "Sessions",
       "students": "Students",
       "users": "Users",
+      "admins": "Administrators",
       "documents": "Documents",
       "training": "Training",
       "exam": "Exam",
@@ -911,11 +912,22 @@
   },
   "adminManagement": {
     "title": "Administrator management",
-    "description": "Invite administrators and manage their access.",
+    "description": "Invite administrators and control their access to FutureTutor.",
     "inviteCta": "Invite administrator",
     "view": "View",
     "never": "No activity",
     "invitedAndExpires": "Invited {invited} · Expires {expires}",
+    "invitedOn": "Invited {date}",
+    "expiresOn": "Expires {date}",
+    "activeAdminsTitle": "Active administrators",
+    "pendingInvitationsTitle": "Pending invitations",
+    "invitationHistoryTitle": "Invitation history",
+    "noActiveAdmins": "No active administrators yet.",
+    "noPendingInvitations": "No pending invitations.",
+    "noInvitationHistory": "No past invitations.",
+    "superAdminBadge": "Super Admin",
+    "superAdminBadgeDescription": "Full platform access",
+    "you": "You",
     "statuses": {
       "INVITED": "Invited",
       "ACTIVE": "Active",
@@ -934,11 +946,11 @@
       "sending": "Sending…",
       "success": "Invitation sent to {email}.",
       "presets": {
-        "FULL_ACCESS": "All permissions",
+        "FULL_ACCESS": "Full access",
         "OPERATIONS": "Operations",
-        "TUTOR_SUCCESS": "Tutor success",
-        "FINANCE_READ_ONLY": "Finance read-only",
-        "CUSTOM": "Custom"
+        "TUTOR_SUCCESS": "Tutor Success",
+        "FINANCE_READ_ONLY": "Finance — Read only",
+        "CUSTOM": "Custom access"
       },
       "errors": {
         "forbidden": "Only a Super Admin can invite administrators.",
@@ -948,6 +960,13 @@
       }
     },
     "detail": {
+      "back": "Back to Admin Management",
+      "roleLabel": "Role",
+      "presetLabel": "Access preset",
+      "statusLabel": "Status",
+      "permissionsTitle": "Permissions",
+      "permissionsDescription": "Review and adjust what this administrator can access.",
+      "superAdminNotice": "Super Admins have full platform access and can't be limited to individual permissions.",
       "savePermissions": "Save permissions",
       "suspend": "Suspend administrator",
       "reactivate": "Reactivate administrator",
