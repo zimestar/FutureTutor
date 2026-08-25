@@ -57,7 +57,7 @@ export default async function AdminTutorsPage({
   });
 
   return (
-    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
+    <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>

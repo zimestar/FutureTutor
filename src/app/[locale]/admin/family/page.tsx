@@ -48,7 +48,7 @@ export default async function AdminFamilyInvitationsPage({
   const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
+    <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
 

@@ -83,7 +83,7 @@ export default async function AdminTutorDetailPage({
 
   return (
     <DashboardShell
-      navItems={adminNavItems(tNav)}
+      navItems={await adminNavItems(tNav, user)}
       userName={user.name ?? ""}
     >
       <div className="flex flex-wrap items-center gap-4">

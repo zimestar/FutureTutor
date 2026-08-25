@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { requireAdminPermission } from "@/services/adminPermissions";
 import {
   startDocumentReview,
   requireInterview,
@@ -12,15 +13,13 @@ import {
   reactivateTutor,
 } from "@/services/tutorApplicationWorkflow";
 
-async function requireAdmin() {
+async function requireAdmin(permission: "ADMIN_TUTORS_REVIEW" | "ADMIN_TUTORS_APPROVE" | "ADMIN_TUTORS_SUSPEND") {
   const session = await auth();
-  const user = session?.user;
-  if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) return null;
-  return user;
+  try { return await requireAdminPermission(session, permission); } catch { return null; }
 }
 
 export async function startDocumentReviewAction(tutorProfileId: string) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_REVIEW");
   if (!admin) return;
   await startDocumentReview(tutorProfileId, admin.id);
   revalidatePath(`/admin/tutors/${tutorProfileId}`);
@@ -28,21 +27,21 @@ export async function startDocumentReviewAction(tutorProfileId: string) {
 }
 
 export async function requireInterviewAction(tutorProfileId: string) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_REVIEW");
   if (!admin) return;
   await requireInterview(tutorProfileId, admin.id);
   revalidatePath(`/admin/tutors/${tutorProfileId}`);
 }
 
 export async function sendToFinalReviewAction(tutorProfileId: string) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_REVIEW");
   if (!admin) return;
   await sendToFinalReview(tutorProfileId, admin.id);
   revalidatePath(`/admin/tutors/${tutorProfileId}`);
 }
 
 export async function approveTutorAction(tutorProfileId: string) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_APPROVE");
   if (!admin) return;
   await approveTutor(tutorProfileId, admin.id);
   revalidatePath(`/admin/tutors/${tutorProfileId}`);
@@ -50,7 +49,7 @@ export async function approveTutorAction(tutorProfileId: string) {
 }
 
 export async function rejectTutorAction(tutorProfileId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_APPROVE");
   if (!admin) return;
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) return;
@@ -60,7 +59,7 @@ export async function rejectTutorAction(tutorProfileId: string, formData: FormDa
 }
 
 export async function suspendTutorAction(tutorProfileId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_SUSPEND");
   if (!admin) return;
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) return;
@@ -70,7 +69,7 @@ export async function suspendTutorAction(tutorProfileId: string, formData: FormD
 }
 
 export async function reactivateTutorAction(tutorProfileId: string, formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin("ADMIN_TUTORS_SUSPEND");
   if (!admin) return;
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) return;

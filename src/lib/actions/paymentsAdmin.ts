@@ -13,7 +13,7 @@ import { resolveCaptureOutcomeAndConverge } from "@/services/payments";
  */
 export async function reconcilePaymentAction(paymentId: string): Promise<void> {
   const session = await auth();
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")) return;
+  if (session?.user.role !== "SUPER_ADMIN") throw new Error("FORBIDDEN");
 
   await resolveCaptureOutcomeAndConverge(paymentId);
   await writeAuditLog({

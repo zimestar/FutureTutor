@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { requireAdminPermission } from "@/services/adminPermissions";
 import { db } from "@/lib/db";
 import { scheduleInterview, recordInterviewEvaluation, completeInterview } from "@/services/tutorApplicationWorkflow";
 import type { TutorInterviewCriterion } from "@/generated/prisma/enums";
@@ -17,9 +18,7 @@ const CRITERIA: TutorInterviewCriterion[] = [
 
 async function requireAdmin() {
   const session = await auth();
-  const user = session?.user;
-  if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) return null;
-  return user;
+  try { return await requireAdminPermission(session, "ADMIN_TUTORS_REVIEW"); } catch { return null; }
 }
 
 export async function scheduleInterviewAction(tutorProfileId: string, formData: FormData) {

@@ -268,9 +268,9 @@
     "columns": {
       "students": "Students",
       "tutors": "Tutors",
-      "students": "Students",
       "sessions": "Sessions",
       "users": "Users",
+      "admins": "Administrators",
       "company": "Company",
       "legal": "Legal"
     },
@@ -382,7 +382,15 @@
       "remove": "Remove photo",
       "uploaded": "Profile photo updated.",
       "removed": "Profile photo removed.",
-      "errors": { "denied": "You cannot update this profile photo.", "empty": "Choose an image to upload.", "tooLarge": "The image must be 5 MB or smaller.", "unsupported": "Use a JPEG, PNG or WebP image.", "invalidContent": "The selected file is not a valid image.", "storage": "The photo service is temporarily unavailable. Your current photo was not changed.", "generic": "The photo could not be updated. Please try again." }
+      "errors": {
+        "denied": "You cannot update this profile photo.",
+        "empty": "Choose an image to upload.",
+        "tooLarge": "The image must be 5 MB or smaller.",
+        "unsupported": "Use a JPEG, PNG or WebP image.",
+        "invalidContent": "The selected file is not a valid image.",
+        "storage": "The photo service is temporarily unavailable. Your current photo was not changed.",
+        "generic": "The photo could not be updated. Please try again."
+      }
     },
     "headlineLabel": "Professional headline",
     "bioLabel": "About you",
@@ -430,18 +438,54 @@
     }
   },
   "metadata": {
-    "login": { "title": "Log In", "description": "Log in to your FutureTutor account." },
-    "signup": { "title": "Sign Up", "description": "Create your FutureTutor account." },
-    "forgotPassword": { "title": "Forgot Password", "description": "Request a secure password reset link for your FutureTutor account." },
-    "resetPassword": { "title": "Reset Password", "description": "Choose a new password for your FutureTutor account." },
-    "about": { "title": "About", "description": "Learn about FutureTutor's mission to make personalized academic support accessible." },
-    "contact": { "title": "Contact", "description": "Get in touch with the FutureTutor team." },
-    "careers": { "title": "Careers", "description": "Careers at FutureTutor." },
-    "privacy": { "title": "Privacy Policy", "description": "FutureTutor's privacy policy." },
-    "terms": { "title": "Terms of Service", "description": "FutureTutor's terms of service." },
-    "cookies": { "title": "Cookie Policy", "description": "FutureTutor's cookie policy." },
-    "howItWorks": { "title": "How It Works", "description": "See how FutureTutor connects students and parents with the right tutor in three simple steps." },
-    "subjects": { "title": "Subjects", "description": "Browse every subject FutureTutor tutors can help with, from math to exam preparation." }
+    "login": {
+      "title": "Log In",
+      "description": "Log in to your FutureTutor account."
+    },
+    "signup": {
+      "title": "Sign Up",
+      "description": "Create your FutureTutor account."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "description": "Request a secure password reset link for your FutureTutor account."
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "description": "Choose a new password for your FutureTutor account."
+    },
+    "about": {
+      "title": "About",
+      "description": "Learn about FutureTutor's mission to make personalized academic support accessible."
+    },
+    "contact": {
+      "title": "Contact",
+      "description": "Get in touch with the FutureTutor team."
+    },
+    "careers": {
+      "title": "Careers",
+      "description": "Careers at FutureTutor."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "FutureTutor's privacy policy."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "FutureTutor's terms of service."
+    },
+    "cookies": {
+      "title": "Cookie Policy",
+      "description": "FutureTutor's cookie policy."
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "description": "See how FutureTutor connects students and parents with the right tutor in three simple steps."
+    },
+    "subjects": {
+      "title": "Subjects",
+      "description": "Browse every subject FutureTutor tutors can help with, from math to exam preparation."
+    }
   },
   "auth": {
     "passwordVisibility": {
@@ -840,8 +884,8 @@
       "stats": {
         "totalUsers": "Total Users",
         "totalTutors": "Tutor Profiles",
-        "pendingApplications": "Pending Applications"
-        ,"totalStudents": "Student profiles",
+        "pendingApplications": "Pending Applications",
+        "totalStudents": "Student profiles",
         "upcomingBookings": "Upcoming bookings",
         "activeSessions": "Sessions in progress"
       },
@@ -865,20 +909,303 @@
       }
     }
   },
+  "adminManagement": {
+    "title": "Administrator management",
+    "description": "Invite administrators and manage their access.",
+    "inviteCta": "Invite administrator",
+    "view": "View",
+    "never": "No activity",
+    "invitedAndExpires": "Invited {invited} · Expires {expires}",
+    "statuses": {
+      "INVITED": "Invited",
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "REVOKED": "Revoked",
+      "EXPIRED": "Expired"
+    },
+    "invite": {
+      "title": "Invite an administrator",
+      "description": "Choose a preset or grant custom permissions.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "preset": "Preset",
+      "send": "Send invitation",
+      "sending": "Sending…",
+      "success": "Invitation sent to {email}.",
+      "presets": {
+        "FULL_ACCESS": "All permissions",
+        "OPERATIONS": "Operations",
+        "TUTOR_SUCCESS": "Tutor success",
+        "FINANCE_READ_ONLY": "Finance read-only",
+        "CUSTOM": "Custom"
+      },
+      "errors": {
+        "forbidden": "Only a Super Admin can invite administrators.",
+        "invalid": "Review the entered information.",
+        "emailExists": "An account already uses this email.",
+        "sendFailed": "The invitation could not be sent."
+      }
+    },
+    "detail": {
+      "savePermissions": "Save permissions",
+      "suspend": "Suspend administrator",
+      "reactivate": "Reactivate administrator",
+      "activity": "Recent activity",
+      "promoteTitle": "Promote to Super Admin",
+      "promoteDescription": "This grants unrestricted platform administration access.",
+      "promoteConfirm": "I understand this administrator will receive full Super Admin access.",
+      "promote": "Promote to Super Admin"
+    },
+    "setup": {
+      "title": "Complete your administrator account",
+      "welcome": "Welcome, {name}.",
+      "password": "Password",
+      "terms": "I accept the terms and privacy policy.",
+      "activate": "Activate account",
+      "activating": "Activating…",
+      "invalidTitle": "This invitation is not available",
+      "invalidDescription": "It may be invalid, expired, revoked, or already used.",
+      "requestNew": "Request a new invitation",
+      "errors": {
+        "invalid": "Use a valid password and accept the terms.",
+        "invalidToken": "This invitation is invalid or no longer available."
+      }
+    },
+    "permissions": {
+      "groups": {
+        "users": "Users",
+        "tutors": "Tutors",
+        "students": "Students",
+        "bookings": "Bookings",
+        "sessions": "Sessions",
+        "quickmatch": "Quick Match",
+        "payments": "Payments",
+        "pricing": "Pricing",
+        "admins": "Administrators",
+        "dashboard": "Dashboard",
+        "guardians": "Guardians"
+      },
+      "items": {
+        "ADMIN_USERS_READ": "Read",
+        "ADMIN_USERS_WRITE": "Write",
+        "ADMIN_TUTORS_READ": "Read",
+        "ADMIN_TUTORS_REVIEW": "Review",
+        "ADMIN_TUTORS_APPROVE": "Approve",
+        "ADMIN_STUDENTS_READ": "Read",
+        "ADMIN_BOOKINGS_READ": "Read",
+        "ADMIN_SESSIONS_READ": "Read",
+        "ADMIN_QUICKMATCH_READ": "Read",
+        "ADMIN_QUICKMATCH_MANAGE": "Manage",
+        "ADMIN_PAYMENTS_READ": "Read",
+        "ADMIN_PRICING_READ": "Read",
+        "ADMIN_PRICING_MANAGE": "Manage",
+        "ADMIN_ADMINS_MANAGE": "Manage",
+        "ADMIN_DASHBOARD_VIEW": "View",
+        "ADMIN_TUTORS_SUSPEND": "Suspend",
+        "ADMIN_GUARDIANS_READ": "Read",
+        "ADMIN_ADMINS_VIEW": "Read"
+      }
+    },
+    "resend": "Resend",
+    "revoke": "Revoke"
+  },
   "admin": {
-    "shared": { "errorTitle": "This Admin view could not load", "errorDescription": "No changes were made. Try loading the current data again.", "retry": "Try again" },
-    "statuses": { "PENDING": "Pending", "REQUIRES_ACTION": "Action required", "AUTHORIZED": "Authorized", "CAPTURED": "Captured", "CAPTURE_FAILED": "Capture failed", "FAILED": "Failed", "CANCELLED": "Cancelled", "PARTIALLY_REFUNDED": "Partially refunded", "REFUNDED": "Refunded", "PRICED": "Priced", "MATCHING": "Matching", "NEW": "New", "VERIFIED": "Verified", "SENIOR": "Senior", "ELITE": "Elite", "DRAFT": "Draft", "PENDING_PAYMENT": "Pending payment", "CONFIRMED": "Confirmed", "COMPLETED": "Completed", "SCHEDULED": "Scheduled", "IN_PROGRESS": "In progress", "NO_SHOW": "No-show", "INTERRUPTED": "Ended early", "ONLINE": "Online", "IN_PERSON": "In person" },
-    "quickMatch": { "title": "Quick Match", "description": "Dispatch and ranking configuration with a live view of requests currently being matched.", "settings": "Ranking and dispatch settings", "requests": "In-flight requests ({count})", "empty": "No requests are currently being priced or matched.", "roundInvitations": "Round {round} · {count, plural, one {# pending invitation} other {# pending invitations}}", "saved": "Saved.", "rankingVersion": "Ranking version", "saveSettings": "Save settings", "fields": { "responseWindowMinutes": "Response window (minutes)", "sequentialInvitationCount": "Sequential invitations", "parallelBatchSize": "Parallel batch size", "maxDispatchAttempts": "Maximum dispatch attempts", "tutorScoreWeight": "Tutor Score weight", "bookingReliabilityWeight": "Booking reliability weight", "invitationResponsivenessWeight": "Invitation responsiveness weight", "tutorTierWeight": "Tutor tier weight", "minInvitationsForReliabilityData": "Minimum invitations for reliability data" } },
-    "payments": { "title": "Payments", "description": "Review payments, Stripe PaymentIntent status, refunds, disputes, and linked Tutor earnings. Reconciliation only re-checks Stripe's authoritative state; it never overrides status manually.", "empty": "No payments yet.", "dispute": "Dispute: {status}", "bookingWith": "{subject} with {tutor}", "refunded": "(refunded {amount})", "earning": "earning: {status}", "checking": "Checking…", "reconcile": "Re-check with Stripe" },
-    "pricing": { "title": "Pricing & Payouts", "description": "FutureTutor sets customer prices and Tutor payouts independently. Editing a rule already used by a quote creates a new version instead of rewriting history.", "customerRules": "Customer base price rules", "tutorRules": "Tutor base payout rules", "marketplaceSettings": "Marketplace pricing settings", "anySubject": "Any subject", "anyLevel": "Any level", "addNewRule": "Add a new rule", "saved": "Saved.", "active": "Active", "inactive": "Inactive", "duration": "Duration (min)", "priceCents": "Price (cents)", "payoutCents": "Payout (cents)", "save": "Save", "addRule": "Add rule", "configVersion": "Config version", "saveSettings": "Save settings", "fields": { "quoteTtlMinutes": "Quote TTL (minutes)", "urgencyShortNoticeThresholdHours": "Short-notice threshold (hours)", "urgencyShortNoticeAmountCents": "Short-notice surcharge (cents)", "urgencyUrgentThresholdHours": "Urgent threshold (hours)", "urgencyUrgentAmountCents": "Urgent surcharge (cents)", "lowSupplyThresholdCount": "Low-supply Tutor count threshold", "lowSupplyAmountCents": "Low-supply surcharge (cents)", "tutorUrgencyBonusCents": "Tutor urgency bonus (cents)", "minimumGrossSpreadCents": "Minimum gross spread (cents)" } },
+    "shared": {
+      "errorTitle": "This Admin view could not load",
+      "errorDescription": "No changes were made. Try loading the current data again.",
+      "retry": "Try again"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "REQUIRES_ACTION": "Action required",
+      "AUTHORIZED": "Authorized",
+      "CAPTURED": "Captured",
+      "CAPTURE_FAILED": "Capture failed",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded",
+      "PRICED": "Priced",
+      "MATCHING": "Matching",
+      "NEW": "New",
+      "VERIFIED": "Verified",
+      "SENIOR": "Senior",
+      "ELITE": "Elite",
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "SCHEDULED": "Scheduled",
+      "IN_PROGRESS": "In progress",
+      "NO_SHOW": "No-show",
+      "INTERRUPTED": "Ended early",
+      "ONLINE": "Online",
+      "IN_PERSON": "In person"
+    },
+    "quickMatch": {
+      "title": "Quick Match",
+      "description": "Dispatch and ranking configuration with a live view of requests currently being matched.",
+      "settings": "Ranking and dispatch settings",
+      "requests": "In-flight requests ({count})",
+      "empty": "No requests are currently being priced or matched.",
+      "roundInvitations": "Round {round} · {count, plural, one {# pending invitation} other {# pending invitations}}",
+      "saved": "Saved.",
+      "rankingVersion": "Ranking version",
+      "saveSettings": "Save settings",
+      "fields": {
+        "responseWindowMinutes": "Response window (minutes)",
+        "sequentialInvitationCount": "Sequential invitations",
+        "parallelBatchSize": "Parallel batch size",
+        "maxDispatchAttempts": "Maximum dispatch attempts",
+        "tutorScoreWeight": "Tutor Score weight",
+        "bookingReliabilityWeight": "Booking reliability weight",
+        "invitationResponsivenessWeight": "Invitation responsiveness weight",
+        "tutorTierWeight": "Tutor tier weight",
+        "minInvitationsForReliabilityData": "Minimum invitations for reliability data"
+      }
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Review payments, Stripe PaymentIntent status, refunds, disputes, and linked Tutor earnings. Reconciliation only re-checks Stripe's authoritative state; it never overrides status manually.",
+      "empty": "No payments yet.",
+      "dispute": "Dispute: {status}",
+      "bookingWith": "{subject} with {tutor}",
+      "refunded": "(refunded {amount})",
+      "earning": "earning: {status}",
+      "checking": "Checking…",
+      "reconcile": "Re-check with Stripe"
+    },
+    "pricing": {
+      "title": "Pricing & Payouts",
+      "description": "FutureTutor sets customer prices and Tutor payouts independently. Editing a rule already used by a quote creates a new version instead of rewriting history.",
+      "customerRules": "Customer base price rules",
+      "tutorRules": "Tutor base payout rules",
+      "marketplaceSettings": "Marketplace pricing settings",
+      "anySubject": "Any subject",
+      "anyLevel": "Any level",
+      "addNewRule": "Add a new rule",
+      "saved": "Saved.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "duration": "Duration (min)",
+      "priceCents": "Price (cents)",
+      "payoutCents": "Payout (cents)",
+      "save": "Save",
+      "addRule": "Add rule",
+      "configVersion": "Config version",
+      "saveSettings": "Save settings",
+      "fields": {
+        "quoteTtlMinutes": "Quote TTL (minutes)",
+        "urgencyShortNoticeThresholdHours": "Short-notice threshold (hours)",
+        "urgencyShortNoticeAmountCents": "Short-notice surcharge (cents)",
+        "urgencyUrgentThresholdHours": "Urgent threshold (hours)",
+        "urgencyUrgentAmountCents": "Urgent surcharge (cents)",
+        "lowSupplyThresholdCount": "Low-supply Tutor count threshold",
+        "lowSupplyAmountCents": "Low-supply surcharge (cents)",
+        "tutorUrgencyBonusCents": "Tutor urgency bonus (cents)",
+        "minimumGrossSpreadCents": "Minimum gross spread (cents)"
+      }
+    },
     "operations": {
-      "students": { "title": "Students", "description": "Find learner profiles and review their operational context.", "search": "Search name or email", "management": "Management", "all": "All", "selfManaged": "Self-managed", "guardianManaged": "Guardian-managed", "apply": "Apply filters", "empty": "No students match these filters.", "noLogin": "No linked login", "summary": "{bookings} bookings · {guardians} guardian relationships" },
-      "studentDetail": { "noLogin": "No linked login", "selfManaged": "Self-managed", "guardianManaged": "Guardian-managed", "academic": "Academic profile", "level": "Academic level", "location": "Location", "mode": "Tutoring mode", "notProvided": "Not provided", "guardians": "Guardian relationships", "noGuardians": "No guardian relationships.", "goals": "Learning goals", "noGoals": "No learning goals recorded.", "recentBookings": "Recent bookings", "noBookings": "No bookings recorded." },
-      "bookings": { "title": "Bookings", "description": "Review scheduled tutoring commitments without changing lifecycle or payment state.", "search": "Student or Tutor", "status": "Booking status", "mode": "Mode", "all": "All", "apply": "Apply filters", "empty": "No bookings match these filters.", "details": "View booking details" },
-      "bookingDetail": { "title": "Booking details", "back": "Back to bookings", "bookingId": "Booking ID", "student": "Student", "tutor": "Tutor", "subject": "Subject", "level": "Level", "mode": "Mode", "scheduled": "Scheduled window", "created": "Created", "session": "Session", "noSession": "No Session record", "notProvided": "Not provided" },
-      "sessionDetail": { "title": "Session details", "back": "Back to sessions", "sessionId": "Session ID", "booking": "Booking ID", "student": "Student", "tutor": "Tutor", "mode": "Mode", "scheduled": "Scheduled window", "started": "Started", "completed": "Completed", "ended": "Ended early", "noShow": "No-show converged", "studentCheckIn": "Student check-in", "tutorCheckIn": "Tutor check-in", "attendanceCount": "Attendance events", "notRecorded": "Not recorded" },
-      "sessions": { "title": "Sessions", "description": "Operational visibility into session state and recorded attendance evidence.", "status": "Session status", "all": "All", "apply": "Apply filter", "empty": "No sessions match this filter.", "attendance": "Tutor: {tutor} · Student: {student}", "present": "present", "absent": "not recorded", "details": "View details" },
-      "users": { "title": "Users", "description": "Read-only account directory. Passwords, tokens and private authentication data are never shown.", "search": "Name or email", "role": "Role", "state": "Account state", "all": "All", "active": "Active", "deactivated": "Deactivated", "apply": "Apply filters", "empty": "No users match these filters.", "unnamed": "Unnamed user" }
+      "students": {
+        "title": "Students",
+        "description": "Find learner profiles and review their operational context.",
+        "search": "Search name or email",
+        "management": "Management",
+        "all": "All",
+        "selfManaged": "Self-managed",
+        "guardianManaged": "Guardian-managed",
+        "apply": "Apply filters",
+        "empty": "No students match these filters.",
+        "noLogin": "No linked login",
+        "summary": "{bookings} bookings · {guardians} guardian relationships"
+      },
+      "studentDetail": {
+        "noLogin": "No linked login",
+        "selfManaged": "Self-managed",
+        "guardianManaged": "Guardian-managed",
+        "academic": "Academic profile",
+        "level": "Academic level",
+        "location": "Location",
+        "mode": "Tutoring mode",
+        "notProvided": "Not provided",
+        "guardians": "Guardian relationships",
+        "noGuardians": "No guardian relationships.",
+        "goals": "Learning goals",
+        "noGoals": "No learning goals recorded.",
+        "recentBookings": "Recent bookings",
+        "noBookings": "No bookings recorded."
+      },
+      "bookings": {
+        "title": "Bookings",
+        "description": "Review scheduled tutoring commitments without changing lifecycle or payment state.",
+        "search": "Student or Tutor",
+        "status": "Booking status",
+        "mode": "Mode",
+        "all": "All",
+        "apply": "Apply filters",
+        "empty": "No bookings match these filters.",
+        "details": "View booking details"
+      },
+      "bookingDetail": {
+        "title": "Booking details",
+        "back": "Back to bookings",
+        "bookingId": "Booking ID",
+        "student": "Student",
+        "tutor": "Tutor",
+        "subject": "Subject",
+        "level": "Level",
+        "mode": "Mode",
+        "scheduled": "Scheduled window",
+        "created": "Created",
+        "session": "Session",
+        "noSession": "No Session record",
+        "notProvided": "Not provided"
+      },
+      "sessionDetail": {
+        "title": "Session details",
+        "back": "Back to sessions",
+        "sessionId": "Session ID",
+        "booking": "Booking ID",
+        "student": "Student",
+        "tutor": "Tutor",
+        "mode": "Mode",
+        "scheduled": "Scheduled window",
+        "started": "Started",
+        "completed": "Completed",
+        "ended": "Ended early",
+        "noShow": "No-show converged",
+        "studentCheckIn": "Student check-in",
+        "tutorCheckIn": "Tutor check-in",
+        "attendanceCount": "Attendance events",
+        "notRecorded": "Not recorded"
+      },
+      "sessions": {
+        "title": "Sessions",
+        "description": "Operational visibility into session state and recorded attendance evidence.",
+        "status": "Session status",
+        "all": "All",
+        "apply": "Apply filter",
+        "empty": "No sessions match this filter.",
+        "attendance": "Tutor: {tutor} · Student: {student}",
+        "present": "present",
+        "absent": "not recorded",
+        "details": "View details"
+      },
+      "users": {
+        "title": "Users",
+        "description": "Read-only account directory. Passwords, tokens and private authentication data are never shown.",
+        "search": "Name or email",
+        "role": "Role",
+        "state": "Account state",
+        "all": "All",
+        "active": "Active",
+        "deactivated": "Deactivated",
+        "apply": "Apply filters",
+        "empty": "No users match these filters.",
+        "unnamed": "Unnamed user"
+      }
     },
     "tutors": {
       "title": "Tutor applications",
@@ -1560,30 +1887,120 @@
   },
   "videoClassroom": {
     "eyebrow": "FutureTutor classroom",
-    "prejoin": { "title": "Ready to join?", "description": "Check your setup before joining {name}.", "you": "You", "previewUnavailable": "Camera preview is off" },
-    "actions": { "back": "Back to session", "join": "Join classroom", "joinObserver": "Join as observer", "retry": "Try again" },
-    "devices": { "microphone": "Microphone", "camera": "Camera", "noneMicrophone": "No microphone detected", "noneCamera": "No camera detected" },
-    "permissions": { "ready": "Camera and microphone are ready.", "checking": "Checking camera and microphone…", "partial": "One device is unavailable. You can still join with the available controls.", "denied": "Camera or microphone access is blocked. Update your browser permissions, or join with them off.", "unsupported": "This browser cannot access camera or microphone here. Try a current Chromium-based browser." },
-    "controls": { "label": "Classroom controls", "micOn": "Microphone on", "micOff": "Microphone off", "cameraOn": "Camera on", "cameraOff": "Camera off", "mute": "Mute microphone", "unmute": "Unmute microphone", "stopCamera": "Turn camera off", "startCamera": "Turn camera on", "leave": "Leave" },
-    "observer": { "title": "Observer mode", "description": "You can watch and listen. Your camera, microphone, and screen sharing stay disabled.", "controlsNote": "Observer audio and video are disabled" },
-    "classroom": { "videoRegion": "Video classroom", "waiting": "Waiting for {name}", "waitingDescription": "You are connected. The classroom will update when the other participant joins.", "cameraOff": "Camera is off" },
-    "connection": { "connecting": "Joining classroom…", "reconnecting": "Reconnecting…", "failedTitle": "Connection interrupted", "failedDescription": "We could not keep the classroom connected. Check your network and try again." },
-    "errors": { "tooEarly": "The classroom is not open yet.", "cancelled": "This booking has been cancelled.", "ended": "The classroom access window has ended.", "denied": "You do not have access to this classroom.", "unavailable": "Video is temporarily unavailable. Please try again.", "generic": "Something went wrong while preparing the classroom. Please try again." },
-    "leave": { "title": "Leave the classroom?", "description": "You can return while the session access window remains open. Leaving does not change the official session status.", "stay": "Stay in classroom", "confirm": "Leave classroom" },
-    "entry": {
-      "tooEarly": { "label": "Classroom not open", "title": "Come back closer to the session", "description": "Your session is scheduled for {time}. The classroom opens shortly before it starts." },
-      "cancelled": { "label": "Booking cancelled", "title": "This classroom is closed", "description": "The booking for {time} was cancelled, so video access is unavailable." },
-      "ended": { "label": "Access ended", "title": "The classroom is closed", "description": "The access window for the session scheduled at {time} has ended." },
-      "unavailable": { "label": "Video unavailable", "title": "This classroom is unavailable", "description": "Video is not available for this session. Return to the session details for current information." }
+    "prejoin": {
+      "title": "Ready to join?",
+      "description": "Check your setup before joining {name}.",
+      "you": "You",
+      "previewUnavailable": "Camera preview is off"
     },
-    "timer": { "label": "Time in classroom" },
-    "postCall": { "title": "You left the classroom", "description": "You can review the session details or return while access remains open.", "authorityNote": "Leaving the call does not decide the official session outcome.", "return": "Return to session details" }
+    "actions": {
+      "back": "Back to session",
+      "join": "Join classroom",
+      "joinObserver": "Join as observer",
+      "retry": "Try again"
+    },
+    "devices": {
+      "microphone": "Microphone",
+      "camera": "Camera",
+      "noneMicrophone": "No microphone detected",
+      "noneCamera": "No camera detected"
+    },
+    "permissions": {
+      "ready": "Camera and microphone are ready.",
+      "checking": "Checking camera and microphone…",
+      "partial": "One device is unavailable. You can still join with the available controls.",
+      "denied": "Camera or microphone access is blocked. Update your browser permissions, or join with them off.",
+      "unsupported": "This browser cannot access camera or microphone here. Try a current Chromium-based browser."
+    },
+    "controls": {
+      "label": "Classroom controls",
+      "micOn": "Microphone on",
+      "micOff": "Microphone off",
+      "cameraOn": "Camera on",
+      "cameraOff": "Camera off",
+      "mute": "Mute microphone",
+      "unmute": "Unmute microphone",
+      "stopCamera": "Turn camera off",
+      "startCamera": "Turn camera on",
+      "leave": "Leave"
+    },
+    "observer": {
+      "title": "Observer mode",
+      "description": "You can watch and listen. Your camera, microphone, and screen sharing stay disabled.",
+      "controlsNote": "Observer audio and video are disabled"
+    },
+    "classroom": {
+      "videoRegion": "Video classroom",
+      "waiting": "Waiting for {name}",
+      "waitingDescription": "You are connected. The classroom will update when the other participant joins.",
+      "cameraOff": "Camera is off"
+    },
+    "connection": {
+      "connecting": "Joining classroom…",
+      "reconnecting": "Reconnecting…",
+      "failedTitle": "Connection interrupted",
+      "failedDescription": "We could not keep the classroom connected. Check your network and try again."
+    },
+    "errors": {
+      "tooEarly": "The classroom is not open yet.",
+      "cancelled": "This booking has been cancelled.",
+      "ended": "The classroom access window has ended.",
+      "denied": "You do not have access to this classroom.",
+      "unavailable": "Video is temporarily unavailable. Please try again.",
+      "generic": "Something went wrong while preparing the classroom. Please try again."
+    },
+    "leave": {
+      "title": "Leave the classroom?",
+      "description": "You can return while the session access window remains open. Leaving does not change the official session status.",
+      "stay": "Stay in classroom",
+      "confirm": "Leave classroom"
+    },
+    "entry": {
+      "tooEarly": {
+        "label": "Classroom not open",
+        "title": "Come back closer to the session",
+        "description": "Your session is scheduled for {time}. The classroom opens shortly before it starts."
+      },
+      "cancelled": {
+        "label": "Booking cancelled",
+        "title": "This classroom is closed",
+        "description": "The booking for {time} was cancelled, so video access is unavailable."
+      },
+      "ended": {
+        "label": "Access ended",
+        "title": "The classroom is closed",
+        "description": "The access window for the session scheduled at {time} has ended."
+      },
+      "unavailable": {
+        "label": "Video unavailable",
+        "title": "This classroom is unavailable",
+        "description": "Video is not available for this session. Return to the session details for current information."
+      }
+    },
+    "timer": {
+      "label": "Time in classroom"
+    },
+    "postCall": {
+      "title": "You left the classroom",
+      "description": "You can review the session details or return while access remains open.",
+      "authorityNote": "Leaving the call does not decide the official session outcome.",
+      "return": "Return to session details"
+    }
   },
   "sessionExperience": {
     "eyebrow": "Tutoring session",
     "subtitle": "Session with {name}",
     "viewSession": "View session",
-    "video": { "title": "Video classroom", "ready": "Your secure classroom is ready.", "tooEarly": "The classroom opens at {opensAt}.", "cancelled": "This booking was cancelled and the classroom is closed.", "ended": "The classroom access window has ended.", "unavailable": "Video is not available for this session.", "observer": "You will join in observer mode with camera and microphone disabled.", "action": "Open classroom" },
+    "video": {
+      "title": "Video classroom",
+      "ready": "Your secure classroom is ready.",
+      "tooEarly": "The classroom opens at {opensAt}.",
+      "cancelled": "This booking was cancelled and the classroom is closed.",
+      "ended": "The classroom access window has ended.",
+      "unavailable": "Video is not available for this session.",
+      "observer": "You will join in observer mode with camera and microphone disabled.",
+      "action": "Open classroom"
+    },
     "bookingNoShow": "Session did not start",
     "bookingCompleted": "Session completed",
     "bookingInterrupted": "Session ended early",

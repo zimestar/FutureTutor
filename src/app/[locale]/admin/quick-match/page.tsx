@@ -45,7 +45,7 @@ export default async function AdminQuickMatchPage({
   ]);
 
   return (
-    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
+    <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <AutoRefresh />
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-slate">

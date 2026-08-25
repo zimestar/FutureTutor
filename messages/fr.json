@@ -268,9 +268,9 @@
     "columns": {
       "students": "Élèves",
       "tutors": "Tuteurs",
-      "students": "Élèves",
       "sessions": "Séances",
       "users": "Utilisateurs",
+      "admins": "Administrateurs",
       "company": "Entreprise",
       "legal": "Mentions légales"
     },
@@ -382,7 +382,15 @@
       "remove": "Retirer la photo",
       "uploaded": "Photo de profil mise à jour.",
       "removed": "Photo de profil retirée.",
-      "errors": { "denied": "Vous ne pouvez pas modifier cette photo de profil.", "empty": "Choisissez une image à téléverser.", "tooLarge": "L’image doit avoir une taille maximale de 5 Mo.", "unsupported": "Utilisez une image JPEG, PNG ou WebP.", "invalidContent": "Le fichier sélectionné n’est pas une image valide.", "storage": "Le service de photos est temporairement indisponible. Votre photo actuelle n’a pas été modifiée.", "generic": "La photo n’a pas pu être mise à jour. Veuillez réessayer." }
+      "errors": {
+        "denied": "Vous ne pouvez pas modifier cette photo de profil.",
+        "empty": "Choisissez une image à téléverser.",
+        "tooLarge": "L’image doit avoir une taille maximale de 5 Mo.",
+        "unsupported": "Utilisez une image JPEG, PNG ou WebP.",
+        "invalidContent": "Le fichier sélectionné n’est pas une image valide.",
+        "storage": "Le service de photos est temporairement indisponible. Votre photo actuelle n’a pas été modifiée.",
+        "generic": "La photo n’a pas pu être mise à jour. Veuillez réessayer."
+      }
     },
     "headlineLabel": "Titre professionnel",
     "bioLabel": "À propos de vous",
@@ -430,18 +438,54 @@
     }
   },
   "metadata": {
-    "login": { "title": "Connexion", "description": "Connectez-vous à votre compte FutureTutor." },
-    "signup": { "title": "Inscription", "description": "Créez votre compte FutureTutor." },
-    "forgotPassword": { "title": "Mot de passe oublié", "description": "Demandez un lien sécurisé pour réinitialiser le mot de passe de votre compte FutureTutor." },
-    "resetPassword": { "title": "Réinitialiser le mot de passe", "description": "Choisissez un nouveau mot de passe pour votre compte FutureTutor." },
-    "about": { "title": "À propos", "description": "Découvrez la mission de FutureTutor : rendre l'accompagnement scolaire personnalisé accessible." },
-    "contact": { "title": "Contact", "description": "Contactez l'équipe FutureTutor." },
-    "careers": { "title": "Carrières", "description": "Les carrières chez FutureTutor." },
-    "privacy": { "title": "Politique de confidentialité", "description": "La politique de confidentialité de FutureTutor." },
-    "terms": { "title": "Conditions d'utilisation", "description": "Les conditions d'utilisation de FutureTutor." },
-    "cookies": { "title": "Politique de cookies", "description": "La politique de cookies de FutureTutor." },
-    "howItWorks": { "title": "Comment ça marche", "description": "Découvrez comment FutureTutor met les élèves et les parents en relation avec le bon tuteur en trois étapes simples." },
-    "subjects": { "title": "Matières", "description": "Parcourez toutes les matières couvertes par les tuteurs FutureTutor, des mathématiques à la préparation aux examens." }
+    "login": {
+      "title": "Connexion",
+      "description": "Connectez-vous à votre compte FutureTutor."
+    },
+    "signup": {
+      "title": "Inscription",
+      "description": "Créez votre compte FutureTutor."
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "description": "Demandez un lien sécurisé pour réinitialiser le mot de passe de votre compte FutureTutor."
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "description": "Choisissez un nouveau mot de passe pour votre compte FutureTutor."
+    },
+    "about": {
+      "title": "À propos",
+      "description": "Découvrez la mission de FutureTutor : rendre l'accompagnement scolaire personnalisé accessible."
+    },
+    "contact": {
+      "title": "Contact",
+      "description": "Contactez l'équipe FutureTutor."
+    },
+    "careers": {
+      "title": "Carrières",
+      "description": "Les carrières chez FutureTutor."
+    },
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "description": "La politique de confidentialité de FutureTutor."
+    },
+    "terms": {
+      "title": "Conditions d'utilisation",
+      "description": "Les conditions d'utilisation de FutureTutor."
+    },
+    "cookies": {
+      "title": "Politique de cookies",
+      "description": "La politique de cookies de FutureTutor."
+    },
+    "howItWorks": {
+      "title": "Comment ça marche",
+      "description": "Découvrez comment FutureTutor met les élèves et les parents en relation avec le bon tuteur en trois étapes simples."
+    },
+    "subjects": {
+      "title": "Matières",
+      "description": "Parcourez toutes les matières couvertes par les tuteurs FutureTutor, des mathématiques à la préparation aux examens."
+    }
   },
   "auth": {
     "passwordVisibility": {
@@ -840,8 +884,8 @@
       "stats": {
         "totalUsers": "Utilisateurs au total",
         "totalTutors": "Profils de tuteurs",
-        "pendingApplications": "Demandes en attente"
-        ,"totalStudents": "Profils d’élèves",
+        "pendingApplications": "Demandes en attente",
+        "totalStudents": "Profils d’élèves",
         "upcomingBookings": "Réservations à venir",
         "activeSessions": "Séances en cours"
       },
@@ -865,20 +909,303 @@
       }
     }
   },
+  "adminManagement": {
+    "title": "Gestion des administrateurs",
+    "description": "Invitez des administrateurs et gérez leurs accès.",
+    "inviteCta": "Inviter un administrateur",
+    "view": "Voir",
+    "never": "Aucune activité",
+    "invitedAndExpires": "Invité le {invited} · Expire le {expires}",
+    "statuses": {
+      "INVITED": "Invité",
+      "ACTIVE": "Actif",
+      "SUSPENDED": "Suspendu",
+      "REVOKED": "Révoqué",
+      "EXPIRED": "Expiré"
+    },
+    "invite": {
+      "title": "Inviter un administrateur",
+      "description": "Choisissez un preset ou accordez des permissions personnalisées.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Courriel",
+      "preset": "Preset",
+      "send": "Envoyer l’invitation",
+      "sending": "Envoi…",
+      "success": "Invitation envoyée à {email}.",
+      "presets": {
+        "FULL_ACCESS": "Toutes les permissions",
+        "OPERATIONS": "Opérations",
+        "TUTOR_SUCCESS": "Succès tuteurs",
+        "FINANCE_READ_ONLY": "Finance en lecture seule",
+        "CUSTOM": "Personnalisé"
+      },
+      "errors": {
+        "forbidden": "Seul un super administrateur peut inviter des administrateurs.",
+        "invalid": "Vérifiez les renseignements saisis.",
+        "emailExists": "Un compte utilise déjà ce courriel.",
+        "sendFailed": "L’invitation n’a pas pu être envoyée."
+      }
+    },
+    "detail": {
+      "savePermissions": "Enregistrer les permissions",
+      "suspend": "Suspendre l’administrateur",
+      "reactivate": "Réactiver l’administrateur",
+      "activity": "Activité récente",
+      "promoteTitle": "Promouvoir au rôle de super administrateur",
+      "promoteDescription": "Cette action accorde un accès d’administration complet à la plateforme.",
+      "promoteConfirm": "Je comprends que cet administrateur recevra l’accès complet de super administrateur.",
+      "promote": "Promouvoir au rôle de super administrateur"
+    },
+    "setup": {
+      "title": "Terminez votre compte administrateur",
+      "welcome": "Bienvenue, {name}.",
+      "password": "Mot de passe",
+      "terms": "J’accepte les conditions et la politique de confidentialité.",
+      "activate": "Activer le compte",
+      "activating": "Activation…",
+      "invalidTitle": "Cette invitation n’est pas disponible",
+      "invalidDescription": "Elle peut être invalide, expirée, révoquée ou déjà utilisée.",
+      "requestNew": "Demander une nouvelle invitation",
+      "errors": {
+        "invalid": "Utilisez un mot de passe valide et acceptez les conditions.",
+        "invalidToken": "Cette invitation est invalide ou n’est plus disponible."
+      }
+    },
+    "permissions": {
+      "groups": {
+        "users": "Utilisateurs",
+        "tutors": "Tuteurs",
+        "students": "Élèves",
+        "bookings": "Réservations",
+        "sessions": "Séances",
+        "quickmatch": "Jumelage rapide",
+        "payments": "Paiements",
+        "pricing": "Tarification",
+        "admins": "Administrateurs",
+        "dashboard": "Tableau de bord",
+        "guardians": "Responsables"
+      },
+      "items": {
+        "ADMIN_USERS_READ": "Lecture",
+        "ADMIN_USERS_WRITE": "Écriture",
+        "ADMIN_TUTORS_READ": "Lecture",
+        "ADMIN_TUTORS_REVIEW": "Révision",
+        "ADMIN_TUTORS_APPROVE": "Approbation",
+        "ADMIN_STUDENTS_READ": "Lecture",
+        "ADMIN_BOOKINGS_READ": "Lecture",
+        "ADMIN_SESSIONS_READ": "Lecture",
+        "ADMIN_QUICKMATCH_READ": "Lecture",
+        "ADMIN_QUICKMATCH_MANAGE": "Gestion",
+        "ADMIN_PAYMENTS_READ": "Lecture",
+        "ADMIN_PRICING_READ": "Lecture",
+        "ADMIN_PRICING_MANAGE": "Gestion",
+        "ADMIN_ADMINS_MANAGE": "Gestion",
+        "ADMIN_DASHBOARD_VIEW": "Voir",
+        "ADMIN_TUTORS_SUSPEND": "Suspendre",
+        "ADMIN_GUARDIANS_READ": "Lire",
+        "ADMIN_ADMINS_VIEW": "Lire"
+      }
+    },
+    "resend": "Renvoyer",
+    "revoke": "Révoquer"
+  },
   "admin": {
-    "shared": { "errorTitle": "Cette vue d’administration n’a pas pu être chargée", "errorDescription": "Aucune modification n’a été apportée. Essayez de charger les données actuelles de nouveau.", "retry": "Réessayer" },
-    "statuses": { "PENDING": "En attente", "REQUIRES_ACTION": "Action requise", "AUTHORIZED": "Autorisé", "CAPTURED": "Capturé", "CAPTURE_FAILED": "Échec de la capture", "FAILED": "Échoué", "CANCELLED": "Annulé", "PARTIALLY_REFUNDED": "Partiellement remboursé", "REFUNDED": "Remboursé", "PRICED": "Tarif établi", "MATCHING": "Jumelage en cours", "NEW": "Nouveau", "VERIFIED": "Vérifié", "SENIOR": "Expérimenté", "ELITE": "Élite", "DRAFT": "Brouillon", "PENDING_PAYMENT": "Paiement en attente", "CONFIRMED": "Confirmée", "COMPLETED": "Terminée", "SCHEDULED": "Planifiée", "IN_PROGRESS": "En cours", "NO_SHOW": "Absence", "INTERRUPTED": "Terminée plus tôt", "ONLINE": "En ligne", "IN_PERSON": "En personne" },
-    "quickMatch": { "title": "Jumelage rapide", "description": "Configuration de la répartition et du classement avec une vue en direct des demandes en cours de jumelage.", "settings": "Paramètres de classement et de répartition", "requests": "Demandes en cours ({count})", "empty": "Aucune demande n’est actuellement en tarification ou en jumelage.", "roundInvitations": "Ronde {round} · {count, plural, one {# invitation en attente} other {# invitations en attente}}", "saved": "Enregistré.", "rankingVersion": "Version du classement", "saveSettings": "Enregistrer les paramètres", "fields": { "responseWindowMinutes": "Délai de réponse (minutes)", "sequentialInvitationCount": "Invitations séquentielles", "parallelBatchSize": "Taille du lot parallèle", "maxDispatchAttempts": "Nombre maximal de tentatives", "tutorScoreWeight": "Pondération du score du tuteur", "bookingReliabilityWeight": "Pondération de la fiabilité des réservations", "invitationResponsivenessWeight": "Pondération de la réactivité aux invitations", "tutorTierWeight": "Pondération du palier du tuteur", "minInvitationsForReliabilityData": "Nombre minimal d’invitations pour les données de fiabilité" } },
-    "payments": { "title": "Paiements", "description": "Consultez les paiements, l’état des PaymentIntent Stripe, les remboursements, les litiges et la rémunération liée du tuteur. Le rapprochement vérifie uniquement l’état de référence de Stripe; il ne remplace jamais un état manuellement.", "empty": "Aucun paiement.", "dispute": "Litige : {status}", "bookingWith": "{subject} avec {tutor}", "refunded": "(remboursé : {amount})", "earning": "rémunération : {status}", "checking": "Vérification…", "reconcile": "Revérifier avec Stripe" },
-    "pricing": { "title": "Tarification et rémunération", "description": "FutureTutor établit indépendamment les prix clients et la rémunération des tuteurs. Modifier une règle déjà utilisée par un devis crée une nouvelle version sans réécrire l’historique.", "customerRules": "Règles de prix de base des clients", "tutorRules": "Règles de rémunération de base des tuteurs", "marketplaceSettings": "Paramètres de tarification de la plateforme", "anySubject": "Toutes les matières", "anyLevel": "Tous les niveaux", "addNewRule": "Ajouter une nouvelle règle", "saved": "Enregistré.", "active": "Active", "inactive": "Inactive", "duration": "Durée (min)", "priceCents": "Prix (cents)", "payoutCents": "Rémunération (cents)", "save": "Enregistrer", "addRule": "Ajouter la règle", "configVersion": "Version de configuration", "saveSettings": "Enregistrer les paramètres", "fields": { "quoteTtlMinutes": "Durée de validité du devis (minutes)", "urgencyShortNoticeThresholdHours": "Seuil de court préavis (heures)", "urgencyShortNoticeAmountCents": "Supplément de court préavis (cents)", "urgencyUrgentThresholdHours": "Seuil d’urgence (heures)", "urgencyUrgentAmountCents": "Supplément d’urgence (cents)", "lowSupplyThresholdCount": "Seuil de faible disponibilité des tuteurs", "lowSupplyAmountCents": "Supplément de faible disponibilité (cents)", "tutorUrgencyBonusCents": "Prime d’urgence du tuteur (cents)", "minimumGrossSpreadCents": "Marge brute minimale (cents)" } },
+    "shared": {
+      "errorTitle": "Cette vue d’administration n’a pas pu être chargée",
+      "errorDescription": "Aucune modification n’a été apportée. Essayez de charger les données actuelles de nouveau.",
+      "retry": "Réessayer"
+    },
+    "statuses": {
+      "PENDING": "En attente",
+      "REQUIRES_ACTION": "Action requise",
+      "AUTHORIZED": "Autorisé",
+      "CAPTURED": "Capturé",
+      "CAPTURE_FAILED": "Échec de la capture",
+      "FAILED": "Échoué",
+      "CANCELLED": "Annulé",
+      "PARTIALLY_REFUNDED": "Partiellement remboursé",
+      "REFUNDED": "Remboursé",
+      "PRICED": "Tarif établi",
+      "MATCHING": "Jumelage en cours",
+      "NEW": "Nouveau",
+      "VERIFIED": "Vérifié",
+      "SENIOR": "Expérimenté",
+      "ELITE": "Élite",
+      "DRAFT": "Brouillon",
+      "PENDING_PAYMENT": "Paiement en attente",
+      "CONFIRMED": "Confirmée",
+      "COMPLETED": "Terminée",
+      "SCHEDULED": "Planifiée",
+      "IN_PROGRESS": "En cours",
+      "NO_SHOW": "Absence",
+      "INTERRUPTED": "Terminée plus tôt",
+      "ONLINE": "En ligne",
+      "IN_PERSON": "En personne"
+    },
+    "quickMatch": {
+      "title": "Jumelage rapide",
+      "description": "Configuration de la répartition et du classement avec une vue en direct des demandes en cours de jumelage.",
+      "settings": "Paramètres de classement et de répartition",
+      "requests": "Demandes en cours ({count})",
+      "empty": "Aucune demande n’est actuellement en tarification ou en jumelage.",
+      "roundInvitations": "Ronde {round} · {count, plural, one {# invitation en attente} other {# invitations en attente}}",
+      "saved": "Enregistré.",
+      "rankingVersion": "Version du classement",
+      "saveSettings": "Enregistrer les paramètres",
+      "fields": {
+        "responseWindowMinutes": "Délai de réponse (minutes)",
+        "sequentialInvitationCount": "Invitations séquentielles",
+        "parallelBatchSize": "Taille du lot parallèle",
+        "maxDispatchAttempts": "Nombre maximal de tentatives",
+        "tutorScoreWeight": "Pondération du score du tuteur",
+        "bookingReliabilityWeight": "Pondération de la fiabilité des réservations",
+        "invitationResponsivenessWeight": "Pondération de la réactivité aux invitations",
+        "tutorTierWeight": "Pondération du palier du tuteur",
+        "minInvitationsForReliabilityData": "Nombre minimal d’invitations pour les données de fiabilité"
+      }
+    },
+    "payments": {
+      "title": "Paiements",
+      "description": "Consultez les paiements, l’état des PaymentIntent Stripe, les remboursements, les litiges et la rémunération liée du tuteur. Le rapprochement vérifie uniquement l’état de référence de Stripe; il ne remplace jamais un état manuellement.",
+      "empty": "Aucun paiement.",
+      "dispute": "Litige : {status}",
+      "bookingWith": "{subject} avec {tutor}",
+      "refunded": "(remboursé : {amount})",
+      "earning": "rémunération : {status}",
+      "checking": "Vérification…",
+      "reconcile": "Revérifier avec Stripe"
+    },
+    "pricing": {
+      "title": "Tarification et rémunération",
+      "description": "FutureTutor établit indépendamment les prix clients et la rémunération des tuteurs. Modifier une règle déjà utilisée par un devis crée une nouvelle version sans réécrire l’historique.",
+      "customerRules": "Règles de prix de base des clients",
+      "tutorRules": "Règles de rémunération de base des tuteurs",
+      "marketplaceSettings": "Paramètres de tarification de la plateforme",
+      "anySubject": "Toutes les matières",
+      "anyLevel": "Tous les niveaux",
+      "addNewRule": "Ajouter une nouvelle règle",
+      "saved": "Enregistré.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "duration": "Durée (min)",
+      "priceCents": "Prix (cents)",
+      "payoutCents": "Rémunération (cents)",
+      "save": "Enregistrer",
+      "addRule": "Ajouter la règle",
+      "configVersion": "Version de configuration",
+      "saveSettings": "Enregistrer les paramètres",
+      "fields": {
+        "quoteTtlMinutes": "Durée de validité du devis (minutes)",
+        "urgencyShortNoticeThresholdHours": "Seuil de court préavis (heures)",
+        "urgencyShortNoticeAmountCents": "Supplément de court préavis (cents)",
+        "urgencyUrgentThresholdHours": "Seuil d’urgence (heures)",
+        "urgencyUrgentAmountCents": "Supplément d’urgence (cents)",
+        "lowSupplyThresholdCount": "Seuil de faible disponibilité des tuteurs",
+        "lowSupplyAmountCents": "Supplément de faible disponibilité (cents)",
+        "tutorUrgencyBonusCents": "Prime d’urgence du tuteur (cents)",
+        "minimumGrossSpreadCents": "Marge brute minimale (cents)"
+      }
+    },
     "operations": {
-      "students": { "title": "Élèves", "description": "Recherchez les profils d’apprentissage et consultez leur contexte opérationnel.", "search": "Rechercher un nom ou courriel", "management": "Gestion", "all": "Tous", "selfManaged": "Autogéré", "guardianManaged": "Géré par un parent", "apply": "Appliquer les filtres", "empty": "Aucun élève ne correspond à ces filtres.", "noLogin": "Aucun compte lié", "summary": "{bookings} réservations · {guardians} relations parentales" },
-      "studentDetail": { "noLogin": "Aucun compte lié", "selfManaged": "Autogéré", "guardianManaged": "Géré par un parent", "academic": "Profil scolaire", "level": "Niveau scolaire", "location": "Emplacement", "mode": "Mode de tutorat", "notProvided": "Non indiqué", "guardians": "Relations parentales", "noGuardians": "Aucune relation parentale.", "goals": "Objectifs d’apprentissage", "noGoals": "Aucun objectif enregistré.", "recentBookings": "Réservations récentes", "noBookings": "Aucune réservation enregistrée." },
-      "bookings": { "title": "Réservations", "description": "Consultez les engagements de tutorat sans modifier le cycle de vie ni l’état du paiement.", "search": "Élève ou tuteur", "status": "Statut de réservation", "mode": "Mode", "all": "Tous", "apply": "Appliquer les filtres", "empty": "Aucune réservation ne correspond à ces filtres.", "details": "Voir les détails de la réservation" },
-      "bookingDetail": { "title": "Détails de la réservation", "back": "Retour aux réservations", "bookingId": "ID de réservation", "student": "Élève", "tutor": "Tuteur", "subject": "Matière", "level": "Niveau", "mode": "Mode", "scheduled": "Plage prévue", "created": "Créée", "session": "Séance", "noSession": "Aucun dossier de séance", "notProvided": "Non indiqué" },
-      "sessionDetail": { "title": "Détails de la séance", "back": "Retour aux séances", "sessionId": "ID de séance", "booking": "ID de réservation", "student": "Élève", "tutor": "Tuteur", "mode": "Mode", "scheduled": "Plage prévue", "started": "Commencée", "completed": "Terminée", "ended": "Terminée plus tôt", "noShow": "Absence déterminée", "studentCheckIn": "Présence de l’élève", "tutorCheckIn": "Présence du tuteur", "attendanceCount": "Événements de présence", "notRecorded": "Non enregistré" },
-      "sessions": { "title": "Séances", "description": "Vue opérationnelle de l’état des séances et des présences enregistrées.", "status": "Statut de séance", "all": "Tous", "apply": "Appliquer le filtre", "empty": "Aucune séance ne correspond à ce filtre.", "attendance": "Tuteur : {tutor} · Élève : {student}", "present": "présent", "absent": "non enregistrée", "details": "Voir les détails" },
-      "users": { "title": "Utilisateurs", "description": "Répertoire de comptes en lecture seule. Les mots de passe, jetons et données d’authentification privées ne sont jamais affichés.", "search": "Nom ou courriel", "role": "Rôle", "state": "État du compte", "all": "Tous", "active": "Actif", "deactivated": "Désactivé", "apply": "Appliquer les filtres", "empty": "Aucun utilisateur ne correspond à ces filtres.", "unnamed": "Utilisateur sans nom" }
+      "students": {
+        "title": "Élèves",
+        "description": "Recherchez les profils d’apprentissage et consultez leur contexte opérationnel.",
+        "search": "Rechercher un nom ou courriel",
+        "management": "Gestion",
+        "all": "Tous",
+        "selfManaged": "Autogéré",
+        "guardianManaged": "Géré par un parent",
+        "apply": "Appliquer les filtres",
+        "empty": "Aucun élève ne correspond à ces filtres.",
+        "noLogin": "Aucun compte lié",
+        "summary": "{bookings} réservations · {guardians} relations parentales"
+      },
+      "studentDetail": {
+        "noLogin": "Aucun compte lié",
+        "selfManaged": "Autogéré",
+        "guardianManaged": "Géré par un parent",
+        "academic": "Profil scolaire",
+        "level": "Niveau scolaire",
+        "location": "Emplacement",
+        "mode": "Mode de tutorat",
+        "notProvided": "Non indiqué",
+        "guardians": "Relations parentales",
+        "noGuardians": "Aucune relation parentale.",
+        "goals": "Objectifs d’apprentissage",
+        "noGoals": "Aucun objectif enregistré.",
+        "recentBookings": "Réservations récentes",
+        "noBookings": "Aucune réservation enregistrée."
+      },
+      "bookings": {
+        "title": "Réservations",
+        "description": "Consultez les engagements de tutorat sans modifier le cycle de vie ni l’état du paiement.",
+        "search": "Élève ou tuteur",
+        "status": "Statut de réservation",
+        "mode": "Mode",
+        "all": "Tous",
+        "apply": "Appliquer les filtres",
+        "empty": "Aucune réservation ne correspond à ces filtres.",
+        "details": "Voir les détails de la réservation"
+      },
+      "bookingDetail": {
+        "title": "Détails de la réservation",
+        "back": "Retour aux réservations",
+        "bookingId": "ID de réservation",
+        "student": "Élève",
+        "tutor": "Tuteur",
+        "subject": "Matière",
+        "level": "Niveau",
+        "mode": "Mode",
+        "scheduled": "Plage prévue",
+        "created": "Créée",
+        "session": "Séance",
+        "noSession": "Aucun dossier de séance",
+        "notProvided": "Non indiqué"
+      },
+      "sessionDetail": {
+        "title": "Détails de la séance",
+        "back": "Retour aux séances",
+        "sessionId": "ID de séance",
+        "booking": "ID de réservation",
+        "student": "Élève",
+        "tutor": "Tuteur",
+        "mode": "Mode",
+        "scheduled": "Plage prévue",
+        "started": "Commencée",
+        "completed": "Terminée",
+        "ended": "Terminée plus tôt",
+        "noShow": "Absence déterminée",
+        "studentCheckIn": "Présence de l’élève",
+        "tutorCheckIn": "Présence du tuteur",
+        "attendanceCount": "Événements de présence",
+        "notRecorded": "Non enregistré"
+      },
+      "sessions": {
+        "title": "Séances",
+        "description": "Vue opérationnelle de l’état des séances et des présences enregistrées.",
+        "status": "Statut de séance",
+        "all": "Tous",
+        "apply": "Appliquer le filtre",
+        "empty": "Aucune séance ne correspond à ce filtre.",
+        "attendance": "Tuteur : {tutor} · Élève : {student}",
+        "present": "présent",
+        "absent": "non enregistrée",
+        "details": "Voir les détails"
+      },
+      "users": {
+        "title": "Utilisateurs",
+        "description": "Répertoire de comptes en lecture seule. Les mots de passe, jetons et données d’authentification privées ne sont jamais affichés.",
+        "search": "Nom ou courriel",
+        "role": "Rôle",
+        "state": "État du compte",
+        "all": "Tous",
+        "active": "Actif",
+        "deactivated": "Désactivé",
+        "apply": "Appliquer les filtres",
+        "empty": "Aucun utilisateur ne correspond à ces filtres.",
+        "unnamed": "Utilisateur sans nom"
+      }
     },
     "tutors": {
       "title": "Demandes de tuteurs",
@@ -1560,30 +1887,120 @@
   },
   "videoClassroom": {
     "eyebrow": "Classe FutureTutor",
-    "prejoin": { "title": "Prêt à vous joindre?", "description": "Vérifiez votre configuration avant de rejoindre {name}.", "you": "Vous", "previewUnavailable": "L’aperçu de la caméra est désactivé" },
-    "actions": { "back": "Retour à la séance", "join": "Rejoindre la classe", "joinObserver": "Rejoindre comme observateur", "retry": "Réessayer" },
-    "devices": { "microphone": "Microphone", "camera": "Caméra", "noneMicrophone": "Aucun microphone détecté", "noneCamera": "Aucune caméra détectée" },
-    "permissions": { "ready": "La caméra et le microphone sont prêts.", "checking": "Vérification de la caméra et du microphone…", "partial": "Un appareil n’est pas disponible. Vous pouvez tout de même rejoindre la classe avec les commandes disponibles.", "denied": "L’accès à la caméra ou au microphone est bloqué. Modifiez les autorisations du navigateur ou rejoignez la classe sans ces appareils.", "unsupported": "Ce navigateur ne peut pas accéder à la caméra ou au microphone ici. Essayez un navigateur récent basé sur Chromium." },
-    "controls": { "label": "Commandes de la classe", "micOn": "Microphone activé", "micOff": "Microphone désactivé", "cameraOn": "Caméra activée", "cameraOff": "Caméra désactivée", "mute": "Couper le microphone", "unmute": "Activer le microphone", "stopCamera": "Désactiver la caméra", "startCamera": "Activer la caméra", "leave": "Quitter" },
-    "observer": { "title": "Mode observateur", "description": "Vous pouvez regarder et écouter. Votre caméra, votre microphone et le partage d’écran restent désactivés.", "controlsNote": "Audio et vidéo désactivés en mode observateur" },
-    "classroom": { "videoRegion": "Classe vidéo", "waiting": "En attente de {name}", "waitingDescription": "Vous êtes connecté. La classe se mettra à jour quand l’autre personne se joindra.", "cameraOff": "La caméra est désactivée" },
-    "connection": { "connecting": "Connexion à la classe…", "reconnecting": "Reconnexion…", "failedTitle": "Connexion interrompue", "failedDescription": "La connexion à la classe a été interrompue. Vérifiez votre réseau et réessayez." },
-    "errors": { "tooEarly": "La classe n’est pas encore ouverte.", "cancelled": "Cette réservation a été annulée.", "ended": "La période d’accès à la classe est terminée.", "denied": "Vous n’avez pas accès à cette classe.", "unavailable": "La vidéo est temporairement indisponible. Veuillez réessayer.", "generic": "Un problème est survenu pendant la préparation de la classe. Veuillez réessayer." },
-    "leave": { "title": "Quitter la classe?", "description": "Vous pouvez revenir pendant que la période d’accès demeure ouverte. Quitter ne change pas le statut officiel de la séance.", "stay": "Rester dans la classe", "confirm": "Quitter la classe" },
-    "entry": {
-      "tooEarly": { "label": "Classe non ouverte", "title": "Revenez à l’approche de la séance", "description": "Votre séance est prévue à {time}. La classe ouvre peu avant le début." },
-      "cancelled": { "label": "Réservation annulée", "title": "Cette classe est fermée", "description": "La réservation prévue à {time} a été annulée; l’accès vidéo est donc indisponible." },
-      "ended": { "label": "Accès terminé", "title": "La classe est fermée", "description": "La période d’accès à la séance prévue à {time} est terminée." },
-      "unavailable": { "label": "Vidéo indisponible", "title": "Cette classe est indisponible", "description": "La vidéo n’est pas offerte pour cette séance. Consultez les détails de la séance pour obtenir l’information actuelle." }
+    "prejoin": {
+      "title": "Prêt à vous joindre?",
+      "description": "Vérifiez votre configuration avant de rejoindre {name}.",
+      "you": "Vous",
+      "previewUnavailable": "L’aperçu de la caméra est désactivé"
     },
-    "timer": { "label": "Temps dans la classe" },
-    "postCall": { "title": "Vous avez quitté la classe", "description": "Vous pouvez consulter les détails de la séance ou revenir pendant que l’accès demeure ouvert.", "authorityNote": "Quitter l’appel ne détermine pas le résultat officiel de la séance.", "return": "Retour aux détails de la séance" }
+    "actions": {
+      "back": "Retour à la séance",
+      "join": "Rejoindre la classe",
+      "joinObserver": "Rejoindre comme observateur",
+      "retry": "Réessayer"
+    },
+    "devices": {
+      "microphone": "Microphone",
+      "camera": "Caméra",
+      "noneMicrophone": "Aucun microphone détecté",
+      "noneCamera": "Aucune caméra détectée"
+    },
+    "permissions": {
+      "ready": "La caméra et le microphone sont prêts.",
+      "checking": "Vérification de la caméra et du microphone…",
+      "partial": "Un appareil n’est pas disponible. Vous pouvez tout de même rejoindre la classe avec les commandes disponibles.",
+      "denied": "L’accès à la caméra ou au microphone est bloqué. Modifiez les autorisations du navigateur ou rejoignez la classe sans ces appareils.",
+      "unsupported": "Ce navigateur ne peut pas accéder à la caméra ou au microphone ici. Essayez un navigateur récent basé sur Chromium."
+    },
+    "controls": {
+      "label": "Commandes de la classe",
+      "micOn": "Microphone activé",
+      "micOff": "Microphone désactivé",
+      "cameraOn": "Caméra activée",
+      "cameraOff": "Caméra désactivée",
+      "mute": "Couper le microphone",
+      "unmute": "Activer le microphone",
+      "stopCamera": "Désactiver la caméra",
+      "startCamera": "Activer la caméra",
+      "leave": "Quitter"
+    },
+    "observer": {
+      "title": "Mode observateur",
+      "description": "Vous pouvez regarder et écouter. Votre caméra, votre microphone et le partage d’écran restent désactivés.",
+      "controlsNote": "Audio et vidéo désactivés en mode observateur"
+    },
+    "classroom": {
+      "videoRegion": "Classe vidéo",
+      "waiting": "En attente de {name}",
+      "waitingDescription": "Vous êtes connecté. La classe se mettra à jour quand l’autre personne se joindra.",
+      "cameraOff": "La caméra est désactivée"
+    },
+    "connection": {
+      "connecting": "Connexion à la classe…",
+      "reconnecting": "Reconnexion…",
+      "failedTitle": "Connexion interrompue",
+      "failedDescription": "La connexion à la classe a été interrompue. Vérifiez votre réseau et réessayez."
+    },
+    "errors": {
+      "tooEarly": "La classe n’est pas encore ouverte.",
+      "cancelled": "Cette réservation a été annulée.",
+      "ended": "La période d’accès à la classe est terminée.",
+      "denied": "Vous n’avez pas accès à cette classe.",
+      "unavailable": "La vidéo est temporairement indisponible. Veuillez réessayer.",
+      "generic": "Un problème est survenu pendant la préparation de la classe. Veuillez réessayer."
+    },
+    "leave": {
+      "title": "Quitter la classe?",
+      "description": "Vous pouvez revenir pendant que la période d’accès demeure ouverte. Quitter ne change pas le statut officiel de la séance.",
+      "stay": "Rester dans la classe",
+      "confirm": "Quitter la classe"
+    },
+    "entry": {
+      "tooEarly": {
+        "label": "Classe non ouverte",
+        "title": "Revenez à l’approche de la séance",
+        "description": "Votre séance est prévue à {time}. La classe ouvre peu avant le début."
+      },
+      "cancelled": {
+        "label": "Réservation annulée",
+        "title": "Cette classe est fermée",
+        "description": "La réservation prévue à {time} a été annulée; l’accès vidéo est donc indisponible."
+      },
+      "ended": {
+        "label": "Accès terminé",
+        "title": "La classe est fermée",
+        "description": "La période d’accès à la séance prévue à {time} est terminée."
+      },
+      "unavailable": {
+        "label": "Vidéo indisponible",
+        "title": "Cette classe est indisponible",
+        "description": "La vidéo n’est pas offerte pour cette séance. Consultez les détails de la séance pour obtenir l’information actuelle."
+      }
+    },
+    "timer": {
+      "label": "Temps dans la classe"
+    },
+    "postCall": {
+      "title": "Vous avez quitté la classe",
+      "description": "Vous pouvez consulter les détails de la séance ou revenir pendant que l’accès demeure ouvert.",
+      "authorityNote": "Quitter l’appel ne détermine pas le résultat officiel de la séance.",
+      "return": "Retour aux détails de la séance"
+    }
   },
   "sessionExperience": {
     "eyebrow": "Séance de tutorat",
     "subtitle": "Séance avec {name}",
     "viewSession": "Voir la séance",
-    "video": { "title": "Classe vidéo", "ready": "Votre classe sécurisée est prête.", "tooEarly": "La classe ouvre à {opensAt}.", "cancelled": "Cette réservation a été annulée et la classe est fermée.", "ended": "La période d’accès à la classe est terminée.", "unavailable": "La vidéo n’est pas offerte pour cette séance.", "observer": "Vous rejoindrez la classe en mode observateur, avec la caméra et le microphone désactivés.", "action": "Ouvrir la classe" },
+    "video": {
+      "title": "Classe vidéo",
+      "ready": "Votre classe sécurisée est prête.",
+      "tooEarly": "La classe ouvre à {opensAt}.",
+      "cancelled": "Cette réservation a été annulée et la classe est fermée.",
+      "ended": "La période d’accès à la classe est terminée.",
+      "unavailable": "La vidéo n’est pas offerte pour cette séance.",
+      "observer": "Vous rejoindrez la classe en mode observateur, avec la caméra et le microphone désactivés.",
+      "action": "Ouvrir la classe"
+    },
     "bookingNoShow": "La séance n'a pas commencé",
     "bookingCompleted": "Séance terminée",
     "bookingInterrupted": "Séance terminée plus tôt",

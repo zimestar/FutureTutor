@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
+import { requireAdminPermission } from "@/services/adminPermissions";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
@@ -337,7 +338,10 @@ export async function cancelTutoringRequestAction(
   const request = await db.tutoringRequest.findUnique({ where: { id: parsed.data.tutoringRequestId } });
   if (!request) return { error: t("notFound") };
 
-  const isAdmin = session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN";
+  let isAdmin = false;
+  if (session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN") {
+    try { await requireAdminPermission(session, "ADMIN_QUICKMATCH_MANAGE"); isAdmin = true; } catch { isAdmin = false; }
+  }
   // Phase H.5 security correction: gated with the same H.2 capability as
   // request creation, for consistency across this resource's lifecycle.
   // Unchanged for every existing SELF_MANAGED student.

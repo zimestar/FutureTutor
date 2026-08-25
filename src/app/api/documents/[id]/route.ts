@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storage } from "@/lib/storage";
+import { requireAdminPermission } from "@/services/adminPermissions";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +22,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const isOwner = document.tutorProfile.userId === user.id;
-  const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+  let isAdmin = false;
+  if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+    try { await requireAdminPermission(session, "ADMIN_TUTORS_READ"); isAdmin = true; } catch { isAdmin = false; }
+  }
   if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

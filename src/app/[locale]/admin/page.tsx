@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Link } from "@/i18n/navigation";
 import { adminNavItems } from "@/lib/adminNav";
+import { requireAdminPermission } from "@/services/adminPermissions";
 
 export default async function AdminDashboardPage({
   params,
@@ -20,6 +21,7 @@ export default async function AdminDashboardPage({
     redirect({ href: "/login", locale });
     return;
   }
+  await requireAdminPermission(session, "ADMIN_DASHBOARD_VIEW");
 
   const t = await getTranslations({ locale, namespace: "dashboard.admin" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
@@ -43,7 +45,7 @@ export default async function AdminDashboardPage({
   ];
 
   return (
-    <DashboardShell navItems={adminNavItems(tNav)} userName={user.name ?? ""}>
+    <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 

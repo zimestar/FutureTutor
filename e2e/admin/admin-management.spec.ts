@@ -1,0 +1,3 @@
+import { test, expect } from "@playwright/test"; import { credentialsFor } from "../helpers/credentials"; import { login } from "../helpers/auth";
+const credentials=credentialsFor("admin");
+test("Super Admin management entry is authorization-safe and responsive",async({page})=>{test.skip(!credentials,"Admin E2E credentials unavailable");await login(page,"admin",credentials!.email,credentials!.password);await page.goto("/en/admin/admins");await expect(page.locator("body")).not.toContainText("adminManagement.");expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true)});

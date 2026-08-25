@@ -27,6 +27,35 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum AdminRolePreset {
+  FULL_ACCESS
+  OPERATIONS
+  TUTOR_SUCCESS
+  FINANCE_READ_ONLY
+  CUSTOM
+}
+
+enum AdminPermission {
+  ADMIN_DASHBOARD_VIEW
+  ADMIN_USERS_READ
+  ADMIN_USERS_WRITE
+  ADMIN_TUTORS_READ
+  ADMIN_TUTORS_REVIEW
+  ADMIN_TUTORS_APPROVE
+  ADMIN_TUTORS_SUSPEND
+  ADMIN_STUDENTS_READ
+  ADMIN_GUARDIANS_READ
+  ADMIN_BOOKINGS_READ
+  ADMIN_SESSIONS_READ
+  ADMIN_QUICKMATCH_READ
+  ADMIN_QUICKMATCH_MANAGE
+  ADMIN_PAYMENTS_READ
+  ADMIN_PRICING_READ
+  ADMIN_PRICING_MANAGE
+  ADMIN_ADMINS_VIEW
+  ADMIN_ADMINS_MANAGE
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -39,29 +68,69 @@ model User {
   updatedAt     DateTime  @updatedAt
   deactivatedAt DateTime?
 
-  accounts                     Account[]
-  sessions                     Session[]
-  studentProfile               StudentProfile?
-  parentProfile                ParentProfile?
-  tutorProfile                 TutorProfile?
-  sentMessages                 Message[]                   @relation("MessageSender")
-  conversations                ConversationParticipant[]
-  notifications                Notification[]
-  notificationPreference       NotificationPreference?
-  auditLogs                    AuditLog[]                  @relation("AuditActor")
-  bookingStatusChanges         BookingStatusHistory[]      @relation("BookingStatusChangedBy")
-  createdPriceQuotes           CustomerPriceQuote[]
-  createdTutoringRequests      TutoringRequest[]
-  payments                     Payment[]
-  guardianRelationshipsCreated ParentStudentRelationship[] @relation("GuardianRelationshipCreatedBy")
-  guardianRelationshipsRevoked ParentStudentRelationship[] @relation("GuardianRelationshipRevokedBy")
-  familyInvitationsInvited     FamilyInvitation[]          @relation("FamilyInvitationInvitedBy")
-  familyInvitationsClaimed     FamilyInvitation[]          @relation("FamilyInvitationClaimedBy")
-  familyInvitationsApproved    FamilyInvitation[]          @relation("FamilyInvitationApprovedBy")
-  consentRecords               ConsentRecord[]             @relation("ConsentActor")
-  sessionAttendanceEventsRecorded SessionAttendanceEvent[] @relation("SessionAttendanceRecordedBy")
+  accounts                        Account[]
+  sessions                        Session[]
+  studentProfile                  StudentProfile?
+  parentProfile                   ParentProfile?
+  tutorProfile                    TutorProfile?
+  sentMessages                    Message[]                   @relation("MessageSender")
+  conversations                   ConversationParticipant[]
+  notifications                   Notification[]
+  notificationPreference          NotificationPreference?
+  auditLogs                       AuditLog[]                  @relation("AuditActor")
+  bookingStatusChanges            BookingStatusHistory[]      @relation("BookingStatusChangedBy")
+  createdPriceQuotes              CustomerPriceQuote[]
+  createdTutoringRequests         TutoringRequest[]
+  payments                        Payment[]
+  guardianRelationshipsCreated    ParentStudentRelationship[] @relation("GuardianRelationshipCreatedBy")
+  guardianRelationshipsRevoked    ParentStudentRelationship[] @relation("GuardianRelationshipRevokedBy")
+  familyInvitationsInvited        FamilyInvitation[]          @relation("FamilyInvitationInvitedBy")
+  familyInvitationsClaimed        FamilyInvitation[]          @relation("FamilyInvitationClaimedBy")
+  familyInvitationsApproved       FamilyInvitation[]          @relation("FamilyInvitationApprovedBy")
+  consentRecords                  ConsentRecord[]             @relation("ConsentActor")
+  sessionAttendanceEventsRecorded SessionAttendanceEvent[]    @relation("SessionAttendanceRecordedBy")
+  adminInvitationsSent            AdminInvitation[]           @relation("AdminInvitationInvitedBy")
+  adminInvitationAccepted         AdminInvitation?            @relation("AdminInvitationAcceptedUser")
+  adminPermissions                AdminPermissionAssignment[] @relation("AdminPermissionUser")
+  adminPermissionsGranted         AdminPermissionAssignment[] @relation("AdminPermissionGrantedBy")
 
   @@index([role])
+}
+
+model AdminInvitation {
+  id             String            @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String
+  invitedById    String
+  tokenHash      String            @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  rolePreset     AdminRolePreset
+  permissions    AdminPermission[]
+  acceptedUserId String?           @unique
+  createdAt      DateTime          @default(now())
+
+  invitedBy    User  @relation("AdminInvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedUser User? @relation("AdminInvitationAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model AdminPermissionAssignment {
+  id          String          @id @default(cuid())
+  userId      String
+  permission  AdminPermission
+  grantedById String
+  createdAt   DateTime        @default(now())
+
+  user      User @relation("AdminPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User @relation("AdminPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: Restrict)
+
+  @@unique([userId, permission])
+  @@index([permission])
 }
 
 model Account {
@@ -1030,7 +1099,7 @@ model Session_ {
   providerRoomId String?        @unique
   roomCreatedAt  DateTime?
 
-  booking          Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking          Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   attendanceEvents SessionAttendanceEvent[]
 
   @@map("Session_tutoring")
