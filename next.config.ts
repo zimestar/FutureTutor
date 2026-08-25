@@ -31,9 +31,11 @@ const nextConfig: NextConfig = {
     // Next.js defaults the Server Action request body to 1MB, which silently
     // rejects any Tutor verification document upload above that size before
     // MAX_DOCUMENT_SIZE_BYTES (10MB, src/lib/storage.ts) is ever evaluated.
-    // Raised past 10MB + multipart overhead per the framework's own guidance.
+    // Set well past 10MB + multipart overhead so a file just over the app's
+    // own 10MB limit still reaches validateDocumentFile and gets the app's
+    // friendly rejection message, rather than a raw framework-level cutoff.
     serverActions: {
-      bodySizeLimit: "11mb",
+      bodySizeLimit: "20mb",
     },
   },
 };
