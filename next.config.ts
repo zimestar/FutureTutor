@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
   // layout.tsx here) — see that file's own comment for the full reasoning.
   experimental: {
     globalNotFound: true,
+    // Next.js defaults the Server Action request body to 1MB, which silently
+    // rejects any Tutor verification document upload above that size before
+    // MAX_DOCUMENT_SIZE_BYTES (10MB, src/lib/storage.ts) is ever evaluated.
+    // Raised past 10MB + multipart overhead per the framework's own guidance.
+    serverActions: {
+      bodySizeLimit: "11mb",
+    },
   },
 };
 
