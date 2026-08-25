@@ -28,15 +28,22 @@ const nextConfig: NextConfig = {
   // layout.tsx here) — see that file's own comment for the full reasoning.
   experimental: {
     globalNotFound: true,
-    // Next.js defaults the Server Action request body to 1MB, which silently
-    // rejects any Tutor verification document upload above that size before
-    // MAX_DOCUMENT_SIZE_BYTES (10MB, src/lib/storage.ts) is ever evaluated.
-    // Set well past 10MB + multipart overhead so a file just over the app's
-    // own 10MB limit still reaches validateDocumentFile and gets the app's
-    // friendly rejection message, rather than a raw framework-level cutoff.
+    // Two independent Next.js body-size caps both default to well under
+    // MAX_DOCUMENT_SIZE_BYTES (10MB, src/lib/storage.ts) and must both be
+    // raised, or a Tutor document upload near 10MB is silently truncated
+    // before validateDocumentFile ever runs (surfaced by real staging E2E
+    // as a 500 "Unexpected end of form", not the app's friendly rejection):
+    //  - serverActions.bodySizeLimit (default 1MB): the Server Action's own
+    //    request body cap.
+    //  - proxyClientMaxBodySize (default 10MB): src/proxy.ts runs on every
+    //    request and buffers/clones the body for its own reads; anything
+    //    past this limit is truncated before the Server Action body is
+    //    even complete, corrupting the multipart upload.
+    // Both set well past 10MB + multipart overhead for the same reason.
     serverActions: {
       bodySizeLimit: "20mb",
     },
+    proxyClientMaxBodySize: "20mb",
   },
 };
 
