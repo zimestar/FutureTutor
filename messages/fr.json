@@ -366,6 +366,10 @@
         "title": "Qualifications",
         "description": "Ajoutez les études et certifications qui appuient votre expérience d'enseignement."
       },
+      "documents": {
+        "title": "Documents justificatifs",
+        "description": "Téléversez les pièces justificatives — relevés de notes, diplômes ou certificats — qui appuient les qualifications ci-dessus."
+      },
       "publicProfile": {
         "eyebrow": "Profil de tuteur",
         "title": "Ce que les familles peuvent voir",

@@ -124,31 +124,31 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate">{tutor.bio}</p>
 
             <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <Laptop size={18} className="text-blue" aria-hidden="true" />
-                <span className="text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</span>
+              <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                <Laptop size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                <span className="min-w-0 text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</span>
               </div>
               {tutor.city && (
-                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <MapPin size={18} className="text-blue" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-navy">
+                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <MapPin size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                  <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.city}
                     {tutor.province ? `, ${tutor.province}` : ""}
                   </span>
                 </div>
               )}
               {tutor.languages.length > 0 && (
-                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <Languages size={18} className="text-blue" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-navy">
+                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <Languages size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                  <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.languages.map((l) => tLanguages(l.language)).join(", ")}
                   </span>
                 </div>
               )}
               {tutor.levels.length > 0 && (
-                <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <GraduationCap size={18} className="text-blue" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-navy">
+                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+                  <GraduationCap size={18} className="shrink-0 text-blue" aria-hidden="true" />
+                  <span className="min-w-0 text-sm font-semibold text-navy">
                     {tutor.levels.map((l) => tLevels(l.academicLevel.slug)).join(", ")}
                   </span>
                 </div>

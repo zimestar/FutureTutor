@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
 import { TutorProfileImageForm } from "@/components/dashboard/TutorProfileImageForm";
+import { TutorDocumentsSection } from "@/components/dashboard/TutorDocumentsSection";
 
 export default async function TutorProfilePage({
   params,
@@ -28,6 +29,7 @@ export default async function TutorProfilePage({
 
   const t = await getTranslations({ locale, namespace: "tutorProfileForm" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
+  const tDocuments = await getTranslations({ locale, namespace: "tutorDocuments" });
 
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { userId: user.id },
@@ -45,6 +47,12 @@ export default async function TutorProfilePage({
     redirect({ href: "/tutor/dashboard", locale });
     return;
   }
+
+  const documents = await db.tutorDocument.findMany({
+    where: { tutorProfileId: tutorProfile.id },
+    orderBy: { uploadedAt: "desc" },
+    select: { id: true, type: true, status: true, originalFileName: true, rejectionReason: true },
+  });
 
   return (
     <DashboardShell navItems={tutorNavItems(tNav, tutorProfile.applicationStatus)} userName={user.name ?? ""} userImage={tutorProfile.user.image}>
@@ -105,6 +113,12 @@ export default async function TutorProfilePage({
         />
         </div>
       </Surface>
+
+      <section className="mt-6 max-w-4xl" aria-labelledby="profile-documents-title">
+        <h2 id="profile-documents-title" className="text-lg font-extrabold text-text-primary">{t("sections.documents.title")}</h2>
+        <p className="mt-1 text-sm leading-6 text-text-secondary">{t("sections.documents.description")}</p>
+        <TutorDocumentsSection documents={documents} t={tDocuments} />
+      </section>
 
       <Surface className="mt-6 max-w-4xl bg-surface-subtle" aria-labelledby="public-profile-title">
         <h2 id="public-profile-title" className="text-lg font-extrabold text-text-primary">{t("sections.publicProfile.title")}</h2>

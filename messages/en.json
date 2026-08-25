@@ -366,6 +366,10 @@
         "title": "Qualifications",
         "description": "Add the education and certifications that support your teaching experience."
       },
+      "documents": {
+        "title": "Supporting documents",
+        "description": "Upload the evidence — transcripts, diplomas, or certificates — that verifies the qualifications above."
+      },
       "publicProfile": {
         "eyebrow": "Tutor profile",
         "title": "What families can see",
