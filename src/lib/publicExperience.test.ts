@@ -86,4 +86,19 @@ describe("public experience regression boundary", () => {
     ].map((file) => readFileSync(file, "utf8")).join("\n");
     for (const file of files) expect(presentation).toContain(file);
   });
+
+  it("keeps the homepage hero bright, editorial and connected to the real search", () => {
+    const hero = readFileSync("src/components/marketing/Hero.tsx", "utf8");
+    const search = readFileSync("src/components/marketing/TutorSearch.tsx", "utf8");
+
+    expect(hero).toContain('bg-[#f8f6f1]');
+    expect(hero).toContain("font-serif");
+    expect(hero).toContain('<TutorSearch presentation="hero"');
+    expect(hero).toContain("parents-students-hero.png");
+    expect(hero).not.toContain("bg-navy pb-16");
+    expect(search).toContain('presentation?: "default" | "hero"');
+    expect(search).toContain('router.push(`${resultsPath}?${params.toString()}`)');
+    expect(en.hero.titleLine1).toBe("Understand today.");
+    expect(fr.hero.titleLine1).toBe("Comprendre aujourd’hui.");
+  });
 });

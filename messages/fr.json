@@ -25,12 +25,14 @@
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "Comprendre. Croire. Avancer.",
-    "title": "La bonne personne peut changer votre façon d’apprendre.",
-    "description": "Rencontrez un tuteur qui comprend où vous bloquez, explique autrement et vous aide à retrouver une voie pour avancer.",
+    "eyebrow": "La bonne rencontre peut changer votre façon d’apprendre",
+    "title": "Comprendre aujourd’hui. Bâtir demain.",
+    "titleLine1": "Comprendre aujourd’hui.",
+    "titleLine2": "Bâtir demain.",
+    "description": "Un tutorat personnalisé qui part de vos besoins, avec la bonne personne pour vous aider à avancer.",
     "primaryCta": "Trouver un tuteur",
     "secondaryCta": "Voir comment ça marche",
-    "searchIntro": "Vous savez déjà ce qu’il vous faut? Commencez ici.",
+    "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",
     "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur"
   },
   "search": {
@@ -42,7 +44,8 @@
     "modePlaceholder": "En ligne ou en personne",
     "online": "En ligne",
     "inPerson": "En personne",
-    "submit": "Rechercher"
+    "submit": "Rechercher",
+    "heroSubmit": "Trouver mon tuteur"
   },
   "gradeLevels": {
     "elementary": "Primaire",

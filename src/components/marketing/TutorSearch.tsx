@@ -19,7 +19,15 @@ const gradeLevelKeys: GradeLevelKey[] = [
   "adultLearner",
 ];
 
-export function TutorSearch({ className, resultsPath = "/find-tutors" }: { className?: string; resultsPath?: string }) {
+export function TutorSearch({
+  className,
+  resultsPath = "/find-tutors",
+  presentation = "default",
+}: {
+  className?: string;
+  resultsPath?: string;
+  presentation?: "default" | "hero";
+}) {
   const router = useRouter();
   const t = useTranslations("search");
   const tLevels = useTranslations("gradeLevels");
@@ -40,14 +48,16 @@ export function TutorSearch({ className, resultsPath = "/find-tutors" }: { class
     router.push(`${resultsPath}?${params.toString()}`);
   }
 
+  const isHero = presentation === "hero";
+
   return (
     <form
       onSubmit={handleSubmit}
-      className={`rounded-xl border border-neutral-200 bg-white p-3 shadow-pop md:p-4 ${className ?? ""}`}
+      className={`${isHero ? "rounded-2xl border border-white/80 bg-white/96 p-4 shadow-[0_24px_70px_rgba(15,35,67,0.16)] backdrop-blur-sm md:p-5" : "rounded-xl border border-neutral-200 bg-white p-3 shadow-pop md:p-4"} ${className ?? ""}`}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1.4fr_1fr_1fr_auto]">
+      <div className={`grid grid-cols-1 gap-3 ${isHero ? "md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_auto] xl:items-end" : "md:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
         <div>
-          <label htmlFor="search-subject" className="sr-only">
+          <label htmlFor="search-subject" className={isHero ? "mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-navy/70" : "sr-only"}>
             {t("subjectLabel")}
           </label>
           <Input
@@ -65,7 +75,7 @@ export function TutorSearch({ className, resultsPath = "/find-tutors" }: { class
         </div>
 
         <div>
-          <label htmlFor="search-level" className="sr-only">
+          <label htmlFor="search-level" className={isHero ? "mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-navy/70" : "sr-only"}>
             {t("levelLabel")}
           </label>
           <Select id="search-level" value={level} onChange={(e) => setLevel(e.target.value)}>
@@ -79,7 +89,7 @@ export function TutorSearch({ className, resultsPath = "/find-tutors" }: { class
         </div>
 
         <div>
-          <label htmlFor="search-mode" className="sr-only">
+          <label htmlFor="search-mode" className={isHero ? "mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-navy/70" : "sr-only"}>
             {t("modeLabel")}
           </label>
           <Select id="search-mode" value={mode} onChange={(e) => setMode(e.target.value)}>
@@ -89,9 +99,9 @@ export function TutorSearch({ className, resultsPath = "/find-tutors" }: { class
           </Select>
         </div>
 
-        <Button type="submit" size="md" className="w-full md:w-auto">
+        <Button type="submit" size="md" className={isHero ? "h-12 w-full md:col-span-2 xl:col-span-1 xl:w-auto" : "w-full md:w-auto"}>
           <Search size={18} aria-hidden="true" />
-          <span>{t("submit")}</span>
+          <span>{t(isHero ? "heroSubmit" : "submit")}</span>
         </Button>
       </div>
     </form>

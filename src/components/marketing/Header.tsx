@@ -30,8 +30,8 @@ export function Header() {
       <div className="mx-auto flex h-20 w-full max-w-(--container-page) items-center justify-between px-5 md:px-10">
         <Logo className="h-9" />
 
-        <nav aria-label="Primary" className="hidden lg:block">
-          <ul className="flex items-center gap-8">
+        <nav aria-label="Primary" className="hidden xl:block">
+          <ul className="flex items-center gap-5 2xl:gap-8">
             {mainNav.map((item) => {
               const active = pathname === item.href;
               return (
@@ -52,7 +52,7 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-2 xl:flex 2xl:gap-3">
           <LanguageSwitcher className="mr-1" />
           {user ? (
             <>
@@ -90,7 +90,7 @@ export function Header() {
 
         <button
           type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-md text-navy lg:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-navy xl:hidden"
           aria-label={open ? tHeader("closeMenu") : tHeader("openMenu")}
           aria-expanded={open}
           aria-controls="mobile-nav"
@@ -104,7 +104,7 @@ export function Header() {
         <nav
           id="mobile-nav"
           aria-label="Mobile"
-          className="border-t border-neutral-200 bg-white px-5 py-6 lg:hidden"
+          className="border-t border-neutral-200 bg-white px-5 py-6 xl:hidden"
         >
           <ul className="flex flex-col gap-1">
             {mainNav.map((item) => (

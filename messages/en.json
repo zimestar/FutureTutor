@@ -25,12 +25,14 @@
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "Understand. Believe. Move forward.",
-    "title": "The right person can change the way you learn.",
-    "description": "Meet a tutor who sees where you are stuck, explains it differently and helps you find your way forward.",
+    "eyebrow": "The right connection can change the way you learn",
+    "title": "Understand today. Build tomorrow.",
+    "titleLine1": "Understand today.",
+    "titleLine2": "Build tomorrow.",
+    "description": "Personalized tutoring that meets you where you are, with the right tutor to help you move forward.",
     "primaryCta": "Find a Tutor",
     "secondaryCta": "See How It Works",
-    "searchIntro": "Already know what you need? Start here.",
+    "searchIntro": "Find the right tutor for what comes next.",
     "imageAlt": "A student smiling during an online tutoring video call with her tutor"
   },
   "search": {
@@ -42,7 +44,8 @@
     "modePlaceholder": "Online or In Person",
     "online": "Online",
     "inPerson": "In Person",
-    "submit": "Search Tutors"
+    "submit": "Search Tutors",
+    "heroSubmit": "Find my tutor"
   },
   "gradeLevels": {
     "elementary": "Elementary",
