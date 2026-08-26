@@ -25,11 +25,11 @@
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "La bonne rencontre peut changer votre façon d’apprendre",
-    "title": "Comprendre aujourd’hui. Bâtir demain.",
-    "titleLine1": "Comprendre aujourd’hui.",
-    "titleLine2": "Bâtir demain.",
-    "description": "Un tutorat personnalisé qui part de vos besoins, avec la bonne personne pour vous aider à avancer.",
+    "eyebrow": "La bonne rencontre peut changer votre façon d’apprendre.",
+    "title": "La bonne personne peut changer votre façon d’apprendre.",
+    "titleEmphasis": "La bonne personne",
+    "titleRest": "peut changer votre façon d’apprendre.",
+    "description": "Rencontrez un tuteur qui comprend où vous bloquez, explique autrement et vous aide à retrouver une voie pour avancer.",
     "primaryCta": "Trouver un tuteur",
     "secondaryCta": "Voir comment ça marche",
     "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",

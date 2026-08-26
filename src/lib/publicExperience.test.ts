@@ -92,13 +92,19 @@ describe("public experience regression boundary", () => {
     const search = readFileSync("src/components/marketing/TutorSearch.tsx", "utf8");
 
     expect(hero).toContain('bg-[#f8f6f1]');
-    expect(hero).toContain("font-serif");
+    expect(hero).toContain("font-sans");
+    expect(hero).not.toContain("font-serif");
     expect(hero).toContain('<TutorSearch presentation="hero"');
     expect(hero).toContain("parents-students-hero.png");
     expect(hero).not.toContain("bg-navy pb-16");
     expect(search).toContain('presentation?: "default" | "hero"');
     expect(search).toContain('router.push(`${resultsPath}?${params.toString()}`)');
-    expect(en.hero.titleLine1).toBe("Understand today.");
-    expect(fr.hero.titleLine1).toBe("Comprendre aujourd’hui.");
+    expect(en.hero.title).toBe("The right person can change the way you learn.");
+    expect(en.hero.titleEmphasis).toBe("The right person");
+    expect(fr.hero.title).toBe("La bonne personne peut changer votre façon d’apprendre.");
+    expect(fr.hero.titleEmphasis).toBe("La bonne personne");
+    expect(search).toContain('role="combobox"');
+    expect(search).toContain('role="listbox"');
+    expect(search).not.toContain("<datalist");
   });
 });
