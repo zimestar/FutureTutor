@@ -1,39 +1,24 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
+import { MarketingPageHero } from "@/components/marketing/MarketingPageHero";
 import { SubjectGrid } from "@/components/marketing/SubjectGrid";
-import { Section } from "@/components/ui/Section";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "metadata.subjects" });
-  return { title: t("title"), description: t("description") };
+  const t = await getTranslations({ locale, namespace: "publicExperience.subjects" });
+  return publicPageMetadata({ locale, path: "/subjects", title: t("metaTitle"), description: t("metaDescription") });
 }
 
-export default async function SubjectsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function SubjectsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "subjects" });
-
+  const t = await getTranslations({ locale, namespace: "publicExperience.subjects" });
   return (
     <MarketingShell>
-      <Section className="bg-off-white pb-0">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-navy md:text-5xl">
-            {t("indexTitle")}
-          </h1>
-          <p className="mt-4 text-lg text-slate">{t("indexSubtitle")}</p>
-        </div>
-      </Section>
-      <SubjectGrid />
+      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/find-tutors" }} secondary={{ label: t("hero.secondary"), href: "/how-it-works" }} />
+      <SubjectGrid showHeader={false} />
     </MarketingShell>
   );
 }

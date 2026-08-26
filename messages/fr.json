@@ -8,6 +8,7 @@
     "subjects": "Matières",
     "howItWorks": "Comment ça marche",
     "forTutors": "Pour les tuteurs",
+    "about": "À propos",
     "login": "Connexion",
     "becomeATutor": "Devenir tuteur",
     "dashboard": "Tableau de bord",
@@ -17,16 +18,19 @@
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu"
   },
+  "logo": { "homeLabel": "Accueil FutureTutor" },
   "languageSwitcher": {
     "label": "Langue",
     "en": "English",
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "Tutorat personnalisé",
-    "title": "Trouvez le bon tuteur. Apprenez en toute confiance.",
-    "description": "Trouvez des tuteurs qui correspondent à votre matière, votre niveau et votre horaire — en ligne ou en personne.",
-    "becomeATutor": "Devenir tuteur",
+    "eyebrow": "Comprendre. Croire. Avancer.",
+    "title": "La bonne personne peut changer votre façon d’apprendre.",
+    "description": "Rencontrez un tuteur qui comprend où vous bloquez, explique autrement et vous aide à retrouver une voie pour avancer.",
+    "primaryCta": "Trouver un tuteur",
+    "secondaryCta": "Voir comment ça marche",
+    "searchIntro": "Vous savez déjà ce qu’il vous faut? Commencez ici.",
     "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur"
   },
   "search": {
@@ -56,7 +60,7 @@
     "personalized": "Tutorat individuel personnalisé",
     "onlineInPerson": "Séances en ligne ou en personne",
     "flexible": "Horaire flexible",
-    "verification": "Vérification des tuteurs : bientôt"
+    "verification": "Seuls les profils de tuteurs approuvés sont publics"
   },
   "subjects": {
     "heading": "Qu'aimeriez-vous apprendre?",
@@ -80,7 +84,7 @@
       "metaDescription": "Trouvez des tuteurs de {subject} sur FutureTutor, en ligne ou en personne.",
       "description": "Parcourez les tuteurs qui enseignent {subject}, en ligne ou en personne.",
       "searchAll": "Rechercher tous les tuteurs",
-      "empty": "Aucun tuteur exemple en {subject} pour l'instant — revenez bientôt."
+      "empty": "Aucun profil public approuvé ne correspond encore à {subject}. Essayez le répertoire complet ou une autre matière."
     }
   },
   "howItWorks": {
@@ -107,11 +111,12 @@
     }
   },
   "featuredTutors": {
-    "badge": "Profils d'exemple",
-    "heading": "Découvrez le type de tuteurs sur FutureTutor",
-    "description": "Ces profils d'exemple montrent à quoi ressemblera le jumelage de tuteurs. Les vrais profils seront publiés au fur et à mesure que les tuteurs se joignent à la plateforme.",
+    "badge": "Profils publics approuvés",
+    "heading": "Rencontrez des tuteurs prêts à vous aider à avancer",
+    "description": "Explorez de vrais profils approuvés et choisissez une personne dont les matières, l’expérience et les disponibilités répondent à vos besoins.",
     "browseAll": "Voir tous les tuteurs",
-    "empty": "Les profils de tuteurs seront bientôt affichés ici."
+    "emptyTitle": "La bonne rencontre compte plus qu’un répertoire rempli.",
+    "emptyDescription": "Les profils publics approuvés apparaîtront ici lorsqu’ils seront disponibles. Vous pouvez déjà préciser votre besoin et explorer les matières offertes sur FutureTutor."
   },
   "tutorCard": {
     "reviews": "{count, plural, one {(# avis)} other {(# avis)}}",
@@ -131,24 +136,6 @@
     },
     "addFavorite": "Ajouter aux favoris",
     "removeFavorite": "Retirer des favoris"
-  },
-  "demoTutors": {
-    "demo-1": {
-      "headline": "Tutrice en mathématiques et physique",
-      "bio": "Diplômée en génie qui rend le calcul et la mécanique accessibles grâce à des exemples concrets et des exercices pratiques."
-    },
-    "demo-2": {
-      "headline": "Tuteur de français",
-      "bio": "Se concentre sur la confiance à l'oral et les bases de grammaire pour les jeunes apprenants."
-    },
-    "demo-3": {
-      "headline": "Tutrice en chimie et biologie",
-      "bio": "Étudiante en pré-médecine qui simplifie les unités chargées en concepts clairs et vérifiables."
-    },
-    "demo-4": {
-      "headline": "Tuteur en informatique",
-      "bio": "Développeur logiciel qui enseigne les bases de la programmation, les algorithmes et les cours d'introduction en informatique."
-    }
   },
   "benefits": {
     "heading": "Pourquoi FutureTutor",
@@ -174,6 +161,7 @@
   "learningModes": {
     "heading": "Apprenez en ligne ou en personne",
     "subheading": "FutureTutor offre les deux, pour que vous choisissiez ce qui convient à votre vie.",
+        "imageAlt": "Une personne apprenante, tutrice ou membre d’une famille prête à avancer avec FutureTutor",
     "online": {
       "title": "Tutorat en ligne",
       "points": [
@@ -240,11 +228,11 @@
       },
       "tutorReview": {
         "question": "Comment les tuteurs sont-ils évalués avant de se joindre?",
-        "answer": "La vérification des tuteurs fait partie de notre feuille de route. En attendant, les informations des profils sont déclarées par les tuteurs eux-mêmes — nous indiquerons clairement les profils vérifiés une fois ce processus lancé."
+        "answer": "Les tuteurs complètent leur profil, la formation, l’évaluation et l’examen des documents requis avant qu’un administrateur puisse approuver leur profil public. FutureTutor ne prétend pas effectuer de vérification des antécédents ni offrir de garantie au-delà de ce processus."
       },
       "payment": {
         "question": "Comment fonctionne le paiement?",
-        "answer": "Le système de paiement de la plateforme est encore en développement. Nous partagerons les détails sur la tarification, la réservation et le paiement avant le lancement de cette fonctionnalité."
+        "answer": "FutureTutor calcule le prix de la séance et l’affiche avant la confirmation. Le paiement est préparé dans le parcours sécurisé de la plateforme, puis son état demeure visible dans la réservation."
       },
       "becomeTutor": {
         "question": "Est-ce que je peux devenir tuteur?",
@@ -333,8 +321,8 @@
   "findTutorsPage": {
     "metaTitle": "Trouver un tuteur",
     "metaDescription": "Cherchez un tuteur sur FutureTutor par matière, niveau scolaire et mode d'apprentissage.",
-    "heading": "Trouver un tuteur",
-    "subheading": "Recherchez par matière, niveau et mode d'apprentissage.",
+    "heading": "Rencontrez des tuteurs qui peuvent vous aider à avancer",
+    "subheading": "Recherchez les profils publics approuvés par matière, niveau et mode d’apprentissage.",
     "resultCount": "{count, plural, one {# résultat} other {# résultats}}",
     "newMarketplaceBadge": "Nouvelle plateforme",
     "emptyFiltered": "Aucun tuteur ne correspond à ces critères. Essayez d'élargir votre recherche.",
@@ -343,7 +331,7 @@
   "tutorProfilePage": {
     "yearsExperience": "{count}+ ans d'expérience",
     "requestToBook": "Demander une réservation",
-    "bookingNote": "La réservation sera possible dès le lancement des comptes.",
+    "bookingNote": "Créez un compte ou connectez-vous pour poursuivre la réservation.",
     "pricingNote": "FutureTutor calcule le prix de la séance selon la matière, le niveau et l'horaire — vous le verrez avant de confirmer.",
     "noBookableChildren": "Vous n'avez aucun enfant lié pour qui vous pouvez réserver actuellement. Ajoutez un enfant ou vérifiez votre statut de parent/tuteur d'abord.",
     "manageFamilyCta": "Aller à Mes élèves",
@@ -514,6 +502,9 @@
       "roleStudent": "Élève",
       "roleParent": "Parent / Tuteur légal",
       "roleTutor": "Tuteur",
+      "roleStudentDescription": "Apprendre pour vous-même",
+      "roleParentDescription": "Accompagner un apprenant",
+      "roleTutorDescription": "Transmettre votre expertise",
       "firstNameLabel": "Prénom",
       "lastNameLabel": "Nom",
       "emailLabel": "Courriel",
@@ -2249,6 +2240,92 @@
     "access": {
       "title": "Séance non disponible",
       "description": "Cette séance est introuvable ou vous n'avez pas l'autorisation de la consulter."
+    }
+  },
+  "publicExperience": {
+    "home": {
+      "problem": {
+        "eyebrow": "Une autre explication peut tout changer",
+        "title": "Être bloqué ne définit pas ce dont vous êtes capable.",
+        "description": "Un apprenant peut être curieux, capable et déterminé, tout en restant trop longtemps seul devant la même question. Souvent, le progrès commence lorsqu’une personne prend le temps de voir l’obstacle et d’expliquer autrement.",
+        "before": "Je ne comprends pas encore et je ne sais pas qui peut m’aider.",
+        "after": "J’ai trouvé quelqu’un qui comprend la difficulté. Je vois comment avancer."
+      },
+      "path": {
+        "eyebrow": "Du besoin au progrès",
+        "title": "Un chemin plus clair vers le bon accompagnement",
+        "description": "FutureTutor raccourcit la distance entre une question et la personne capable de la rendre compréhensible.",
+        "step": "Étape {number}",
+        "items": {
+          "0": { "title": "Précisez votre besoin", "description": "Choisissez une matière, un niveau et un mode, ou utilisez le Jumelage rapide pour décrire l’accompagnement recherché." },
+          "1": { "title": "Rencontrez un tuteur pertinent", "description": "Consultez les profils publics approuvés, l’expérience, les matières et les disponibilités avant de choisir." },
+          "2": { "title": "Apprenez dans un échange humain", "description": "Réservez une séance, en ligne ou en personne lorsque ce mode est offert, puis travaillez ensemble sur la difficulté." },
+          "3": { "title": "Continuez à avancer", "description": "Retrouvez vos réservations et poursuivez avec un accompagnement adapté à votre prochaine étape." }
+        },
+        "cta": "Voir le parcours complet"
+      },
+      "trust": {
+        "eyebrow": "La confiance avant la croissance",
+        "title": "De la clarté dans chaque décision importante",
+        "description": "FutureTutor garde les personnes, le prix et la prochaine étape bien visibles. La technologie organise l’expérience; la relation d’apprentissage reste centrale.",
+        "items": {
+          "0": { "title": "Parcours tuteur évalué", "description": "Les tuteurs complètent leur profil, la formation, l’évaluation et l’examen des documents avant l’approbation." },
+          "1": { "title": "Prix avant confirmation", "description": "Le prix de la séance est calculé par FutureTutor et affiché avant la confirmation d’une réservation." },
+          "2": { "title": "De vraies personnes, des profils clairs", "description": "La découverte publique présente uniquement les profils de tuteurs approuvés dans la plateforme réelle." }
+        }
+      },
+      "possibility": {
+        "eyebrow": "La possibilité dans une rencontre",
+        "statement": "Comprendre peut restaurer la confiance. La confiance peut rouvrir l’avenir.",
+        "description": "FutureTutor existe pour rendre la bonne transmission accessible au moment où elle peut aider une personne à avancer.",
+        "imageAlt": "Une apprenante vivant un déclic de compréhension avec son tuteur"
+      }
+    },
+    "about": {
+      "metaTitle": "Pourquoi FutureTutor existe",
+      "metaDescription": "Découvrez la conviction derrière FutureTutor : la connaissance devient puissante lorsqu’elle est comprise et transmise d’une personne à une autre.",
+      "hero": { "eyebrow": "Notre conviction", "title": "La connaissance prend toute sa valeur lorsqu’elle atteint la personne qui en a besoin.", "description": "FutureTutor existe pour raccourcir la distance entre le besoin de comprendre et la rencontre avec une personne capable d’aider.", "primary": "Voir comment ça marche", "secondary": "Trouver un tuteur", "imageAlt": "Une apprenante et un tuteur concentrés ensemble pendant une séance en ligne" },
+      "why": { "eyebrow": "Pourquoi nous existons", "title": "Le monde ne manque pas de connaissances. Il manque souvent de ponts.", "description": "Le potentiel ne devrait pas dépendre du lieu où l’on vit, du réseau familial ou du hasard de recevoir la bonne explication.", "statement": "Nous croyons que la connaissance devient véritablement puissante lorsqu’elle passe d’une personne à une autre et ouvre une possibilité qui n’existait pas auparavant." },
+      "belief": { "eyebrow": "Ce qui nous guide", "title": "La transmission avant la transaction", "description": "La plateforme est le mécanisme. La relation humaine d’apprentissage est ce qui lui donne son sens.", "items": { "0": { "title": "L’humain avant la technologie", "description": "La technologie doit réduire les frictions et améliorer la pertinence sans devenir la vedette." }, "1": { "title": "Le potentiel avant les étiquettes", "description": "Une difficulté actuelle ne définit ni l’intelligence ni l’avenir d’un apprenant." }, "2": { "title": "Le progrès avant la perfection", "description": "Nous valorisons les déclics répétés qui transforment la compréhension en mouvement." } } },
+      "future": { "title": "Construire le pont. Garder la relation humaine.", "description": "Les outils de FutureTutor pourront évoluer. La raison d’être demeure : rapprocher la bonne connaissance de la personne qui en a besoin, d’une manière qui l’aide réellement à avancer.", "cta": "Commencer à chercher du soutien" }
+    },
+    "contact": {
+      "metaTitle": "Contact et soutien",
+      "metaDescription": "Trouvez le bon parcours FutureTutor pour l’accès au compte, les questions de tutorat et l’accompagnement des tuteurs.",
+      "hero": { "eyebrow": "Contact et soutien", "title": "Commencez par le parcours qui correspond à votre question.", "description": "FutureTutor construit un soutien clair autour des moments importants. Ces parcours vous aident à avancer sans faux formulaire de contact.", "primary": "Comprendre l’expérience", "secondary": "Se connecter" },
+      "routes": { "0": { "title": "Accès au compte", "description": "Mot de passe oublié? Utilisez le parcours sécurisé sans révéler si une adresse est liée à un compte.", "cta": "Réinitialiser le mot de passe" }, "1": { "title": "Élèves et familles", "description": "Découvrez la recherche d’un tuteur, la réservation et les séances avant de créer un compte.", "cta": "Voir comment ça marche" }, "2": { "title": "Questions des tuteurs", "description": "Explorez à un niveau général la candidature, le profil, les disponibilités, les séances et les versements.", "cta": "Voir les ressources pour tuteurs" } },
+      "general": { "title": "Vous cherchez une adresse de contact générale?", "description": "Aucune adresse générale de soutien vérifiée n’est encore publiée. D’ici là, utilisez les parcours ci-dessus pour l’accès au compte, l’information sur le tutorat et l’accompagnement des tuteurs." }
+    },
+    "forTutors": {
+      "metaTitle": "Devenir tuteur",
+      "metaDescription": "Transmettez ce que vous savez avec FutureTutor et aidez des apprenants à passer de la confusion à la compréhension et au progrès.",
+      "hero": { "eyebrow": "Un savoir qui mérite de circuler", "title": "Ce que vous savez pourrait devenir le déclic dont une autre personne a besoin.", "description": "Créez un profil public clair, indiquez vos disponibilités et rencontrez des apprenants qui ont besoin de votre façon d’expliquer.", "primary": "Devenir tuteur", "secondary": "Explorer les ressources", "imageAlt": "Un tuteur et une apprenante engagés dans une explication en ligne" },
+      "value": { "eyebrow": "Enseigner avec intention", "title": "Une expérience professionnelle centrée sur la transmission humaine", "description": "FutureTutor organise la découverte, la réservation et les séances pour vous permettre de vous concentrer sur la compréhension.", "items": { "0": { "title": "Rendez votre expertise visible", "description": "Présentez vos matières, niveaux, expérience et approche dans un profil facile à comprendre." }, "1": { "title": "Définissez de vraies disponibilités", "description": "Choisissez quand vous pouvez enseigner et les modes que vous offrez réellement." }, "2": { "title": "Bâtissez la confiance étape par étape", "description": "Complétez la formation, l’évaluation et le parcours d’examen requis avant l’approbation du profil." } } },
+      "process": { "eyebrow": "Pour commencer", "title": "Un parcours clair de la candidature au tutorat", "description": "Chaque étape rend les attentes et l’état de préparation visibles.", "step": "Étape {number}", "items": { "0": { "title": "Créez votre compte Tuteur", "description": "Choisissez le rôle Tuteur à l’inscription et complétez votre profil de base." }, "1": { "title": "Complétez le parcours d’approbation", "description": "Ajoutez le profil, la formation, l’évaluation et les documents demandés pour examen." }, "2": { "title": "Définissez vos disponibilités", "description": "Publiez les heures et les modes d’accompagnement que vous pouvez réellement offrir." }, "3": { "title": "Rencontrez des apprenants", "description": "Gérez les demandes, réservations et séances dans votre espace Tuteur." } } },
+      "cta": { "title": "Votre savoir peut aider une personne à voir comment avancer.", "description": "Créez un compte Tuteur lorsque vous êtes prêt à commencer le parcours d’approbation.", "primary": "Créer un compte Tuteur", "secondary": "Lire les ressources" }
+    },
+    "how": {
+      "metaTitle": "Comment fonctionne FutureTutor",
+      "metaDescription": "Découvrez le parcours réel FutureTutor : préciser un besoin, trouver un tuteur, réserver et participer à une séance.",
+      "hero": { "eyebrow": "Simple par choix", "title": "De « j’ai besoin d’aide » à une personne capable de vous aider.", "description": "Cherchez directement ou décrivez votre besoin avec le Jumelage rapide, puis consultez les détails avec une prochaine étape toujours claire.", "primary": "Trouver un tuteur", "secondary": "Créer un compte" },
+      "journey": { "eyebrow": "Le parcours complet", "title": "Comprenez ce qui se passe avant de commencer", "description": "FutureTutor relie la découverte, le prix, la réservation et la séance sans masquer les décisions importantes.", "items": { "0": { "title": "Nommez le besoin", "description": "Choisissez une matière, un niveau et un mode. Le Jumelage rapide permet aussi de soumettre une demande structurée." }, "1": { "title": "Explorez les tuteurs approuvés", "description": "Recherchez les profils publics par matière, niveau et mode en ligne ou en personne." }, "2": { "title": "Choisissez avec le bon contexte", "description": "Consultez l’expérience, les matières, le lieu ou le mode, les disponibilités et les détails du profil." }, "3": { "title": "Vérifiez et confirmez", "description": "FutureTutor calcule le prix et l’affiche avant la confirmation. Le paiement passe par le parcours sécurisé existant." }, "4": { "title": "Participez à la séance", "description": "Utilisez l’expérience de séance prévue pour le format choisi et les commandes d’arrivée propres à votre rôle." }, "5": { "title": "Poursuivez à partir d’un dossier clair", "description": "Retrouvez vos réservations et les informations des séances terminées pour préparer la prochaine étape." } } }
+    },
+    "resources": {
+      "metaTitle": "Ressources pour tuteurs",
+      "metaDescription": "Un guide concis pour devenir tuteur FutureTutor, bâtir son profil, compléter l’examen et organiser son activité.",
+      "hero": { "eyebrow": "Ressources pour tuteurs", "title": "Sachez à quoi vous attendre avant de commencer.", "description": "Un aperçu concret du parcours Tuteur, fondé sur les outils et processus que FutureTutor offre aujourd’hui.", "primary": "Devenir tuteur", "secondary": "Créer un compte" },
+      "hub": { "eyebrow": "Le parcours Tuteur", "title": "Des repères pratiques, sans politiques inventées", "description": "Utilisez ces points de départ pour comprendre l’expérience actuelle.", "items": { "0": { "title": "Devenir tuteur", "description": "Comprenez le rôle du tutorat sur FutureTutor et le point de départ de la candidature.", "cta": "Explorer l’expérience Tuteur" }, "1": { "title": "Bâtir votre profil", "description": "Préparez votre identité, votre titre, votre biographie, vos matières, niveaux, langues et mode d’enseignement.", "cta": "Créer un compte Tuteur" }, "2": { "title": "Parcours d’approbation", "description": "Complétez le profil, la formation, l’évaluation et l’examen des documents présentés dans le tableau de bord.", "cta": "Voir ce qui vous attend" }, "3": { "title": "Disponibilités", "description": "Définissez les plages récurrentes et les modes que vous pouvez offrir avec constance.", "cta": "Commencer votre profil" }, "4": { "title": "Réservations et demandes", "description": "Consultez les réservations confirmées et les possibilités de Jumelage rapide dans votre espace Tuteur.", "cta": "Voir le parcours apprenant" }, "5": { "title": "Séances", "description": "Comprenez les états d’arrivée, de période de grâce et de fin avant votre première séance planifiée.", "cta": "Voir la place des séances" }, "6": { "title": "Paiements et versements", "description": "FutureTutor présente l’état des gains et des versements dans le tableau de bord Tuteur. L’admissibilité et les transferts demeurent déterminés par la plateforme.", "cta": "Revoir l’expérience Tuteur" } }, "boundary": "Ce centre décrit le produit actuel à un niveau général. Il ne remplace ni les conditions juridiques, ni les politiques de sécurité, ni une promesse de revenus." }
+    },
+    "authEditorial": {
+      "imageAlt": "Une apprenante participant à une séance de tutorat en ligne avec concentration",
+      "login": { "statement": "Parfois, comprendre commence lorsqu’une personne explique autrement.", "support": "Retrouvez votre espace d’apprentissage, de tutorat ou familial avec des personnes et des prochaines étapes toujours claires." },
+      "signup": { "statement": "Chaque chemin vers l’avant commence par une première rencontre.", "support": "Créez le compte correspondant à votre rôle. FutureTutor rendra la prochaine étape claire." },
+      "recovery": { "statement": "Retrouver son accès devrait être simple et rassurant.", "support": "Récupérez votre compte sans exposer d’information et sans modifier le fonctionnement de votre rôle FutureTutor." }
+    },
+    "subjects": {
+      "metaTitle": "Matières de tutorat",
+      "metaDescription": "Explorez les matières offertes sur FutureTutor et passez directement à la découverte de tuteurs approuvés.",
+      "hero": { "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" }
     }
   }
 }

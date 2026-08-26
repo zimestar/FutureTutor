@@ -12,30 +12,9 @@ export type LanguageKey = "en" | "fr";
 
 export type TutorBadgeKey = "topTutor" | "respondsQuickly" | "popular";
 
-export interface DemoTutor {
-  id: string;
-  slug: string;
-  firstName: string;
-  /** References `content/subjects.ts` slugs. */
-  subjectSlugs: string[];
-  gradeLevels: GradeLevelKey[];
-  languages: LanguageKey[];
-  rating: number;
-  reviewCount: number;
-  learningMode: LearningMode;
-  city: string;
-  yearsExperience: number;
-  badges: TutorBadgeKey[];
-}
-
-/**
- * What `TutorCard` actually renders — fully resolved display strings, not
- * translation keys or slugs. Built either from `DemoTutor` + translations
- * (see `DemoTutorCard.tsx`, homepage only) or from a real `TutorProfile`
- * query (see `src/lib/tutorCard.ts`).
- */
+/** What `TutorCard` renders — fully resolved display strings from an approved public Tutor profile. */
 export interface TutorCardData {
-  /** TutorProfile.id for real tutors, DemoTutor.id for demo ones — used as the favorite-toggle key. */
+  /** TutorProfile.id — used as the favorite-toggle key for authenticated learners. */
   id: string;
   slug: string;
   firstName: string;

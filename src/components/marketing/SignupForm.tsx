@@ -19,6 +19,11 @@ export function SignupForm() {
     PARENT: t("roleParent"),
     TUTOR: t("roleTutor"),
   };
+  const roleDescriptions: Record<"STUDENT" | "TUTOR" | "PARENT", string> = {
+    STUDENT: t("roleStudentDescription"),
+    PARENT: t("roleParentDescription"),
+    TUTOR: t("roleTutorDescription"),
+  };
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -37,13 +42,14 @@ export function SignupForm() {
             aria-checked={role === option}
             onClick={() => setRole(option)}
             className={cn(
-              "rounded-md border px-3 py-3 text-left text-sm font-semibold transition-colors",
+              "min-h-20 rounded-xl border px-3 py-3 text-left text-sm transition-colors",
               role === option
                 ? "border-blue bg-blue/5 text-blue"
                 : "border-neutral-300 text-slate hover:border-neutral-400"
             )}
           >
-            {roleLabels[option]}
+            <span className="block font-bold">{roleLabels[option]}</span>
+            <span className="mt-1 block text-xs leading-4 opacity-75">{roleDescriptions[option]}</span>
           </button>
         ))}
         <input type="hidden" name="role" value={role} />

@@ -8,6 +8,7 @@
     "subjects": "Subjects",
     "howItWorks": "How It Works",
     "forTutors": "For Tutors",
+    "about": "About",
     "login": "Log In",
     "becomeATutor": "Become a Tutor",
     "dashboard": "Dashboard",
@@ -17,16 +18,19 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
+  "logo": { "homeLabel": "FutureTutor home" },
   "languageSwitcher": {
     "label": "Language",
     "en": "English",
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "Personalized tutoring",
-    "title": "Find the right tutor. Learn with confidence.",
-    "description": "Connect with tutors who match your subject, level and schedule — online or in person.",
-    "becomeATutor": "Become a Tutor",
+    "eyebrow": "Understand. Believe. Move forward.",
+    "title": "The right person can change the way you learn.",
+    "description": "Meet a tutor who sees where you are stuck, explains it differently and helps you find your way forward.",
+    "primaryCta": "Find a Tutor",
+    "secondaryCta": "See How It Works",
+    "searchIntro": "Already know what you need? Start here.",
     "imageAlt": "A student smiling during an online tutoring video call with her tutor"
   },
   "search": {
@@ -56,7 +60,7 @@
     "personalized": "Personalized one-on-one tutoring",
     "onlineInPerson": "Online or in-person sessions",
     "flexible": "Flexible scheduling",
-    "verification": "Tutor verification: coming soon"
+    "verification": "Only approved Tutor profiles are public"
   },
   "subjects": {
     "heading": "What do you want to learn?",
@@ -80,7 +84,7 @@
       "metaDescription": "Find {subject} tutors on FutureTutor, online or in person.",
       "description": "Browse tutors who teach {subject}, online or in person.",
       "searchAll": "Search All Tutors",
-      "empty": "No example {subject} tutors yet — check back soon as tutors join."
+      "empty": "No approved public {subject} tutors match yet. Try the full directory or another subject."
     }
   },
   "howItWorks": {
@@ -107,11 +111,12 @@
     }
   },
   "featuredTutors": {
-    "badge": "Example profiles",
-    "heading": "Meet the kind of tutors on FutureTutor",
-    "description": "These sample profiles show how tutor matching will look. Real tutor profiles go live as they join the platform.",
+    "badge": "Approved public profiles",
+    "heading": "Meet tutors ready to help you move forward",
+    "description": "Explore real approved profiles and choose someone whose subjects, experience and availability fit your needs.",
     "browseAll": "Browse All Tutors",
-    "empty": "Tutor profiles will appear here soon."
+    "emptyTitle": "The right connection matters more than a crowded directory.",
+    "emptyDescription": "Approved public profiles will appear here when they are available. You can still tell us what you need and explore the subjects FutureTutor supports."
   },
   "tutorCard": {
     "reviews": "{count, plural, one {(# review)} other {(# reviews)}}",
@@ -131,24 +136,6 @@
     },
     "addFavorite": "Save to favorites",
     "removeFavorite": "Remove from favorites"
-  },
-  "demoTutors": {
-    "demo-1": {
-      "headline": "Math & Physics Tutor",
-      "bio": "Engineering grad who makes calculus and mechanics click through worked examples and practice sets."
-    },
-    "demo-2": {
-      "headline": "French Language Tutor",
-      "bio": "Focuses on conversational confidence and grammar fundamentals for young learners."
-    },
-    "demo-3": {
-      "headline": "Chemistry & Biology Tutor",
-      "bio": "Pre-med student tutor who breaks exam-heavy units into clear, testable concepts."
-    },
-    "demo-4": {
-      "headline": "Computer Science Tutor",
-      "bio": "Software developer teaching programming fundamentals, algorithms, and intro CS coursework."
-    }
   },
   "benefits": {
     "heading": "Why FutureTutor",
@@ -174,6 +161,7 @@
   "learningModes": {
     "heading": "Learn online or in person",
     "subheading": "FutureTutor supports both, so you can choose what fits your life.",
+    "imageAlt": "A learner taking part in a focused online tutoring session",
     "online": {
       "title": "Online tutoring",
       "points": [
@@ -240,11 +228,11 @@
       },
       "tutorReview": {
         "question": "How are tutors reviewed before joining?",
-        "answer": "Tutor verification is part of our product roadmap. Until it's live, profile details are self-reported by tutors — we'll clearly label verified profiles once that process launches."
+        "answer": "Tutors complete their profile, training, assessment and required document review before an administrator can approve their public profile. FutureTutor does not claim background checks or guarantees beyond this process."
       },
       "payment": {
         "question": "How does payment work?",
-        "answer": "Marketplace payments are still in development. We'll share details on pricing, booking and payment flow before the feature goes live."
+        "answer": "FutureTutor calculates the session price and shows it before confirmation. Payment is prepared through the platform's secure checkout flow; the booking record keeps the resulting status visible."
       },
       "becomeTutor": {
         "question": "Can I become a tutor?",
@@ -333,8 +321,8 @@
   "findTutorsPage": {
     "metaTitle": "Find a Tutor",
     "metaDescription": "Search FutureTutor for a tutor by subject, grade level and learning mode.",
-    "heading": "Find a tutor",
-    "subheading": "Search by subject, level and learning mode.",
+    "heading": "Meet tutors who can help you move forward",
+    "subheading": "Search approved public profiles by subject, level and learning mode.",
     "resultCount": "{count, plural, one {# result} other {# results}}",
     "newMarketplaceBadge": "New marketplace",
     "emptyFiltered": "No tutors match those filters yet. Try broadening your search.",
@@ -343,7 +331,7 @@
   "tutorProfilePage": {
     "yearsExperience": "{count}+ years of experience",
     "requestToBook": "Request to Book",
-    "bookingNote": "Booking opens once accounts launch.",
+    "bookingNote": "Create an account or log in to continue with booking.",
     "pricingNote": "FutureTutor calculates the session price based on subject, level and timing — you'll see it before confirming.",
     "noBookableChildren": "You don't have a linked child you can currently book for. Add a child or check your guardian status first.",
     "manageFamilyCta": "Go to My Students",
@@ -514,6 +502,9 @@
       "roleStudent": "Student",
       "roleParent": "Parent / Guardian",
       "roleTutor": "Tutor",
+      "roleStudentDescription": "Learn for yourself",
+      "roleParentDescription": "Support a learner",
+      "roleTutorDescription": "Share your expertise",
       "firstNameLabel": "First name",
       "lastNameLabel": "Last name",
       "emailLabel": "Email",
@@ -2249,6 +2240,92 @@
     "access": {
       "title": "Session unavailable",
       "description": "This session could not be found or you do not have permission to view it."
+    }
+  },
+  "publicExperience": {
+    "home": {
+      "problem": {
+        "eyebrow": "A different explanation can change everything",
+        "title": "Being stuck does not define what you are capable of.",
+        "description": "A learner can be curious, capable and determined, yet stay alone with the same question for too long. Often, progress begins when someone takes the time to see the obstacle and explain it another way.",
+        "before": "I do not understand this yet, and I do not know who can help.",
+        "after": "I found someone who understands the difficulty. I can see how to move forward."
+      },
+      "path": {
+        "eyebrow": "From need to progress",
+        "title": "A clearer path to the right support",
+        "description": "FutureTutor shortens the distance between a question and a person who can help make it understandable.",
+        "step": "Step {number}",
+        "items": {
+          "0": { "title": "Tell us what you need", "description": "Choose a subject, level and learning mode, or use Quick Match to describe the support you are looking for." },
+          "1": { "title": "Meet a relevant tutor", "description": "Review approved public profiles, experience, subjects and availability before deciding." },
+          "2": { "title": "Learn through a human exchange", "description": "Book a session, meet online or in person when offered, and work through the difficulty together." },
+          "3": { "title": "Keep moving forward", "description": "Return to your bookings and continue with support that fits your next step." }
+        },
+        "cta": "See the complete journey"
+      },
+      "trust": {
+        "eyebrow": "Trust before growth",
+        "title": "Clarity at every important decision",
+        "description": "FutureTutor keeps the people, the price and the next step visible. Technology organizes the experience; the learning relationship remains central.",
+        "items": {
+          "0": { "title": "Reviewed tutor journey", "description": "Tutors complete a profile, training, assessment and document review before approval." },
+          "1": { "title": "Price before confirmation", "description": "The session price is calculated by FutureTutor and shown before a booking is confirmed." },
+          "2": { "title": "Real people, clear profiles", "description": "Public discovery surfaces only approved tutor profiles from the live marketplace." }
+        }
+      },
+      "possibility": {
+        "eyebrow": "The possibility in one encounter",
+        "statement": "Understanding can restore confidence. Confidence can reopen a future.",
+        "description": "FutureTutor exists to make the right transmission accessible at the moment it can help someone move forward.",
+        "imageAlt": "A learner recognizing a breakthrough while working with a tutor"
+      }
+    },
+    "about": {
+      "metaTitle": "Why FutureTutor Exists",
+      "metaDescription": "Discover the belief behind FutureTutor: knowledge becomes powerful when it is understood and transmitted from one person to another.",
+      "hero": { "eyebrow": "Our belief", "title": "Knowledge matters when it can reach the person who needs it.", "description": "FutureTutor exists to shorten the distance between needing to understand and meeting someone capable of helping you understand.", "primary": "See how it works", "secondary": "Find a Tutor", "imageAlt": "A learner and tutor focused together during an online tutoring session" },
+      "why": { "eyebrow": "Why we exist", "title": "The world does not lack knowledge. It often lacks bridges.", "description": "Potential should not depend on where someone lives, who their family knows or whether the right explanation happens by chance.", "statement": "We believe knowledge becomes truly powerful when it passes from one person to another and opens a possibility that did not exist before." },
+      "belief": { "eyebrow": "What guides us", "title": "Transmission before transaction", "description": "The marketplace is the mechanism. The human learning relationship is the reason it matters.", "items": { "0": { "title": "Human before technology", "description": "Technology should remove friction and improve relevance without becoming the hero." }, "1": { "title": "Potential before labels", "description": "A current difficulty does not define a learner’s intelligence or future." }, "2": { "title": "Progress before perfection", "description": "We value the repeated breakthroughs that turn understanding into movement." } } },
+      "future": { "title": "Build the bridge. Keep the relationship human.", "description": "As FutureTutor grows, its tools may become more capable. The purpose remains constant: bring the right knowledge closer to the person who needs it, in a way that genuinely helps them move forward.", "cta": "Start finding support" }
+    },
+    "contact": {
+      "metaTitle": "Contact and Support",
+      "metaDescription": "Find the right FutureTutor support route for account access, tutoring questions and tutor guidance.",
+      "hero": { "eyebrow": "Contact and support", "title": "Start with the path that fits your question.", "description": "FutureTutor is building clear support around the moments that matter. These routes can help you move forward without a pretend contact form.", "primary": "Understand the experience", "secondary": "Log in" },
+      "routes": { "0": { "title": "Account access", "description": "Forgot your password? Use the secure recovery flow without exposing whether an email belongs to an account.", "cta": "Reset your password" }, "1": { "title": "Students and families", "description": "Learn how finding a tutor, booking and sessions work before creating an account.", "cta": "See how it works" }, "2": { "title": "Tutor questions", "description": "Explore the application, profile, availability, session and payout experience at a high level.", "cta": "Visit Tutor Resources" } },
+      "general": { "title": "Looking for a general contact address?", "description": "A verified general support address is not yet published. Until it is, use the routes above for account access, tutoring information and Tutor guidance." }
+    },
+    "forTutors": {
+      "metaTitle": "Become a Tutor",
+      "metaDescription": "Share what you know through FutureTutor and help learners turn confusion into understanding and progress.",
+      "hero": { "eyebrow": "Knowledge worth sharing", "title": "What you know could become someone else’s breakthrough.", "description": "Build a clear public profile, share your availability and meet learners who need the way you explain.", "primary": "Become a Tutor", "secondary": "Explore Tutor Resources", "imageAlt": "A tutor and learner engaged in a focused online explanation" },
+      "value": { "eyebrow": "Teach with purpose", "title": "A professional experience built around human transmission", "description": "FutureTutor helps organize discovery, booking and sessions so you can focus on helping someone understand.", "items": { "0": { "title": "Make your expertise visible", "description": "Present your subjects, levels, experience and approach through a profile learners can understand." }, "1": { "title": "Set real availability", "description": "Choose when you can tutor and the learning modes you actually offer." }, "2": { "title": "Build trust step by step", "description": "Complete the training, assessment and review journey required before your profile is approved." } } },
+      "process": { "eyebrow": "Getting started", "title": "A clear path from application to tutoring", "description": "Each step makes expectations and readiness visible.", "step": "Step {number}", "items": { "0": { "title": "Create your Tutor account", "description": "Choose Tutor during signup and complete your core profile." }, "1": { "title": "Complete the approval journey", "description": "Add the required profile information, training, assessment and documents for review." }, "2": { "title": "Set availability", "description": "Publish the times and modes you can genuinely support." }, "3": { "title": "Meet learners", "description": "Manage requests, bookings and sessions from your Tutor experience." } } },
+      "cta": { "title": "Your knowledge can help someone see a way forward.", "description": "Create a Tutor account when you are ready to begin the approval journey.", "primary": "Create a Tutor account", "secondary": "Read Tutor Resources" }
+    },
+    "how": {
+      "metaTitle": "How FutureTutor Works",
+      "metaDescription": "See the real FutureTutor journey from identifying a need to finding, booking and meeting a tutor.",
+      "hero": { "eyebrow": "Simple by design", "title": "From “I need help” to a person who can help.", "description": "Search directly or describe your need through Quick Match, review the details and keep every next step clear.", "primary": "Find a Tutor", "secondary": "Create an account" },
+      "journey": { "eyebrow": "The complete journey", "title": "Understand what happens before you begin", "description": "FutureTutor keeps discovery, pricing, booking and the session experience connected without hiding important decisions.", "items": { "0": { "title": "Name the need", "description": "Choose a subject, level and mode. If you prefer, Quick Match lets you submit a structured tutoring request." }, "1": { "title": "Explore approved tutors", "description": "Search public profiles by subject, level and online or in-person mode." }, "2": { "title": "Choose with context", "description": "Review experience, subjects, location or mode, availability and profile details." }, "3": { "title": "Review and confirm", "description": "FutureTutor calculates the session price and shows it before confirmation. Payment is handled through the existing secure flow." }, "4": { "title": "Meet for the session", "description": "Use the session experience for the scheduled tutoring format and follow the role-specific arrival controls." }, "5": { "title": "Continue from a clear record", "description": "Return to bookings and completed session information when planning what comes next." } } }
+    },
+    "resources": {
+      "metaTitle": "Tutor Resources",
+      "metaDescription": "A concise guide to becoming a FutureTutor tutor, building a profile, completing review and managing tutoring work.",
+      "hero": { "eyebrow": "Tutor Resources", "title": "Know what to expect before you begin.", "description": "A grounded overview of the Tutor journey, based on the tools and processes FutureTutor supports today.", "primary": "Become a Tutor", "secondary": "Create an account" },
+      "hub": { "eyebrow": "The Tutor journey", "title": "Practical guidance, without invented policy", "description": "Use these starting points to understand the current platform experience.", "items": { "0": { "title": "Becoming a Tutor", "description": "Understand the purpose of tutoring on FutureTutor and where the application journey begins.", "cta": "Explore the Tutor experience" }, "1": { "title": "Build your profile", "description": "Prepare your identity, headline, biography, subjects, levels, languages and teaching mode.", "cta": "Create a Tutor account" }, "2": { "title": "Approval journey", "description": "Complete the profile, training, assessment and document-review steps shown in the Tutor dashboard.", "cta": "See what Tutors can expect" }, "3": { "title": "Availability", "description": "Set the recurring times and tutoring modes you can reliably offer.", "cta": "Start your Tutor profile" }, "4": { "title": "Bookings and requests", "description": "Review confirmed bookings and Quick Match opportunities from the Tutor experience.", "cta": "See the learner journey" }, "5": { "title": "Sessions", "description": "Understand arrival, grace-period and completion states before your first scheduled session.", "cta": "See how sessions fit" }, "6": { "title": "Payments and payouts", "description": "FutureTutor presents earning status and payout readiness in the Tutor dashboard. Eligibility and transfer state remain platform-authoritative.", "cta": "Review the Tutor overview" } }, "boundary": "This hub describes current product behavior at a high level. It does not replace FutureTutor’s legal terms, safety policies or a guaranteed earnings statement." }
+    },
+    "authEditorial": {
+        "imageAlt": "A FutureTutor learner, tutor or family member ready to move forward",
+      "login": { "statement": "Sometimes understanding begins with one person explaining it differently.", "support": "Return to your learning, tutoring or family experience with the people and next steps kept clear." },
+      "signup": { "statement": "Every path forward begins with a first connection.", "support": "Create the account that fits your role. FutureTutor will keep the next step clear from there." },
+      "recovery": { "statement": "A secure return should feel simple and calm.", "support": "Recover access without exposing account information or changing the way your FutureTutor role works." }
+    },
+    "subjects": {
+      "metaTitle": "Tutoring Subjects",
+      "metaDescription": "Explore the subjects supported on FutureTutor and move directly into approved Tutor discovery.",
+      "hero": { "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" }
     }
   }
 }

@@ -29,18 +29,18 @@ const iconMap: Record<Subject["icon"], LucideIcon> = {
   "graduation-cap": GraduationCap,
 };
 
-export function SubjectGrid() {
+export function SubjectGrid({ showHeader = true }: { showHeader?: boolean }) {
   const t = useTranslations("subjects");
   const tItems = useTranslations("subjects.items");
 
   return (
     <Section id="subjects" ariaLabelledby="subjects-heading" className="bg-off-white">
-      <div className="mx-auto max-w-2xl text-center">
+      {showHeader && <div className="mx-auto max-w-2xl text-center">
         <h2 id="subjects-heading" className="text-3xl font-bold tracking-tight text-navy md:text-4xl">
           {t("heading")}
         </h2>
         <p className="mt-3 text-lg text-slate">{t("subheading")}</p>
-      </div>
+      </div>}
 
       <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
         {subjects.map((subject) => {

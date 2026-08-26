@@ -3,6 +3,7 @@ export const mainNav = [
   { key: "findTutor", href: "/find-tutors" },
   { key: "subjects", href: "/subjects" },
   { key: "howItWorks", href: "/how-it-works" },
+  { key: "about", href: "/about" },
   { key: "forTutors", href: "/become-a-tutor" },
 ] as const;
 
@@ -14,7 +15,7 @@ export const footerNav = {
   ],
   tutors: [
     { key: "becomeATutor", href: "/become-a-tutor" },
-    { key: "tutorResources", href: "/become-a-tutor#resources" },
+    { key: "tutorResources", href: "/tutor-resources" },
   ],
   company: [
     { key: "about", href: "/about" },

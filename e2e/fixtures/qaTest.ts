@@ -40,7 +40,7 @@ export async function expectSameOrigin(page: Page, configuredBaseUrl: string) {
 
 export async function expectNoRawKeys(page: Page) {
   const body = await page.locator("body").innerText();
-  expect(body).not.toMatch(/(?:sessionExperience|auth\.(?:forgotPassword|resetPassword|passwordVisibility)|quickMatch|tutorPayouts|runtimeError)\.[\w.-]+/);
+  expect(body).not.toMatch(/(?:publicExperience|sessionExperience|auth\.(?:forgotPassword|resetPassword|passwordVisibility)|quickMatch|tutorPayouts|runtimeError)\.[\w.-]+/);
 }
 
 export async function expectNoDocumentOverflow(page: Page, tolerance = 1) {

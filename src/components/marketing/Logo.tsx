@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const LOGO_ASPECT_RATIO = 471 / 103;
 
@@ -11,13 +12,14 @@ export function Logo({
   variant?: "light" | "dark";
   className?: string;
 }) {
+  const t = useTranslations("logo");
   const src =
     variant === "light"
       ? "/brand/logo-horizontal-light.png"
       : "/brand/logo-horizontal-dark.png";
 
   return (
-    <Link href="/" aria-label="FutureTutor home" className="block shrink-0">
+    <Link href="/" aria-label={t("homeLabel")} className="block shrink-0">
       <Image
         src={src}
         alt="FutureTutor"

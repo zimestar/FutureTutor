@@ -1,5 +1,11 @@
 export const publicRoutes = [
   "",
+  "/about",
+  "/become-a-tutor",
+  "/contact",
+  "/how-it-works",
+  "/subjects",
+  "/tutor-resources",
   "/login",
   "/signup",
   "/forgot-password",

@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
 type Params = { locale: string; subject: string };
 
@@ -29,10 +30,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "subjects" });
   const label = t(`items.${slug}`);
 
-  return {
-    title: t("page.title", { subject: label }),
-    description: t("page.metaDescription", { subject: label }),
-  };
+  return publicPageMetadata({ locale, path: `/subjects/${slug}`, title: t("page.title", { subject: label }), description: t("page.metaDescription", { subject: label }) });
 }
 
 export default async function SubjectPage({ params }: { params: Promise<Params> }) {
@@ -72,7 +70,7 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
           </h1>
           <p className="mt-4 text-lg text-slate">{t("page.description", { subject: label })}</p>
           <div className="mt-6 flex justify-center">
-            <Button href="/find-tutors">{t("page.searchAll")}</Button>
+            <Button href={`/find-tutors?subject=${encodeURIComponent(label)}`}>{t("page.searchAll")}</Button>
           </div>
         </div>
       </Section>

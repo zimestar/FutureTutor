@@ -10,6 +10,7 @@ const forgotForm = readFileSync("src/components/marketing/ForgotPasswordForm.tsx
 const resetForm = readFileSync("src/components/marketing/ResetPasswordForm.tsx", "utf8");
 const forgotPage = readFileSync("src/app/[locale]/forgot-password/page.tsx", "utf8");
 const resetPage = readFileSync("src/app/[locale]/reset-password/page.tsx", "utf8");
+const authShell = readFileSync("src/components/marketing/AuthExperienceShell.tsx", "utf8");
 const authActions = readFileSync("src/lib/actions/auth.ts", "utf8");
 
 describe("L1-01C account recovery presentation", () => {
@@ -22,8 +23,9 @@ describe("L1-01C account recovery presentation", () => {
   it("provides localized forgot/reset route shells with one H1 each", () => {
     expect(forgotPage).toContain("ForgotPasswordForm");
     expect(resetPage).toContain("ResetPasswordForm");
-    expect(forgotPage.match(/<h1/g)).toHaveLength(1);
-    expect(resetPage.match(/<h1/g)).toHaveLength(1);
+    expect(forgotPage).toContain('title={t("title")}');
+    expect(resetPage).toContain('title={t("title")}');
+    expect(authShell.match(/<h1/g)).toHaveLength(1);
   });
 
   it("reads the authoritative URL token without decoding or duplicating it into server props", () => {

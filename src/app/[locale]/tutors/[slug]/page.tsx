@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArrowLeft, Star, MapPin, Laptop, Languages, GraduationCap } from "lucide-react";
@@ -16,10 +17,11 @@ import { dbModeToDisplay } from "@/lib/tutorMode";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { listBookableStudentsForActor } from "@/services/learnerSelection";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
 type Params = { locale: string; slug: string };
 
-async function findApprovedTutor(slug: string) {
+const findApprovedTutor = cache(async (slug: string) => {
   return db.tutorProfile.findFirst({
     where: { slug, applicationStatus: "APPROVED" },
     include: {
@@ -29,21 +31,19 @@ async function findApprovedTutor(slug: string) {
       languages: { select: { language: true } },
     },
   });
-}
+});
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const tutor = await findApprovedTutor(slug);
   if (!tutor) return {};
 
-  return {
-    title: `${tutor.user.name?.split(" ")[0] ?? ""} — ${tutor.headline ?? ""}`,
-    description: tutor.bio ?? undefined,
-  };
+  const title = `${tutor.user.name?.split(" ")[0] ?? ""} — ${tutor.headline ?? ""}`;
+  return publicPageMetadata({ locale, path: `/tutors/${slug}`, title, description: tutor.bio ?? title });
 }
 
 export default async function TutorProfilePage({ params }: { params: Promise<Params> }) {

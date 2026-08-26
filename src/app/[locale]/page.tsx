@@ -1,20 +1,23 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Header } from "@/components/marketing/Header";
 import { Hero } from "@/components/marketing/Hero";
-import { TrustStrip } from "@/components/marketing/TrustStrip";
 import { SubjectGrid } from "@/components/marketing/SubjectGrid";
-import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { FeaturedTutors } from "@/components/marketing/FeaturedTutors";
-import { Benefits } from "@/components/marketing/Benefits";
 import { LearningModes } from "@/components/marketing/LearningModes";
-import { FutureVision } from "@/components/marketing/FutureVision";
-import { ParentTrust } from "@/components/marketing/ParentTrust";
 import { TutorCTA } from "@/components/marketing/TutorCTA";
 import { FAQ } from "@/components/marketing/FAQ";
 import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { Footer } from "@/components/marketing/Footer";
+import { HomeStory } from "@/components/marketing/HomeStory";
 import { site } from "@/content/site";
 import { faqItemIds } from "@/content/faq";
+import { publicPageMetadata } from "@/lib/publicMetadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "site" });
+  return publicPageMetadata({ locale, path: "/", title: t("tagline"), description: t("description") });
+}
 
 export default async function Home({
   params,
@@ -65,14 +68,10 @@ export default async function Home({
       <Header />
       <main id="main" className="flex-1">
         <Hero />
-        <TrustStrip />
+        <HomeStory />
         <SubjectGrid />
-        <HowItWorks />
-        <FeaturedTutors />
-        <Benefits />
+        <FeaturedTutors locale={locale} />
         <LearningModes />
-        <FutureVision />
-        <ParentTrust />
         <TutorCTA />
         <FAQ />
         <FinalCTA />
@@ -81,3 +80,4 @@ export default async function Home({
     </>
   );
 }
+import type { Metadata } from "next";

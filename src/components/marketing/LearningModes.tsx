@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Laptop, Home, Check } from "lucide-react";
+import Image from "next/image";
 import { Section } from "@/components/ui/Section";
 
 const columns = [
@@ -19,7 +20,18 @@ export function LearningModes() {
         <p className="mt-3 text-lg text-white/70">{t("subheading")}</p>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="relative mt-10 aspect-[16/8] overflow-hidden rounded-3xl border border-white/12 shadow-pop md:aspect-[16/7]">
+        <Image
+          src="/images/online-tutoring.png"
+          alt={t("imageAlt")}
+          fill
+          sizes="(min-width: 1280px) 1200px, 92vw"
+          className="object-cover object-center"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-navy/20 via-transparent to-navy/10" />
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         {columns.map((col) => {
           const points = t.raw(`${col.key}.points`) as string[];
           return (

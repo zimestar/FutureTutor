@@ -14,6 +14,7 @@ const viewports = [
   { name: "chromium-375", width: 375, height: 812 },
   { name: "chromium-768", width: 768, height: 1024 },
   { name: "chromium-1024", width: 1024, height: 768 },
+  { name: "chromium-1180", width: 1180, height: 820 },
   { name: "chromium-1440", width: 1440, height: 900 },
 ];
 
