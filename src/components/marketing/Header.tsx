@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -16,6 +16,7 @@ import { homePathForRole } from "@/lib/authorization";
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const locale = useLocale();
   const pathname = usePathname();
   const t = useTranslations("nav");
   const tHeader = useTranslations("header");
@@ -24,13 +25,16 @@ export function Header() {
   // SessionProvider in the root layout.
   const { data: session } = useSession();
   const user = session?.user;
+  const desktopOnly = locale === "fr" ? "hidden min-[1440px]:block" : "hidden xl:block";
+  const desktopActions = locale === "fr" ? "hidden min-[1440px]:flex" : "hidden xl:flex";
+  const compactOnly = locale === "fr" ? "min-[1440px]:hidden" : "xl:hidden";
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-off-white/90 backdrop-blur-sm">
       <div className="mx-auto flex h-20 w-full max-w-(--container-page) items-center justify-between px-5 md:px-10">
         <Logo className="h-9" />
 
-        <nav aria-label="Primary" className="hidden xl:block">
+        <nav data-testid="desktop-navigation" aria-label="Primary" className={desktopOnly}>
           <ul className="flex items-center gap-5 2xl:gap-8">
             {mainNav.map((item) => {
               const active = pathname === item.href;
@@ -52,7 +56,7 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="hidden items-center gap-2 xl:flex 2xl:gap-3">
+        <div data-testid="desktop-actions" className={`${desktopActions} items-center gap-2 2xl:gap-3`}>
           <LanguageSwitcher className="mr-1" />
           {user ? (
             <>
@@ -90,7 +94,7 @@ export function Header() {
 
         <button
           type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-md text-navy xl:hidden"
+          className={`flex h-11 w-11 items-center justify-center rounded-md text-navy ${compactOnly}`}
           aria-label={open ? tHeader("closeMenu") : tHeader("openMenu")}
           aria-expanded={open}
           aria-controls="mobile-nav"
@@ -104,7 +108,7 @@ export function Header() {
         <nav
           id="mobile-nav"
           aria-label="Mobile"
-          className="border-t border-neutral-200 bg-white px-5 py-6 xl:hidden"
+          className={`border-t border-neutral-200 bg-white px-5 py-6 ${compactOnly}`}
         >
           <ul className="flex flex-col gap-1">
             {mainNav.map((item) => (

@@ -21,9 +21,43 @@ for (const locale of ["en", "fr"] as const) {
     );
 
     const viewportWidth = page.viewportSize()?.width ?? 0;
+    const compactMenu = page.getByRole("button", {
+      name: locale === "en" ? "Open menu" : "Ouvrir le menu",
+    });
+    const desktopNavigation = page.getByTestId("desktop-navigation");
+    const expectsDesktopNavigation = locale === "fr" ? viewportWidth >= 1440 : viewportWidth >= 1280;
+    if (expectsDesktopNavigation) {
+      await expect(desktopNavigation).toBeVisible();
+      await expect(compactMenu).toBeHidden();
+    } else {
+      await expect(desktopNavigation).toBeHidden();
+      await expect(compactMenu).toBeVisible();
+    }
+
     if (viewportWidth >= 1280) {
       const imageWidth = await page.locator('img[src*="parents-students-hero"]').evaluate((image) => image.getBoundingClientRect().width);
       expect(imageWidth).toBeGreaterThan(viewportWidth * 0.5);
+
+      const safeZone = await page.evaluate(() => {
+        const copy = document.querySelector('[data-testid="hero-copy"]')!.getBoundingClientRect();
+        const visual = document.querySelector('[data-testid="hero-visual"]')!.getBoundingClientRect();
+        return { copyRight: copy.right, imageSubjectSafeEdge: visual.left + visual.width * 0.35 };
+      });
+      expect(safeZone.copyRight).toBeLessThanOrEqual(safeZone.imageSubjectSafeEdge);
+    }
+
+    const headingLines = await page.getByTestId("hero-heading").evaluate((heading) => {
+      const styles = getComputedStyle(heading);
+      return Math.round(heading.getBoundingClientRect().height / Number.parseFloat(styles.lineHeight));
+    });
+    expect(headingLines).toBeLessThanOrEqual(locale === "fr" ? 5 : 4);
+
+    for (const item of await page.getByTestId("hero-trust-row").locator("li").all()) {
+      const dimensions = await item.evaluate((element) => ({
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
     }
 
     await expectNoDocumentOverflow(page);
