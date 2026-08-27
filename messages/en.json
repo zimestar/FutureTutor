@@ -1951,6 +1951,11 @@
       "unmute": "Unmute microphone",
       "stopCamera": "Turn camera off",
       "startCamera": "Turn camera on",
+      "startShare": "Share screen",
+      "stopShare": "Stop sharing",
+      "othersSharing": "{name} is sharing",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
       "leave": "Leave"
     },
     "observer": {
@@ -1961,8 +1966,18 @@
     "classroom": {
       "videoRegion": "Video classroom",
       "waiting": "Waiting for {name}",
+      "waitingShort": {
+        "tutor": "Waiting for tutor to join",
+        "student": "Waiting for student to join"
+      },
       "waitingDescription": "You are connected. The classroom will update when the other participant joins.",
-      "cameraOff": "Camera is off"
+      "cameraOff": "Camera is off",
+      "roleLabel": {
+        "tutor": "Tutor",
+        "student": "Student",
+        "observer": "Observer"
+      },
+      "sharingStatus": "{name} is sharing their screen"
     },
     "connection": {
       "connecting": "Joining classroom…",
@@ -1976,7 +1991,8 @@
       "ended": "The classroom access window has ended.",
       "denied": "You do not have access to this classroom.",
       "unavailable": "Video is temporarily unavailable. Please try again.",
-      "generic": "Something went wrong while preparing the classroom. Please try again."
+      "generic": "Something went wrong while preparing the classroom. Please try again.",
+      "screenShareError": "Screen sharing could not start. Please try again."
     },
     "leave": {
       "title": "Leave the classroom?",
@@ -2007,7 +2023,8 @@
       }
     },
     "timer": {
-      "label": "Time in classroom"
+      "label": "Time in classroom",
+      "remaining": "{minutes} min remaining"
     },
     "postCall": {
       "title": "You left the classroom",

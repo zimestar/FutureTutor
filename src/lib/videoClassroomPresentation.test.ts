@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { controlsForVideoRole, deriveVideoEntryState, formatCallDuration, presentConnectionState } from "@/lib/videoClassroomPresentation";
+import {
+  controlsForVideoRole,
+  deriveVideoEntryState,
+  formatCallDuration,
+  isSessionEndingSoon,
+  minutesRemainingInSession,
+  presentConnectionState,
+  resolveParticipantRoleFromUserData,
+} from "@/lib/videoClassroomPresentation";
 
 const base = {
   mode: "ONLINE" as const,
@@ -19,9 +27,9 @@ describe("VIDEO-1C classroom presentation", () => {
   });
 
   it("keeps observer publishing controls structurally unavailable", () => {
-    expect(controlsForVideoRole("OBSERVER")).toEqual({ canPublishAudio: false, canPublishVideo: false });
-    expect(controlsForVideoRole("STUDENT")).toEqual({ canPublishAudio: true, canPublishVideo: true });
-    expect(controlsForVideoRole("TUTOR")).toEqual({ canPublishAudio: true, canPublishVideo: true });
+    expect(controlsForVideoRole("OBSERVER")).toEqual({ canPublishAudio: false, canPublishVideo: false, canShareScreen: false });
+    expect(controlsForVideoRole("STUDENT")).toEqual({ canPublishAudio: true, canPublishVideo: true, canShareScreen: true });
+    expect(controlsForVideoRole("TUTOR")).toEqual({ canPublishAudio: true, canPublishVideo: true, canShareScreen: true });
   });
 
   it("formats an informational elapsed timer", () => {
@@ -35,5 +43,31 @@ describe("VIDEO-1C classroom presentation", () => {
     expect(presentConnectionState("peer-to-peer-connected")).toBe("connected");
     expect(presentConnectionState("network-disconnected")).toBe("disconnected");
     expect(presentConnectionState("signaling-started")).toBeNull();
+  });
+
+  it("computes a clamped, presentational time-remaining figure", () => {
+    const end = new Date("2026-08-24T11:00:00Z");
+    expect(minutesRemainingInSession(end, new Date("2026-08-24T10:18:30Z"))).toBe(42);
+    expect(minutesRemainingInSession(end, new Date("2026-08-24T10:00:00Z"))).toBe(60);
+    expect(minutesRemainingInSession(end, new Date("2026-08-24T11:00:00Z"))).toBe(0);
+    expect(minutesRemainingInSession(end, new Date("2026-08-24T12:00:00Z"))).toBe(0);
+  });
+
+  it("flags the ending-soon state only in the final ten minutes, never at/after zero", () => {
+    expect(isSessionEndingSoon(11)).toBe(false);
+    expect(isSessionEndingSoon(10)).toBe(true);
+    expect(isSessionEndingSoon(1)).toBe(true);
+    expect(isSessionEndingSoon(0)).toBe(false);
+  });
+
+  it("resolves a participant's classroom role from userData without trusting an unrecognized shape", () => {
+    expect(resolveParticipantRoleFromUserData({ role: "TUTOR" })).toBe("TUTOR");
+    expect(resolveParticipantRoleFromUserData({ role: "STUDENT" })).toBe("STUDENT");
+    expect(resolveParticipantRoleFromUserData({ role: "OBSERVER" })).toBe("OBSERVER");
+    expect(resolveParticipantRoleFromUserData({ role: "ADMIN" })).toBeNull();
+    expect(resolveParticipantRoleFromUserData({ somethingElse: true })).toBeNull();
+    expect(resolveParticipantRoleFromUserData(undefined)).toBeNull();
+    expect(resolveParticipantRoleFromUserData(null)).toBeNull();
+    expect(resolveParticipantRoleFromUserData("TUTOR")).toBeNull();
   });
 });

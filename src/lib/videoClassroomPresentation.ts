@@ -20,8 +20,38 @@ export function deriveVideoEntryState(input: {
 
 export function controlsForVideoRole(role: VideoParticipantRole) {
   return role === "OBSERVER"
-    ? { canPublishAudio: false, canPublishVideo: false }
-    : { canPublishAudio: true, canPublishVideo: true };
+    ? { canPublishAudio: false, canPublishVideo: false, canShareScreen: false }
+    : { canPublishAudio: true, canPublishVideo: true, canShareScreen: true };
+}
+
+/** VIDEO-2A — pure, presentational only: minutes until the authoritative
+ * session end (Session/Booking-derived `scheduledEndAt`, already computed
+ * server-side). Clamped at 0 once past end. Never used to decide session
+ * completion/no-show — the server remains authoritative for that. */
+export function minutesRemainingInSession(scheduledEndAt: Date, now: Date): number {
+  return Math.max(0, Math.ceil((scheduledEndAt.getTime() - now.getTime()) / 60_000));
+}
+
+/** VIDEO-2A — whether the time-remaining indicator should become slightly
+ * more noticeable (still presentational, never controls lifecycle). */
+export function isSessionEndingSoon(remainingMinutes: number): boolean {
+  return remainingMinutes > 0 && remainingMinutes <= 10;
+}
+
+/** VIDEO-2A — resolves a Daily participant's FutureTutor role from the
+ * `userData` tag set at `call.join({ userData: { role } })`. Pure and
+ * defensive: `userData` is `unknown` by the Daily SDK's own typing and is
+ * never trusted beyond this narrow shape check — an unrecognized/missing
+ * shape resolves to `null` rather than throwing or guessing. This is
+ * presentation-layer identity only (which grid slot a tile renders into);
+ * it grants no capability — publish/screen-share authority remains
+ * enforced entirely by the server-issued Daily token (dailyVideoProvider). */
+export function resolveParticipantRoleFromUserData(userData: unknown): VideoParticipantRole | null {
+  if (userData && typeof userData === "object" && "role" in userData) {
+    const role = (userData as { role?: unknown }).role;
+    if (role === "TUTOR" || role === "STUDENT" || role === "OBSERVER") return role;
+  }
+  return null;
 }
 
 export function formatCallDuration(elapsedSeconds: number): string {

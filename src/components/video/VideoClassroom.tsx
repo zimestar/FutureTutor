@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DailyIframe, { type DailyCall, type DailyParticipant, type DailyParticipantsObject } from "@daily-co/daily-js";
 import {
   ArrowLeft, Camera, CameraOff, CheckCircle2, Clock3, Headphones,
-  LoaderCircle, Mic, MicOff, MonitorUp, PhoneOff, RefreshCw, ShieldCheck, Users,
+  LoaderCircle, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff,
+  RefreshCw, ScreenShare, ScreenShareOff, ShieldCheck,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -13,7 +14,10 @@ import { cn } from "@/lib/utils";
 import {
   controlsForVideoRole,
   formatCallDuration,
+  isSessionEndingSoon,
+  minutesRemainingInSession,
   presentConnectionState,
+  resolveParticipantRoleFromUserData,
   type VideoConnectionState,
   type VideoEntryState,
 } from "@/lib/videoClassroomPresentation";
@@ -22,8 +26,10 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/Dialog";
 import { Select } from "@/components/ui/Input";
 import { Logo } from "@/components/marketing/Logo";
+import { ParticipantTile, WaitingSlotTile } from "@/components/video/ParticipantTile";
 
 type PermissionState = "checking" | "ready" | "partial" | "denied" | "unsupported";
+type RoleKey = "tutor" | "student";
 
 export interface VideoClassroomProps {
   bookingId: string;
@@ -31,9 +37,22 @@ export interface VideoClassroomProps {
   participantRole: VideoParticipantRole;
   participantName: string;
   counterpartName: string;
+  /** VIDEO-2A — explicit, role-independent identity so the classroom grid
+   * can label the Tutor tile and the Student tile correctly for every
+   * viewer, including an Observer who has no single "counterpart". */
+  tutorName: string;
+  studentName: string;
   subject: string;
   scheduledTime: string;
+  /** VIDEO-2A — the authoritative Session/Booking end instant (ISO), reused
+   * as-is for a presentational time-remaining indicator only; never a new
+   * server clock and never consulted for lifecycle decisions. */
+  scheduledEndAtIso: string;
   sessionHref: string;
+}
+
+function roleOfParticipant(participant: DailyParticipant): VideoParticipantRole | null {
+  return resolveParticipantRoleFromUserData(participant.userData);
 }
 
 export function VideoClassroom(props: VideoClassroomProps) {
@@ -53,7 +72,10 @@ export function VideoClassroom(props: VideoClassroomProps) {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [left, setLeft] = useState(false);
+  const [screenShareError, setScreenShareError] = useState(false);
+  const [now, setNow] = useState(() => new Date());
   const controls = controlsForVideoRole(props.participantRole);
+  const scheduledEndAt = useMemo(() => new Date(props.scheduledEndAtIso), [props.scheduledEndAtIso]);
 
   const refreshParticipants = useCallback(() => {
     const call = callRef.current;
@@ -94,6 +116,15 @@ export function VideoClassroom(props: VideoClassroomProps) {
       setJoinError("unavailable");
       setConnection("disconnected");
     };
+    const onScreenShareStarted = () => { setScreenShareError(false); refreshParticipants(); };
+    const onScreenShareStopped = () => refreshParticipants();
+    const onNonFatalError = (event: unknown) => {
+      const type = typeof event === "object" && event && "type" in event ? String((event as { type: unknown }).type) : "";
+      if (type === "screen-share-error") {
+        setScreenShareError(true);
+        refreshParticipants();
+      }
+    };
 
     call.on("joined-meeting", onJoined);
     call.on("left-meeting", onLeft);
@@ -103,6 +134,10 @@ export function VideoClassroom(props: VideoClassroomProps) {
     call.on("network-connection", onNetwork);
     call.on("camera-error", onCameraError);
     call.on("error", onError);
+    call.on("local-screen-share-started", onScreenShareStarted);
+    call.on("local-screen-share-stopped", onScreenShareStopped);
+    call.on("local-screen-share-canceled", onScreenShareStopped);
+    call.on("nonfatal-error", onNonFatalError);
 
     if (props.participantRole === "OBSERVER") {
       // Observer readiness is the initial state; the provider token, not a
@@ -146,6 +181,12 @@ export function VideoClassroom(props: VideoClassroomProps) {
   }, [connection]);
 
   useEffect(() => {
+    if (connection !== "connected") return;
+    const interval = window.setInterval(() => setNow(new Date()), 20_000);
+    return () => window.clearInterval(interval);
+  }, [connection]);
+
+  useEffect(() => {
     if (connection !== "connected" && connection !== "reconnecting") return;
     const interval = window.setInterval(() => {
       void getVideoClassroomStateAction(props.bookingId).then((state) => {
@@ -160,10 +201,28 @@ export function VideoClassroom(props: VideoClassroomProps) {
   }, [connection, props.bookingId]);
 
   const localParticipant = participants?.local;
-  const remoteParticipant = useMemo(
-    () => Object.values(participants ?? {}).find((participant) => !participant.local),
-    [participants],
-  );
+  const participantList = useMemo(() => Object.values(participants ?? {}), [participants]);
+  const tutorParticipant = useMemo(() => participantList.find((p) => roleOfParticipant(p) === "TUTOR"), [participantList]);
+  const studentParticipant = useMemo(() => participantList.find((p) => roleOfParticipant(p) === "STUDENT"), [participantList]);
+  const screenSharingParticipant = useMemo(() => {
+    if (tutorParticipant?.tracks.screenVideo.state === "playable") return tutorParticipant;
+    if (studentParticipant?.tracks.screenVideo.state === "playable") return studentParticipant;
+    return undefined;
+  }, [tutorParticipant, studentParticipant]);
+  const sharerName = screenSharingParticipant === tutorParticipant
+    ? props.tutorName
+    : screenSharingParticipant === studentParticipant
+      ? props.studentName
+      : null;
+  const remoteAudioParticipants = useMemo(() => {
+    const list: DailyParticipant[] = [];
+    if (tutorParticipant && !tutorParticipant.local) list.push(tutorParticipant);
+    if (studentParticipant && !studentParticipant.local) list.push(studentParticipant);
+    return list;
+  }, [tutorParticipant, studentParticipant]);
+
+  const remainingMinutes = minutesRemainingInSession(scheduledEndAt, now);
+  const endingSoon = isSessionEndingSoon(remainingMinutes);
 
   async function join() {
     const call = callRef.current;
@@ -183,6 +242,7 @@ export function VideoClassroom(props: VideoClassroomProps) {
         url: credential.joinUrl,
         token: credential.token,
         userName: props.participantName,
+        userData: { role: props.participantRole },
         startAudioOff: !controls.canPublishAudio || !microphoneOn,
         startVideoOff: !controls.canPublishVideo || !cameraOn,
       });
@@ -209,6 +269,23 @@ export function VideoClassroom(props: VideoClassroomProps) {
     call.setLocalVideo(next);
     setCameraOn(next);
     refreshParticipants();
+  }
+
+  function toggleScreenShare() {
+    const call = callRef.current;
+    if (!call || call.isDestroyed() || !controls.canShareScreen) return;
+    const localIsSharing = localParticipant?.tracks.screenVideo.state === "playable";
+    if (localIsSharing) {
+      call.stopScreenShare();
+      return;
+    }
+    if (screenSharingParticipant && !screenSharingParticipant.local) return;
+    setScreenShareError(false);
+    try {
+      call.startScreenShare();
+    } catch {
+      setScreenShareError(true);
+    }
   }
 
   async function changeDevice(kind: "audio" | "video", deviceId: string) {
@@ -241,7 +318,14 @@ export function VideoClassroom(props: VideoClassroomProps) {
       <header className="flex min-h-18 items-center gap-4 border-b border-white/10 px-4 py-3 sm:px-6">
         <Logo variant="dark" className="h-8" />
         <div className="min-w-0 border-l border-white/15 pl-4">
-          <p className="truncate text-sm font-extrabold sm:text-base">{props.subject}</p>
+          <p className="truncate text-sm font-extrabold sm:text-base">
+            {props.subject}
+            {connection === "connected" && remainingMinutes > 0 && (
+              <span className={cn("ml-2 text-xs font-bold", endingSoon ? "text-amber-300" : "text-white/60")} data-testid="time-remaining">
+                • {t("timer.remaining", { minutes: remainingMinutes })}
+              </span>
+            )}
+          </p>
           <p className="truncate text-xs text-white/65">{props.scheduledTime}</p>
         </div>
         {connection !== "prejoin" && (
@@ -272,18 +356,28 @@ export function VideoClassroom(props: VideoClassroomProps) {
         />
       ) : (
         <ConnectedClassroom
-          counterpartName={props.counterpartName}
           role={props.participantRole}
           connection={connection}
-          remoteParticipant={remoteParticipant}
+          isSharing={Boolean(screenSharingParticipant)}
+          localIsSharing={Boolean(screenSharingParticipant?.local)}
+          sharerName={sharerName}
+          screenSharingParticipant={screenSharingParticipant}
+          tutorParticipant={tutorParticipant}
+          studentParticipant={studentParticipant}
           localParticipant={localParticipant}
+          tutorName={props.tutorName}
+          studentName={props.studentName}
+          remoteAudioParticipants={remoteAudioParticipants}
           microphoneOn={microphoneOn}
           cameraOn={cameraOn}
           canPublishAudio={controls.canPublishAudio}
           canPublishVideo={controls.canPublishVideo}
+          canShareScreen={controls.canShareScreen}
           joinError={joinError}
+          screenShareError={screenShareError}
           onMicrophone={toggleMicrophone}
           onCamera={toggleCamera}
+          onToggleShare={toggleScreenShare}
           onLeave={() => setLeaveOpen(true)}
           onRetry={() => void join()}
         />
@@ -326,7 +420,7 @@ function PreJoin({
             <p className="mt-2 max-w-md text-sm leading-6 text-white/70">{t("observer.description")}</p>
           </div>
         ) : (
-          <VideoTile participant={localParticipant} cameraOn={cameraOn} label={participantName} muted local waitingLabel={t("prejoin.previewUnavailable")} />
+          <ParticipantTile participant={localParticipant} cameraOn={cameraOn} name={participantName} muted local cameraOffLabel={t("prejoin.previewUnavailable")} />
         )}
         {!observer && <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold backdrop-blur">{t("prejoin.you")}</div>}
       </section>
@@ -368,33 +462,117 @@ function PreJoin({
   );
 }
 
-function ConnectedClassroom({ counterpartName, role, connection, remoteParticipant, localParticipant, microphoneOn, cameraOn, canPublishAudio, canPublishVideo, joinError, onMicrophone, onCamera, onLeave, onRetry }: {
-  counterpartName: string; role: VideoParticipantRole; connection: VideoConnectionState;
-  remoteParticipant?: DailyParticipant; localParticipant?: DailyParticipant; microphoneOn: boolean; cameraOn: boolean;
-  canPublishAudio: boolean; canPublishVideo: boolean; joinError: VideoJoinActionError | null;
-  onMicrophone: () => void; onCamera: () => void; onLeave: () => void; onRetry: () => void;
+function ConnectedClassroom({
+  role, connection, isSharing, localIsSharing, sharerName, screenSharingParticipant,
+  tutorParticipant, studentParticipant, localParticipant, tutorName, studentName,
+  remoteAudioParticipants, microphoneOn, cameraOn, canPublishAudio, canPublishVideo, canShareScreen,
+  joinError, screenShareError, onMicrophone, onCamera, onToggleShare, onLeave, onRetry,
+}: {
+  role: VideoParticipantRole; connection: VideoConnectionState; isSharing: boolean; localIsSharing: boolean;
+  sharerName: string | null; screenSharingParticipant?: DailyParticipant;
+  tutorParticipant?: DailyParticipant; studentParticipant?: DailyParticipant; localParticipant?: DailyParticipant;
+  tutorName: string; studentName: string; remoteAudioParticipants: DailyParticipant[];
+  microphoneOn: boolean; cameraOn: boolean; canPublishAudio: boolean; canPublishVideo: boolean; canShareScreen: boolean;
+  joinError: VideoJoinActionError | null; screenShareError: boolean;
+  onMicrophone: () => void; onCamera: () => void; onToggleShare: () => void; onLeave: () => void; onRetry: () => void;
 }) {
   const t = useTranslations("videoClassroom");
   const observer = role === "OBSERVER";
+  const shareStageRef = useRef<HTMLDivElement>(null);
+  const [fullscreenSupported] = useState(() => typeof document !== "undefined" && Boolean(document.fullscreenEnabled));
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(Boolean(document.fullscreenElement) && document.fullscreenElement === shareStageRef.current);
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  async function toggleFullscreen() {
+    if (!fullscreenSupported) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (shareStageRef.current) await shareStageRef.current.requestFullscreen();
+    } catch {
+      // Browser rejected the request — the fullscreenchange listener stays
+      // authoritative for `isFullscreen`, nothing else to reconcile here.
+    }
+  }
+
+  function renderSlot(participant: DailyParticipant | undefined, name: string, roleKey: RoleKey, compact: boolean) {
+    if (!participant) {
+      return (
+        <WaitingSlotTile
+          compact={compact}
+          label={t(`classroom.waitingShort.${roleKey}`)}
+          description={compact ? undefined : t("classroom.waitingDescription")}
+        />
+      );
+    }
+    const isLocal = participant.local;
+    return (
+      <ParticipantTile
+        participant={participant}
+        cameraOn={isLocal ? cameraOn : participant.tracks.video.state === "playable"}
+        name={isLocal ? t("prejoin.you") : name}
+        roleLabel={t(`classroom.roleLabel.${roleKey}`)}
+        cameraOffLabel={t("classroom.cameraOff")}
+        muted={isLocal}
+        local={isLocal}
+        compact={compact}
+      />
+    );
+  }
+
+  // Non-observer viewers get "self" + "counterpart"; the observer gets
+  // both real participants (never a self tile, since they never publish).
+  const primary = observer ? tutorParticipant : role === "TUTOR" ? studentParticipant : tutorParticipant;
+  const primaryName = observer ? tutorName : role === "TUTOR" ? studentName : tutorName;
+  const primaryRoleKey: RoleKey = observer || role === "STUDENT" ? "tutor" : "student";
+  const secondary = observer ? studentParticipant : localParticipant;
+  const secondaryName = observer ? studentName : role === "TUTOR" ? tutorName : studentName;
+  const secondaryRoleKey: RoleKey = observer ? "student" : role === "TUTOR" ? "tutor" : "student";
+
+  const shareDisabledByOther = isSharing && !localIsSharing;
+  const shareLabel = localIsSharing
+    ? t("controls.stopShare")
+    : shareDisabledByOther && sharerName
+      ? t("controls.othersSharing", { name: sharerName })
+      : t("controls.startShare");
+
   return (
     <div className="relative flex min-h-[calc(100dvh-4.5rem)] flex-col p-3 sm:p-5">
       <section className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-neutral-900" aria-label={t("classroom.videoRegion")}>
-        {remoteParticipant ? (
-          <VideoTile participant={remoteParticipant} cameraOn={remoteParticipant.video} label={remoteParticipant.user_name || counterpartName} waitingLabel={t("classroom.cameraOff")} />
+        {isSharing ? (
+          <div className="grid h-full grid-rows-[1fr_auto] gap-2 p-2 lg:grid-cols-[1fr_14rem] lg:grid-rows-1 lg:gap-3">
+            <div ref={shareStageRef} className="relative min-h-[14rem] overflow-hidden rounded-xl bg-black">
+              <ScreenShareVideo participant={screenSharingParticipant} sharerLabel={sharerName ? t("classroom.sharingStatus", { name: sharerName }) : null} />
+            </div>
+            <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+              <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/15 lg:h-auto lg:w-full lg:flex-1">
+                {renderSlot(studentParticipant, studentName, "student", true)}
+              </div>
+              <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/15 lg:h-auto lg:w-full lg:flex-1">
+                {renderSlot(tutorParticipant, tutorName, "tutor", true)}
+              </div>
+            </div>
+          </div>
         ) : (
-          <div className="flex h-full min-h-[24rem] flex-col items-center justify-center px-5 text-center">
-            <div className="flex size-16 items-center justify-center rounded-full bg-white/10"><Users className="size-7 text-mint" aria-hidden="true" /></div>
-            <h1 className="mt-5 text-xl font-extrabold sm:text-2xl">{t("classroom.waiting", { name: counterpartName })}</h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-white/65">{t("classroom.waitingDescription")}</p>
+          <div className="relative h-full min-h-[24rem] w-full sm:grid sm:grid-cols-2 sm:gap-3 sm:p-2">
+            <div className="absolute inset-0 overflow-hidden rounded-xl sm:static sm:h-full">{renderSlot(primary, primaryName, primaryRoleKey, false)}</div>
+            <div
+              className="absolute bottom-4 right-4 h-28 w-36 overflow-hidden rounded-xl border-2 border-white/25 bg-neutral-800 shadow-pop sm:static sm:h-full sm:w-full sm:border-0 sm:shadow-none"
+              data-testid="local-video-tile"
+            >
+              {renderSlot(secondary, secondaryName, secondaryRoleKey, false)}
+            </div>
           </div>
         )}
-        {remoteParticipant && <RemoteAudio participant={remoteParticipant} />}
 
-        {!observer && (
-          <div className="absolute bottom-4 right-4 h-28 w-36 overflow-hidden rounded-xl border-2 border-white/25 bg-neutral-800 shadow-pop sm:h-40 sm:w-56" data-testid="local-video-tile">
-            <VideoTile participant={localParticipant} cameraOn={cameraOn} label={t("prejoin.you")} muted local waitingLabel={t("classroom.cameraOff")} />
-          </div>
-        )}
+        {remoteAudioParticipants.map((participant) => <RemoteAudio key={participant.session_id} participant={participant} />)}
+
         {observer && <div className="absolute left-4 top-4 rounded-full bg-mint px-3 py-1.5 text-xs font-extrabold text-navy"><ShieldCheck className="mr-1 inline size-4" aria-hidden="true" />{t("observer.title")}</div>}
         {(connection === "connecting" || connection === "reconnecting") && (
           <div className="absolute inset-x-4 top-4 mx-auto flex w-fit items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-bold backdrop-blur" role="status">
@@ -409,9 +587,27 @@ function ConnectedClassroom({ counterpartName, role, connection, remoteParticipa
       </section>
 
       {joinError && connection !== "disconnected" && <SafeError error={joinError} inverse />}
-      <nav className="mx-auto mt-3 flex min-h-16 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/8 px-3 py-2 backdrop-blur sm:mt-4 sm:px-5" aria-label={t("controls.label")}>
+      {screenShareError && <p role="alert" className="mt-2 text-center text-xs font-semibold text-white/85">{t("errors.screenShareError")}</p>}
+      <nav className="mx-auto mt-3 flex min-h-16 flex-wrap items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/8 px-3 py-2 backdrop-blur sm:mt-4 sm:px-5" aria-label={t("controls.label")}>
         {canPublishAudio && <RoundControl icon={microphoneOn ? Mic : MicOff} active={microphoneOn} label={microphoneOn ? t("controls.mute") : t("controls.unmute")} onClick={onMicrophone} />}
         {canPublishVideo && <RoundControl icon={cameraOn ? Camera : CameraOff} active={cameraOn} label={cameraOn ? t("controls.stopCamera") : t("controls.startCamera")} onClick={onCamera} />}
+        {canShareScreen && (
+          <RoundControl
+            icon={localIsSharing ? ScreenShareOff : ScreenShare}
+            active={localIsSharing}
+            label={shareLabel}
+            onClick={onToggleShare}
+            disabled={shareDisabledByOther}
+          />
+        )}
+        {isSharing && fullscreenSupported && (
+          <RoundControl
+            icon={isFullscreen ? Minimize2 : Maximize2}
+            active={isFullscreen}
+            label={isFullscreen ? t("controls.exitFullscreen") : t("controls.fullscreen")}
+            onClick={() => void toggleFullscreen()}
+          />
+        )}
         {observer && <span className="px-2 text-center text-xs font-bold text-white/65"><ShieldCheck className="mx-auto mb-1 size-5 text-mint" aria-hidden="true" />{t("observer.controlsNote")}</span>}
         <button type="button" onClick={onLeave} className="flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full bg-destructive px-4 text-sm font-extrabold text-white transition hover:bg-destructive-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={t("controls.leave")}>
           <PhoneOff className="size-5" aria-hidden="true" /><span className="hidden sm:inline">{t("controls.leave")}</span>
@@ -421,9 +617,9 @@ function ConnectedClassroom({ counterpartName, role, connection, remoteParticipa
   );
 }
 
-function VideoTile({ participant, cameraOn, label, muted = false, local = false, waitingLabel }: { participant?: DailyParticipant; cameraOn: boolean; label: string; muted?: boolean; local?: boolean; waitingLabel: string }) {
+function ScreenShareVideo({ participant, sharerLabel }: { participant?: DailyParticipant; sharerLabel: string | null }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const track = participant?.tracks.video.persistentTrack;
+  const track = participant?.tracks.screenVideo.persistentTrack;
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -431,8 +627,11 @@ function VideoTile({ participant, cameraOn, label, muted = false, local = false,
     return () => { video.srcObject = null; };
   }, [track]);
   return (
-    <div className="relative h-full min-h-full w-full bg-neutral-900">
-      {cameraOn && track ? <video ref={videoRef} autoPlay playsInline muted={muted} className={cn("h-full w-full object-cover", local && "-scale-x-100")} /> : <div className="flex h-full min-h-[inherit] flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.16),_transparent_55%)] p-5 text-center"><div className="flex size-16 items-center justify-center rounded-full bg-white/10 text-xl font-extrabold">{label.trim().charAt(0).toUpperCase()}</div><p className="mt-3 text-sm font-bold">{label}</p><p className="mt-1 text-xs text-white/55">{waitingLabel}</p></div>}
+    <div className="relative flex h-full min-h-[14rem] w-full items-center justify-center bg-black">
+      {track ? <video ref={videoRef} autoPlay playsInline className="h-full w-full object-contain" /> : <LoaderCircle className="size-8 animate-spin text-white/50" aria-hidden="true" />}
+      {sharerLabel && (
+        <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">{sharerLabel}</div>
+      )}
     </div>
   );
 }
@@ -453,8 +652,24 @@ function ControlButton({ icon: Icon, active, label, onClick }: { icon: typeof Mi
   return <button type="button" onClick={onClick} aria-pressed={active} className={cn("flex min-h-12 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-blue", active ? "border-blue/25 bg-blue/10 text-blue" : "border-border bg-surface text-text-secondary")}><Icon className="size-5" aria-hidden="true" />{label}</button>;
 }
 
-function RoundControl({ icon: Icon, active, label, onClick }: { icon: typeof Mic; active: boolean; label: string; onClick: () => void }) {
-  return <button type="button" onClick={onClick} aria-label={label} aria-pressed={active} title={label} className={cn("flex size-12 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white", active ? "bg-white text-navy hover:bg-neutral-100" : "bg-white/12 text-white hover:bg-white/20")}><Icon className="size-5" aria-hidden="true" /></button>;
+function RoundControl({ icon: Icon, active, label, onClick, disabled = false }: { icon: typeof Mic; active: boolean; label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      aria-disabled={disabled}
+      disabled={disabled}
+      title={label}
+      className={cn(
+        "flex size-12 items-center justify-center rounded-full transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-40",
+        active ? "bg-white text-navy hover:bg-neutral-100" : "bg-white/12 text-white hover:bg-white/20"
+      )}
+    >
+      <Icon className="size-5" aria-hidden="true" />
+    </button>
+  );
 }
 
 function DeviceSelect({ label, value, devices, onChange, emptyLabel }: { label: string; value: string; devices: MediaDeviceInfo[]; onChange: (value: string) => void; emptyLabel: string }) {

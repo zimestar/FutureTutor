@@ -62,9 +62,9 @@ export default async function ClassroomPage({ params }: { params: Promise<{ loca
 
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const participantName = freshUser.name?.trim() || (role === "STUDENT" ? context.representedLearner.firstName : role === "OBSERVER" ? context.representedLearner.firstName : "Tutor");
-  const counterpartName = role === "TUTOR" || role === "OBSERVER"
-    ? context.representedLearner.firstName
-    : booking.tutorProfile.user.name?.trim() || "Tutor";
+  const tutorName = booking.tutorProfile.user.name?.trim() || "Tutor";
+  const studentName = context.representedLearner.firstName;
+  const counterpartName = role === "TUTOR" || role === "OBSERVER" ? studentName : tutorName;
   const scheduledTime = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -84,8 +84,11 @@ export default async function ClassroomPage({ params }: { params: Promise<{ loca
       participantRole={role}
       participantName={participantName}
       counterpartName={counterpartName}
+      tutorName={tutorName}
+      studentName={studentName}
       subject={tSubjects(context.subjectSlug)}
       scheduledTime={scheduledTime}
+      scheduledEndAtIso={context.scheduledEndAt.toISOString()}
       sessionHref={`/session/${bookingId}`}
     />
   );

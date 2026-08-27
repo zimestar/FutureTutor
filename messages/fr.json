@@ -1951,6 +1951,11 @@
       "unmute": "Activer le microphone",
       "stopCamera": "Désactiver la caméra",
       "startCamera": "Activer la caméra",
+      "startShare": "Partager l’écran",
+      "stopShare": "Arrêter le partage",
+      "othersSharing": "{name} partage son écran",
+      "fullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran",
       "leave": "Quitter"
     },
     "observer": {
@@ -1961,8 +1966,18 @@
     "classroom": {
       "videoRegion": "Classe vidéo",
       "waiting": "En attente de {name}",
+      "waitingShort": {
+        "tutor": "En attente du tuteur",
+        "student": "En attente de l’élève"
+      },
       "waitingDescription": "Vous êtes connecté. La classe se mettra à jour quand l’autre personne se joindra.",
-      "cameraOff": "La caméra est désactivée"
+      "cameraOff": "La caméra est désactivée",
+      "roleLabel": {
+        "tutor": "Tuteur",
+        "student": "Élève",
+        "observer": "Observateur"
+      },
+      "sharingStatus": "{name} partage son écran"
     },
     "connection": {
       "connecting": "Connexion à la classe…",
@@ -1976,7 +1991,8 @@
       "ended": "La période d’accès à la classe est terminée.",
       "denied": "Vous n’avez pas accès à cette classe.",
       "unavailable": "La vidéo est temporairement indisponible. Veuillez réessayer.",
-      "generic": "Un problème est survenu pendant la préparation de la classe. Veuillez réessayer."
+      "generic": "Un problème est survenu pendant la préparation de la classe. Veuillez réessayer.",
+      "screenShareError": "Le partage d’écran n’a pas pu démarrer. Veuillez réessayer."
     },
     "leave": {
       "title": "Quitter la classe?",
@@ -2007,7 +2023,8 @@
       }
     },
     "timer": {
-      "label": "Temps dans la classe"
+      "label": "Temps dans la classe",
+      "remaining": "{minutes} min restantes"
     },
     "postCall": {
       "title": "Vous avez quitté la classe",

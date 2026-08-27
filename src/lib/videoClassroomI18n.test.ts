@@ -10,6 +10,11 @@ const runtimePaths = [
   "classroom.waiting", "connection.reconnecting", "connection.failedTitle", "errors.tooEarly", "errors.cancelled",
   "errors.ended", "errors.denied", "errors.unavailable", "leave.title", "entry.tooEarly.title",
   "entry.cancelled.title", "entry.ended.title", "entry.unavailable.title", "postCall.title",
+  // VIDEO-2A
+  "controls.startShare", "controls.stopShare", "controls.othersSharing", "controls.fullscreen", "controls.exitFullscreen",
+  "classroom.roleLabel.tutor", "classroom.roleLabel.student", "classroom.roleLabel.observer",
+  "classroom.waitingShort.tutor", "classroom.waitingShort.student", "classroom.sharingStatus",
+  "errors.screenShareError", "timer.remaining",
 ];
 
 function resolve(messages: Record<string, unknown>, path: string) {
