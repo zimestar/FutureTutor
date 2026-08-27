@@ -49,6 +49,7 @@ let resolveRefundOutcomeAndConverge: typeof import("./payments").resolveRefundOu
 let recoverFailedRefund: typeof import("./payments").recoverFailedRefund;
 let createTransferForEarning: typeof import("./tutorTransfers").createTransferForEarning;
 let markEligibleEarnings: typeof import("./tutorTransfers").markEligibleEarnings;
+let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 // Phase H.8.3 — module-scope handle to the ambient @/lib/db singleton
 // (the exact PrismaClient instance cancellationPolicy.ts's cancelBookingWithRefund
 // itself calls .$transaction on), captured once in beforeAll below. Used by
@@ -161,6 +162,7 @@ beforeAll(async () => {
   ({ createCustomerPriceQuote } = await import("./customerPricing"));
   ({ createTutorPayoutQuote } = await import("./tutorPayout"));
   ({ reserveBookingPendingPayment } = await import("./bookingCreation"));
+  ({ withSerializableRetry } = await import("@/lib/serializableRetry"));
   ({ cancelBookingWithRefund, NotAuthorizedToCancelError, SessionAlreadyStartedError, SessionNotCancellableError, BookingNotCancellableError } =
     await import("./cancellationPolicy"));
   ({ convergeToCaptured, getOrCreateRefund, refundIdForBooking, resolveRefundOutcomeAndConverge, recoverFailedRefund } = await import(
@@ -325,7 +327,7 @@ async function makePayoutQuote(tutorProfileId: string, customerQuoteId: string, 
 async function makePayment(quoteId: string, payerUserId: string) {
   const quote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quoteId } });
   const payment = await db.payment.create({
-    data: { id: randomUUID(), customerPriceQuoteId: quoteId, payerUserId, amountCents: quote.totalCents, currency: quote.currency, status: "PENDING" },
+    data: { id: randomUUID(), customerPriceQuoteId: quoteId, payerUserId, amountCents: quote.totalCents, currency: quote.currency, status: "AUTHORIZED", authorizedAt: new Date(), stripePaymentIntentId: `pi_test_${randomUUID()}` },
   });
   createdPaymentIds.push(payment.id);
   return payment;
@@ -342,23 +344,27 @@ async function reserveBooking(params: {
 }) {
   const startAt = params.startAt ?? FAR_FUTURE_START;
   const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
-  const booking = await db.$transaction(
-    (tx) =>
-      reserveBookingPendingPayment(tx, {
-        actorUserId: params.actorUserId,
-        studentProfileId: params.studentProfileId,
-        tutorProfileId: params.tutorProfileId,
-        subjectId,
-        academicLevelId,
-        startAt,
-        endAt,
-        timezone: "America/Toronto",
-        mode: "ONLINE",
-        paymentId: params.paymentId,
-        customerPriceQuoteId: params.customerPriceQuoteId,
-        tutorPayoutQuoteId: params.tutorPayoutQuoteId,
-      }),
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  // BETA-1 / P1-02 — see tutorEarningConvergence.integration.test.ts's
+  // identical comment.
+  const booking = await withSerializableRetry(() =>
+    db.$transaction(
+      (tx) =>
+        reserveBookingPendingPayment(tx, {
+          actorUserId: params.actorUserId,
+          studentProfileId: params.studentProfileId,
+          tutorProfileId: params.tutorProfileId,
+          subjectId,
+          academicLevelId,
+          startAt,
+          endAt,
+          timezone: "America/Toronto",
+          mode: "ONLINE",
+          paymentId: params.paymentId,
+          customerPriceQuoteId: params.customerPriceQuoteId,
+          tutorPayoutQuoteId: params.tutorPayoutQuoteId,
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    )
   );
   createdBookingIds.push(booking.id);
   return booking;

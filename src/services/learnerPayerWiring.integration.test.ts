@@ -15,6 +15,7 @@ import {
 } from "./bookingCreation";
 import { createTutoringRequestForLearner } from "./tutoringRequestCreation";
 import { canInitiatePaidBooking, canPayForStudent } from "./studentAuthorization";
+import { withSerializableRetry } from "@/lib/serializableRetry";
 
 // Phase H.7 — permanent DB-integration tests for Direct Booking + Quick
 // Match learner/actor/payer wiring (§43-§47 of the H.7 prompt, numbered
@@ -235,7 +236,15 @@ async function makePayoutQuote(tutorProfileId: string, customerQuoteId: string, 
  * H.7 prompt) and still hardcodes the ambient `db`. This constructs the
  * exact same row shape directly against the test database instead,
  * proving the payer-identity invariant (payerUserId distinct from
- * studentProfileId, always the actor) without touching that file. */
+ * studentProfileId, always the actor) without touching that file.
+ *
+ * BETA-1 / P1-02 — created AUTHORIZED (not PENDING), matching real
+ * production sequencing: reserveBookingPendingPayment now authoritatively
+ * requires the Payment to already be AUTHORIZED or CAPTURED before it will
+ * reserve a slot against it (see that function's own doc comment). A
+ * PENDING payment was never a real precondition reserveBookingPendingPayment
+ * was called with in production — verifyAndAuthorizePaymentIntent always
+ * transitions it to AUTHORIZED first. */
 async function makePayment(quoteId: string, payerUserId: string) {
   const quote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quoteId } });
   const payment = await db.payment.create({
@@ -245,7 +254,9 @@ async function makePayment(quoteId: string, payerUserId: string) {
       payerUserId,
       amountCents: quote.totalCents,
       currency: quote.currency,
-      status: "PENDING",
+      status: "AUTHORIZED",
+      authorizedAt: new Date(),
+      stripePaymentIntentId: `pi_test_${randomUUID()}`,
     },
   });
   createdPaymentIds.push(payment.id);
@@ -263,23 +274,27 @@ async function reserveBooking(params: {
 }) {
   const startAt = params.startAt ?? FAR_FUTURE_START;
   const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
-  const booking = await db.$transaction(
-    (tx) =>
-      reserveBookingPendingPayment(tx, {
-        actorUserId: params.actorUserId,
-        studentProfileId: params.studentProfileId,
-        tutorProfileId: params.tutorProfileId,
-        subjectId,
-        academicLevelId,
-        startAt,
-        endAt,
-        timezone: "America/Toronto",
-        mode: "ONLINE",
-        paymentId: params.paymentId,
-        customerPriceQuoteId: params.customerPriceQuoteId,
-        tutorPayoutQuoteId: params.tutorPayoutQuoteId,
-      }),
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  // BETA-1 / P1-02 — see tutorEarningConvergence.integration.test.ts's
+  // identical comment.
+  const booking = await withSerializableRetry(() =>
+    db.$transaction(
+      (tx) =>
+        reserveBookingPendingPayment(tx, {
+          actorUserId: params.actorUserId,
+          studentProfileId: params.studentProfileId,
+          tutorProfileId: params.tutorProfileId,
+          subjectId,
+          academicLevelId,
+          startAt,
+          endAt,
+          timezone: "America/Toronto",
+          mode: "ONLINE",
+          paymentId: params.paymentId,
+          customerPriceQuoteId: params.customerPriceQuoteId,
+          tutorPayoutQuoteId: params.tutorPayoutQuoteId,
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    )
   );
   createdBookingIds.push(booking.id);
   return booking;
@@ -704,7 +719,12 @@ describe("Direct Booking", () => {
     const refetchedQuote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quote.id } });
     expect(refetchedQuote.status).toBe("ACTIVE"); // never consumed
     const refetchedPayment = await db.payment.findUniqueOrThrow({ where: { id: payment.id } });
-    expect(refetchedPayment.status).toBe("PENDING"); // never authorized/captured
+    // BETA-1 / P1-02 — the fixture now creates the Payment already
+    // AUTHORIZED (matching real production sequencing); this assertion's
+    // point is unchanged — the payment was never CAPTURED or attached to a
+    // Booking, since the reservation attempt failed before reaching either.
+    expect(refetchedPayment.status).toBe("AUTHORIZED");
+    expect(refetchedPayment.bookingId).toBeNull();
   });
 });
 

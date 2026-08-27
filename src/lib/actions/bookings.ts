@@ -16,6 +16,8 @@ import {
   SlotTakenError,
   NotAuthorizedForLearnerError,
   QuoteLearnerMismatchError,
+  PaymentReservationMismatchError,
+  PaymentAlreadyAttachedError,
 } from "@/services/bookingCreation";
 import {
   preparePaymentForQuote,
@@ -185,6 +187,29 @@ export async function createBookingAction(
     // never distinguishing the reason for an unauthorized caller.
     if (error instanceof NotAuthorizedForLearnerError) return { error: t("notAStudent") };
     if (error instanceof QuoteLearnerMismatchError) return { error: t("invalidInput") };
+    // BETA-1 / P1-02 — reserveBookingPendingPayment now authoritatively
+    // validates and consumes both quotes, and validates the Payment,
+    // BEFORE this transaction commits — so these errors (previously only
+    // reachable from the later capture/converge step, after Stripe money
+    // had already moved) are now reachable here instead, with no Stripe
+    // call ever attempted. Same fail-closed "pricing unavailable" messaging
+    // the later catch block below already used for the identical error
+    // types, kept consistent rather than inventing new copy.
+    if (
+      error instanceof QuoteNotFoundError ||
+      error instanceof QuoteNotOwnedError ||
+      error instanceof QuoteExpiredError ||
+      error instanceof QuoteAlreadyConsumedError ||
+      error instanceof QuoteNotActiveError ||
+      error instanceof QuoteContextMismatchError ||
+      error instanceof TutorPayoutQuoteNotFoundError ||
+      error instanceof TutorPayoutQuoteExpiredError ||
+      error instanceof TutorPayoutQuoteNotActiveError ||
+      error instanceof PaymentReservationMismatchError ||
+      error instanceof PaymentAlreadyAttachedError
+    ) {
+      return { error: t("pricingUnavailable") };
+    }
     // Defense-in-depth only, matching the same post-hardening shape already
     // established by cancelBookingAction below: withSerializableRetry now
     // absorbs both known-retryable Serializable-conflict error shapes

@@ -2,6 +2,8 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
+import { validateAndConsumeCustomerPriceQuote } from "@/services/customerPricing";
+import { validateAndConsumeTutorPayoutQuote } from "@/services/tutorPayout";
 
 export const ACTIVE_BOOKING_STATUSES = ["DRAFT", "PENDING_PAYMENT", "CONFIRMED"] as const;
 
@@ -16,6 +18,26 @@ export class NotAuthorizedForLearnerError extends Error {}
  * selecting Child B while consuming a quote generated for Child A must
  * fail, never silently book Child B (or Child A) instead. */
 export class QuoteLearnerMismatchError extends Error {}
+/**
+ * BETA-1 / P1-02 — the Payment named by input.paymentId is not a valid,
+ * usable payment for this exact reservation: missing, belongs to a
+ * different payer, was authorized against a different CustomerPriceQuote,
+ * carries an amount/currency that no longer matches that quote, or is not
+ * in a capturable (AUTHORIZED) or already-settled (CAPTURED, the
+ * PAYMENT_MODE=disabled_dev bypass) state. Thrown BEFORE the Booking row
+ * or the Payment/Booking link is created, so no Stripe capture is ever
+ * reachable for a mismatched Payment.
+ */
+export class PaymentReservationMismatchError extends Error {}
+/**
+ * BETA-1 / P1-02 — the exclusive, conditional Payment -> Booking
+ * attachment (`bookingId: null` guard) affected zero rows: the Payment was
+ * concurrently attached to a different Booking between this function's own
+ * pre-check and the write. Required invariant is exactly one row affected;
+ * anything else aborts the whole reservation transaction before any Stripe
+ * capture is attempted.
+ */
+export class PaymentAlreadyAttachedError extends Error {}
 
 /**
  * True interval-overlap conflict check: existing.startAt < newEnd AND
@@ -110,6 +132,23 @@ export interface ReserveBookingPendingPaymentInput {
  * for this exact learner (`customerQuote.studentProfileId ===
  * input.studentProfileId`) — closing the "Child A quote + Child B selector"
  * gap a client-supplied studentProfileId could otherwise exploit.
+ *
+ * BETA-1 / P1-02 — this is also now the ONE place the complete immutable
+ * booking/payment context is authoritatively validated BEFORE any Stripe
+ * capture becomes reachable (captureAuthorizedPayment is only ever called
+ * by the caller after this transaction has committed successfully). Quote
+ * consumption (both customer and payout) moved here from post-capture
+ * convergence (src/services/payments.ts's convergeToCaptured) — that
+ * function's own consumeCustomerQuoteForConvergence /
+ * consumeTutorPayoutQuoteForConvergence already no-op cleanly when a quote
+ * is found already CONSUMED, so moving consumption earlier needs no change
+ * on that side; it simply becomes a defense-in-depth idempotent re-check.
+ * Previously, a client-supplied startAt/subjectId/academicLevelId/mode that
+ * did not match the CustomerPriceQuote's own locked context was never
+ * compared against it here at all — only the learner (studentProfileId)
+ * was checked — so a valid, unconsumed quote/payment pair could reserve
+ * (and then capture) a Booking for a different, non-overlapping slot or
+ * subject than what was actually priced and authorized.
  */
 export async function reserveBookingPendingPayment(
   tx: Prisma.TransactionClient,
@@ -121,12 +160,54 @@ export async function reserveBookingPendingPayment(
   const conflict = await hasOverlappingActiveBooking(tx, input.tutorProfileId, input.startAt, input.endAt);
   if (conflict) throw new SlotTakenError();
 
-  const customerQuote = await tx.customerPriceQuote.findUniqueOrThrow({ where: { id: input.customerPriceQuoteId } });
-  const payoutQuote = await tx.tutorPayoutQuote.findUniqueOrThrow({ where: { id: input.tutorPayoutQuoteId } });
-
-  if (customerQuote.studentProfileId !== input.studentProfileId) {
+  const preCheckCustomerQuote = await tx.customerPriceQuote.findUniqueOrThrow({
+    where: { id: input.customerPriceQuoteId },
+  });
+  if (preCheckCustomerQuote.studentProfileId !== input.studentProfileId) {
     throw new QuoteLearnerMismatchError();
   }
+
+  // Payment validation — BEFORE either quote is consumed and BEFORE the
+  // Booking row exists, so a mismatched Payment aborts the whole
+  // transaction with nothing written and no Stripe call ever reachable.
+  const payment = await tx.payment.findUnique({ where: { id: input.paymentId } });
+  if (
+    !payment ||
+    payment.payerUserId !== input.actorUserId ||
+    payment.customerPriceQuoteId !== input.customerPriceQuoteId ||
+    payment.bookingId !== null ||
+    payment.amountCents !== preCheckCustomerQuote.totalCents ||
+    payment.currency !== preCheckCustomerQuote.currency ||
+    (payment.status !== "AUTHORIZED" && payment.status !== "CAPTURED")
+  ) {
+    throw new PaymentReservationMismatchError();
+  }
+
+  const durationMinutes = Math.round((input.endAt.getTime() - input.startAt.getTime()) / 60000);
+
+  // Consumes the customer quote exactly here — validates ownership, status
+  // (ACTIVE-with-TTL or LOCKED), and the full context fingerprint (subject,
+  // academic level, mode, duration, requested start) against the quote's
+  // own immutable contextHash. Throws (aborting this transaction, before
+  // any Stripe call) on any mismatch or reuse attempt.
+  const customerQuote = await validateAndConsumeCustomerPriceQuote(tx, input.customerPriceQuoteId, input.actorUserId, {
+    subjectId: input.subjectId,
+    academicLevelId: input.academicLevelId ?? null,
+    tutoringMode: input.mode,
+    durationMinutes,
+    requestedStartAt: input.startAt,
+  });
+
+  // Consumes the payout quote exactly here — validates it belongs to the
+  // intended Tutor and to this exact customer quote (closing "another
+  // Tutor's payout quote" / "unrelated quote pairing" reuse), and that its
+  // status is consumable. Throws (aborting this transaction) otherwise.
+  const payoutQuote = await validateAndConsumeTutorPayoutQuote(
+    tx,
+    input.tutorPayoutQuoteId,
+    input.tutorProfileId,
+    input.customerPriceQuoteId
+  );
 
   const grossSpreadCents = customerQuote.subtotalCents - payoutQuote.totalPayoutCents;
 
@@ -168,13 +249,21 @@ export async function reserveBookingPendingPayment(
     data: { bookingId: booking.id, toStatus: "PENDING_PAYMENT" },
   });
 
-  // Guarded — only links if this Payment hasn't already been linked to a
-  // different booking (shouldn't happen given Payment.bookingId's own
-  // uniqueness, but the guard costs nothing and documents the invariant).
-  await tx.payment.updateMany({
+  // Exclusive attachment — the pre-check above already confirmed
+  // payment.bookingId === null moments ago inside this same transaction,
+  // but under Serializable isolation the authoritative signal is this
+  // guarded write's own affected-row count, not the earlier read. Exactly
+  // one row must be affected; zero (a concurrent attachment won the race,
+  // or the row no longer matches) aborts the whole reservation — and with
+  // it, both quote consumptions above — before any Stripe capture is ever
+  // attempted. BETA-1 / P1-02: this count was previously never checked.
+  const attachment = await tx.payment.updateMany({
     where: { id: input.paymentId, bookingId: null },
     data: { bookingId: booking.id },
   });
+  if (attachment.count !== 1) {
+    throw new PaymentAlreadyAttachedError();
+  }
 
   return booking;
 }

@@ -246,10 +246,31 @@ async function makePayoutQuote(tutorProfileId: string, customerQuoteId: string, 
   return payoutQuote;
 }
 
+/**
+ * BETA-1 / P1-02 — creates the Payment already AUTHORIZED, matching real
+ * production sequencing: src/services/payments.ts's
+ * verifyAndAuthorizePaymentIntent always transitions PENDING -> AUTHORIZED
+ * BEFORE createBookingAction/acceptTutorInvitationAction ever call
+ * reserveBookingPendingPayment. reserveBookingPendingPayment now
+ * authoritatively validates the Payment's own state (status must be
+ * AUTHORIZED or CAPTURED) before consuming either quote, so a fixture
+ * payment must reflect that real precondition, not the earlier PENDING
+ * state that only ever existed momentarily in production before capture
+ * readiness.
+ */
 async function makePayment(quoteId: string, payerUserId: string) {
   const quote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quoteId } });
   const payment = await db.payment.create({
-    data: { id: randomUUID(), customerPriceQuoteId: quoteId, payerUserId, amountCents: quote.totalCents, currency: quote.currency, status: "PENDING" },
+    data: {
+      id: randomUUID(),
+      customerPriceQuoteId: quoteId,
+      payerUserId,
+      amountCents: quote.totalCents,
+      currency: quote.currency,
+      status: "AUTHORIZED",
+      authorizedAt: new Date(),
+      stripePaymentIntentId: `pi_test_${randomUUID()}`,
+    },
   });
   createdPaymentIds.push(payment.id);
   return payment;
@@ -736,8 +757,20 @@ describe("P0 booking hardening — Serializable retry around reserveBookingPendi
     expect(booking.studentProfileId).toBe(requester.studentProfile.id);
     expect(booking.tutorProfileId).toBe(tutor.tutorProfile.id);
 
+    // BETA-1 / P1-02 — reserveBookingPendingPayment now authoritatively
+    // consumes both quotes itself (see that function's own doc comment),
+    // rather than leaving consumption for post-capture convergence. By the
+    // time claimInvitationWithRetry (which calls it) returns, the payout
+    // quote has already advanced past ACCEPTED to CONSUMED, and the
+    // customer quote has already left ACTIVE for CONSUMED too — this is the
+    // whole point of the fix (full context validated and locked in before
+    // any Stripe capture is ever reachable), not a side effect to work
+    // around.
     const finalPayoutQuote = await db.tutorPayoutQuote.findUniqueOrThrow({ where: { id: payoutQuote.id } });
-    expect(finalPayoutQuote.status).toBe("ACCEPTED");
+    expect(finalPayoutQuote.status).toBe("CONSUMED");
+
+    const finalQuote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quote.id } });
+    expect(finalQuote.status).toBe("CONSUMED");
   });
 
   it("Quick Match: retryable conflict on the claim transaction -> retries -> succeeds once, request claimed exactly once", async () => {

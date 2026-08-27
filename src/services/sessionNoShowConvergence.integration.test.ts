@@ -33,6 +33,7 @@ let resolveSessionNoShowConvergence: typeof import("./sessionLifecycle").resolve
 let sweepDueNoShowConvergence: typeof import("./sessionLifecycle").sweepDueNoShowConvergence;
 let computeNoShowGraceDeadline: typeof import("./sessionLifecycle").computeNoShowGraceDeadline;
 let SessionNotCheckInEligibleError: typeof import("./sessionLifecycle").SessionNotCheckInEligibleError;
+let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 
 let db: PrismaClient;
 let subjectId: string;
@@ -66,6 +67,7 @@ beforeAll(async () => {
   ({ createCustomerPriceQuote } = await import("./customerPricing"));
   ({ createTutorPayoutQuote } = await import("./tutorPayout"));
   ({ reserveBookingPendingPayment } = await import("./bookingCreation"));
+  ({ withSerializableRetry } = await import("@/lib/serializableRetry"));
   ({ convergeToCaptured } = await import("./payments"));
   ({ cancelBookingWithRefund, SessionAlreadyStartedError } = await import("./cancellationPolicy"));
   ({
@@ -212,7 +214,7 @@ async function makePayoutQuote(tutorProfileId: string, customerQuoteId: string, 
 async function makePayment(quoteId: string, payerUserId: string) {
   const quote = await db.customerPriceQuote.findUniqueOrThrow({ where: { id: quoteId } });
   const payment = await db.payment.create({
-    data: { id: randomUUID(), customerPriceQuoteId: quoteId, payerUserId, amountCents: quote.totalCents, currency: quote.currency, status: "PENDING" },
+    data: { id: randomUUID(), customerPriceQuoteId: quoteId, payerUserId, amountCents: quote.totalCents, currency: quote.currency, status: "AUTHORIZED", authorizedAt: new Date(), stripePaymentIntentId: `pi_test_${randomUUID()}` },
   });
   createdPaymentIds.push(payment.id);
   return payment;
@@ -228,24 +230,31 @@ async function reserveBooking(params: {
   startAt: Date;
 }) {
   const endAt = new Date(params.startAt.getTime() + 60 * 60 * 1000);
-  const booking = await db.$transaction(
-    (tx) =>
-      reserveBookingPendingPayment(tx, {
-        actorUserId: params.actorUserId,
-        studentProfileId: params.studentProfileId,
-        tutorProfileId: params.tutorProfileId,
-        subjectId,
-        academicLevelId,
-        startAt: params.startAt,
-        endAt,
-        timezone: "America/Toronto",
-        mode: "ONLINE",
-        paymentId: params.paymentId,
-        customerPriceQuoteId: params.customerPriceQuoteId,
-        tutorPayoutQuoteId: params.tutorPayoutQuoteId,
-        tutoringRequestId: null,
-      }),
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  // BETA-1 / P1-02 — see tutorEarningConvergence.integration.test.ts's
+  // identical comment: reserveBookingPendingPayment now writes both quote
+  // tables inside this same transaction, increasing real contention under
+  // this suite's parallel execution; wrapped in withSerializableRetry to
+  // match the established, already-hardened production call sites.
+  const booking = await withSerializableRetry(() =>
+    db.$transaction(
+      (tx) =>
+        reserveBookingPendingPayment(tx, {
+          actorUserId: params.actorUserId,
+          studentProfileId: params.studentProfileId,
+          tutorProfileId: params.tutorProfileId,
+          subjectId,
+          academicLevelId,
+          startAt: params.startAt,
+          endAt,
+          timezone: "America/Toronto",
+          mode: "ONLINE",
+          paymentId: params.paymentId,
+          customerPriceQuoteId: params.customerPriceQuoteId,
+          tutorPayoutQuoteId: params.tutorPayoutQuoteId,
+          tutoringRequestId: null,
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    )
   );
   createdBookingIds.push(booking.id);
   return booking;

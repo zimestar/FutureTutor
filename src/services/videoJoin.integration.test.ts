@@ -219,7 +219,7 @@ async function setupConfirmedBooking(overrides: { startAt?: Date; mode?: "ONLINE
   );
   createdTutorPayoutQuoteIds.push(payoutQuote.id);
   const payment = await db.payment.create({
-    data: { id: randomUUID(), customerPriceQuoteId: quote.id, payerUserId: student.user.id, amountCents: quote.totalCents, currency: quote.currency, status: "PENDING" },
+    data: { id: randomUUID(), customerPriceQuoteId: quote.id, payerUserId: student.user.id, amountCents: quote.totalCents, currency: quote.currency, status: "AUTHORIZED", authorizedAt: new Date(), stripePaymentIntentId: `pi_test_${randomUUID()}` },
   });
   createdPaymentIds.push(payment.id);
 
@@ -308,7 +308,7 @@ describe("requestVideoJoinToken — authorization matrix", () => {
     );
     createdTutorPayoutQuoteIds.push(payoutQuote.id);
     const payment = await db.payment.create({
-      data: { id: randomUUID(), customerPriceQuoteId: quote.id, payerUserId: parentUser.id, amountCents: quote.totalCents, currency: quote.currency, status: "PENDING" },
+      data: { id: randomUUID(), customerPriceQuoteId: quote.id, payerUserId: parentUser.id, amountCents: quote.totalCents, currency: quote.currency, status: "AUTHORIZED", authorizedAt: new Date(), stripePaymentIntentId: `pi_test_${randomUUID()}` },
     });
     createdPaymentIds.push(payment.id);
     const booking = await withSerializableRetry(() =>
