@@ -16,6 +16,7 @@ const runtimePaths = [
   "classroom.waitingShort.tutor", "classroom.waitingShort.student", "classroom.sharingStatus",
   "classroom.waitingBody.tutor", "classroom.waitingBody.student",
   "errors.screenShareError", "timer.remaining",
+  "controls.settings", "settings.title", "settings.close",
 ];
 
 function resolve(messages: Record<string, unknown>, path: string) {

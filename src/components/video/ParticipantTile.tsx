@@ -32,10 +32,29 @@ export function ParticipantTile({
   const videoRef = useRef<HTMLVideoElement>(null);
   const track = participant?.tracks.video.persistentTrack;
 
+  // VIDEO-2A.2 — root cause of the intermittent "remote camera stays blank
+  // until an unrelated screen-share layout switch" defect: the <video>
+  // element used to be conditionally mounted/unmounted based on
+  // `showVideo`. A `useEffect` dependency array is compared against the
+  // PREVIOUS render of this SAME component instance, not against whether a
+  // child element just mounted — so when `showVideo` flipped true (camera
+  // came on) without `track`'s own object reference changing, React saw an
+  // "unchanged" dependency and skipped re-running the effect, leaving the
+  // brand-new <video> node's srcObject unset. The element is now always
+  // mounted (visibility is purely a CSS/overlay concern below), so this
+  // effect's [track] dependency is only ever compared across renders of the
+  // SAME persistent DOM node — exactly what useEffect's semantics assume.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.srcObject = track ? new MediaStream([track]) : null;
+    if (track) {
+      // autoPlay alone can silently fail to (re)start after a dynamic
+      // srcObject assignment in some browsers; an explicit play() call is
+      // the standard, documented way to make this robust. A rejection here
+      // is benign (e.g. a stale attempt on an element about to unmount).
+      void video.play().catch(() => undefined);
+    }
     return () => {
       video.srcObject = null;
     };
@@ -50,14 +69,16 @@ export function ParticipantTile({
 
   return (
     <div className="relative h-full min-h-full w-full overflow-hidden bg-neutral-900" data-testid={local ? "local-participant-tile" : "remote-participant-tile"}>
-      {showVideo ? (
-        // VIDEO-2A.1 — object-contain (not object-cover): human QA reported
-        // faces being aggressively zoomed/cropped when a tile's container
-        // aspect ratio didn't match the camera's native feed. contain never
-        // crops a face; the trade-off (occasional letterboxing) is
-        // acceptable against the dark tile background.
-        <video ref={videoRef} autoPlay playsInline muted={muted} className={cn("h-full w-full object-contain", local && "-scale-x-100")} />
-      ) : (
+      {/* VIDEO-2A.2 — always mounted (see the effect above); camera-on/off
+         only toggles which layer is visible, never the element's presence. */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={muted}
+        className={cn("h-full w-full object-contain", local && "-scale-x-100", !showVideo && "hidden")}
+      />
+      {!showVideo && (
         <div className="flex h-full min-h-[inherit] flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.16),_transparent_55%)] p-4 text-center">
           <div className={cn("flex items-center justify-center rounded-full bg-white/10 font-extrabold", compact ? "size-9 text-xs" : "size-16 text-xl")} aria-hidden="true">
             {initial}

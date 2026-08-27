@@ -5,7 +5,7 @@ import DailyIframe, { type DailyCall, type DailyParticipant, type DailyParticipa
 import {
   ArrowLeft, Camera, CameraOff, CheckCircle2, Clock3, Headphones,
   LoaderCircle, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff,
-  RefreshCw, ScreenShare, ScreenShareOff, ShieldCheck,
+  RefreshCw, ScreenShare, ScreenShareOff, Settings, ShieldCheck,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -24,7 +24,7 @@ import {
 } from "@/lib/videoClassroomPresentation";
 import type { VideoParticipantRole } from "@/services/videoProvider";
 import { Button } from "@/components/ui/Button";
-import { ConfirmationDialog } from "@/components/ui/Dialog";
+import { ConfirmationDialog, Dialog } from "@/components/ui/Dialog";
 import { Select } from "@/components/ui/Input";
 import { Logo } from "@/components/marketing/Logo";
 import { ParticipantTile, WaitingSlotTile } from "@/components/video/ParticipantTile";
@@ -130,6 +130,24 @@ export function VideoClassroom(props: VideoClassroomProps) {
     // fresh refreshParticipants() call.
     const onTrackStarted = () => refreshParticipants();
     const onTrackStopped = () => refreshParticipants();
+    // VIDEO-2A.2 — in-session device settings: Daily's own device-change
+    // events, not a parallel getUserMedia/polling system. 'available-
+    // devices-updated' fires with the full current hardware list whenever
+    // it changes (plug/unplug), so the Settings panel's dropdowns stay
+    // live. 'selected-devices-updated' reflects Daily's own authoritative
+    // current selection — including any automatic fallback Daily performs
+    // if the previously-selected device disappears — so the UI never
+    // silently disagrees with what's actually active.
+    const onAvailableDevicesUpdated = (event: unknown) => {
+      const list = typeof event === "object" && event && "availableDevices" in event ? (event as { availableDevices: MediaDeviceInfo[] }).availableDevices : [];
+      setAudioDevices(list.filter((device) => device.kind === "audioinput"));
+      setVideoDevices(list.filter((device) => device.kind === "videoinput"));
+    };
+    const onSelectedDevicesUpdated = (event: unknown) => {
+      const devices = typeof event === "object" && event && "devices" in event ? (event as { devices?: { mic?: { deviceId?: string }; camera?: { deviceId?: string } } }).devices : undefined;
+      if (devices?.mic?.deviceId) setSelectedAudio(devices.mic.deviceId);
+      if (devices?.camera?.deviceId) setSelectedVideo(devices.camera.deviceId);
+    };
     const onNonFatalError = (event: unknown) => {
       const type = typeof event === "object" && event && "type" in event ? String((event as { type: unknown }).type) : "";
       if (type === "screen-share-error") {
@@ -151,6 +169,8 @@ export function VideoClassroom(props: VideoClassroomProps) {
     call.on("local-screen-share-canceled", onScreenShareStopped);
     call.on("track-started", onTrackStarted);
     call.on("track-stopped", onTrackStopped);
+    call.on("available-devices-updated", onAvailableDevicesUpdated);
+    call.on("selected-devices-updated", onSelectedDevicesUpdated);
     call.on("nonfatal-error", onNonFatalError);
 
     if (props.participantRole === "OBSERVER") {
@@ -389,9 +409,16 @@ export function VideoClassroom(props: VideoClassroomProps) {
           canShareScreen={controls.canShareScreen}
           joinError={joinError}
           screenShareError={screenShareError}
+          audioDevices={audioDevices}
+          videoDevices={videoDevices}
+          selectedAudio={selectedAudio}
+          selectedVideo={selectedVideo}
+          devicePermission={permission}
           onMicrophone={toggleMicrophone}
           onCamera={toggleCamera}
           onToggleShare={toggleScreenShare}
+          onAudioDevice={(value) => void changeDevice("audio", value)}
+          onVideoDevice={(value) => void changeDevice("video", value)}
           onLeave={() => setLeaveOpen(true)}
           onRetry={() => void join()}
         />
@@ -480,7 +507,8 @@ function ConnectedClassroom({
   role, connection, isSharing, localIsSharing, sharerName, screenSharingParticipant,
   tutorParticipant, studentParticipant, localParticipant, tutorName, studentName,
   remoteAudioParticipants, microphoneOn, cameraOn, canPublishAudio, canPublishVideo, canShareScreen,
-  joinError, screenShareError, onMicrophone, onCamera, onToggleShare, onLeave, onRetry,
+  joinError, screenShareError, audioDevices, videoDevices, selectedAudio, selectedVideo, devicePermission,
+  onMicrophone, onCamera, onToggleShare, onAudioDevice, onVideoDevice, onLeave, onRetry,
 }: {
   role: VideoParticipantRole; connection: VideoConnectionState; isSharing: boolean; localIsSharing: boolean;
   sharerName: string | null; screenSharingParticipant?: DailyParticipant;
@@ -488,13 +516,18 @@ function ConnectedClassroom({
   tutorName: string; studentName: string; remoteAudioParticipants: DailyParticipant[];
   microphoneOn: boolean; cameraOn: boolean; canPublishAudio: boolean; canPublishVideo: boolean; canShareScreen: boolean;
   joinError: VideoJoinActionError | null; screenShareError: boolean;
-  onMicrophone: () => void; onCamera: () => void; onToggleShare: () => void; onLeave: () => void; onRetry: () => void;
+  audioDevices: MediaDeviceInfo[]; videoDevices: MediaDeviceInfo[]; selectedAudio: string; selectedVideo: string;
+  devicePermission: PermissionState;
+  onMicrophone: () => void; onCamera: () => void; onToggleShare: () => void;
+  onAudioDevice: (value: string) => void; onVideoDevice: (value: string) => void;
+  onLeave: () => void; onRetry: () => void;
 }) {
   const t = useTranslations("videoClassroom");
   const observer = role === "OBSERVER";
   const shareStageRef = useRef<HTMLDivElement>(null);
   const [fullscreenSupported] = useState(() => typeof document !== "undefined" && Boolean(document.fullscreenEnabled));
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     function onFullscreenChange() {
@@ -574,15 +607,31 @@ function ConnectedClassroom({
             </div>
           </div>
         ) : (
-          <div className="relative h-full min-h-[24rem] w-full sm:grid sm:grid-cols-2 sm:gap-3 sm:p-2">
-            <div className="absolute inset-0 overflow-hidden rounded-xl sm:static sm:h-full">{renderSlot(primary, primaryName, primaryRoleKey, false)}</div>
-            <div
-              className="absolute bottom-4 right-4 h-28 w-36 overflow-hidden rounded-xl border-2 border-white/25 bg-neutral-800 shadow-pop sm:static sm:h-full sm:w-full sm:border-0 sm:shadow-none"
-              data-testid="local-video-tile"
-            >
-              {renderSlot(secondary, secondaryName, secondaryRoleKey, false)}
+          <>
+            {/* VIDEO-2A.2 — desktop: an explicit, symmetric two-tile
+               composition (equal size, equal weight, centered), replacing
+               the mobile-style "full-bleed + floating corner" pattern that
+               human QA found made desktop feel unfinished/off-balance. */}
+            <div className="hidden h-full items-center justify-center gap-4 p-4 lg:flex" data-testid="desktop-participant-grid">
+              <div className="aspect-video max-h-full min-w-0 max-w-2xl flex-1 basis-0 overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 shadow-pop">
+                {renderSlot(primary, primaryName, primaryRoleKey, false)}
+              </div>
+              <div className="aspect-video max-h-full min-w-0 max-w-2xl flex-1 basis-0 overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 shadow-pop">
+                {renderSlot(secondary, secondaryName, secondaryRoleKey, false)}
+              </div>
             </div>
-          </div>
+            {/* Mobile — unchanged from VIDEO-2A: full-bleed primary tile with
+               local/secondary as a floating picture-in-picture corner. */}
+            <div className="relative h-full min-h-[24rem] w-full lg:hidden">
+              <div className="absolute inset-0 overflow-hidden rounded-xl">{renderSlot(primary, primaryName, primaryRoleKey, false)}</div>
+              <div
+                className="absolute bottom-4 right-4 h-28 w-36 overflow-hidden rounded-xl border-2 border-white/25 bg-neutral-800 shadow-pop"
+                data-testid="local-video-tile"
+              >
+                {renderSlot(secondary, secondaryName, secondaryRoleKey, false)}
+              </div>
+            </div>
+          </>
         )}
 
         {remoteAudioParticipants.map((participant) => <RemoteAudio key={participant.session_id} participant={participant} />)}
@@ -614,6 +663,14 @@ function ConnectedClassroom({
             disabled={shareDisabledByOther}
           />
         )}
+        {(canPublishAudio || canPublishVideo) && (
+          <RoundControl
+            icon={Settings}
+            active={settingsOpen}
+            label={t("controls.settings")}
+            onClick={() => setSettingsOpen(true)}
+          />
+        )}
         {isSharing && fullscreenSupported && (
           <RoundControl
             icon={isFullscreen ? Minimize2 : Maximize2}
@@ -627,6 +684,14 @@ function ConnectedClassroom({
           <PhoneOff className="size-5" aria-hidden="true" /><span className="hidden sm:inline">{t("controls.leave")}</span>
         </button>
       </nav>
+
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} title={t("settings.title")} closeLabel={t("settings.close")}>
+        <div className="space-y-4" data-testid="device-settings-panel">
+          {devicePermission === "denied" && <p className="rounded-lg bg-warning/10 p-3 text-sm leading-6 text-text-secondary">{t("permissions.denied")}</p>}
+          <DeviceSelect label={t("devices.microphone")} value={selectedAudio} devices={audioDevices} onChange={onAudioDevice} emptyLabel={t("devices.noneMicrophone")} />
+          <DeviceSelect label={t("devices.camera")} value={selectedVideo} devices={videoDevices} onChange={onVideoDevice} emptyLabel={t("devices.noneCamera")} />
+        </div>
+      </Dialog>
     </div>
   );
 }
@@ -638,11 +703,15 @@ function ScreenShareVideo({ participant, sharerLabel }: { participant?: DailyPar
     const video = videoRef.current;
     if (!video) return;
     video.srcObject = track ? new MediaStream([track]) : null;
+    if (track) void video.play().catch(() => undefined);
     return () => { video.srcObject = null; };
   }, [track]);
+  // VIDEO-2A.2 — same always-mounted pattern as ParticipantTile: the
+  // element's presence must not depend on `track`, only its visibility.
   return (
     <div className="relative flex h-full min-h-[14rem] w-full items-center justify-center bg-black">
-      {track ? <video ref={videoRef} autoPlay playsInline className="h-full w-full object-contain" /> : <LoaderCircle className="size-8 animate-spin text-white/50" aria-hidden="true" />}
+      <video ref={videoRef} autoPlay playsInline className={cn("h-full w-full object-contain", !track && "hidden")} />
+      {!track && <LoaderCircle className="size-8 animate-spin text-white/50" aria-hidden="true" />}
       {sharerLabel && (
         <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">{sharerLabel}</div>
       )}

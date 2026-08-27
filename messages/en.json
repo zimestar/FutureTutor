@@ -1956,7 +1956,12 @@
       "othersSharing": "{name} is sharing",
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit fullscreen",
+      "settings": "Settings",
       "leave": "Leave"
+    },
+    "settings": {
+      "title": "Audio & video",
+      "close": "Close"
     },
     "observer": {
       "title": "Observer mode",
