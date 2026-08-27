@@ -54,6 +54,26 @@ export function resolveParticipantRoleFromUserData(userData: unknown): VideoPart
   return null;
 }
 
+export type DailyMediaTrackState = "blocked" | "off" | "sendable" | "loading" | "interrupted" | "playable";
+
+/** VIDEO-2A.1 — the single source of truth for "should this tile render the
+ * live camera feed right now," decoupled from the Daily SDK's concrete
+ * types so it's unit-testable without a DOM/component harness. For the
+ * local participant, the caller's own toggle state is authoritative (it
+ * reflects intent immediately, before Daily's track state catches up). For
+ * a remote participant, only `"playable"` counts — `"loading"`/`"sendable"`
+ * must keep showing the camera-off placeholder rather than a blank/broken
+ * video element. This function has no opinion on *when* it gets re-evaluated
+ * — that's the caller's job (VideoClassroom re-renders it on every
+ * `track-started`/`track-stopped`/`participant-updated` event). */
+export function shouldRenderParticipantVideo(
+  participant: { local: boolean; videoTrackState: DailyMediaTrackState } | undefined,
+  localCameraOn: boolean
+): boolean {
+  if (!participant) return false;
+  return participant.local ? localCameraOn : participant.videoTrackState === "playable";
+}
+
 export function formatCallDuration(elapsedSeconds: number): string {
   const safeSeconds = Math.max(0, Math.floor(elapsedSeconds));
   const hours = Math.floor(safeSeconds / 3600);

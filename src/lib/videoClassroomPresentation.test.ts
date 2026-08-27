@@ -7,6 +7,7 @@ import {
   minutesRemainingInSession,
   presentConnectionState,
   resolveParticipantRoleFromUserData,
+  shouldRenderParticipantVideo,
 } from "@/lib/videoClassroomPresentation";
 
 const base = {
@@ -69,5 +70,43 @@ describe("VIDEO-1C classroom presentation", () => {
     expect(resolveParticipantRoleFromUserData(undefined)).toBeNull();
     expect(resolveParticipantRoleFromUserData(null)).toBeNull();
     expect(resolveParticipantRoleFromUserData("TUTOR")).toBeNull();
+  });
+
+  describe("VIDEO-2A.1 remote video render decision", () => {
+    it("shows the local tile purely from local toggle intent, ignoring track state", () => {
+      // Local intent must win immediately (before Daily's track state
+      // catches up) — a "loading" track state must not hide a camera the
+      // user just turned on themselves.
+      expect(shouldRenderParticipantVideo({ local: true, videoTrackState: "loading" }, true)).toBe(true);
+      expect(shouldRenderParticipantVideo({ local: true, videoTrackState: "playable" }, false)).toBe(false);
+    });
+
+    it("shows a remote tile only once Daily reports the track as playable", () => {
+      // 1. joins with camera already on and immediately playable
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "playable" }, true)).toBe(true);
+      // 2. joins while the track is still negotiating — must show the
+      //    camera-off placeholder, not a broken/blank video element
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "loading" }, true)).toBe(false);
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "sendable" }, true)).toBe(false);
+      // 3. camera turns on after join: loading -> playable transition
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "playable" }, true)).toBe(true);
+      // 4. camera turns off after join
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "off" }, true)).toBe(false);
+      // 5. participant reconnects — track interrupted, then playable again
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "interrupted" }, true)).toBe(false);
+      expect(shouldRenderParticipantVideo({ local: false, videoTrackState: "playable" }, true)).toBe(true);
+    });
+
+    it("shows the camera-off placeholder, never a broken tile, when no participant is present yet", () => {
+      expect(shouldRenderParticipantVideo(undefined, true)).toBe(false);
+    });
+
+    it("never requires an active screen share to decide remote video visibility (no such input exists)", () => {
+      // Structural guard: the function's own signature has no screen-share
+      // parameter at all — remote video visibility is decided purely from
+      // (participant, localCameraOn), so a screen share starting/stopping
+      // cannot be a hidden prerequisite for this decision.
+      expect(shouldRenderParticipantVideo.length).toBe(2);
+    });
   });
 });

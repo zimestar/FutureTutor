@@ -18,6 +18,7 @@ import {
   minutesRemainingInSession,
   presentConnectionState,
   resolveParticipantRoleFromUserData,
+  shouldRenderParticipantVideo,
   type VideoConnectionState,
   type VideoEntryState,
 } from "@/lib/videoClassroomPresentation";
@@ -118,6 +119,17 @@ export function VideoClassroom(props: VideoClassroomProps) {
     };
     const onScreenShareStarted = () => { setScreenShareError(false); refreshParticipants(); };
     const onScreenShareStopped = () => refreshParticipants();
+    // VIDEO-2A.1 — `participant-updated` alone was not a reliable trigger to
+    // re-render when a remote track's own playability changes (e.g. camera
+    // negotiation completing a moment after join): Daily's own guidance for
+    // attaching tracks to DOM elements is 'track-started'/'track-stopped',
+    // which fire specifically "when the playability of a track has changed"
+    // (participant toggling media, permission changes, network hiccups).
+    // Registering them closes the gap where remote video only appeared once
+    // an unrelated event (e.g. starting a screen share) happened to force a
+    // fresh refreshParticipants() call.
+    const onTrackStarted = () => refreshParticipants();
+    const onTrackStopped = () => refreshParticipants();
     const onNonFatalError = (event: unknown) => {
       const type = typeof event === "object" && event && "type" in event ? String((event as { type: unknown }).type) : "";
       if (type === "screen-share-error") {
@@ -137,6 +149,8 @@ export function VideoClassroom(props: VideoClassroomProps) {
     call.on("local-screen-share-started", onScreenShareStarted);
     call.on("local-screen-share-stopped", onScreenShareStopped);
     call.on("local-screen-share-canceled", onScreenShareStopped);
+    call.on("track-started", onTrackStarted);
+    call.on("track-stopped", onTrackStopped);
     call.on("nonfatal-error", onNonFatalError);
 
     if (props.participantRole === "OBSERVER") {
@@ -507,7 +521,7 @@ function ConnectedClassroom({
         <WaitingSlotTile
           compact={compact}
           label={t(`classroom.waitingShort.${roleKey}`)}
-          description={compact ? undefined : t("classroom.waitingDescription")}
+          description={compact ? undefined : t(`classroom.waitingBody.${roleKey}`)}
         />
       );
     }
@@ -515,7 +529,7 @@ function ConnectedClassroom({
     return (
       <ParticipantTile
         participant={participant}
-        cameraOn={isLocal ? cameraOn : participant.tracks.video.state === "playable"}
+        cameraOn={shouldRenderParticipantVideo({ local: isLocal, videoTrackState: participant.tracks.video.state }, cameraOn)}
         name={isLocal ? t("prejoin.you") : name}
         roleLabel={t(`classroom.roleLabel.${roleKey}`)}
         cameraOffLabel={t("classroom.cameraOff")}

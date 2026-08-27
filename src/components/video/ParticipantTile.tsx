@@ -43,18 +43,27 @@ export function ParticipantTile({
 
   const initial = name.trim().charAt(0).toUpperCase() || "?";
   const showVideo = cameraOn && Boolean(track);
+  // VIDEO-2A.1 — a name that happens to equal its role label (e.g. a QA/demo
+  // account with no display name set, falling back to the literal string
+  // "Tutor") would otherwise render a redundant "Tutor • Tutor" badge.
+  const showRoleLabel = Boolean(roleLabel) && roleLabel !== name;
 
   return (
     <div className="relative h-full min-h-full w-full overflow-hidden bg-neutral-900" data-testid={local ? "local-participant-tile" : "remote-participant-tile"}>
       {showVideo ? (
-        <video ref={videoRef} autoPlay playsInline muted={muted} className={cn("h-full w-full object-cover", local && "-scale-x-100")} />
+        // VIDEO-2A.1 — object-contain (not object-cover): human QA reported
+        // faces being aggressively zoomed/cropped when a tile's container
+        // aspect ratio didn't match the camera's native feed. contain never
+        // crops a face; the trade-off (occasional letterboxing) is
+        // acceptable against the dark tile background.
+        <video ref={videoRef} autoPlay playsInline muted={muted} className={cn("h-full w-full object-contain", local && "-scale-x-100")} />
       ) : (
         <div className="flex h-full min-h-[inherit] flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.16),_transparent_55%)] p-4 text-center">
           <div className={cn("flex items-center justify-center rounded-full bg-white/10 font-extrabold", compact ? "size-9 text-xs" : "size-16 text-xl")} aria-hidden="true">
             {initial}
           </div>
           {!compact && <p className="mt-3 text-sm font-bold">{name}</p>}
-          {!compact && roleLabel && <p className="text-[11px] font-semibold text-white/55">{roleLabel}</p>}
+          {!compact && showRoleLabel && <p className="text-[11px] font-semibold text-white/55">{roleLabel}</p>}
           <p className={cn("text-white/55", compact ? "mt-1 text-[10px]" : "mt-1 text-xs")}>{cameraOffLabel}</p>
         </div>
       )}
@@ -65,7 +74,7 @@ export function ParticipantTile({
         )}
       >
         {name}
-        {roleLabel && !compact ? ` • ${roleLabel}` : ""}
+        {showRoleLabel && !compact ? ` • ${roleLabel}` : ""}
       </div>
     </div>
   );

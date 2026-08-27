@@ -14,6 +14,7 @@ const runtimePaths = [
   "controls.startShare", "controls.stopShare", "controls.othersSharing", "controls.fullscreen", "controls.exitFullscreen",
   "classroom.roleLabel.tutor", "classroom.roleLabel.student", "classroom.roleLabel.observer",
   "classroom.waitingShort.tutor", "classroom.waitingShort.student", "classroom.sharingStatus",
+  "classroom.waitingBody.tutor", "classroom.waitingBody.student",
   "errors.screenShareError", "timer.remaining",
 ];
 

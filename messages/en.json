@@ -1967,8 +1967,12 @@
       "videoRegion": "Video classroom",
       "waiting": "Waiting for {name}",
       "waitingShort": {
-        "tutor": "Waiting for tutor to join",
-        "student": "Waiting for student to join"
+        "tutor": "Waiting for your tutor",
+        "student": "Waiting for your student"
+      },
+      "waitingBody": {
+        "tutor": "Your tutor hasn't joined yet.",
+        "student": "Your student hasn't joined yet."
       },
       "waitingDescription": "You are connected. The classroom will update when the other participant joins.",
       "cameraOff": "Camera is off",

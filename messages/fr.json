@@ -1967,8 +1967,12 @@
       "videoRegion": "Classe vidéo",
       "waiting": "En attente de {name}",
       "waitingShort": {
-        "tutor": "En attente du tuteur",
-        "student": "En attente de l’élève"
+        "tutor": "En attente de votre tuteur",
+        "student": "En attente de votre élève"
+      },
+      "waitingBody": {
+        "tutor": "Votre tuteur ne s’est pas encore joint.",
+        "student": "Votre élève ne s’est pas encore joint."
       },
       "waitingDescription": "Vous êtes connecté. La classe se mettra à jour quand l’autre personne se joindra.",
       "cameraOff": "La caméra est désactivée",
