@@ -1394,6 +1394,14 @@
       "alreadyStarted": "This session has already started and can no longer be cancelled."
     }
   },
+  "inPersonTutoring": {
+    "mode": { "legend": "Tutoring mode", "ONLINE": "Online", "IN_PERSON": "In person" },
+    "selector": { "title": "Choose tutoring location", "description": "Select a saved location or add one for this request.", "add": "Add location", "empty": "No saved tutoring locations yet." },
+    "form": { "title": "Tutoring location", "privacy": "Your exact address is only shared with the confirmed tutor.", "addressLine1": "Address line 1", "addressLine2": "Address line 2 / Unit (optional)", "city": "City", "province": "Province or territory", "provincePlaceholder": "Choose a province or territory", "postalCode": "Postal code" },
+    "guardian": { "title": "Your tutoring locations are managed by your parent or guardian", "description": "Ask them to choose or update the location for an in-person request." },
+    "approximate": { "title": "Approximate tutoring location", "unavailable": "Approximate area unavailable", "postalArea": "{prefix} area", "distance": "Approx. {distance, number, ::0.0} km away", "privacy": "Exact location is shared after booking confirmation.", "waiting": "Waiting for booking confirmation. The exact location is still private." },
+    "confirmed": { "title": "Tutoring location", "arrivalInstructions": "Arrival instructions", "directions": "Get Directions" }
+  },
   "quickMatch": {
     "title": "Quick Match",
     "description": "Tell us what you need and we'll find and dispatch the best available tutor automatically.",

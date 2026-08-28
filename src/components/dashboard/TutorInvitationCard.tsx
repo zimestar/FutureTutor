@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { acceptTutorInvitationAction, declineTutorInvitationAction } from "@/lib/actions/tutorInvitations";
+import { ApproximateLocationSummary } from "@/components/dashboard/InPersonTutoringLocation";
 
 export function TutorInvitationCard({
   tutorInvitationId,
@@ -49,13 +50,7 @@ export function TutorInvitationCard({
           <p className="mt-1 text-sm text-slate">
             {dateFormatter.format(new Date(requestedStartAt))} · {t("duration", { minutes: durationMinutes })}
           </p>
-          {dispatchLocation && (
-            <p className="mt-1 text-sm text-slate" data-testid="dispatch-location">
-              {[dispatchLocation.city, dispatchLocation.province, dispatchLocation.postalCodePrefix]
-                .filter(Boolean)
-                .join(", ")}
-            </p>
-          )}
+          {dispatchLocation && <div data-testid="dispatch-location"><ApproximateLocationSummary location={{ city: dispatchLocation.city, province: dispatchLocation.province, postalCodePrefix: dispatchLocation.postalCodePrefix }} /></div>}
           {notes && <p className="mt-1 text-sm italic text-slate">&ldquo;{notes}&rdquo;</p>}
         </div>
         <p className="text-lg font-bold text-navy" data-testid="invitation-payout">

@@ -14,6 +14,7 @@ import { listBookableStudentsForActor } from "@/services/learnerSelection";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { quickMatchCustomerView } from "@/lib/quickMatchCustomerFlow";
 import { ACTIVE_TUTORING_REQUEST_STATUSES } from "@/services/tutoringRequestCreation";
+import { GuardianManagedLocationNotice } from "@/components/dashboard/InPersonTutoringLocation";
 
 export default async function StudentQuickMatchPage({
   params,
@@ -66,9 +67,17 @@ export default async function StudentQuickMatchPage({
   // Student this always resolves to exactly their own profile at this
   // point (the activation-state gate above already ensured ACTIVE). For a
   // Parent it's every linked child they currently have authority over.
-  const bookableStudents = await listBookableStudentsForActor(db, user.id);
+  const [bookableStudents, ownManagementMode] = await Promise.all([
+    listBookableStudentsForActor(db, user.id),
+    user.role === "STUDENT"
+      ? db.studentProfile.findUnique({ where: { userId: user.id }, select: { managementMode: true } }).then((profile) => profile?.managementMode ?? null)
+      : Promise.resolve(null),
+  ]);
 
   if (bookableStudents.length === 0) {
+    if (user.role === "STUDENT" && ownManagementMode === "GUARDIAN_MANAGED") {
+      return <DashboardShell navItems={navItems} userName={user.name ?? ""}><h1 className="text-2xl font-bold text-navy">{t("title")}</h1><div className="mt-6"><GuardianManagedLocationNotice /></div></DashboardShell>;
+    }
     // Only reachable for a PARENT with no (yet) bookable child — the
     // STUDENT case is already excluded by the activation-state gate above.
     return (

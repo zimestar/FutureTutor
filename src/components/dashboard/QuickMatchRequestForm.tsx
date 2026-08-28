@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/Input";
 import { createTutoringRequestAction } from "@/lib/actions/tutoringRequests";
+import { LocationForm, TutoringModeSelector, type RequestTutoringMode } from "@/components/dashboard/InPersonTutoringLocation";
 
 export interface QuickMatchOption {
   id: string;
@@ -33,8 +34,7 @@ export function QuickMatchRequestForm({
 }) {
   const t = useTranslations("quickMatch");
   const [state, formAction, pending] = useActionState(createTutoringRequestAction, undefined);
-  const [tutoringMode, setTutoringMode] = useState<"ONLINE" | "IN_PERSON" | "BOTH">("ONLINE");
-  const requiresAddress = tutoringMode !== "ONLINE";
+  const [tutoringMode, setTutoringMode] = useState<RequestTutoringMode>("ONLINE");
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6">
@@ -72,21 +72,7 @@ export function QuickMatchRequestForm({
         </Select>
       </div>
 
-      <div>
-        <label htmlFor="tutoringMode" className="mb-1.5 block text-sm font-semibold text-navy">
-          {t("form.modeLabel")}
-        </label>
-        <Select
-          id="tutoringMode"
-          name="tutoringMode"
-          value={tutoringMode}
-          onChange={(e) => setTutoringMode(e.target.value as "ONLINE" | "IN_PERSON" | "BOTH")}
-        >
-          <option value="ONLINE">{t("form.modeOnline")}</option>
-          <option value="IN_PERSON">{t("form.modeInPerson")}</option>
-          <option value="BOTH">{t("form.modeBoth")}</option>
-        </Select>
-      </div>
+      <TutoringModeSelector value={tutoringMode} onChange={setTutoringMode} />
 
       <div>
         <label htmlFor="durationMinutes" className="mb-1.5 block text-sm font-semibold text-navy">
@@ -108,18 +94,7 @@ export function QuickMatchRequestForm({
         <Input id="requestedStartAt" name="requestedStartAt" type="datetime-local" required data-testid="requested-start-at" />
       </div>
 
-      {requiresAddress && (
-        <div className="flex flex-col gap-3 rounded-md border border-neutral-200 bg-off-white p-4">
-          <p className="text-sm font-semibold text-navy">{t("form.addressTitle")}</p>
-          <Input name="addressLine1" placeholder={t("form.addressLine1Placeholder")} required data-testid="address-line1" />
-          <Input name="addressLine2" placeholder={t("form.addressLine2Placeholder")} />
-          <div className="grid grid-cols-2 gap-3">
-            <Input name="city" placeholder={t("form.cityPlaceholder")} required data-testid="address-city" />
-            <Input name="province" placeholder={t("form.provincePlaceholder")} required />
-          </div>
-          <Input name="postalCode" placeholder={t("form.postalCodePlaceholder")} required />
-        </div>
-      )}
+      {tutoringMode === "IN_PERSON" && <LocationForm />}
 
       <div>
         <label htmlFor="notes" className="mb-1.5 block text-sm font-semibold text-navy">
