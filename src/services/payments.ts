@@ -14,6 +14,7 @@ import {
 import { validateAndConsumeTutorPayoutQuote, cancelTutorPayoutQuote } from "@/services/tutorPayout";
 import { notifyUser } from "@/lib/notify";
 import { writeAuditLog } from "@/lib/audit";
+import { toExactLocationDto } from "@/services/bookingLocationAccess";
 
 export class PaymentIntentVerificationError extends Error {}
 export class PaymentNotAuthorizedError extends Error {}
@@ -707,12 +708,26 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
               metadata: { bookingId: booking.id },
             });
             if (tutor) {
+              // BETA-IP1-A — the exact tutoring location becomes available
+              // to the Tutor at the exact moment the Booking reaches
+              // CONFIRMED (this code path only ever runs once, guarded by
+              // the transition.count===1/!existingEarning checks above),
+              // regardless of how far in advance or how urgently the
+              // booking was made — no reminder/scheduler dependency, per
+              // the mission's explicit §21 requirement. Losing/expired/
+              // unrelated Tutors never reach this branch at all, since
+              // only the winning claim ever produces a Booking row.
+              const isInPerson = booking.mode === "IN_PERSON";
               await notifyUser(tx, {
                 userId: tutor.userId,
                 type: "booking.confirmed",
                 title: "Session confirmed",
-                body: "Payment was captured — your session is confirmed and an earning has been recorded.",
-                metadata: { bookingId: booking.id },
+                body: isInPerson
+                  ? "Payment was captured — your session is confirmed and an earning has been recorded. The tutoring location is now available."
+                  : "Payment was captured — your session is confirmed and an earning has been recorded.",
+                metadata: isInPerson
+                  ? ({ bookingId: booking.id, location: toExactLocationDto(booking) } as unknown as Prisma.InputJsonValue)
+                  : { bookingId: booking.id },
               });
             }
           }
