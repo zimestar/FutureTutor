@@ -111,6 +111,10 @@ export function SignupForm() {
           {t("termsAcceptancePrefix")}{" "}
           <Link href="/terms" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
             {t("termsAcceptanceLink")}
+          </Link>{" "}
+          {t("privacyAcknowledgementPrefix")}{" "}
+          <Link href="/privacy" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
+            {t("privacyAcknowledgementLink")}
           </Link>
           .
         </span>

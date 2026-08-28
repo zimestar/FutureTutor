@@ -522,6 +522,8 @@
       "passwordHint": "At least 8 characters.",
       "termsAcceptancePrefix": "I agree to the",
       "termsAcceptanceLink": "Terms of Service",
+      "privacyAcknowledgementPrefix": "and acknowledge the",
+      "privacyAcknowledgementLink": "Privacy Policy",
       "submit": "Create Account",
       "submitting": "Creating account...",
       "haveAccount": "Already have an account?",
