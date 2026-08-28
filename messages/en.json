@@ -573,6 +573,19 @@
     "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
     "footer": "FutureTutor — helping students learn with the right tutor."
   },
+  "pwa": {
+    "install": {
+      "action": "Install FutureTutor",
+      "iosTitle": "Add FutureTutor to your Home Screen",
+      "iosDescription": "Safari installs FutureTutor through the Share menu.",
+      "iosStepShare": "Tap the Share button in Safari.",
+      "iosStepAdd": "Choose Add to Home Screen.",
+      "iosStepConfirm": "Confirm by tapping Add.",
+      "manualTitle": "Install FutureTutor",
+      "manualDescription": "Open your browser menu and choose Install app or Add to Home Screen. If that option is unavailable, you can continue using FutureTutor normally in your browser.",
+      "close": "Close installation instructions"
+    }
+  },
   "dashboard": {
     "logOut": "Log Out",
     "openNavigation": "Open dashboard navigation",

@@ -573,6 +573,19 @@
     "linkFallback": "Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
     "footer": "FutureTutor — aider les élèves à apprendre avec le bon tuteur."
   },
+  "pwa": {
+    "install": {
+      "action": "Installer FutureTutor",
+      "iosTitle": "Ajouter FutureTutor à l’écran d’accueil",
+      "iosDescription": "Safari installe FutureTutor depuis le menu Partager.",
+      "iosStepShare": "Touchez le bouton Partager dans Safari.",
+      "iosStepAdd": "Choisissez Sur l’écran d’accueil.",
+      "iosStepConfirm": "Confirmez en touchant Ajouter.",
+      "manualTitle": "Installer FutureTutor",
+      "manualDescription": "Ouvrez le menu de votre navigateur, puis choisissez Installer l’application ou Ajouter à l’écran d’accueil. Si cette option n’est pas disponible, vous pouvez continuer à utiliser FutureTutor normalement dans votre navigateur.",
+      "close": "Fermer les instructions d’installation"
+    }
+  },
   "dashboard": {
     "logOut": "Déconnexion",
     "openNavigation": "Ouvrir la navigation du tableau de bord",

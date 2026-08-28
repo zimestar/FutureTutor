@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { Manrope } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
@@ -13,6 +13,11 @@ const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  colorScheme: "light",
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -31,6 +36,13 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(site.url),
+    applicationName: site.name,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: site.name,
+      statusBarStyle: "default",
+    },
     title: {
       default: title,
       template: `%s — ${site.name}`,

@@ -17,6 +17,7 @@ assertExternalSuitesDisabled();
 // instead of only inferring from CSS at 5 of them.
 const viewports = [
   { name: "chromium-375", width: 375, height: 812 },
+  { name: "chromium-390", width: 390, height: 844 },
   { name: "chromium-430", width: 430, height: 932 },
   { name: "chromium-768", width: 768, height: 1024 },
   { name: "chromium-1024", width: 1024, height: 768 },
@@ -46,9 +47,10 @@ export default defineConfig({
   use: {
     baseURL: target.origin,
     browserName: "chromium",
+    channel: process.env.E2E_BROWSER_CHANNEL,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
-    video: "retain-on-failure",
+    video: process.env.E2E_DISABLE_VIDEO === "true" ? "off" : "retain-on-failure",
     testIdAttribute: "data-testid",
   },
   webServer: target.kind === "local" ? {
