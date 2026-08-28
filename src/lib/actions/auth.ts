@@ -18,7 +18,9 @@ import {
 } from "@/services/passwordReset";
 import { resolveSendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 
-type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth";
+import { TERMS_VERSION } from "@/content/legal/termsContent.en";
+
+type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth" | "termsAccepted";
 
 export type AuthActionState = {
   error?: string;
@@ -40,6 +42,7 @@ export async function registerAction(
     password: formData.get("password"),
     role: formData.get("role"),
     dateOfBirth: formData.get("dateOfBirth"),
+    termsAccepted: formData.get("termsAccepted"),
   });
 
   if (!parsed.success) {
@@ -84,6 +87,9 @@ export async function registerAction(
       role,
       dateOfBirth: role === "STUDENT" ? new Date(`${dateOfBirth}T00:00:00.000Z`) : undefined,
       tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
+      termsAcceptedAt: new Date(),
+      termsAcceptedVersion: TERMS_VERSION,
+      termsAcceptedLocale: locale,
     });
   } catch (error) {
     logAuthFailure("user-profile-create", error);
@@ -242,6 +248,7 @@ const REGISTER_FIELDS = new Set<RegisterField>([
   "password",
   "role",
   "dateOfBirth",
+  "termsAccepted",
 ]);
 
 function isRegisterField(value: string): value is RegisterField {

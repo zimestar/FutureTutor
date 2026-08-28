@@ -99,6 +99,24 @@ export function SignupForm() {
         {state?.fieldErrors?.password && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.password}</p>}
       </div>
 
+      <label className="flex items-start gap-2.5 text-sm text-slate">
+        <input
+          type="checkbox"
+          name="termsAccepted"
+          value="true"
+          required
+          className="mt-0.5 size-4 shrink-0 accent-blue"
+        />
+        <span>
+          {t("termsAcceptancePrefix")}{" "}
+          <Link href="/terms" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
+            {t("termsAcceptanceLink")}
+          </Link>
+          .
+        </span>
+      </label>
+      {state?.fieldErrors?.termsAccepted && <p role="alert" className="text-sm text-error">{state.fieldErrors.termsAccepted}</p>}
+
       <Button type="submit" size="lg" disabled={pending} className="mt-2">
         {pending ? t("submitting") : t("submit")}
       </Button>

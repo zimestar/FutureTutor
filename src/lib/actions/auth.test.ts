@@ -65,6 +65,7 @@ function parentForm(email = "parent.qa@futuretutor.local") {
   form.set("email", email);
   form.set("password", "LocalTestPassword123!");
   form.set("role", "PARENT");
+  form.set("termsAccepted", "true");
   return form;
 }
 

@@ -72,6 +72,48 @@ describe("createUserForSignup — STUDENT", () => {
     expect(studentProfile!.userId).toBe(user.id);
   });
 
+  it("LEGAL-19: records termsAcceptedAt/Version/Locale exactly as given", async () => {
+    const email = uniqueEmail("student-terms");
+    const acceptedAt = new Date("2026-08-30T12:00:00.000Z");
+    const user = await createUserForSignup(db, {
+      firstName: "Tia",
+      lastName: "Student",
+      email,
+      passwordHash: "hash",
+      role: "STUDENT",
+      dateOfBirth: new Date("2010-06-15T00:00:00.000Z"),
+      termsAcceptedAt: acceptedAt,
+      termsAcceptedVersion: "2026-08-30",
+      termsAcceptedLocale: "fr",
+    });
+    createdUserIds.push(user.id);
+    const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
+    createdStudentProfileIds.push(studentProfile!.id);
+
+    expect(user.termsAcceptedAt?.toISOString()).toBe(acceptedAt.toISOString());
+    expect(user.termsAcceptedVersion).toBe("2026-08-30");
+    expect(user.termsAcceptedLocale).toBe("fr");
+  });
+
+  it("leaves termsAcceptedAt/Version/Locale null when not supplied (e.g. the guardian-invitation account-creation path)", async () => {
+    const email = uniqueEmail("student-no-terms");
+    const user = await createUserForSignup(db, {
+      firstName: "No",
+      lastName: "Terms",
+      email,
+      passwordHash: "hash",
+      role: "STUDENT",
+      dateOfBirth: new Date("2010-06-15T00:00:00.000Z"),
+    });
+    createdUserIds.push(user.id);
+    const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
+    createdStudentProfileIds.push(studentProfile!.id);
+
+    expect(user.termsAcceptedAt).toBeNull();
+    expect(user.termsAcceptedVersion).toBeNull();
+    expect(user.termsAcceptedLocale).toBeNull();
+  });
+
   it("2. persists dateOfBirth exactly as given (no timezone drift)", async () => {
     const email = uniqueEmail("student-dob");
     const dob = new Date("1995-11-02T00:00:00.000Z");

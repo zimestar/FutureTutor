@@ -30,10 +30,19 @@ export interface CreateUserForSignupInput {
   /** Only meaningful when role === "TUTOR" — the caller resolves a unique
    * slug before calling in, since slug generation itself queries the DB. */
   tutorSlug?: string;
+  /** FG-LEGAL1A — minimal, auditable Terms-of-Service acceptance record.
+   * All three are set together (or not at all) — registerAction always
+   * supplies them, since termsAccepted is a required field on
+   * registerSchema; other callers of this function (e.g. the guardian
+   * student-login-invitation flow) never do, since that flow's own consent
+   * model is the guardian's authority, not a fresh Terms click. */
+  termsAcceptedAt?: Date;
+  termsAcceptedVersion?: string;
+  termsAcceptedLocale?: string;
 }
 
 export async function createUserForSignup(client: SignupClient, input: CreateUserForSignupInput) {
-  const { firstName, lastName, email, passwordHash, role, dateOfBirth, tutorSlug } = input;
+  const { firstName, lastName, email, passwordHash, role, dateOfBirth, tutorSlug, termsAcceptedAt, termsAcceptedVersion, termsAcceptedLocale } = input;
   const name = `${firstName} ${lastName}`;
 
   let profileData;
@@ -56,7 +65,7 @@ export async function createUserForSignup(client: SignupClient, input: CreateUse
   }
 
   return client.user.create({
-    data: { name, email, passwordHash, role, ...profileData },
+    data: { name, email, passwordHash, role, termsAcceptedAt, termsAcceptedVersion, termsAcceptedLocale, ...profileData },
   });
 }
 

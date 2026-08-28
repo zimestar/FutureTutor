@@ -432,6 +432,12 @@
       }
     }
   },
+  "legal": {
+    "termsTitle": "Conditions d'utilisation",
+    "privacyTitle": "Politique de confidentialité",
+    "effectiveDate": "Date d'entrée en vigueur",
+    "lastUpdated": "Dernière mise à jour"
+  },
   "metadata": {
     "login": {
       "title": "Connexion",
@@ -514,6 +520,8 @@
       "dateOfBirthLabel": "Date de naissance",
       "passwordLabel": "Mot de passe",
       "passwordHint": "Au moins 8 caractères.",
+      "termsAcceptancePrefix": "J'accepte les",
+      "termsAcceptanceLink": "Conditions d'utilisation",
       "submit": "Créer le compte",
       "submitting": "Création du compte...",
       "haveAccount": "Vous avez déjà un compte?",
@@ -558,6 +566,7 @@
       "passwordInvalid": "Utilisez un mot de passe de 8 à 72 caractères.",
       "roleInvalid": "Choisissez Élève, Parent / Tuteur légal ou Tuteur.",
       "dateOfBirthInvalid": "Saisissez une date de naissance valide qui n'est pas dans le futur.",
+      "termsAcceptedInvalid": "Vous devez accepter les Conditions d'utilisation pour créer un compte.",
       "signupFailed": "Nous n'avons pas pu créer votre compte. Veuillez réessayer.",
       "accountCreatedSignInFailed": "Votre compte a été créé, mais nous n'avons pas pu vous connecter automatiquement. Veuillez vous connecter avec votre nouveau compte."
     }

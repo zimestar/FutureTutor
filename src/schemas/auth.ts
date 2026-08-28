@@ -48,6 +48,13 @@ export const registerSchema = z
       (value) => (value === null || value === "" ? undefined : value),
       z.string().trim().optional()
     ),
+    // FG-LEGAL1A — a required acceptance checkbox; the browser only ever
+    // sends this field at all when checked, so its mere presence (any
+    // non-empty value) is what "checked" means here, not a specific string.
+    termsAccepted: z.preprocess(
+      (value) => value === null ? undefined : value,
+      z.string().trim().min(1)
+    ),
   })
   .superRefine((data, ctx) => {
     if (data.role !== "STUDENT") return;

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
-import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { LegalDocument } from "@/components/marketing/LegalDocument";
+import { termsContentEn } from "@/content/legal/termsContent.en";
+import { termsContentFr } from "@/content/legal/termsContent.fr";
 
 export async function generateMetadata({
   params,
@@ -20,11 +22,18 @@ export default async function TermsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "comingSoon.terms" });
+  const t = await getTranslations({ locale, namespace: "legal" });
+
+  const content = locale === "fr" ? termsContentFr : termsContentEn;
 
   return (
     <MarketingShell>
-      <ComingSoon title={t("title")} description={t("description")} />
+      <LegalDocument
+        title={t("termsTitle")}
+        effectiveDateLabel={t("effectiveDate")}
+        lastUpdatedLabel={t("lastUpdated")}
+        content={content}
+      />
     </MarketingShell>
   );
 }

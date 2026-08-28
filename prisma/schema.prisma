@@ -68,6 +68,18 @@ model User {
   updatedAt     DateTime  @updatedAt
   deactivatedAt DateTime?
 
+  // FG-LEGAL1A — minimal, auditable Terms-of-Service acceptance record,
+  // captured at signup. Null on any account created before this field
+  // existed (never backfilled — recording a version/timestamp for an
+  // acceptance that was never actually shown would be dishonest, not a
+  // real omission to "fix"). termsAcceptedVersion is a plain date-stamp
+  // string (e.g. "2026-08-30") matching the Terms document's own Effective
+  // Date, not a semantic version — mirrors this codebase's existing
+  // pricingVersion/scoreVersion string-stamp convention.
+  termsAcceptedAt      DateTime?
+  termsAcceptedVersion String?
+  termsAcceptedLocale  String?
+
   accounts                        Account[]
   sessions                        Session[]
   studentProfile                  StudentProfile?

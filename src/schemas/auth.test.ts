@@ -14,6 +14,7 @@ const BASE = {
   lastName: "Example",
   email: "alex@example.com",
   password: "correcthorsebattery",
+  termsAccepted: "true",
 };
 
 describe("registerSchema — role whitelist", () => {
@@ -89,6 +90,31 @@ describe("registerSchema — date of birth (STUDENT only)", () => {
   it("12. accepts STUDENT with a very recent (infant) date of birth — no arbitrary min-age policy is enforced", () => {
     const yesterday = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().slice(0, 10);
     const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: yesterday });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("registerSchema — FG-LEGAL1A Terms acceptance", () => {
+  it("13. rejects when termsAccepted is missing entirely, for every role", () => {
+    const { termsAccepted: _omit, ...withoutTerms } = BASE;
+    for (const role of ["STUDENT", "TUTOR", "PARENT"] as const) {
+      const result = registerSchema.safeParse({ ...withoutTerms, role, dateOfBirth: "2010-05-14" });
+      expect(result.success, `role ${role} should require termsAccepted`).toBe(false);
+    }
+  });
+
+  it("14. rejects when termsAccepted is an empty string (unchecked checkbox represented as empty)", () => {
+    const result = registerSchema.safeParse({ ...BASE, role: "PARENT", termsAccepted: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("15. rejects when termsAccepted is submitted as null (form field genuinely absent)", () => {
+    const result = registerSchema.safeParse({ ...BASE, role: "PARENT", termsAccepted: null });
+    expect(result.success).toBe(false);
+  });
+
+  it("16. accepts when termsAccepted is any non-empty string — the checkbox's mere presence in FormData is what matters", () => {
+    const result = registerSchema.safeParse({ ...BASE, role: "PARENT", termsAccepted: "true" });
     expect(result.success).toBe(true);
   });
 });
