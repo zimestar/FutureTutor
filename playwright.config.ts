@@ -10,12 +10,20 @@ if (target.kind !== requestedTarget) {
 }
 assertExternalSuitesDisabled();
 
+// BETA-IP1-D — widened to the exact 8 breakpoints the in-person location QA
+// mission requires (was 5: 375/768/1024/1180/1440). Kept as the project's
+// standing viewport matrix rather than a one-off QA-local list — every
+// suite run through this config now genuinely renders at all 8 sizes
+// instead of only inferring from CSS at 5 of them.
 const viewports = [
   { name: "chromium-375", width: 375, height: 812 },
+  { name: "chromium-430", width: 430, height: 932 },
   { name: "chromium-768", width: 768, height: 1024 },
   { name: "chromium-1024", width: 1024, height: 768 },
-  { name: "chromium-1180", width: 1180, height: 820 },
+  { name: "chromium-1280", width: 1280, height: 832 },
   { name: "chromium-1440", width: 1440, height: 900 },
+  { name: "chromium-1536", width: 1536, height: 864 },
+  { name: "chromium-1920", width: 1920, height: 1080 },
 ];
 
 export default defineConfig({

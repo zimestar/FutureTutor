@@ -133,6 +133,15 @@ export async function createTutoringRequestAction(
       customerPriceQuoteId: quote.id,
     });
 
+    // BETA-IP1-D live-QA finding — this was the one Quick Match action
+    // missing the revalidatePath call its sibling actions (confirm/cancel,
+    // below) already have. Without it, the page.tsx Server Component parent
+    // never refetches activeRequest after a successful create, so the
+    // client-side form stays on the stale "create" view instead of
+    // switching to the price-review view — the student sees no feedback at
+    // all that their request (with a real quote) was actually created.
+    revalidatePath("/dashboard/quick-match");
+
     return {
       success: true,
       tutoringRequestId: request.id,
