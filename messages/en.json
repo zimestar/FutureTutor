@@ -1482,7 +1482,8 @@
         "description": "We hit an unexpected error matching this request. Please try again."
       },
       "cancelCta": "Cancel request",
-      "cancelling": "Cancelling…"
+      "cancelling": "Cancelling…",
+      "viewBookingCta": "View your booking"
     },
     "mode": {
       "ONLINE": "Online",

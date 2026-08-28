@@ -1482,7 +1482,8 @@
         "description": "Une erreur inattendue est survenue lors du jumelage. Veuillez réessayer."
       },
       "cancelCta": "Annuler la demande",
-      "cancelling": "Annulation…"
+      "cancelling": "Annulation…",
+      "viewBookingCta": "Voir votre réservation"
     },
     "mode": {
       "ONLINE": "En ligne",

@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { cancelTutoringRequestAction } from "@/lib/actions/tutoringRequests";
 
 const REFRESH_INTERVAL_MS = 15000;
@@ -37,6 +38,16 @@ export function QuickMatchStatusView({
         <p role="alert" className="mt-3 rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {cancelState.error}
         </p>
+      )}
+
+      {status === "BOOKED" && (
+        <Link
+          href="/dashboard/bookings"
+          data-testid="view-booking-cta"
+          className="mt-4 inline-flex min-h-11 items-center rounded-md bg-blue px-5 text-sm font-bold text-white hover:bg-blue/90"
+        >
+          {t("status.viewBookingCta")}
+        </Link>
       )}
 
       {status === "MATCHING" && (
