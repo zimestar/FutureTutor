@@ -12,6 +12,16 @@ import { resolveStudentAccountActivationState } from "@/services/familyManagemen
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { listBookableStudentsForActor } from "@/services/learnerSelection";
 import { describeCancellationConsequence } from "@/services/cancellationPolicy";
+import { toExactLocationDto } from "@/services/bookingLocationAccess";
+import { ConfirmedLocationCard } from "@/components/dashboard/InPersonTutoringLocation";
+import { toConfirmedTutoringLocation } from "@/lib/inPersonLocationPresentation";
+
+/** The booking's own Student/Parent always sees the exact location they (or
+ * their authorized guardian) submitted — no privacy gate applies to the
+ * party who provided the data (bookingLocation.ts's getBookingLocationAction
+ * applies this same rule). Shown only while still meaningful — a
+ * cancelled/declined/refunded/rescheduled booking's location is moot. */
+const LOCATION_RELEVANT_STATUSES = new Set(["DRAFT", "PENDING_PAYMENT", "CONFIRMED", "COMPLETED", "NO_SHOW"]);
 
 export default async function StudentBookingsPage({
   params,
@@ -138,6 +148,11 @@ export default async function StudentBookingsPage({
                         )}
                         {booking.status === "PENDING_PAYMENT" && (
                           <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
+                        )}
+                        {booking.mode === "IN_PERSON" && LOCATION_RELEVANT_STATUSES.has(booking.status) && (
+                          <div className="mt-3 max-w-md">
+                            <ConfirmedLocationCard location={toConfirmedTutoringLocation(toExactLocationDto(booking))} />
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">

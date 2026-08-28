@@ -24,10 +24,16 @@ export const createTutoringRequestSchema = z
     city: z.string().min(1).max(120).optional(),
     province: z.string().min(1).max(120).optional(),
     postalCode: z.string().min(1).max(20).optional(),
+    // BETA-IP1-C — optional free-text arrival guidance, same privacy tier
+    // and mode-conditional handling as the address fields above. A 500-char
+    // cap is generous for real human directions ("use the side entrance
+    // and ring the bell") while bounding payload size, matching this
+    // schema's existing declineReason field's own max-length discipline.
+    arrivalInstructions: z.string().max(500).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.tutoringMode === "ONLINE") {
-      if (data.addressLine1 || data.addressLine2 || data.postalCode) {
+      if (data.addressLine1 || data.addressLine2 || data.postalCode || data.arrivalInstructions) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Address fields must be empty for an online request",

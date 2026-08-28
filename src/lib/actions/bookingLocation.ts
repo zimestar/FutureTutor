@@ -44,6 +44,7 @@ export async function getBookingLocationAction(bookingId: string): Promise<Booki
       bookingCity: true,
       bookingProvince: true,
       bookingPostalCode: true,
+      bookingArrivalInstructions: true,
     },
   });
   if (!booking) return { success: false, error: "notFound" };

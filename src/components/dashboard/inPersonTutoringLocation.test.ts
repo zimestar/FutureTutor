@@ -18,9 +18,14 @@ describe("in-person tutoring presentation", () => {
     expect(component).toContain('aria-describedby="location-privacy-note"');
   });
 
-  it("supports saved-location selection and a no-location empty state", () => {
-    expect(component).toContain('name="savedLocationId"');
-    expect(component).toContain('data-testid="no-saved-location"');
+  it("does not offer saved-location selection (no Saved Locations backend exists — BETA-IP1-C §12)", () => {
+    expect(component).not.toContain('name="savedLocationId"');
+    expect(component).not.toContain("SavedTutoringLocationOption");
+    expect(component).not.toContain("LocationSelector");
+  });
+
+  it("collects optional arrival instructions in the same location form", () => {
+    expect(component).toContain('name="arrivalInstructions"');
   });
 
   it("exposes the guardian-managed restriction as a status", () => {

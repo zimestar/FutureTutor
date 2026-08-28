@@ -3,11 +3,11 @@
 import { useTranslations } from "next-intl";
 import { ExternalLink, Home, MapPin, Monitor, ShieldCheck } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Form";
 import { buildDirectionsHref } from "@/lib/inPersonLocationPresentation";
 import type {
   ApproximateTutoringLocation,
   ConfirmedTutoringLocation,
-  SavedTutoringLocationOption,
 } from "@/types/inPersonTutoring";
 
 export type RequestTutoringMode = "ONLINE" | "IN_PERSON";
@@ -36,36 +36,6 @@ export function TutoringModeSelector({ value, onChange }: {
   );
 }
 
-export function LocationSelector({ locations, selectedId, onSelect, onAdd }: {
-  locations: SavedTutoringLocationOption[];
-  selectedId?: string;
-  onSelect: (id: string) => void;
-  onAdd: () => void;
-}) {
-  const t = useTranslations("inPersonTutoring");
-  return (
-    <section aria-labelledby="saved-location-heading" className="rounded-lg border border-neutral-200 bg-off-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 id="saved-location-heading" className="font-bold text-navy">{t("selector.title")}</h3>
-          <p className="mt-1 text-sm text-slate">{t("selector.description")}</p>
-        </div>
-        <button type="button" onClick={onAdd} className="min-h-11 rounded-md border border-blue px-4 text-sm font-bold text-blue hover:bg-blue/5">{t("selector.add")}</button>
-      </div>
-      {locations.length > 0 ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {locations.map((location) => (
-            <label key={location.id} className={`flex cursor-pointer gap-3 rounded-lg border bg-white p-4 ${selectedId === location.id ? "border-blue" : "border-neutral-200"}`}>
-              <input type="radio" name="savedLocationId" value={location.id} checked={selectedId === location.id} onChange={() => onSelect(location.id)} />
-              <span><span className="block font-bold text-navy">{location.label}</span><span className="mt-1 block text-sm text-slate">{location.summary}</span></span>
-            </label>
-          ))}
-        </div>
-      ) : <p className="mt-4 text-sm text-slate" data-testid="no-saved-location">{t("selector.empty")}</p>}
-    </section>
-  );
-}
-
 export function LocationForm() {
   const t = useTranslations("inPersonTutoring");
   return (
@@ -79,6 +49,7 @@ export function LocationForm() {
         <div><label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.province")}</label><Select id="province" name="province" required defaultValue=""><option value="" disabled>{t("form.provincePlaceholder")}</option>{["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"].map((province) => <option key={province} value={province}>{province}</option>)}</Select></div>
       </div>
       <div><label htmlFor="postalCode" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.postalCode")}</label><Input id="postalCode" name="postalCode" required autoComplete="postal-code" inputMode="text" /></div>
+      <div><label htmlFor="arrivalInstructions" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.arrivalInstructions")}</label><Textarea id="arrivalInstructions" name="arrivalInstructions" rows={3} maxLength={500} placeholder={t("form.arrivalInstructionsPlaceholder")} /></div>
     </fieldset>
   );
 }

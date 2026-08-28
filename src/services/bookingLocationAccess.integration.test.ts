@@ -12,6 +12,8 @@ import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
 // Mirrors videoJoin.integration.test.ts's DB-target-redirection technique.
 
 let resolveExactLocationAccess: typeof import("./bookingLocationAccess").resolveExactLocationAccess;
+let toExactLocationDto: typeof import("./bookingLocationAccess").toExactLocationDto;
+let toApproximateLocationDto: typeof import("./bookingLocationAccess").toApproximateLocationDto;
 let canActForStudent: typeof import("./studentAuthorization").canActForStudent;
 
 let db: PrismaClient;
@@ -32,7 +34,7 @@ beforeAll(async () => {
 
   process.env.DATABASE_URL = target.connectionString;
 
-  ({ resolveExactLocationAccess } = await import("./bookingLocationAccess"));
+  ({ resolveExactLocationAccess, toExactLocationDto, toApproximateLocationDto } = await import("./bookingLocationAccess"));
   ({ canActForStudent } = await import("./studentAuthorization"));
 
   const [{ current_database: ambientDatabaseName }] = await db.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`;
@@ -127,7 +129,7 @@ async function createGuardianManagedFamily(relationshipStatus: "ACTIVE" | "REVOK
   return { parentUser, parentProfile, studentProfile };
 }
 
-async function createInPersonBooking(overrides: { tutorProfileId: string; studentProfileId: string; status?: "DRAFT" | "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED"; mode?: "IN_PERSON" | "ONLINE" }) {
+async function createInPersonBooking(overrides: { tutorProfileId: string; studentProfileId: string; status?: "DRAFT" | "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "NO_SHOW" | "CANCELLED"; mode?: "IN_PERSON" | "ONLINE"; arrivalInstructions?: string | null }) {
   const startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const booking = await db.booking.create({
     data: {
@@ -146,6 +148,7 @@ async function createInPersonBooking(overrides: { tutorProfileId: string; studen
       bookingCity: "Toronto",
       bookingProvince: "ON",
       bookingPostalCode: "M5V2T6",
+      bookingArrivalInstructions: overrides.arrivalInstructions === undefined ? "Use the side entrance and ring the bell." : overrides.arrivalInstructions,
     },
   });
   createdBookingIds.push(booking.id);
@@ -184,6 +187,31 @@ describe("resolveExactLocationAccess (IO wrapper — real TutorProfile lookup)",
     const booking = await createInPersonBooking({ tutorProfileId: tutor.tutorProfile.id, studentProfileId: student.studentProfile.id, status: "PENDING_PAYMENT" });
     const result = await resolveExactLocationAccess(db, tutor.user.id, booking);
     expect(result).toEqual({ granted: false, reason: "BOOKING_NOT_CONFIRMED" });
+  });
+
+  it("IP-C-SNAP-1: a real persisted arrival-instructions value round-trips through the exact DTO and is excluded from the approximate DTO", async () => {
+    const tutor = await createTutor();
+    const student = await createSelfManagedStudent();
+    const booking = await createInPersonBooking({
+      tutorProfileId: tutor.tutorProfile.id,
+      studentProfileId: student.studentProfile.id,
+      arrivalInstructions: "Park in visitor spot 4, buzz unit 12B.",
+    });
+    const persisted = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(toExactLocationDto(persisted).arrivalInstructions).toBe("Park in visitor spot 4, buzz unit 12B.");
+    expect(toApproximateLocationDto(persisted)).not.toHaveProperty("arrivalInstructions");
+  });
+
+  it("a booking created with null arrival instructions persists and reads back as null, not a placeholder string", async () => {
+    const tutor = await createTutor();
+    const student = await createSelfManagedStudent();
+    const booking = await createInPersonBooking({
+      tutorProfileId: tutor.tutorProfile.id,
+      studentProfileId: student.studentProfile.id,
+      arrivalInstructions: null,
+    });
+    const persisted = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(toExactLocationDto(persisted).arrivalInstructions).toBeNull();
   });
 });
 

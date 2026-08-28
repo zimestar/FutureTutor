@@ -14,6 +14,15 @@ import { Surface } from "@/components/ui/Surface";
 import { Button } from "@/components/ui/Button";
 import { TutorEarningStatus } from "@/components/dashboard/TutorEarningStatus";
 import { presentTutorEarning } from "@/lib/tutorEarningPresentation";
+import { computeExactLocationAccess, toApproximateLocationDto, toExactLocationDto } from "@/services/bookingLocationAccess";
+import { ApproximateLocationSummary, ConfirmedLocationCard } from "@/components/dashboard/InPersonTutoringLocation";
+import { toApproximateTutoringLocation, toConfirmedTutoringLocation } from "@/lib/inPersonLocationPresentation";
+
+/** Statuses for which an in-person booking's location is still meaningful
+ * to show the tutor — a cancelled/declined/refunded/rescheduled booking's
+ * location is moot, so it's simply not rendered rather than shown with
+ * misleading "waiting for confirmation" copy. */
+const LOCATION_RELEVANT_STATUSES = new Set(["DRAFT", "PENDING_PAYMENT", "CONFIRMED", "COMPLETED", "NO_SHOW"]);
 
 export default async function TutorBookingsPage({
   params,
@@ -118,6 +127,19 @@ export default async function TutorBookingsPage({
                         {booking.status === "PENDING_PAYMENT" && (
                           <p className="mt-1 text-xs font-semibold text-slate">{t("paymentProcessing")}</p>
                         )}
+                        {booking.mode === "IN_PERSON" && LOCATION_RELEVANT_STATUSES.has(booking.status) && (() => {
+                          const access = computeExactLocationAccess({ bookingMode: booking.mode, bookingStatus: booking.status, isBookingTutor: true });
+                          return access.granted ? (
+                            <div className="mt-3 max-w-md">
+                              <ConfirmedLocationCard location={toConfirmedTutoringLocation(toExactLocationDto(booking))} />
+                            </div>
+                          ) : (
+                            <ApproximateLocationSummary
+                              location={toApproximateTutoringLocation(toApproximateLocationDto(booking))}
+                              waitingForConfirmation
+                            />
+                          );
+                        })()}
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         <Badge variant={booking.status === "CONFIRMED" ? "mint" : "outline"}>

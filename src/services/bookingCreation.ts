@@ -72,6 +72,9 @@ export interface BookingLocationSnapshot {
   city?: string | null;
   province?: string | null;
   postalCode?: string | null;
+  // BETA-IP1-C — same snapshot-at-claim-time principle as the address
+  // fields above.
+  arrivalInstructions?: string | null;
 }
 
 export interface ReserveBookingPendingPaymentInput {
@@ -242,6 +245,7 @@ export async function reserveBookingPendingPayment(
       bookingCity: input.location?.city ?? null,
       bookingProvince: input.location?.province ?? null,
       bookingPostalCode: input.location?.postalCode ?? null,
+      bookingArrivalInstructions: input.location?.arrivalInstructions ?? null,
     },
   });
 

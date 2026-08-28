@@ -90,6 +90,10 @@ export interface ExactLocationDto {
   province: string | null;
   postalCode: string | null;
   country: "CA";
+  /** BETA-IP1-C — same privacy tier as the address fields: only ever
+   * present on the exact (post-authorization) DTO, never on
+   * ApproximateLocationDto. */
+  arrivalInstructions: string | null;
 }
 
 /** Source shape both projections read from — the Booking row's own
@@ -102,6 +106,7 @@ export interface BookingLocationSnapshotSource {
   bookingCity: string | null;
   bookingProvince: string | null;
   bookingPostalCode: string | null;
+  bookingArrivalInstructions: string | null;
 }
 
 export function toApproximateLocationDto(snapshot: BookingLocationSnapshotSource): ApproximateLocationDto {
@@ -124,5 +129,6 @@ export function toExactLocationDto(snapshot: BookingLocationSnapshotSource): Exa
     province: snapshot.bookingProvince,
     postalCode: snapshot.bookingPostalCode,
     country: "CA",
+    arrivalInstructions: snapshot.bookingArrivalInstructions,
   };
 }

@@ -77,6 +77,7 @@ export async function createTutoringRequestAction(
     city: formData.get("city") ? String(formData.get("city")) : undefined,
     province: formData.get("province") ? String(formData.get("province")) : undefined,
     postalCode: formData.get("postalCode") ? String(formData.get("postalCode")) : undefined,
+    arrivalInstructions: formData.get("arrivalInstructions") ? String(formData.get("arrivalInstructions")) : undefined,
   });
   if (!parsed.success) return { success: false, error: t("invalidInput") };
   const data = parsed.data;
@@ -126,6 +127,7 @@ export async function createTutoringRequestAction(
       city: data.city ?? null,
       province: data.province ?? null,
       postalCode: data.postalCode ?? null,
+      arrivalInstructions: data.arrivalInstructions ?? null,
       notes: data.notes ?? null,
       currency: quote.currency,
       customerPriceQuoteId: quote.id,

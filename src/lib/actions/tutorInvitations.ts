@@ -165,6 +165,7 @@ export async function acceptTutorInvitationAction(
                   city: request.city,
                   province: request.province,
                   postalCode: request.postalCode,
+                  arrivalInstructions: request.arrivalInstructions,
                 }
               : null,
         });

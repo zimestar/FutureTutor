@@ -1396,8 +1396,7 @@
   },
   "inPersonTutoring": {
     "mode": { "legend": "Mode de tutorat", "ONLINE": "En ligne", "IN_PERSON": "En présentiel" },
-    "selector": { "title": "Choisir le lieu du tutorat", "description": "Sélectionnez un lieu enregistré ou ajoutez-en un pour cette demande.", "add": "Ajouter un lieu", "empty": "Aucun lieu de tutorat enregistré pour le moment." },
-    "form": { "title": "Lieu du tutorat", "privacy": "Votre adresse exacte est uniquement communiquée au tuteur confirmé.", "addressLine1": "Adresse — ligne 1", "addressLine2": "Adresse — ligne 2 / unité (facultatif)", "city": "Ville", "province": "Province ou territoire", "provincePlaceholder": "Choisir une province ou un territoire", "postalCode": "Code postal" },
+    "form": { "title": "Lieu du tutorat", "privacy": "Votre adresse exacte est uniquement communiquée au tuteur confirmé.", "addressLine1": "Adresse — ligne 1", "addressLine2": "Adresse — ligne 2 / unité (facultatif)", "city": "Ville", "province": "Province ou territoire", "provincePlaceholder": "Choisir une province ou un territoire", "postalCode": "Code postal", "arrivalInstructions": "Instructions d’arrivée (facultatif)", "arrivalInstructionsPlaceholder": "ex. : Utilisez l’entrée latérale et sonnez." },
     "guardian": { "title": "Vos lieux de tutorat sont gérés par votre parent ou tuteur légal", "description": "Demandez-lui de choisir ou de mettre à jour le lieu d’une demande en présentiel." },
     "approximate": { "title": "Lieu approximatif du tutorat", "unavailable": "Secteur approximatif non disponible", "postalArea": "Secteur {prefix}", "distance": "À environ {distance, number, ::0.0} km", "privacy": "L’adresse exacte est communiquée après confirmation de la réservation.", "waiting": "En attente de confirmation. L’adresse exacte demeure confidentielle." },
     "confirmed": { "title": "Lieu du tutorat", "arrivalInstructions": "Instructions d’arrivée", "directions": "Obtenir l’itinéraire" }

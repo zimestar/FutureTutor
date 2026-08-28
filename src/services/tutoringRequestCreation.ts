@@ -109,6 +109,7 @@ export interface CreateTutoringRequestForLearnerInput {
   city?: string | null;
   province?: string | null;
   postalCode?: string | null;
+  arrivalInstructions?: string | null;
   notes?: string | null;
   currency: string;
   customerPriceQuoteId: string;
@@ -183,6 +184,7 @@ export async function createTutoringRequestForLearner(
       city: input.city ?? null,
       province: input.province ?? null,
       postalCode: input.postalCode ?? null,
+      arrivalInstructions: input.arrivalInstructions ?? null,
       notes: input.notes ?? null,
       currency: input.currency,
       customerPriceQuoteId: input.customerPriceQuoteId,

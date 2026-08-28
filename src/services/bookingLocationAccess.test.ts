@@ -21,6 +21,7 @@ const SNAPSHOT: BookingLocationSnapshotSource = {
   bookingCity: "Toronto",
   bookingProvince: "ON",
   bookingPostalCode: "M5V2T6",
+  bookingArrivalInstructions: "Use the side entrance and ring the bell.",
 };
 
 describe("computeExactLocationAccess", () => {
@@ -89,7 +90,7 @@ describe("computeExactLocationAccess", () => {
 });
 
 describe("location DTO projections", () => {
-  it("IP-SEC-11/12: the approximate DTO never carries street address, unit, or full postal code", () => {
+  it("IP-SEC-11/12/IP-C-SEC-12: the approximate DTO never carries street address, unit, full postal code, or arrival instructions", () => {
     const dto = toApproximateLocationDto(SNAPSHOT);
     expect(dto).toEqual({
       mode: "IN_PERSON",
@@ -101,6 +102,7 @@ describe("location DTO projections", () => {
     expect(dto).not.toHaveProperty("addressLine1");
     expect(dto).not.toHaveProperty("addressLine2");
     expect(dto).not.toHaveProperty("postalCode");
+    expect(dto).not.toHaveProperty("arrivalInstructions");
   });
 
   it("approximate DTO handles a null postal code without throwing", () => {
@@ -108,7 +110,7 @@ describe("location DTO projections", () => {
     expect(dto.postalCodePrefix).toBeNull();
   });
 
-  it("the exact DTO carries the full snapshot", () => {
+  it("IP-C-SEC-3: the exact DTO carries the full snapshot including arrival instructions", () => {
     const dto = toExactLocationDto(SNAPSHOT);
     expect(dto).toEqual({
       mode: "IN_PERSON",
@@ -119,6 +121,12 @@ describe("location DTO projections", () => {
       province: "ON",
       postalCode: "M5V2T6",
       country: "CA",
+      arrivalInstructions: "Use the side entrance and ring the bell.",
     });
+  });
+
+  it("exact DTO handles null arrival instructions (optional field) without throwing", () => {
+    const dto = toExactLocationDto({ ...SNAPSHOT, bookingArrivalInstructions: null });
+    expect(dto.arrivalInstructions).toBeNull();
   });
 });

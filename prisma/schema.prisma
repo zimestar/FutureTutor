@@ -971,6 +971,11 @@ model Booking {
   bookingCity         String?
   bookingProvince     String?
   bookingPostalCode   String?
+  // BETA-IP1-C — same snapshot principle as the five fields above, for the
+  // TutoringRequest.arrivalInstructions this Booking was claimed against.
+  // Immutable once set; a later edit to a (currently nonexistent) saved
+  // location can never retroactively change an already-snapshotted Booking.
+  bookingArrivalInstructions String?
 
   studentProfile     StudentProfile         @relation(fields: [studentProfileId], references: [id])
   tutorProfile       TutorProfile           @relation(fields: [tutorProfileId], references: [id])
@@ -1433,6 +1438,13 @@ model TutoringRequest {
   city             String?
   province         String?
   postalCode       String?
+  // BETA-IP1-C — optional free-text arrival guidance (e.g. "use the side
+  // entrance", "ring apartment 302"). Same privacy tier as the address
+  // fields above: private, never copied onto TutorInvitation, only ever
+  // disclosed to the winning Tutor via the Booking snapshot below once the
+  // Booking reaches an access-granting state (src/services/
+  // bookingLocationAccess.ts). Always null for ONLINE requests.
+  arrivalInstructions String?
   notes            String?
   currency         String       @default("CAD")
 

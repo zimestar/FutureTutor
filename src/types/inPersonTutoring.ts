@@ -1,9 +1,12 @@
 /**
- * Frontend-only integration shapes for BETA-IP1-B.
- *
- * These are deliberately presentation DTOs, not canonical persistence
- * models. BETA-IP1-C must align them with the authoritative backend contract
- * before exact-location data is wired into a page.
+ * Presentation shapes for the in-person location UI components
+ * (InPersonTutoringLocation.tsx). BETA-IP1-C reconciled these against the
+ * authoritative backend contract in src/services/bookingLocationAccess.ts
+ * (ApproximateLocationDto / ExactLocationDto) — these types stay UI-only
+ * adapters (adding presentation-only fields like areaLabel/distanceKm that
+ * the backend has no concept of) rather than a competing source of truth.
+ * No geocoding provider is configured, so distanceKm is always omitted by
+ * every real caller today; the field stays optional for when one exists.
  */
 export interface ApproximateTutoringLocation {
   areaLabel?: string | null;
@@ -21,10 +24,4 @@ export interface ConfirmedTutoringLocation {
   province: string;
   postalCode: string;
   arrivalInstructions?: string | null;
-}
-
-export interface SavedTutoringLocationOption {
-  id: string;
-  label: string;
-  summary: string;
 }
