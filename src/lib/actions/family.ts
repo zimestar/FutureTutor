@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { getTranslations, getLocale } from "next-intl/server";
 import { auth, signIn } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/appUrl";
+import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 import {
   createChildSchema,
   inviteGuardianSchema,
@@ -264,6 +266,19 @@ export async function claimWithNewAccountAction(
   });
   if (!parsed.success) return { error: t("invalidInput") };
 
+  // BETA-OPS1 — IP-scoped throttle against automated token guessing;
+  // deliberately collapsed into the same generic "invitationInvalid"
+  // response as any other rejection here, so a rate-limited attempt is
+  // indistinguishable from a wrong/unknown token.
+  const rateLimit = await checkActionRateLimit({
+    action: "invitationClaim",
+    identifier: null,
+    ip: getClientIp(await headers()),
+    identifierLimit: RATE_LIMITS.invitationClaimByIp,
+    ipLimit: RATE_LIMITS.invitationClaimByIp,
+  });
+  if (!rateLimit.allowed) return { error: t("invitationInvalid") };
+
   const tokenHash = hashInvitationToken(parsed.data.token);
   const invitation = await db.familyInvitation.findUnique({ where: { tokenHash } });
   if (!invitation || invitation.type !== "GUARDIAN_LINK") return { error: t("invitationInvalid") };
@@ -339,6 +354,16 @@ export async function claimStudentLoginWithNewAccountAction(
     password: formData.get("password"),
   });
   if (!parsed.success) return { error: t("invalidInput") };
+
+  // BETA-OPS1 — same IP-scoped throttle as claimWithNewAccountAction.
+  const rateLimit = await checkActionRateLimit({
+    action: "invitationClaim",
+    identifier: null,
+    ip: getClientIp(await headers()),
+    identifierLimit: RATE_LIMITS.invitationClaimByIp,
+    ipLimit: RATE_LIMITS.invitationClaimByIp,
+  });
+  if (!rateLimit.allowed) return { error: t("invitationInvalid") };
 
   const tokenHash = hashInvitationToken(parsed.data.token);
   const invitation = await db.familyInvitation.findUnique({ where: { tokenHash } });

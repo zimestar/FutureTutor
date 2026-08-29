@@ -14,10 +14,29 @@ const mocks = vi.hoisted(() => {
     getAppBaseUrl: vi.fn(),
     resolveSendPasswordResetEmail: vi.fn(),
     consoleDevSendPasswordResetEmail: vi.fn(),
+    checkActionRateLimit: vi.fn(),
     InvalidOrExpiredResetTokenError,
     ResetPasswordPolicyError,
   };
 });
+
+// BETA-OPS1 — headers() requires a real Next.js request scope, which these
+// plain-function unit tests don't have; mocked here (not exercised for real
+// until an actual request comes in) so the action-layer tests below can
+// keep asserting the thin wrapper's own responsibilities in isolation, same
+// reasoning as every other mock in this file. checkActionRateLimit defaults
+// to "always allowed" so every pre-existing test's behavior is unchanged;
+// see the "BETA-OPS1 rate limiting" describe blocks below for the
+// rate-limited branch.
+vi.mock("next/headers", () => ({ headers: vi.fn().mockResolvedValue(new Headers()) }));
+vi.mock("@/lib/rateLimit", () => ({
+  checkActionRateLimit: mocks.checkActionRateLimit,
+  getClientIp: vi.fn().mockReturnValue(null),
+  RATE_LIMITS: {
+    loginByEmail: {}, loginByIp: {}, registerByIp: {}, forgotPasswordByEmail: {},
+    forgotPasswordByIp: {}, resetPasswordByIp: {}, invitationClaimByIp: {}, adminSetupByIp: {},
+  },
+}));
 
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn().mockResolvedValue("en"),
@@ -76,6 +95,7 @@ describe("registerAction — Parent signup hardening", () => {
     mocks.hash.mockResolvedValue("test-hash");
     mocks.createUserForSignup.mockResolvedValue({ id: "parent-user" });
     mocks.signIn.mockResolvedValue("http://localhost:3100/en/signup");
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
   });
 
   it("accepts a real Parent FormData payload where dateOfBirth is absent", async () => {
@@ -124,6 +144,15 @@ describe("registerAction — Parent signup hardening", () => {
     expect(result).toEqual({ error: "accountCreatedSignInFailed", accountCreated: true });
     expect(mocks.createUserForSignup).toHaveBeenCalledTimes(1);
   });
+
+  it("BETA-OPS1: returns a rate-limited outcome and never creates an account when the IP bucket is exceeded", async () => {
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 300 });
+
+    const result = await registerAction(undefined, parentForm());
+
+    expect(result).toEqual({ error: "tooManyAttempts" });
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
 });
 
 describe("signInResultHasError", () => {
@@ -149,6 +178,7 @@ describe("forgotPasswordAction", () => {
     mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
     mocks.requestPasswordReset.mockResolvedValue(undefined);
     mocks.resolveSendPasswordResetEmail.mockReturnValue(resolvedSendEmail);
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
   });
 
   function form(email: string) {
@@ -199,11 +229,19 @@ describe("forgotPasswordAction", () => {
     expect(result).toEqual({ submitted: true });
     expect(mocks.requestPasswordReset).not.toHaveBeenCalled();
   });
+
+  it("BETA-OPS1: returns the SAME generic outcome when rate-limited, and never calls the service (no enumeration signal)", async () => {
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 300 });
+    const result = await forgotPasswordAction(undefined, form("someone@example.com"));
+    expect(result).toEqual({ submitted: true });
+    expect(mocks.requestPasswordReset).not.toHaveBeenCalled();
+  });
 });
 
 describe("resetPasswordAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
   });
 
   function form(token: string, password: string) {
@@ -247,5 +285,12 @@ describe("resetPasswordAction", () => {
     mocks.resetPassword.mockRejectedValue(new Error("unexpected db failure"));
     const result = await resetPasswordAction(undefined, form("a-raw-token-value", "ValidPassword123!"));
     expect(result).toEqual({ error: "reset_failed" });
+  });
+
+  it("BETA-OPS1: returns reset_failed and never calls the service when the IP bucket is exceeded", async () => {
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 300 });
+    const result = await resetPasswordAction(undefined, form("a-raw-token-value", "ValidPassword123!"));
+    expect(result).toEqual({ error: "reset_failed" });
+    expect(mocks.resetPassword).not.toHaveBeenCalled();
   });
 });

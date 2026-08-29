@@ -44,7 +44,9 @@ enum AdminPermission {
   ADMIN_TUTORS_APPROVE
   ADMIN_TUTORS_SUSPEND
   ADMIN_STUDENTS_READ
+  ADMIN_STUDENTS_SUSPEND
   ADMIN_GUARDIANS_READ
+  ADMIN_GUARDIANS_SUSPEND
   ADMIN_BOOKINGS_READ
   ADMIN_SESSIONS_READ
   ADMIN_QUICKMATCH_READ
@@ -2000,4 +2002,31 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Operational security (BETA-OPS1). Postgres-backed fixed-window rate
+// limiting — deliberately not Redis/an external vendor: the existing
+// Supabase/Postgres infrastructure already supports an atomic upsert+
+// increment cleanly, and this is the only rate-limiting mechanism in the
+// app, so a new piece of infrastructure isn't justified. `key` encodes
+// scope+identifier+action (e.g. "login:email:foo@example.com" or
+// "login:ip:1.2.3.4"), `windowStart` is the current fixed window's start
+// instant. One row per (key, windowStart) accumulates a count via an
+// atomic `INSERT ... ON CONFLICT DO UPDATE SET count = count + 1`
+// (raw SQL, since Prisma's upsert isn't atomic under concurrent writers).
+// This design is correct under horizontal scaling (Postgres is the single
+// source of truth, not per-instance memory) — see the BETA-OPS1 report for
+// the fuller rationale.
+// ---------------------------------------------------------------------------
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([key, windowStart])
+  @@index([windowStart])
 }

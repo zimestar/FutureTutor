@@ -204,6 +204,54 @@ describe("computeStudentCapabilities — LEGACY_UNKNOWN (test 21: fails closed)"
   });
 });
 
+describe("computeStudentCapabilities — BETA-OPS1 suspended actor", () => {
+  it("22a. suspended SELF_MANAGED student loses financial authority", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: ACTOR, managementMode: "SELF_MANAGED", actorDeactivatedAt: new Date() })
+    );
+    expect(result.canInitiatePaidBooking).toBe(false);
+    expect(result.canPayForStudent).toBe(false);
+  });
+
+  it("22b. suspended SELF_MANAGED student loses account-management authority", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: ACTOR, managementMode: "SELF_MANAGED", actorDeactivatedAt: new Date() })
+    );
+    expect(result.canManageStudentAccount).toBe(false);
+  });
+
+  it("22c. suspended SELF_MANAGED student KEEPS pure self-view (canActForStudent) — suspension blocks new commitments, not historical access", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: ACTOR, managementMode: "SELF_MANAGED", actorDeactivatedAt: new Date() })
+    );
+    expect(result.canActForStudent).toBe(true);
+  });
+
+  it("22d. suspended guardian loses financial authority over a GUARDIAN_MANAGED child", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: null, managementMode: "GUARDIAN_MANAGED", guardianRelationshipStatus: "ACTIVE", actorDeactivatedAt: new Date() })
+    );
+    expect(result.canInitiatePaidBooking).toBe(false);
+    expect(result.canPayForStudent).toBe(false);
+    expect(result.canManageStudentAccount).toBe(false);
+  });
+
+  it("22e. a suspended guardian does NOT free the child to self-manage — hasActiveGuardianAuthority and canActForStudent are unaffected by suspension", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: null, managementMode: "GUARDIAN_MANAGED", guardianRelationshipStatus: "ACTIVE", actorDeactivatedAt: new Date() })
+    );
+    expect(result.hasActiveGuardianAuthority).toBe(true);
+    expect(result.canActForStudent).toBe(true);
+  });
+
+  it("22f. an active (non-suspended) actor is unaffected — actorDeactivatedAt: null behaves identically to omitting it", () => {
+    const result = computeStudentCapabilities(
+      facts({ studentUserId: ACTOR, managementMode: "SELF_MANAGED", actorDeactivatedAt: null })
+    );
+    expect(result.canInitiatePaidBooking).toBe(true);
+  });
+});
+
 describe("computeStudentCapabilities — unknown/missing student (fail closed)", () => {
   it("denies every capability when the StudentProfile does not exist", () => {
     const result = computeStudentCapabilities(

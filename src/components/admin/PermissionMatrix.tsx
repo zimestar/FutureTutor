@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 import { ADMIN_PERMISSIONS } from "@/services/adminPermissions.constants";
 const groups = {
-  dashboard: ["ADMIN_DASHBOARD_VIEW"], users: ["ADMIN_USERS_READ","ADMIN_USERS_WRITE"], tutors: ["ADMIN_TUTORS_READ","ADMIN_TUTORS_REVIEW","ADMIN_TUTORS_APPROVE","ADMIN_TUTORS_SUSPEND"], students: ["ADMIN_STUDENTS_READ"], guardians: ["ADMIN_GUARDIANS_READ"], bookings: ["ADMIN_BOOKINGS_READ"], sessions: ["ADMIN_SESSIONS_READ"], quickmatch: ["ADMIN_QUICKMATCH_READ","ADMIN_QUICKMATCH_MANAGE"], pricing: ["ADMIN_PRICING_READ","ADMIN_PRICING_MANAGE"], payments: ["ADMIN_PAYMENTS_READ"], admins: ["ADMIN_ADMINS_VIEW","ADMIN_ADMINS_MANAGE"],
+  dashboard: ["ADMIN_DASHBOARD_VIEW"], users: ["ADMIN_USERS_READ","ADMIN_USERS_WRITE"], tutors: ["ADMIN_TUTORS_READ","ADMIN_TUTORS_REVIEW","ADMIN_TUTORS_APPROVE","ADMIN_TUTORS_SUSPEND"], students: ["ADMIN_STUDENTS_READ","ADMIN_STUDENTS_SUSPEND"], guardians: ["ADMIN_GUARDIANS_READ","ADMIN_GUARDIANS_SUSPEND"], bookings: ["ADMIN_BOOKINGS_READ"], sessions: ["ADMIN_SESSIONS_READ"], quickmatch: ["ADMIN_QUICKMATCH_READ","ADMIN_QUICKMATCH_MANAGE"], pricing: ["ADMIN_PRICING_READ","ADMIN_PRICING_MANAGE"], payments: ["ADMIN_PAYMENTS_READ"], admins: ["ADMIN_ADMINS_VIEW","ADMIN_ADMINS_MANAGE"],
 } as const;
 export function PermissionMatrix({ selected=[], disabled=false }: { selected?: string[]; disabled?: boolean }) {
   const t=useTranslations("adminManagement.permissions");

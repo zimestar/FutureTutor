@@ -1,11 +1,13 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
 import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { signIn, signOut } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { getAppBaseUrl } from "@/lib/appUrl";
+import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 import { homePathForRole } from "@/lib/authorization";
 import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/schemas/auth";
 import { createUserForSignup } from "@/services/signup";
@@ -55,6 +57,18 @@ export async function registerAction(
     }
     return { error: t("invalidInput"), fieldErrors };
   }
+
+  // BETA-OPS1 — IP-scoped only: there's no existing account yet to key an
+  // identifier-based bucket on.
+  const ip = getClientIp(await headers());
+  const rateLimit = await checkActionRateLimit({
+    action: "register",
+    identifier: null,
+    ip,
+    identifierLimit: RATE_LIMITS.registerByIp,
+    ipLimit: RATE_LIMITS.registerByIp,
+  });
+  if (!rateLimit.allowed) return { error: t("tooManyAttempts") };
 
   const { firstName, lastName, email, password, role, dateOfBirth } = parsed.data;
   const name = `${firstName} ${lastName}`;
@@ -125,6 +139,21 @@ export async function loginAction(
     return { error: t("invalidInput") };
   }
 
+  // BETA-OPS1 — UX-friendly check on the primary login path (authorize()
+  // in src/lib/auth.ts carries the same limit as a backstop for any
+  // request that reaches the NextAuth callback route directly).
+  const ip = getClientIp(await headers());
+  const rateLimit = await checkActionRateLimit({
+    action: "login",
+    identifier: parsed.data.email,
+    ip,
+    identifierLimit: RATE_LIMITS.loginByEmail,
+    ipLimit: RATE_LIMITS.loginByIp,
+  });
+  if (!rateLimit.allowed) {
+    return { error: t("tooManyAttempts") };
+  }
+
   const result = await signIn("credentials", {
     ...parsed.data,
     redirect: false,
@@ -171,7 +200,23 @@ export async function forgotPasswordAction(
   const locale = await getLocale();
   const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
 
-  if (parsed.success) {
+  // BETA-OPS1 — rate-limited silently: the return value below is
+  // deliberately identical whether this request is rate-limited, the email
+  // doesn't exist, or a real reset email was sent — §7's no-enumeration
+  // contract is preserved exactly (a rate-limited response is
+  // indistinguishable from every other case).
+  const ip = getClientIp(await headers());
+  const rateLimit = parsed.success
+    ? await checkActionRateLimit({
+        action: "forgotPassword",
+        identifier: parsed.data.email,
+        ip,
+        identifierLimit: RATE_LIMITS.forgotPasswordByEmail,
+        ipLimit: RATE_LIMITS.forgotPasswordByIp,
+      })
+    : { allowed: true, retryAfterSeconds: 0 };
+
+  if (parsed.success && rateLimit.allowed) {
     try {
       const appBaseUrl = await getAppBaseUrl();
       // L1-01B — resolveSendPasswordResetEmail() picks the Resend-backed
@@ -219,6 +264,22 @@ export async function resetPasswordAction(
 
   if (!parsed.success) {
     return { error: "invalid_request" };
+  }
+
+  // BETA-OPS1 — IP-scoped only: the reset token itself is a cryptographically
+  // random, single-use, time-limited value (see passwordReset.ts), so there
+  // is no meaningful account identifier to key an identifier-scoped bucket
+  // on here; this guards against automated scanning across many tokens.
+  const ip = getClientIp(await headers());
+  const rateLimit = await checkActionRateLimit({
+    action: "resetPassword",
+    identifier: null,
+    ip,
+    identifierLimit: RATE_LIMITS.resetPasswordByIp,
+    ipLimit: RATE_LIMITS.resetPasswordByIp,
+  });
+  if (!rateLimit.allowed) {
+    return { error: "reset_failed" };
   }
 
   try {

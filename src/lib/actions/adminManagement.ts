@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { AdminPermission, AdminRolePreset } from "@/generated/prisma/enums";
@@ -7,6 +8,7 @@ import { ADMIN_PERMISSIONS, replaceAdminPermissions } from "@/services/adminPerm
 import { acceptAdminInvitation, createAdminInvitation, resendAdminInvitation } from "@/services/adminInvitation";
 import { sendAdminInvitationEmail } from "@/lib/email/adminInvitationEmail";
 import { getAppBaseUrl } from "@/lib/appUrl";
+import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 
 export type AdminManagementState = { success: true; email: string; error?: never } | { success?: never; email?: never; error: string } | undefined;
 const strings = (form: FormData, key: string) => typeof form.get(key) === "string" ? String(form.get(key)).trim() : "";
@@ -23,6 +25,9 @@ export async function inviteAdminAction(_state: AdminManagementState, form: Form
 
 export async function completeAdminSetupAction(_state: AdminManagementState, form: FormData): Promise<AdminManagementState> {
   const token=strings(form,"token"), password=strings(form,"password"), accepted=form.get("terms")==="on"; if(!accepted||password.length<8||password.length>72)return{error:"invalid"};
+  // BETA-OPS1 — IP-scoped throttle against automated setup-token guessing.
+  const rateLimit = await checkActionRateLimit({ action: "adminSetup", identifier: null, ip: getClientIp(await headers()), identifierLimit: RATE_LIMITS.adminSetupByIp, ipLimit: RATE_LIMITS.adminSetupByIp });
+  if (!rateLimit.allowed) return { error: "invalidToken" };
   try { const result=await acceptAdminInvitation(db,token,password); return{success:true,email:result.email}; } catch{return{error:"invalidToken"};}
 }
 

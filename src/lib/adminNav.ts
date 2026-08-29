@@ -8,6 +8,7 @@ const items: ReadonlyArray<{ key: string; href: string; group: "operationsGroup"
   { key: "overview", href: "/admin", group: "operationsGroup", permission: "ADMIN_DASHBOARD_VIEW" },
   { key: "tutors", href: "/admin/tutors", group: "operationsGroup", permission: "ADMIN_TUTORS_READ" },
   { key: "students", href: "/admin/students", group: "operationsGroup", permission: "ADMIN_STUDENTS_READ" },
+  { key: "parents", href: "/admin/parents", group: "operationsGroup", permission: "ADMIN_GUARDIANS_READ" },
   { key: "bookings", href: "/admin/bookings", group: "operationsGroup", permission: "ADMIN_BOOKINGS_READ" },
   { key: "sessions", href: "/admin/sessions", group: "operationsGroup", permission: "ADMIN_SESSIONS_READ" },
   { key: "users", href: "/admin/users", group: "operationsGroup", permission: "ADMIN_USERS_READ" },

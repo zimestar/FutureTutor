@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { loginSchema } from "@/schemas/auth";
+import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Credentials provider requires JWT sessions — it intentionally isn't
@@ -16,9 +17,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(rawCredentials) {
+      async authorize(rawCredentials, request) {
         const parsed = loginSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
+
+        // BETA-OPS1 — backstop rate-limit gate. This is the single choke
+        // point every credential check funnels through (both loginAction's
+        // own signIn() call, which has its own earlier, UX-friendly check,
+        // and any direct request to the NextAuth callback route) — see
+        // src/lib/rateLimit.ts. Returns null (identical to a wrong
+        // password) rather than a distinguishable error, since a raw
+        // bypass of loginAction doesn't get the nicer localized message
+        // either way.
+        const ip = getClientIp(request.headers);
+        const rateLimit = await checkActionRateLimit({
+          action: "login",
+          identifier: parsed.data.email,
+          ip,
+          identifierLimit: RATE_LIMITS.loginByEmail,
+          ipLimit: RATE_LIMITS.loginByIp,
+        });
+        if (!rateLimit.allowed) return null;
 
         const user = await db.user.findUnique({
           where: { email: parsed.data.email },

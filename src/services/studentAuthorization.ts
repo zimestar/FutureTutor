@@ -146,6 +146,14 @@ export interface StudentCapabilityFacts {
   managementMode: StudentManagementMode | null;
   actorUserId: string;
   guardianRelationshipStatus: GuardianRelationshipStatus | null;
+  /** BETA-OPS1 — the acting User's own `User.deactivatedAt`. Optional,
+   * defaulting to "active" (undefined/null) so every pre-existing caller of
+   * this pure function keeps its exact prior behavior; resolveStudentCapabilities
+   * below always passes the real, freshly-read value. A suspended actor loses
+   * management/financial authority (see computeStudentCapabilities) but keeps
+   * pure view access — suspension blocks new commitments, not historical
+   * access. */
+  actorDeactivatedAt?: Date | null;
 }
 
 /**
@@ -198,7 +206,15 @@ export function computeStudentCapabilities(facts: StudentCapabilityFacts): Stude
   // that a student's own login never converts GUARDIAN_MANAGED into
   // self-authority (H.2 implementation prompt §5.H / §9).
   const selfManagementAuthority = isLinkedStudentSelf && facts.managementMode === "SELF_MANAGED";
-  const financialAuthority = selfManagementAuthority || guardianAuthority;
+
+  // BETA-OPS1 — a suspended actor (their own User.deactivatedAt set) loses
+  // management/financial authority: this is what makes admin suspension of
+  // a Student or Parent actually block NEW paid bookings/account edits,
+  // not just a cosmetic status flag. It deliberately does NOT affect
+  // canActForStudent/hasActiveGuardianAuthority below (pure view access is
+  // preserved — suspension blocks new commitments, not historical access).
+  const actorActive = facts.actorDeactivatedAt === undefined || facts.actorDeactivatedAt === null;
+  const managementOrFinancialAuthority = (selfManagementAuthority || guardianAuthority) && actorActive;
 
   return {
     studentExists: true,
@@ -206,9 +222,9 @@ export function computeStudentCapabilities(facts: StudentCapabilityFacts): Stude
     isLinkedStudentSelf,
     hasActiveGuardianAuthority: guardianAuthority,
     canActForStudent: isLinkedStudentSelf || guardianAuthority,
-    canManageStudentAccount: selfManagementAuthority || guardianAuthority,
-    canInitiatePaidBooking: financialAuthority,
-    canPayForStudent: financialAuthority,
+    canManageStudentAccount: managementOrFinancialAuthority,
+    canInitiatePaidBooking: managementOrFinancialAuthority,
+    canPayForStudent: managementOrFinancialAuthority,
   };
 }
 
@@ -228,6 +244,11 @@ export async function resolveStudentCapabilities(
   actorUserId: string,
   studentProfileId: string
 ): Promise<StudentCapabilities> {
+  // BETA-OPS1 — fail closed if the actor's own User row is somehow gone
+  // (treated as deactivated) rather than silently defaulting to active.
+  const actor = await client.user.findUnique({ where: { id: actorUserId }, select: { deactivatedAt: true } });
+  const actorDeactivatedAt = actor ? actor.deactivatedAt : new Date();
+
   const student = await loadStudentContext(client, studentProfileId);
   if (!student) {
     return computeStudentCapabilities({
@@ -236,6 +257,7 @@ export async function resolveStudentCapabilities(
       managementMode: null,
       actorUserId,
       guardianRelationshipStatus: null,
+      actorDeactivatedAt,
     });
   }
 
@@ -247,6 +269,7 @@ export async function resolveStudentCapabilities(
     managementMode: student.managementMode,
     actorUserId,
     guardianRelationshipStatus: relationship?.status ?? null,
+    actorDeactivatedAt,
   });
 }
 

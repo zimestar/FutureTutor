@@ -28,12 +28,19 @@ export function InstallFutureTutor({ className }: { className?: string }) {
   const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   useEffect(() => {
+    // BETA-OPS1 — window/navigator don't exist during SSR, so this
+    // one-time capability read (not a subscription to anything that
+    // changes) can only happen post-mount; starting from "checking" and
+    // flipping once here is the correct SSR-safe pattern, not a
+    // synchronization bug the lint rule's cascading-render concern applies
+    // to (this effect sets state exactly once per mount either way).
     if (
       isStandaloneDisplay({
         displayModeStandalone: window.matchMedia("(display-mode: standalone)").matches,
         iosStandalone: navigator.standalone,
       })
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState("installed");
       return;
     }
