@@ -77,10 +77,18 @@ function normalizeEmailKey(email: string): string {
 /** DEV-labeled starting thresholds — not tuned against real abuse traffic,
  * deliberately conservative for a Closed Beta's traffic volume. Named
  * constants (not inlined at each call site) so a future tuning pass changes
- * one place. */
+ * one place. loginByEmail/loginByIp were raised from an initial 10/30 after
+ * live staging E2E verification showed 10 per 15 minutes is too tight for
+ * realistic legitimate use (a single Playwright run exercises ~9 viewport
+ * projects, each logging in once — plus real users switching devices,
+ * retrying a mistyped password, etc.) — every attempt counts toward the
+ * limit, successful or not, since rate limiting must happen before the
+ * expensive credential check. 20/15min still meaningfully throttles
+ * brute-forcing (a guesser is capped at ~80 attempts/hour) while comfortably
+ * covering legitimate multi-context usage. */
 export const RATE_LIMITS = {
-  loginByEmail: { windowMs: 15 * 60_000, max: 10 } satisfies RateLimitConfig,
-  loginByIp: { windowMs: 15 * 60_000, max: 30 } satisfies RateLimitConfig,
+  loginByEmail: { windowMs: 15 * 60_000, max: 20 } satisfies RateLimitConfig,
+  loginByIp: { windowMs: 15 * 60_000, max: 60 } satisfies RateLimitConfig,
   registerByIp: { windowMs: 60 * 60_000, max: 10 } satisfies RateLimitConfig,
   forgotPasswordByEmail: { windowMs: 60 * 60_000, max: 5 } satisfies RateLimitConfig,
   forgotPasswordByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
