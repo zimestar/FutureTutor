@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
-import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { LegalDocument } from "@/components/marketing/LegalDocument";
+import { cookieContentEn } from "@/content/legal/cookieContent.en";
+import { cookieContentFr } from "@/content/legal/cookieContent.fr";
 
 export async function generateMetadata({
   params,
@@ -20,11 +22,22 @@ export default async function CookiesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "comingSoon.cookies" });
+  const t = await getTranslations({ locale, namespace: "legal" });
+
+  const content = locale === "fr" ? cookieContentFr : cookieContentEn;
 
   return (
     <MarketingShell>
-      <ComingSoon title={t("title")} description={t("description")} />
+      <LegalDocument
+        title={t("cookiesTitle")}
+        effectiveDateLabel={t("effectiveDate")}
+        lastUpdatedLabel={t("lastUpdated")}
+        content={content}
+        relatedLinks={[
+          { href: "/terms", label: t("termsTitle") },
+          { href: "/privacy", label: t("privacyTitle") },
+        ]}
+      />
     </MarketingShell>
   );
 }

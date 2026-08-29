@@ -8,7 +8,12 @@
 export type LegalBlock =
   | { type: "p"; text: string }
   | { type: "ul"; items: string[] }
-  | { type: "ol"; items: string[] };
+  | { type: "ol"; items: string[] }
+  /** FG-LEGAL1C — a small, factual summary table (e.g. the Cookie Policy's
+   * current-practices table). Every row must have the same length as
+   * `headers`. Not intended for arbitrary layout — just a faithful
+   * rendering of a source document's own tabular content. */
+  | { type: "table"; headers: string[]; rows: string[][] };
 
 export interface LegalSection {
   number: number;

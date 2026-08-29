@@ -6,7 +6,11 @@ import type { LegalBlock } from "./types";
 
 function flatten(blocks: LegalBlock[]): string {
   return blocks
-    .map((b) => (b.type === "p" ? b.text : b.items.join(" ")))
+    .map((b) => {
+      if (b.type === "p") return b.text;
+      if (b.type === "table") return [b.headers.join(" "), ...b.rows.map((row) => row.join(" "))].join(" ");
+      return b.items.join(" ");
+    })
     .join(" ");
 }
 

@@ -33,6 +33,10 @@ export default async function PrivacyPage({
         effectiveDateLabel={t("effectiveDate")}
         lastUpdatedLabel={t("lastUpdated")}
         content={content}
+        relatedLinks={[
+          { href: "/terms", label: t("termsTitle") },
+          { href: "/cookies", label: t("cookiesTitle") },
+        ]}
       />
     </MarketingShell>
   );

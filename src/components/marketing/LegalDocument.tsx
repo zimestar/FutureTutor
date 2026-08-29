@@ -1,21 +1,28 @@
 import { Container } from "@/components/ui/Container";
+import { Link } from "@/i18n/navigation";
 import type { LegalDocumentContent } from "@/content/legal/types";
 
-/** FG-LEGAL1A — renders a full structured legal document (Terms today;
- * Privacy Policy will reuse this in a later task). A plain Server
- * Component: the legal text is readable without any client-side
- * JavaScript, per the mission's own requirement. Proper heading hierarchy
- * (h1 title, h2 per numbered section) for accessibility and readability. */
+/** FG-LEGAL1A — renders a full structured legal document (Terms, Privacy
+ * Policy, and — as of FG-LEGAL1C — the Cookie Policy all reuse this same
+ * component). A plain Server Component: the legal text is readable without
+ * any client-side JavaScript, per the mission's own requirement. Proper
+ * heading hierarchy (h1 title, h2 per numbered section) for accessibility
+ * and readability. */
 export function LegalDocument({
   title,
   effectiveDateLabel,
   lastUpdatedLabel,
   content,
+  relatedLinks,
 }: {
   title: string;
   effectiveDateLabel: string;
   lastUpdatedLabel: string;
   content: LegalDocumentContent;
+  /** FG-LEGAL1C — cross-links to FutureTutor's other legal documents,
+   * rendered after the document body so a reader of one policy can reach
+   * the others without hunting for the footer. */
+  relatedLinks?: { href: string; label: string }[];
 }) {
   return (
     <Container as="article" className="py-12 md:py-16">
@@ -54,6 +61,37 @@ export function LegalDocument({
                       </p>
                     );
                   }
+                  if (block.type === "table") {
+                    return (
+                      <div key={index} className="overflow-x-auto">
+                        <table className="w-full min-w-[420px] border-collapse text-left text-sm">
+                          <thead>
+                            <tr>
+                              {block.headers.map((header, headerIndex) => (
+                                <th
+                                  key={headerIndex}
+                                  className="border-b border-neutral-300 py-2 pr-4 font-semibold text-navy"
+                                >
+                                  {header}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {block.rows.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {row.map((cell, cellIndex) => (
+                                  <td key={cellIndex} className="border-b border-neutral-200 py-2 pr-4 align-top">
+                                    {cell}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  }
                   const ListTag = block.type === "ol" ? "ol" : "ul";
                   return (
                     <ListTag key={index} className={block.type === "ol" ? "list-decimal space-y-1.5 pl-5" : "list-disc space-y-1.5 pl-5"}>
@@ -68,6 +106,16 @@ export function LegalDocument({
           </div>
         ))}
       </div>
+
+      {relatedLinks && relatedLinks.length > 0 && (
+        <div className="mt-12 flex flex-wrap gap-x-6 gap-y-2 border-t border-neutral-200 pt-6 text-sm">
+          {relatedLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="font-semibold text-blue hover:text-blue-hover">
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </Container>
   );
 }

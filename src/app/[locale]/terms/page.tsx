@@ -33,6 +33,10 @@ export default async function TermsPage({
         effectiveDateLabel={t("effectiveDate")}
         lastUpdatedLabel={t("lastUpdated")}
         content={content}
+        relatedLinks={[
+          { href: "/privacy", label: t("privacyTitle") },
+          { href: "/cookies", label: t("cookiesTitle") },
+        ]}
       />
     </MarketingShell>
   );
