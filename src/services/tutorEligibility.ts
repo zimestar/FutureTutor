@@ -48,6 +48,12 @@ export async function getEligibleTutors(tx: Prisma.TransactionClient, request: E
   const candidates = await tx.tutorProfile.findMany({
     where: {
       applicationStatus: "APPROVED",
+      // FG-LEGAL2 — a tutor approved before the Tutor Agreement existed (or
+      // who somehow reached APPROVED without accepting) is excluded from new
+      // dispatch until they accept, per "no new tutoring commitment until
+      // accepted" — their existing bookings/payouts/dashboard access are
+      // untouched, only new Quick Match candidacy is gated.
+      tutorAgreementAcceptedAt: { not: null },
       subjects: { some: { subjectId: request.subjectId } },
       ...(request.academicLevelId ? { levels: { some: { academicLevelId: request.academicLevelId } } } : {}),
     },
@@ -99,6 +105,8 @@ export async function isTutorEligibleForRequest(
 ): Promise<boolean> {
   const tutor = await tx.tutorProfile.findUnique({ where: { id: tutorProfileId } });
   if (!tutor || tutor.applicationStatus !== "APPROVED") return false;
+  // FG-LEGAL2 — see the matching comment in getEligibleTutors.
+  if (!tutor.tutorAgreementAcceptedAt) return false;
 
   const hasSubject = await tx.tutorSubject.findFirst({ where: { tutorProfileId, subjectId: request.subjectId } });
   if (!hasSubject) return false;

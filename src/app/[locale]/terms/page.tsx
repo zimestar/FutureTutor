@@ -36,6 +36,7 @@ export default async function TermsPage({
         relatedLinks={[
           { href: "/privacy", label: t("privacyTitle") },
           { href: "/cookies", label: t("cookiesTitle") },
+          { href: "/tutor-agreement", label: t("tutorAgreementTitle") },
         ]}
       />
     </MarketingShell>

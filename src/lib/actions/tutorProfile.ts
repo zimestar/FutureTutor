@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tutorProfileSchema, type TutorProfileInput } from "@/schemas/tutorProfile";
 import { submitApplication } from "@/services/tutorApplicationWorkflow";
+import { TUTOR_AGREEMENT_VERSION } from "@/content/legal/tutorAgreementContent.en";
 
 export type TutorProfileActionState = { error?: string; success?: boolean } | undefined;
 
@@ -64,6 +65,12 @@ export async function updateTutorProfileAction(
     return { error: t("alreadySubmitted") };
   }
 
+  // FG-LEGAL2 — required only for the "submit" intent, not "save"; the
+  // profile can be saved as a draft repeatedly without accepting anything.
+  if (intent === "submit" && !formData.get("tutorAgreementAccepted")) {
+    return { error: t("tutorAgreementRequired") };
+  }
+
   const parsed = tutorProfileSchema.safeParse({
     headline: formData.get("headline"),
     bio: formData.get("bio"),
@@ -80,6 +87,18 @@ export async function updateTutorProfileAction(
   await applyTutorProfileFields(tutorProfile.id, parsed.data);
 
   if (intent === "submit") {
+    const locale = typeof formData.get("locale") === "string" ? (formData.get("locale") as string) : "en";
+    // Written just before submitApplication, in its own statement — the
+    // service re-checks tutorAgreementAcceptedAt itself (defense in depth),
+    // so this write must land first for a genuine submission to pass its gate.
+    await db.tutorProfile.update({
+      where: { id: tutorProfile.id },
+      data: {
+        tutorAgreementAcceptedAt: new Date(),
+        tutorAgreementAcceptedVersion: TUTOR_AGREEMENT_VERSION,
+        tutorAgreementAcceptedLocale: locale,
+      },
+    });
     try {
       await submitApplication(tutorProfile.id, tutorProfile.userId);
     } catch {
@@ -89,5 +108,37 @@ export async function updateTutorProfileAction(
   }
 
   revalidatePath("/tutor/profile");
+  return { success: true };
+}
+
+/** FG-LEGAL2 — re-acceptance path for a Tutor who reached APPROVED before the
+ * Tutor Agreement existed (or otherwise never accepted it), surfaced as a
+ * dashboard banner (see TutorDashboardPage) rather than requiring them to
+ * revisit the profile-submission flow they already passed. Separate from
+ * updateTutorProfileAction's own acceptance write above so an already-
+ * APPROVED tutor accepting here never re-triggers submitApplication. */
+export async function acceptTutorAgreementAction(
+  _prevState: TutorProfileActionState,
+  formData: FormData
+): Promise<TutorProfileActionState> {
+  const t = await getTranslations("tutorProfileForm.errors");
+  const tutorProfile = await requireTutorProfile();
+  if (!tutorProfile) return { error: t("notATutor") };
+
+  if (!formData.get("tutorAgreementAccepted")) {
+    return { error: t("tutorAgreementRequired") };
+  }
+
+  const locale = typeof formData.get("locale") === "string" ? (formData.get("locale") as string) : "en";
+  await db.tutorProfile.update({
+    where: { id: tutorProfile.id },
+    data: {
+      tutorAgreementAcceptedAt: new Date(),
+      tutorAgreementAcceptedVersion: TUTOR_AGREEMENT_VERSION,
+      tutorAgreementAcceptedLocale: locale,
+    },
+  });
+
+  revalidatePath("/tutor/dashboard");
   return { success: true };
 }

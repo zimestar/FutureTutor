@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { LegalDocument } from "@/components/marketing/LegalDocument";
-import { cookieContentEn } from "@/content/legal/cookieContent.en";
-import { cookieContentFr } from "@/content/legal/cookieContent.fr";
+import { tutorAgreementContentEn } from "@/content/legal/tutorAgreementContent.en";
+import { tutorAgreementContentFr } from "@/content/legal/tutorAgreementContent.fr";
 
 export async function generateMetadata({
   params,
@@ -11,11 +11,11 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "metadata.cookies" });
+  const t = await getTranslations({ locale, namespace: "metadata.tutorAgreement" });
   return { title: t("title"), description: t("description") };
 }
 
-export default async function CookiesPage({
+export default async function TutorAgreementPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -24,19 +24,19 @@ export default async function CookiesPage({
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "legal" });
 
-  const content = locale === "fr" ? cookieContentFr : cookieContentEn;
+  const content = locale === "fr" ? tutorAgreementContentFr : tutorAgreementContentEn;
 
   return (
     <MarketingShell>
       <LegalDocument
-        title={t("cookiesTitle")}
+        title={t("tutorAgreementTitle")}
         effectiveDateLabel={t("effectiveDate")}
         lastUpdatedLabel={t("lastUpdated")}
         content={content}
         relatedLinks={[
           { href: "/terms", label: t("termsTitle") },
           { href: "/privacy", label: t("privacyTitle") },
-          { href: "/tutor-agreement", label: t("tutorAgreementTitle") },
+          { href: "/cookies", label: t("cookiesTitle") },
         ]}
       />
     </MarketingShell>

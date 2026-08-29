@@ -485,6 +485,15 @@ model TutorProfile {
   reviewCount            Int                    @default(0)
   stripeConnectAccountId String?
   stripeConnectStatus    StripeConnectStatus    @default(NOT_STARTED)
+  /// FG-LEGAL2 — Tutor Independent Service Provider Agreement acceptance
+  /// record. Mirrors User.termsAcceptedAt/Version/Locale's shape (see
+  /// migration 20260828213506_add_terms_acceptance_record) but lives here
+  /// since only Tutors need it. Never backfilled for tutors approved before
+  /// this field existed — see submitApplication's gate and the dashboard
+  /// re-acceptance banner for already-APPROVED tutors.
+  tutorAgreementAcceptedAt      DateTime?
+  tutorAgreementAcceptedVersion String?
+  tutorAgreementAcceptedLocale  String?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 

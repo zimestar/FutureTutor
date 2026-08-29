@@ -194,7 +194,17 @@ async function createTutorUser() {
   const user = await db.user.create({ data: { email: uniqueEmail("tutor"), role: "TUTOR" } });
   createdUserIds.push(user.id);
   const tutorProfile = await db.tutorProfile.create({
-    data: { userId: user.id, slug: `p0-bc-tutor-${randomUUID()}`, applicationStatus: "APPROVED", payoutTier: "NEW", learningMode: "BOTH" },
+    data: {
+      userId: user.id,
+      slug: `p0-bc-tutor-${randomUUID()}`,
+      applicationStatus: "APPROVED",
+      payoutTier: "NEW",
+      learningMode: "BOTH",
+      // FG-LEGAL2 — isTutorEligibleForRequest now also requires this.
+      tutorAgreementAcceptedAt: new Date(),
+      tutorAgreementAcceptedVersion: "2026-08-30",
+      tutorAgreementAcceptedLocale: "en",
+    },
   });
   createdTutorProfileIds.push(tutorProfile.id);
   // Quick Match eligibility (isTutorEligibleForRequest) requires a

@@ -97,6 +97,15 @@ export default async function AdminTutorDetailPage({
         </div>
       </div>
       <p className="mt-1 text-sm text-slate">{tutor.user.email}</p>
+      <p className="mt-1 text-xs text-slate">
+        {tutor.tutorAgreementAcceptedAt
+          ? t("tutorAgreementAccepted", {
+              version: tutor.tutorAgreementAcceptedVersion ?? "?",
+              date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(tutor.tutorAgreementAcceptedAt),
+              lang: tutor.tutorAgreementAcceptedLocale ?? "?",
+            })
+          : t("tutorAgreementNotAccepted")}
+      </p>
 
       <TutorPayoutTierSelect
         tutorProfileId={tutor.id}

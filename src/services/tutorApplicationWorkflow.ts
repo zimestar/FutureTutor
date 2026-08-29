@@ -109,6 +109,13 @@ export async function submitApplication(tutorProfileId: string, actorUserId: str
     if (subjectCount === 0 || levelCount === 0) {
       throw new TransitionGateError("Profile must have at least one subject and one level before submitting");
     }
+    // FG-LEGAL2 — re-checked here, not just in the calling Server Action, so a
+    // forged call can't skip acceptance. The caller (updateTutorProfileAction)
+    // writes tutorAgreementAcceptedAt in the same transaction just before
+    // calling this, so a genuine submission always has it set by this point.
+    if (!tutor.tutorAgreementAcceptedAt) {
+      throw new TransitionGateError("Tutor Independent Service Provider Agreement must be accepted before submitting");
+    }
 
     const updated = await tx.tutorProfile.update({
       where: { id: tutorProfileId },

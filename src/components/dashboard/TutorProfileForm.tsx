@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Link } from "@/i18n/navigation";
 import { subjects } from "@/content/subjects";
 import { updateTutorProfileAction } from "@/lib/actions/tutorProfile";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
@@ -75,6 +76,7 @@ export function TutorProfileForm({
   const tLanguages = useTranslations("languages");
   const tMode = useTranslations("tutorCard.mode");
   const tStatus = useTranslations("dashboard.tutor.applicationStatus");
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState(updateTutorProfileAction, undefined);
 
   const canSubmit = applicationStatus === "DRAFT";
@@ -203,6 +205,21 @@ export function TutorProfileForm({
           <Input id="province" name="province" defaultValue={values.province} required />
         </div>
       </div>
+
+      <input type="hidden" name="locale" value={locale} />
+
+      {canSubmit && (
+        <label className="flex items-start gap-3 rounded-md border border-neutral-200 bg-surface-subtle px-4 py-3 text-sm text-slate">
+          <input type="checkbox" name="tutorAgreementAccepted" value="true" required className="mt-0.5" />
+          <span>
+            {t("tutorAgreementPrefix")}{" "}
+            <Link href="/tutor-agreement" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
+              {t("tutorAgreementLink")}
+            </Link>
+            .
+          </span>
+        </label>
+      )}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-6">
         <Button type="submit" name="intent" value="save" variant="outline" disabled={pending}>

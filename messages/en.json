@@ -276,7 +276,8 @@
       "careers": "Careers",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
-      "cookies": "Cookie Policy"
+      "cookies": "Cookie Policy",
+      "tutorAgreement": "Tutor Agreement"
     },
     "copyright": "© {year} FutureTutor. All rights reserved.",
     "tagline": "Made for students, parents and tutors across Canada."
@@ -400,10 +401,13 @@
     "saveDraft": "Save",
     "submitForReview": "Submit for Review",
     "saved": "Saved.",
+    "tutorAgreementPrefix": "I have read and agree to the",
+    "tutorAgreementLink": "Tutor Independent Service Provider Agreement",
     "errors": {
       "notATutor": "Only tutor accounts can edit a tutor profile.",
       "invalidInput": "Please check your information — some fields are missing or too short.",
-      "alreadySubmitted": "Your profile has already been submitted and can no longer be edited here."
+      "alreadySubmitted": "Your profile has already been submitted and can no longer be edited here.",
+      "tutorAgreementRequired": "You must read and accept the Tutor Independent Service Provider Agreement before submitting."
     }
   },
   "becomeATutorPage": {
@@ -436,6 +440,7 @@
     "termsTitle": "Terms of Service",
     "privacyTitle": "Privacy Policy",
     "cookiesTitle": "Cookie Policy",
+    "tutorAgreementTitle": "Tutor Independent Service Provider Agreement",
     "effectiveDate": "Effective Date",
     "lastUpdated": "Last Updated"
   },
@@ -479,6 +484,10 @@
     "cookies": {
       "title": "Cookie Policy",
       "description": "FutureTutor's cookie policy."
+    },
+    "tutorAgreement": {
+      "title": "Tutor Independent Service Provider Agreement",
+      "description": "FutureTutor's Tutor Independent Service Provider Agreement."
     },
     "howItWorks": {
       "title": "How It Works",
@@ -621,6 +630,7 @@
       "pricing": "Pricing",
       "quickMatch": "Quick Match",
       "payouts": "Payouts",
+      "tutorAgreement": "Tutor Agreement",
       "payments": "Payments",
       "family": "My Students",
       "familyInvitations": "Family Invitations",
@@ -885,6 +895,13 @@
         "profileTitle": "Public profile",
         "profileDescription": "Keep the teaching information families use to understand your approach accurate and current.",
         "manageProfile": "Manage profile"
+      },
+      "tutorAgreementBanner": {
+        "title": "Accept the Tutor Independent Service Provider Agreement",
+        "description": "FutureTutor has published a Tutor Independent Service Provider Agreement. Your existing bookings, payouts, and account access are unaffected, but you won't receive new Quick Match opportunities or new direct bookings until you accept it.",
+        "checkboxPrefix": "I have read and agree to the",
+        "checkboxLink": "Tutor Independent Service Provider Agreement",
+        "submit": "Accept Agreement"
       },
       "bookings": {
         "title": "Your bookings",
@@ -1261,6 +1278,8 @@
     },
     "tutorDetail": {
       "validationVersion": "Validation v{version}",
+      "tutorAgreementAccepted": "Tutor Agreement accepted: v{version} on {date} ({lang})",
+      "tutorAgreementNotAccepted": "Tutor Agreement not yet accepted — excluded from new Quick Match dispatch and new direct bookings.",
       "payoutTierLabel": "Payout tier",
       "payoutTiers": {
         "NEW": "New",
@@ -1411,6 +1430,7 @@
       "notAStudent": "Only students can book sessions.",
       "invalidInput": "Please choose a subject and a time slot.",
       "slotTaken": "That slot was just taken — please pick another time.",
+      "tutorUnavailable": "This tutor is not currently accepting new bookings.",
       "generic": "Something went wrong. Please try again.",
       "notFound": "This booking could not be found.",
       "notYours": "You can't manage this booking.",

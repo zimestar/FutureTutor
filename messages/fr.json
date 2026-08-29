@@ -276,7 +276,8 @@
       "careers": "Carrières",
       "privacy": "Politique de confidentialité",
       "terms": "Conditions d'utilisation",
-      "cookies": "Politique de cookies"
+      "cookies": "Politique de cookies",
+      "tutorAgreement": "Entente des tuteurs"
     },
     "copyright": "© {year} FutureTutor. Tous droits réservés.",
     "tagline": "Conçu pour les élèves, les parents et les tuteurs partout au Canada."
@@ -400,10 +401,13 @@
     "saveDraft": "Enregistrer",
     "submitForReview": "Soumettre pour révision",
     "saved": "Enregistré.",
+    "tutorAgreementPrefix": "J'ai lu et j'accepte l'",
+    "tutorAgreementLink": "Entente de prestataire de services indépendant pour les tuteurs",
     "errors": {
       "notATutor": "Seuls les comptes tuteurs peuvent modifier un profil de tuteur.",
       "invalidInput": "Veuillez vérifier vos informations — certains champs sont manquants ou trop courts.",
-      "alreadySubmitted": "Votre profil a déjà été soumis et ne peut plus être modifié ici."
+      "alreadySubmitted": "Votre profil a déjà été soumis et ne peut plus être modifié ici.",
+      "tutorAgreementRequired": "Vous devez lire et accepter l'Entente de prestataire de services indépendant pour les tuteurs avant de soumettre."
     }
   },
   "becomeATutorPage": {
@@ -436,6 +440,7 @@
     "termsTitle": "Conditions d'utilisation",
     "privacyTitle": "Politique de confidentialité",
     "cookiesTitle": "Politique sur les témoins",
+    "tutorAgreementTitle": "Entente de prestataire de services indépendant pour les tuteurs",
     "effectiveDate": "Date d'entrée en vigueur",
     "lastUpdated": "Dernière mise à jour"
   },
@@ -479,6 +484,10 @@
     "cookies": {
       "title": "Politique de cookies",
       "description": "La politique de cookies de FutureTutor."
+    },
+    "tutorAgreement": {
+      "title": "Entente de prestataire de services indépendant pour les tuteurs",
+      "description": "L'Entente de prestataire de services indépendant pour les tuteurs de FutureTutor."
     },
     "howItWorks": {
       "title": "Comment ça marche",
@@ -621,6 +630,7 @@
       "pricing": "Tarification",
       "quickMatch": "Jumelage rapide",
       "payouts": "Paiements",
+      "tutorAgreement": "Entente des tuteurs",
       "payments": "Paiements des clients",
       "family": "Mes élèves",
       "familyInvitations": "Invitations familiales",
@@ -885,6 +895,13 @@
         "profileTitle": "Profil public",
         "profileDescription": "Gardez à jour les renseignements qui aident les familles à comprendre votre approche pédagogique.",
         "manageProfile": "Gérer le profil"
+      },
+      "tutorAgreementBanner": {
+        "title": "Accepter l'Entente de prestataire de services indépendant pour les tuteurs",
+        "description": "FutureTutor a publié une Entente de prestataire de services indépendant pour les tuteurs. Vos réservations, vos versements et l'accès à votre compte ne sont pas touchés, mais vous ne recevrez pas de nouvelles occasions Appariement rapide ni de nouvelles réservations directes tant que vous ne l'aurez pas acceptée.",
+        "checkboxPrefix": "J'ai lu et j'accepte l'",
+        "checkboxLink": "Entente de prestataire de services indépendant pour les tuteurs",
+        "submit": "Accepter l'entente"
       },
       "bookings": {
         "title": "Vos réservations",
@@ -1261,6 +1278,8 @@
     },
     "tutorDetail": {
       "validationVersion": "Validation v{version}",
+      "tutorAgreementAccepted": "Entente des tuteurs acceptée : v{version} le {date} ({lang})",
+      "tutorAgreementNotAccepted": "Entente des tuteurs non encore acceptée — exclu des nouvelles répartitions Jumelage rapide et des nouvelles réservations directes.",
       "payoutTierLabel": "Palier de rémunération",
       "payoutTiers": {
         "NEW": "Nouveau",
@@ -1411,6 +1430,7 @@
       "notAStudent": "Seuls les élèves peuvent réserver des séances.",
       "invalidInput": "Veuillez choisir une matière et un créneau horaire.",
       "slotTaken": "Ce créneau vient d'être pris — veuillez en choisir un autre.",
+      "tutorUnavailable": "Ce tuteur n'accepte pas de nouvelles réservations pour le moment.",
       "generic": "Une erreur est survenue. Veuillez réessayer.",
       "notFound": "Cette réservation est introuvable.",
       "notYours": "Vous ne pouvez pas gérer cette réservation.",

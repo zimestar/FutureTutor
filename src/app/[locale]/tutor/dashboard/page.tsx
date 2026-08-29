@@ -5,6 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorApprovalJourney } from "@/components/dashboard/TutorApprovalJourney";
+import { TutorAgreementBanner } from "@/components/dashboard/TutorAgreementBanner";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Feedback";
@@ -38,7 +39,12 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
 
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true, applicationStatus: true, user: { select: { image: true } } },
+    select: {
+      id: true,
+      applicationStatus: true,
+      tutorAgreementAcceptedAt: true,
+      user: { select: { image: true } },
+    },
   });
   const status = tutorProfile?.applicationStatus ?? "DRAFT";
   const userImage = tutorProfile?.user.image;
@@ -147,6 +153,12 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
         description={t("approved.description")}
         status={<Badge variant="mint">{t("applicationStatus.APPROVED")}</Badge>}
       />
+
+      {!tutorProfile?.tutorAgreementAcceptedAt && (
+        <div className="mt-6">
+          <TutorAgreementBanner />
+        </div>
+      )}
 
       <div className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <Surface className="xl:row-span-2" aria-labelledby="next-booking-title">

@@ -13,6 +13,7 @@ export function tutorNavItems(
       { label: tNav("availability"), href: "/tutor/availability", group: tNav("tutoringGroup") },
       { label: tNav("payouts"), href: "/tutor/payouts", group: tNav("tutoringGroup") },
       { label: tNav("profile"), href: "/tutor/profile", group: tNav("tutoringGroup") },
+      { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("tutoringGroup") },
     ];
   }
 
@@ -23,5 +24,6 @@ export function tutorNavItems(
     { label: tNav("training"), href: "/tutor/training", group: tNav("approvalGroup") },
     { label: tNav("exam"), href: "/tutor/exam", group: tNav("approvalGroup") },
     { label: tNav("availability"), href: "/tutor/availability", group: tNav("approvalGroup") },
+    { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("approvalGroup") },
   ];
 }

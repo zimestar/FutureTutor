@@ -26,5 +26,6 @@ export const footerNav = {
     { key: "privacy", href: "/privacy" },
     { key: "terms", href: "/terms" },
     { key: "cookies", href: "/cookies" },
+    { key: "tutorAgreement", href: "/tutor-agreement" },
   ],
 } as const;

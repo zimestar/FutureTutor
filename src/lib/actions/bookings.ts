@@ -94,6 +94,19 @@ export async function createBookingAction(
   ]);
   if (!studentProfile || !tutorProfile) return { error: t("invalidInput") };
 
+  // FG-LEGAL2 — deliberately checked here (the direct-booking Server Action
+  // entry point), not inside reserveBookingPendingPayment: that shared
+  // service function is also called directly, bypassing this action
+  // entirely, by dozens of pre-existing integration test fixtures across
+  // unrelated domains (session lifecycle, cancellation, payments, video)
+  // that construct an APPROVED tutor without any Tutor Agreement concept —
+  // enforcing this deep in the shared function broke all of them. A tutor
+  // who hasn't accepted the current Agreement should not receive new
+  // opportunities through any real user-facing route; this covers direct
+  // booking, and tutorEligibility.ts's getEligibleTutors/
+  // isTutorEligibleForRequest gates cover Quick Match dispatch and accept.
+  if (!tutorProfile.tutorAgreementAcceptedAt) return { error: t("tutorUnavailable") };
+
   // Phase H.5 security correction (extended in H.7 for actor != learner):
   // previously authorized solely by role===STUDENT + a raw
   // studentProfile-by-own-userId lookup, with no H.2 involvement — a
