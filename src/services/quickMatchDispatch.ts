@@ -42,7 +42,18 @@ export async function advanceDispatch(tutoringRequestId: string): Promise<void> 
         if (attemptsSoFar < settings.sequentialInvitationCount) {
           inviteCount = 1;
           isParallelRound = false;
-        } else if (attemptsSoFar === settings.sequentialInvitationCount && attemptsSoFar < settings.maxDispatchAttempts) {
+        } else if (attemptsSoFar < settings.maxDispatchAttempts) {
+          // PROD-DISPATCHFIX1 — must be `>=`/`<` (a range check), not
+          // `attemptsSoFar === settings.sequentialInvitationCount` (an exact-
+          // equality check). The old condition could only ever be true once,
+          // at the single instant attemptsSoFar exactly equaled
+          // sequentialInvitationCount — so only one parallel batch was ever
+          // dispatched, no matter how much headroom remained under
+          // maxDispatchAttempts. Every subsequent round (attemptsSoFar now
+          // past that one value) fell through to the else branch below and
+          // closed the request to NO_TUTOR_FOUND prematurely. This range
+          // check re-enters the parallel branch on every round for as long
+          // as budget remains, producing as many batches as fit.
           inviteCount = Math.min(settings.parallelBatchSize, settings.maxDispatchAttempts - attemptsSoFar);
           isParallelRound = true;
         } else {
