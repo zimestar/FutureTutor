@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type Stripe from "stripe";
-import { deriveTutorStripeConnectStatus } from "./stripeConnect";
+import { deriveTutorStripeConnectStatus, deriveInitialStatusFromV2Account } from "./stripeConnect";
 
 // PAY-1B onboarding-regression fix — pure unit coverage for
 // deriveTutorStripeConnectStatus, isolated from the DB/Stripe-client
@@ -73,5 +73,47 @@ describe("deriveTutorStripeConnectStatus", () => {
       account({ detailsSubmitted: false, currentlyDue: ["business_type"] })
     );
     expect(result).toBe("PENDING");
+  });
+});
+
+// PROD-CONNECT-V2-MIGRATION2 — pure unit coverage for
+// deriveInitialStatusFromV2Account, the Accounts v2 counterpart used only
+// immediately after ensureConnectAccount's stripe.v2.core.accounts.create()
+// call. Fixture shape mirrors the real v2 Account response's
+// configuration.recipient.capabilities.stripe_balance.stripe_transfers
+// path (confirmed against the installed Stripe SDK's own v2 type
+// definitions).
+
+function v2Account(status?: "active" | "pending" | "restricted" | "unsupported"): Stripe.V2.Core.Account {
+  return {
+    id: "acct_fake_v2",
+    object: "v2.core.account",
+    applied_configurations: ["recipient"],
+    livemode: true,
+    configuration: status
+      ? { recipient: { capabilities: { stripe_balance: { stripe_transfers: { status, status_details: [] } } } } }
+      : undefined,
+  } as unknown as Stripe.V2.Core.Account;
+}
+
+describe("deriveInitialStatusFromV2Account", () => {
+  it("active stripe_transfers capability maps to ACTIVE", () => {
+    expect(deriveInitialStatusFromV2Account(v2Account("active"))).toBe("ACTIVE");
+  });
+
+  it("restricted stripe_transfers capability maps to RESTRICTED", () => {
+    expect(deriveInitialStatusFromV2Account(v2Account("restricted"))).toBe("RESTRICTED");
+  });
+
+  it("unsupported stripe_transfers capability maps to DISABLED", () => {
+    expect(deriveInitialStatusFromV2Account(v2Account("unsupported"))).toBe("DISABLED");
+  });
+
+  it("pending stripe_transfers capability maps to PENDING (the expected, near-universal result immediately after creation)", () => {
+    expect(deriveInitialStatusFromV2Account(v2Account("pending"))).toBe("PENDING");
+  });
+
+  it("no configuration.recipient in the response at all falls through safely to PENDING, never throws", () => {
+    expect(deriveInitialStatusFromV2Account(v2Account(undefined))).toBe("PENDING");
   });
 });

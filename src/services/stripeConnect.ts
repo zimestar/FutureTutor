@@ -43,6 +43,38 @@ export function deriveTutorStripeConnectStatus(account: Stripe.Account): StripeC
   return "PENDING";
 }
 
+/**
+ * PROD-CONNECT-V2-MIGRATION2 — maps the Accounts v2 create-account
+ * response's recipient/stripe_transfers capability status onto the same
+ * StripeConnectStatus model deriveTutorStripeConnectStatus produces for
+ * v1-shaped payloads. Used ONLY immediately after a fresh
+ * stripe.v2.core.accounts.create() call.
+ *
+ * Every ONGOING status read (the account.updated webhook, and the manual
+ * resync on `?onboarding=return`) intentionally keeps going through the
+ * unchanged deriveTutorStripeConnectStatus above, never this function —
+ * confirmed via Stripe's own documentation (PROD-CONNECT-V2-MIGRATION1
+ * §10) that a v2-created account still fires the classic v1-shaped
+ * `account.updated` event, and that a v1 accounts.retrieve() call still
+ * returns v1-shaped data for a v2-created account. This avoids needing a
+ * single dual-shape derivation function, per the certified plan's explicit
+ * recommendation.
+ *
+ * Stripe's own documentation states a freshly created account "exists in
+ * a pending state" — PENDING is therefore the expected, near-universal
+ * result here (ACTIVE is not realistically reachable before any KYC has
+ * happened). This function still reads the real response rather than
+ * hardcoding that, so it stays correct if Stripe ever returns something
+ * more specific inline.
+ */
+export function deriveInitialStatusFromV2Account(account: Stripe.V2.Core.Account): StripeConnectStatus {
+  const status = account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status;
+  if (status === "active") return "ACTIVE";
+  if (status === "restricted") return "RESTRICTED";
+  if (status === "unsupported") return "DISABLED";
+  return "PENDING";
+}
+
 /** Step A/B/C — idempotent by construction: TutorProfile.stripeConnectAccountId
  * is the durable anchor; a retry finds the existing account rather than
  * creating a second one.
@@ -77,18 +109,47 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
   const attemptEpoch = tutor.stripeConnectAttemptEpoch;
   const idempotencyKey = `connect-account:${tutorProfileId}:${attemptEpoch}`;
 
-  let account: Stripe.Account;
+  // PROD-CONNECT-V2-MIGRATION2 — Accounts v2, per the certified migration
+  // plan's §7 configuration (recipient + Express Dashboard access +
+  // platform responsible for fees/losses, matching the marketplace
+  // acknowledgements already accepted on the Stripe Dashboard). `include`
+  // requests the recipient capability status inline so
+  // deriveInitialStatusFromV2Account below has real data to read.
+  let account: Stripe.V2.Core.Account;
   try {
-    account = await stripe.accounts.create(
+    account = await stripe.v2.core.accounts.create(
       {
-        type: "express",
-        email: tutor.user.email,
-        capabilities: { transfers: { requested: true } },
+        contact_email: tutor.user.email,
+        dashboard: "express",
+        defaults: {
+          responsibilities: {
+            fees_collector: "application",
+            losses_collector: "application",
+          },
+        },
+        configuration: {
+          recipient: {
+            capabilities: {
+              stripe_balance: { stripe_transfers: { requested: true } },
+            },
+          },
+        },
+        include: ["configuration.recipient"],
         metadata: { tutorProfileId },
       },
       { idempotencyKey }
     );
   } catch (error) {
+    // Error-class-based, not shape-based — unchanged from the v1
+    // implementation. StripeInvalidRequestError remains the class Stripe's
+    // own SDK resolves a definitive 4xx to (confirmed for v2 requests too:
+    // Error.js's generateV2Error falls through to the same statusCode-based
+    // generateV1Error classification for anything that isn't one of v2's
+    // few specially-named error types), so this still proves nothing was
+    // created and the epoch can safely advance for the next attempt. Every
+    // other outcome (5xx, network, rate limit, auth/permission) leaves the
+    // epoch untouched, preserving PROD-CONNECT-RETRYFIX1's crash-recovery
+    // guarantee unchanged.
     if (error instanceof Stripe.errors.StripeInvalidRequestError) {
       await db.tutorProfile.updateMany({
         where: { id: tutorProfileId, stripeConnectAccountId: null, stripeConnectAttemptEpoch: attemptEpoch },
@@ -98,7 +159,7 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
     throw error;
   }
 
-  const status = deriveTutorStripeConnectStatus(account);
+  const status = deriveInitialStatusFromV2Account(account);
   await db.tutorProfile.updateMany({
     where: { id: tutorProfileId, stripeConnectAccountId: null },
     data: { stripeConnectAccountId: account.id, stripeConnectStatus: status },
@@ -112,19 +173,37 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
 }
 
 /** Tutors resume incomplete onboarding by generating a fresh link — Account
- * Links expire quickly and are never stored/reused. */
+ * Links expire quickly and are never stored/reused.
+ *
+ * PROD-CONNECT-V2-MIGRATION2 — v2 Account Links (per the certified plan's
+ * §6): still a single-use, redirect-based, Stripe-hosted URL — no embedded
+ * ConnectJS component required, preserving the existing tutor-facing UX
+ * unchanged. */
 export async function createOnboardingLink(tutorProfileId: string, returnUrl: string, refreshUrl: string): Promise<string> {
   const accountId = await ensureConnectAccount(tutorProfileId);
   const stripe = getStripeClient();
-  const link = await stripe.accountLinks.create({
+  const link = await stripe.v2.core.accountLinks.create({
     account: accountId,
-    type: "account_onboarding",
-    return_url: returnUrl,
-    refresh_url: refreshUrl,
+    use_case: {
+      type: "account_onboarding",
+      account_onboarding: {
+        configurations: ["recipient"],
+        return_url: returnUrl,
+        refresh_url: refreshUrl,
+      },
+    },
   });
   return link.url;
 }
 
+// PROD-CONNECT-V2-MIGRATION2 — deliberately still stripe.accounts.retrieve
+// (v1), not stripe.v2.core.accounts.retrieve, even for a v2-created
+// account id. Confirmed via Stripe's own documentation that a v1 endpoint
+// referencing a v2 Account id returns v1-shaped data, so this keeps
+// deriveTutorStripeConnectStatus's existing, unchanged, well-tested v1
+// logic as the single source of truth for every ongoing status read —
+// the certified migration plan's explicit recommendation to avoid a
+// second, v2-shaped derivation function on this path.
 export async function syncTutorConnectStatusFromStripe(tutorProfileId: string): Promise<void> {
   const tutor = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfileId } });
   if (!tutor.stripeConnectAccountId) return;

@@ -23,6 +23,14 @@ import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
 // unchanged; no financial semantics (pricing/payout/earnings/transfers/
 // capture/refunds/cancellation) are touched by this file or by the service
 // it tests.
+//
+// PROD-CONNECT-V2-MIGRATION2 — ensureConnectAccount/createOnboardingLink
+// now call stripe.v2.core.accounts.create / stripe.v2.core.accountLinks.create
+// (Accounts v2). syncTutorConnectStatusFromStripe deliberately still calls
+// the unchanged v1 stripe.accounts.retrieve — so the fake client below
+// exposes BOTH: a v1-shaped `accounts.retrieve` at the top level, and a
+// v2-shaped `v2.core.accounts.create`/`v2.core.accountLinks.create`
+// namespace, mirroring the real Stripe SDK's own dual-namespace shape.
 
 vi.mock("@/lib/stripe", () => ({ getStripeClient: vi.fn() }));
 
@@ -35,7 +43,7 @@ let createOnboardingLink: typeof import("./stripeConnect").createOnboardingLink;
 const createdUserIds: string[] = [];
 const createdTutorProfileIds: string[] = [];
 
-interface FakeStripeAccount {
+interface FakeV1Account {
   id: string;
   capabilities: { transfers?: "active" | "inactive" };
   payouts_enabled: boolean;
@@ -43,62 +51,102 @@ interface FakeStripeAccount {
   requirements: { disabled_reason: string | null; currently_due: string[]; past_due: string[] };
 }
 
-/** Small, controllable, in-memory Stripe fake for accounts.create/retrieve
- * and accountLinks.create — mirrors cancellationRefund.integration.test.ts's
- * own makeFakeStripeClient style (call-tracking arrays, scripted throw
- * paths, deterministic fake ids). */
+type StripeTransfersStatus = "active" | "pending" | "restricted" | "unsupported";
+
+interface FakeV2Account {
+  id: string;
+  object: "v2.core.account";
+  applied_configurations: string[];
+  livemode: boolean;
+  configuration?: {
+    recipient?: {
+      capabilities?: {
+        stripe_balance?: {
+          stripe_transfers?: { status: StripeTransfersStatus; status_details: unknown[] };
+        };
+      };
+    };
+  };
+}
+
+function defaultFakeV2Account(id: string): FakeV2Account {
+  return {
+    id,
+    object: "v2.core.account",
+    applied_configurations: ["recipient"],
+    livemode: true,
+    configuration: {
+      recipient: { capabilities: { stripe_balance: { stripe_transfers: { status: "pending", status_details: [] } } } },
+    },
+  };
+}
+
+/** Small, controllable, in-memory Stripe fake for v2 accounts.create/
+ * accountLinks.create, plus v1 accounts.retrieve — mirrors
+ * cancellationRefund.integration.test.ts's own makeFakeStripeClient style
+ * (call-tracking arrays, scripted throw paths, deterministic fake ids). */
 function makeFakeStripeClient(
   opts: {
-    onCreateAccount?: () => FakeStripeAccount | "throw" | { throwError: unknown };
+    onCreateAccount?: () => FakeV2Account | "throw" | { throwError: unknown };
     onCreateAccountLink?: () => { url: string } | "throw";
+    onRetrieveV1Account?: (id: string) => FakeV1Account;
   } = {}
 ) {
   let nextId = 1;
   const createAccountCalls: Array<{ params: unknown; idempotencyKey: string }> = [];
-  const createLinkCalls: Array<{ account: string }> = [];
+  const createLinkCalls: Array<{ account: string; params: unknown }> = [];
+  const retrieveCalls: string[] = [];
   const callOrder: string[] = [];
 
   return {
+    // v1 — deliberately retained, unchanged, only for syncTutorConnectStatusFromStripe.
     accounts: {
-      create: vi.fn(async (params: unknown, options: { idempotencyKey: string }) => {
-        callOrder.push("accounts.create");
-        createAccountCalls.push({ params, idempotencyKey: options.idempotencyKey });
-        if (opts.onCreateAccount) {
-          const result = opts.onCreateAccount();
-          if (result === "throw") throw new Error("simulated Stripe account creation failure");
-          if (typeof result === "object" && result !== null && "throwError" in result) throw result.throwError;
-          return result;
-        }
+      retrieve: vi.fn(async (id: string) => {
+        callOrder.push("accounts.retrieve");
+        retrieveCalls.push(id);
+        if (opts.onRetrieveV1Account) return opts.onRetrieveV1Account(id);
         return {
-          id: `acct_fake_${nextId++}`,
+          id,
           capabilities: { transfers: "inactive" as const },
           payouts_enabled: false,
           details_submitted: false,
           requirements: { disabled_reason: null, currently_due: [], past_due: [] },
         };
       }),
-      retrieve: vi.fn(async (id: string) => ({
-        id,
-        capabilities: { transfers: "inactive" as const },
-        payouts_enabled: false,
-        details_submitted: false,
-        requirements: { disabled_reason: null, currently_due: [], past_due: [] },
-      })),
     },
-    accountLinks: {
-      create: vi.fn(async (params: { account: string }) => {
-        callOrder.push("accountLinks.create");
-        createLinkCalls.push(params);
-        if (opts.onCreateAccountLink) {
-          const result = opts.onCreateAccountLink();
-          if (result === "throw") throw new Error("simulated Stripe account-link failure");
-          return result;
-        }
-        return { url: "https://connect.stripe.com/setup/fake-link" };
-      }),
+    // v2 — used by ensureConnectAccount/createOnboardingLink.
+    v2: {
+      core: {
+        accounts: {
+          create: vi.fn(async (params: unknown, options: { idempotencyKey: string }) => {
+            callOrder.push("v2.core.accounts.create");
+            createAccountCalls.push({ params, idempotencyKey: options.idempotencyKey });
+            if (opts.onCreateAccount) {
+              const result = opts.onCreateAccount();
+              if (result === "throw") throw new Error("simulated Stripe account creation failure");
+              if (typeof result === "object" && result !== null && "throwError" in result) throw result.throwError;
+              return result;
+            }
+            return defaultFakeV2Account(`acct_fake_${nextId++}`);
+          }),
+        },
+        accountLinks: {
+          create: vi.fn(async (params: { account: string }) => {
+            callOrder.push("v2.core.accountLinks.create");
+            createLinkCalls.push({ account: params.account, params });
+            if (opts.onCreateAccountLink) {
+              const result = opts.onCreateAccountLink();
+              if (result === "throw") throw new Error("simulated Stripe account-link failure");
+              return result;
+            }
+            return { url: "https://connect.stripe.com/setup/fake-link" };
+          }),
+        },
+      },
     },
     __createAccountCalls: createAccountCalls,
     __createLinkCalls: createLinkCalls,
+    __retrieveCalls: retrieveCalls,
     __callOrder: callOrder,
   };
 }
@@ -173,17 +221,18 @@ async function createTutorProfile(applicationStatus: "APPROVED" = "APPROVED") {
 }
 
 describe("ensureConnectAccount", () => {
-  it("creates an Express connected account when none exists", async () => {
+  it("creates a v2 recipient-configured Express-dashboard account when none exists", async () => {
     const { tutorProfile } = await createTutorProfile();
     const fake = makeFakeStripeClient();
     vi.mocked(getStripeClient).mockReturnValue(fake as never);
 
     const accountId = await ensureConnectAccount(tutorProfile.id);
 
-    expect(fake.accounts.create).toHaveBeenCalledTimes(1);
+    expect(fake.v2.core.accounts.create).toHaveBeenCalledTimes(1);
     expect(fake.__createAccountCalls[0].params).toMatchObject({
-      type: "express",
-      capabilities: { transfers: { requested: true } },
+      dashboard: "express",
+      defaults: { responsibilities: { fees_collector: "application", losses_collector: "application" } },
+      configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
       metadata: { tutorProfileId: tutorProfile.id },
     });
     expect(accountId).toBe(`acct_fake_1`);
@@ -198,9 +247,8 @@ describe("ensureConnectAccount", () => {
 
     const updated = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
     expect(updated.stripeConnectAccountId).toBe(accountId);
-    // Fake account has no active transfers/payouts and no outstanding
-    // requirements/details_submitted -> deriveTutorStripeConnectStatus's
-    // fallthrough case.
+    // Default fake v2 account has stripe_transfers status "pending" ->
+    // deriveInitialStatusFromV2Account's PENDING branch.
     expect(updated.stripeConnectStatus).toBe("PENDING");
   });
 
@@ -216,7 +264,7 @@ describe("ensureConnectAccount", () => {
     const accountId = await ensureConnectAccount(tutorProfile.id);
 
     expect(accountId).toBe("acct_preexisting");
-    expect(fake.accounts.create).not.toHaveBeenCalled();
+    expect(fake.v2.core.accounts.create).not.toHaveBeenCalled();
   });
 
   it("never creates a duplicate account across repeat onboarding starts for the same tutor", async () => {
@@ -228,7 +276,7 @@ describe("ensureConnectAccount", () => {
     const second = await ensureConnectAccount(tutorProfile.id);
 
     expect(first).toBe(second);
-    expect(fake.accounts.create).toHaveBeenCalledTimes(1);
+    expect(fake.v2.core.accounts.create).toHaveBeenCalledTimes(1);
   });
 
   it("safe failure: if Stripe account creation fails, nothing is persisted and the error propagates", async () => {
@@ -244,7 +292,7 @@ describe("ensureConnectAccount", () => {
   });
 });
 
-describe("ensureConnectAccount — PROD-CONNECT-RETRYFIX1 idempotency epoch recovery", () => {
+describe("ensureConnectAccount — PROD-CONNECT-RETRYFIX1 idempotency epoch recovery (Accounts v2)", () => {
   it("1/10: confirmed pre-creation 4xx (StripeInvalidRequestError) advances the epoch for the NEXT attempt, without persisting an account", async () => {
     const { tutorProfile } = await createTutorProfile();
     const fake = makeFakeStripeClient({
@@ -283,13 +331,7 @@ describe("ensureConnectAccount — PROD-CONNECT-RETRYFIX1 idempotency epoch reco
             }),
           };
         }
-        return {
-          id: "acct_fake_after_fix",
-          capabilities: { transfers: "inactive" as const },
-          payouts_enabled: false,
-          details_submitted: false,
-          requirements: { disabled_reason: null, currently_due: [], past_due: [] },
-        };
+        return defaultFakeV2Account("acct_fake_after_fix");
       },
     });
     vi.mocked(getStripeClient).mockReturnValue(fake as never);
@@ -395,7 +437,7 @@ describe("ensureConnectAccount — PROD-CONNECT-RETRYFIX1 idempotency epoch reco
     const accountId = await ensureConnectAccount(tutorProfile.id);
 
     expect(accountId).toBe("acct_preexisting");
-    expect(fake.accounts.create).not.toHaveBeenCalled();
+    expect(fake.v2.core.accounts.create).not.toHaveBeenCalled();
   });
 
   it("9/10: concurrent requests hitting the same confirmed 4xx advance the epoch exactly once, not twice", async () => {
@@ -448,8 +490,18 @@ describe("createOnboardingLink", () => {
     const url = await createOnboardingLink(tutorProfile.id, "https://app.test/return", "https://app.test/refresh");
 
     expect(url).toBe("https://connect.stripe.com/setup/fake-link");
-    expect(fake.__callOrder).toEqual(["accounts.create", "accountLinks.create"]);
+    expect(fake.__callOrder).toEqual(["v2.core.accounts.create", "v2.core.accountLinks.create"]);
     expect(fake.__createLinkCalls[0].account).toBe("acct_fake_1");
+    expect(fake.__createLinkCalls[0].params).toMatchObject({
+      use_case: {
+        type: "account_onboarding",
+        account_onboarding: {
+          configurations: ["recipient"],
+          return_url: "https://app.test/return",
+          refresh_url: "https://app.test/refresh",
+        },
+      },
+    });
   });
 
   it("passes the persisted account id to accountLinks.create when an account already exists", async () => {
@@ -463,7 +515,7 @@ describe("createOnboardingLink", () => {
 
     await createOnboardingLink(tutorProfile.id, "https://app.test/return", "https://app.test/refresh");
 
-    expect(fake.accounts.create).not.toHaveBeenCalled();
+    expect(fake.v2.core.accounts.create).not.toHaveBeenCalled();
     expect(fake.__createLinkCalls[0].account).toBe("acct_preexisting");
   });
 
@@ -481,5 +533,44 @@ describe("createOnboardingLink", () => {
     // call reuses it rather than creating a second Stripe account.
     const persisted = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
     expect(persisted.stripeConnectAccountId).toBe("acct_fake_1");
+  });
+});
+
+describe("syncTutorConnectStatusFromStripe — deliberately still v1 accounts.retrieve", () => {
+  it("retrieves via the v1 accounts.retrieve endpoint (not v2), and updates status from the v1-shaped response", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    await db.tutorProfile.update({
+      where: { id: tutorProfile.id },
+      data: { stripeConnectAccountId: "acct_existing", stripeConnectStatus: "PENDING" },
+    });
+    const fake = makeFakeStripeClient({
+      onRetrieveV1Account: (id) => ({
+        id,
+        capabilities: { transfers: "active" as const },
+        payouts_enabled: true,
+        details_submitted: true,
+        requirements: { disabled_reason: null, currently_due: [], past_due: [] },
+      }),
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    const { syncTutorConnectStatusFromStripe } = await import("./stripeConnect");
+    await syncTutorConnectStatusFromStripe(tutorProfile.id);
+
+    expect(fake.__retrieveCalls).toEqual(["acct_existing"]);
+    expect(fake.v2.core.accounts.create).not.toHaveBeenCalled();
+    const updated = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    expect(updated.stripeConnectStatus).toBe("ACTIVE");
+  });
+
+  it("does nothing when the tutor has no stripeConnectAccountId yet", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    const { syncTutorConnectStatusFromStripe } = await import("./stripeConnect");
+    await syncTutorConnectStatusFromStripe(tutorProfile.id);
+
+    expect(fake.accounts.retrieve).not.toHaveBeenCalled();
   });
 });
