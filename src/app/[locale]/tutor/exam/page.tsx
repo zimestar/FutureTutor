@@ -4,7 +4,7 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorExamForm } from "@/components/dashboard/TutorExamForm";
-import { PLATFORM_EXAM_QUESTIONS } from "@/lib/exam/examQuestions";
+import { PLATFORM_EXAM_QUESTIONS, shuffleExamQuestionOptions } from "@/lib/exam/examQuestions";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Feedback";
@@ -67,7 +67,7 @@ export default async function TutorExamPage({
           {previousAttempts > 0 && <p className="text-sm font-semibold text-text-secondary">{t("previousAttempts", { count: previousAttempts })}</p>}
         </div>
         <div className="mt-6">
-        <TutorExamForm questions={PLATFORM_EXAM_QUESTIONS} />
+        <TutorExamForm questions={shuffleExamQuestionOptions(PLATFORM_EXAM_QUESTIONS)} />
         </div>
       </Surface>
     </DashboardShell>

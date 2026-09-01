@@ -18,6 +18,32 @@ export interface ExamQuestion {
 export const PLATFORM_EXAM_SLUG = "platform-exam-v1";
 export const PLATFORM_EXAM_PASSING_SCORE = 80;
 
+/**
+ * PROD-TUTOR1 — the correct answer for every one of the authored
+ * PLATFORM_EXAM_QUESTIONS happens to be the first-listed option, making the
+ * exam trivially guessable ("always pick the first option") without any
+ * subject-matter/policy knowledge. Grading is entirely id-based (see
+ * examAnswerKey.server.ts's scoreExam, which compares submitted answers to
+ * ANSWER_KEY by option id, never by position), so decorrelating *display*
+ * order from correctness requires no change to the answer key or scoring
+ * logic — only to what order a caller renders each question's options in.
+ * Returns new question/option objects; never mutates PLATFORM_EXAM_QUESTIONS
+ * or any option's id/label, only their order within each question.
+ */
+export function shuffleExamQuestionOptions(
+  questions: ExamQuestion[],
+  random: () => number = Math.random
+): ExamQuestion[] {
+  return questions.map((question) => {
+    const options = [...question.options];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return { ...question, options };
+  });
+}
+
 export const PLATFORM_EXAM_QUESTIONS: ExamQuestion[] = [
   {
     id: "q1",
