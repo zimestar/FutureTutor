@@ -1717,9 +1717,15 @@
       "OTHER": "Autre"
     },
     "fileLabel": "Fichier",
+    "chooseFile": "Choisir un fichier",
+    "dragDropPrompt": "Glissez-déposez votre fichier ici",
+    "dragDropOr": "ou",
+    "changeFile": "Changer de fichier",
+    "chooseFileAria": "Choisissez un fichier à téléverser. Formats acceptés : PDF, JPG ou PNG. Taille maximale 10 Mo.",
+    "fileSelectedAria": "Fichier sélectionné : {filename}. Cliquez pour choisir un autre fichier.",
     "uploading": "Téléversement…",
     "upload": "Téléverser",
-    "uploadHint": "PDF, JPG ou PNG, jusqu'à 10 Mo.",
+    "uploadHint": "PDF, JPG ou PNG • Max 10 Mo",
     "status": {
       "UPLOADED": "Téléversé",
       "PENDING_REVIEW": "En attente de révision",

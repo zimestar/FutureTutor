@@ -1717,9 +1717,15 @@
       "OTHER": "Other"
     },
     "fileLabel": "File",
+    "chooseFile": "Choose a file",
+    "dragDropPrompt": "Drag & drop your file here",
+    "dragDropOr": "or",
+    "changeFile": "Change file",
+    "chooseFileAria": "Choose a file to upload. Accepted formats: PDF, JPG, or PNG. Maximum size 10 MB.",
+    "fileSelectedAria": "Selected file: {filename}. Click to choose a different file.",
     "uploading": "Uploading…",
     "upload": "Upload",
-    "uploadHint": "PDF, JPG, or PNG, up to 10 MB.",
+    "uploadHint": "PDF, JPG, or PNG • Max 10 MB",
     "status": {
       "UPLOADED": "Uploaded",
       "PENDING_REVIEW": "Pending Review",
