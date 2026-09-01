@@ -12,16 +12,22 @@ import type {
 
 export type RequestTutoringMode = "ONLINE" | "IN_PERSON";
 
-export function TutoringModeSelector({ value, onChange }: {
+export function TutoringModeSelector({ value, onChange, betaOnlineOnly = false }: {
   value: RequestTutoringMode;
   onChange: (value: RequestTutoringMode) => void;
+  /** BETA-HARDEN1 — computed server-side via closedBetaOnlineOnlyActive()
+   * and passed down through QuickMatchRequestForm; this component never
+   * decides the gate itself. When true, IN_PERSON is not offered at all —
+   * the Closed Beta is online-only (BETA-USER1 §20 #5). */
+  betaOnlineOnly?: boolean;
 }) {
   const t = useTranslations("inPersonTutoring");
+  const modes = betaOnlineOnly ? (["ONLINE"] as const) : (["ONLINE", "IN_PERSON"] as const);
   return (
     <fieldset>
       <legend className="mb-2 text-sm font-semibold text-navy">{t("mode.legend")}</legend>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(["ONLINE", "IN_PERSON"] as const).map((mode) => {
+      <div className={`grid gap-3 ${betaOnlineOnly ? "" : "sm:grid-cols-2"}`}>
+        {modes.map((mode) => {
           const Icon = mode === "ONLINE" ? Monitor : Home;
           return (
             <label key={mode} className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${value === mode ? "border-blue bg-blue/5" : "border-neutral-200 bg-white hover:border-blue/50"}`}>

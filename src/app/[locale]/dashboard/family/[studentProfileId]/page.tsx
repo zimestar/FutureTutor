@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect, Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { InviteGuardianForm } from "@/components/dashboard/InviteGuardianForm";
@@ -92,6 +93,7 @@ export default async function FamilyStudentDetailPage({
               studentProfileId={studentProfileId}
               editableFields={profileView.editableFields}
               academicLevels={academicLevels}
+              betaOnlineOnly={closedBetaOnlineOnlyActive()}
               initialValues={{
                 firstName: studentProfile.firstName,
                 lastName: studentProfile.lastName,

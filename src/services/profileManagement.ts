@@ -2,6 +2,7 @@ import "server-only";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
 import { writeAuditLog } from "@/lib/audit";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { resolveStudentCapabilities } from "@/services/studentAuthorization";
 import { NotAuthorizedError } from "@/services/familyManagement";
 
@@ -119,6 +120,12 @@ export function resolveEditableStudentProfileFields(capabilities: {
 export class ForbiddenFieldError extends Error {}
 export class InvalidFieldValueError extends Error {}
 export class ParentProfileNotFoundError extends Error {}
+/** BETA-HARDEN1 — thrown instead of silently coercing a submitted
+ * IN_PERSON/BOTH tutoringMode to ONLINE, so the caller gets a clear,
+ * beta-specific message rather than a generic invalid-input error, and so a
+ * crafted request can't silently "succeed" into a value the beta doesn't
+ * actually support. */
+export class BetaOnlineOnlyModeError extends Error {}
 
 export interface StudentProfileUpdateInput {
   firstName?: string;
@@ -220,6 +227,25 @@ export async function updateStudentProfileForActor(
   }
   if (submittedFields.includes("tutoringMode")) {
     if (!VALID_TUTORING_MODES.includes(input.tutoringMode!)) throw new InvalidFieldValueError();
+    // BETA-HARDEN1 — the Closed Beta is online-only (BETA-USER1 §20 #5:
+    // IN_PERSON/BOTH were found fully live and unguarded). "BOTH" is
+    // rejected alongside "IN_PERSON" because it still permits an in-person
+    // match. Only a genuine CHANGE into a non-ONLINE value is rejected —
+    // resubmitting a historical profile's existing non-ONLINE value
+    // unchanged (e.g. saving an edit to `city` on a profile that predates
+    // this gate) must not be blocked, since that would silently prevent a
+    // guardian from editing any other field on that profile at all. This
+    // never mass-mutates historical data — it only guards what a NEW write
+    // can newly set.
+    if (closedBetaOnlineOnlyActive() && input.tutoringMode !== "ONLINE") {
+      const current = await client.studentProfile.findUnique({
+        where: { id: studentProfileId },
+        select: { tutoringMode: true },
+      });
+      if (current?.tutoringMode !== input.tutoringMode) {
+        throw new BetaOnlineOnlyModeError();
+      }
+    }
     data.tutoringMode = input.tutoringMode;
   }
   if (submittedFields.includes("preferredLanguage")) {

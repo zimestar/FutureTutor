@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { StudentProfileEditForm } from "@/components/dashboard/StudentProfileEditForm";
@@ -102,6 +103,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
           studentProfileId={view.studentProfile.id}
           editableFields={view.editableFields}
           academicLevels={academicLevels}
+          betaOnlineOnly={closedBetaOnlineOnlyActive()}
           initialValues={{
             firstName: view.studentProfile.firstName,
             lastName: view.studentProfile.lastName,

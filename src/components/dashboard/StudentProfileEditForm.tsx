@@ -36,11 +36,20 @@ export function StudentProfileEditForm({
   initialValues,
   editableFields,
   academicLevels,
+  betaOnlineOnly = false,
 }: {
   studentProfileId: string;
   initialValues: StudentProfileEditFormValues;
   editableFields: readonly StudentProfileGuardianField[];
   academicLevels: { id: string; label: string }[];
+  /** BETA-HARDEN1 — computed server-side via closedBetaOnlineOnlyActive()
+   * and passed down; this component never decides the gate itself. When
+   * true, IN_PERSON/BOTH are hidden from the selector UNLESS the profile's
+   * current value is already one of them (a historical row predating this
+   * gate) — in that case it stays selectable so the select's current value
+   * remains representable, but choosing anything other than the current
+   * value or ONLINE is still rejected server-side either way. */
+  betaOnlineOnly?: boolean;
 }) {
   const t = useTranslations("profile.studentForm");
   const [state, formAction, pending] = useActionState(updateStudentProfileAction, undefined);
@@ -125,11 +134,18 @@ export function StudentProfileEditForm({
           {canEdit("tutoringMode") ? (
             <Select name="tutoringMode" defaultValue={initialValues.tutoringMode}>
               <option value="ONLINE">{t("tutoringMode.ONLINE")}</option>
-              <option value="IN_PERSON">{t("tutoringMode.IN_PERSON")}</option>
-              <option value="BOTH">{t("tutoringMode.BOTH")}</option>
+              {(!betaOnlineOnly || initialValues.tutoringMode === "IN_PERSON") && (
+                <option value="IN_PERSON">{t("tutoringMode.IN_PERSON")}</option>
+              )}
+              {(!betaOnlineOnly || initialValues.tutoringMode === "BOTH") && (
+                <option value="BOTH">{t("tutoringMode.BOTH")}</option>
+              )}
             </Select>
           ) : (
             <ReadOnlyValue>{t(`tutoringMode.${initialValues.tutoringMode}`)}</ReadOnlyValue>
+          )}
+          {betaOnlineOnly && canEdit("tutoringMode") && (
+            <p className="mt-1 text-xs text-slate">{t("tutoringModeBetaNote")}</p>
           )}
         </ProfileField>
       </div>

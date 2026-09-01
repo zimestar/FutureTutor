@@ -1481,7 +1481,8 @@
       "notYours": "Vous ne pouvez pas gérer cette réservation.",
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
       "paymentPreparationFailed": "La configuration du paiement n'a pas pu être complétée. Veuillez réessayer.",
-      "alreadyStarted": "Cette séance a déjà commencé et ne peut plus être annulée."
+      "alreadyStarted": "Cette séance a déjà commencé et ne peut plus être annulée.",
+      "betaBookingsUnavailable": "Les réservations seront bientôt disponibles. Pendant notre bêta fermée, vous pouvez créer un compte, parcourir les tuteurs et configurer le profil de l'élève — les réservations payantes ouvriront sous peu."
     }
   },
   "inPersonTutoring": {
@@ -1607,6 +1608,8 @@
       "invitationNoLongerAvailable": "Cette demande n'est plus disponible — elle a peut-être expiré ou été prise par un autre tuteur.",
       "paymentFailed": "Cette séance n'a pas pu être confirmée car le paiement n'a pas pu être complété.",
       "paymentPreparationFailed": "La configuration du paiement n'a pas pu être complétée. Veuillez réessayer.",
+      "betaBookingsUnavailable": "Les réservations seront bientôt disponibles. Pendant notre bêta fermée, vous pouvez créer un compte, parcourir les tuteurs et configurer le profil de l'élève — les réservations payantes ouvriront sous peu.",
+      "betaOnlineOnly": "Pendant notre bêta fermée, le tutorat est uniquement en ligne — les demandes en personne ne sont pas encore disponibles.",
       "generic": "Une erreur est survenue. Veuillez réessayer."
     }
   },
@@ -1974,6 +1977,7 @@
       "notAuthorized": "Vous n'avez pas la permission de faire cela.",
       "invalidInput": "Veuillez vérifier vos informations et réessayer.",
       "forbiddenField": "Vous n'avez pas la permission de modifier ce champ.",
+      "betaOnlineOnly": "Pendant notre bêta fermée, le tutorat est uniquement en ligne — le mode en personne n'est pas encore disponible.",
       "generic": "Une erreur s'est produite. Veuillez réessayer."
     },
     "studentForm": {
@@ -1989,6 +1993,7 @@
       "academicLevelLabel": "Niveau scolaire",
       "anyLevel": "Non défini",
       "tutoringModeLabel": "Mode de tutorat",
+      "tutoringModeBetaNote": "En ligne uniquement pendant notre bêta fermée.",
       "tutoringMode": {
         "ONLINE": "En ligne",
         "IN_PERSON": "En personne",

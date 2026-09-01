@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { closedBetaFinancialGateActive, closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { canInitiatePaidBooking, canPayForStudent } from "@/services/studentAuthorization";
 import {
   createTutoringRequestSchema,
@@ -81,6 +82,15 @@ export async function createTutoringRequestAction(
   });
   if (!parsed.success) return { success: false, error: t("invalidInput") };
   const data = parsed.data;
+
+  // BETA-HARDEN1 — Closed Beta is online-only (BETA-USER1 §20 #5). "BOTH"
+  // is rejected alongside "IN_PERSON" since it still permits an in-person
+  // match. Checked before any DB write (quote creation, request creation)
+  // so a crafted request can never even produce an orphaned in-person
+  // TutoringRequest row while the gate is active.
+  if (closedBetaOnlineOnlyActive() && data.tutoringMode !== "ONLINE") {
+    return { success: false, error: t("betaOnlineOnly") };
+  }
 
   // Phase H.7 — the learner is now an explicit, client-selected
   // studentProfileId (self, or a linked child), never self-derived from
@@ -184,7 +194,10 @@ export async function createTutoringRequestAction(
 
 export type PreparePaymentState =
   | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
-  | { success: false; error: string; retryable: boolean };
+  // `reason: "beta_gate"` lets the UI distinguish "the Closed Beta financial
+  // gate is active" from an ordinary transient payment-preparation failure —
+  // see QuickMatchPriceReview.tsx.
+  | { success: false; error: string; retryable: boolean; reason?: "beta_gate" };
 
 /** Called once the price is shown, before the student clicks confirm — in
  * live mode this is what lets the client render the Payment Element; in
@@ -193,6 +206,15 @@ export type PreparePaymentState =
  * transaction — see the Payment model's schema domain comment. */
 export async function preparePaymentForRequestAction(tutoringRequestId: string): Promise<PreparePaymentState> {
   const t = await getTranslations("quickMatch.errors");
+
+  // BETA-HARDEN1 — Closed Beta financial gate, checked first so a crafted
+  // direct call fails closed regardless of caller. Quick Match's financial
+  // boundary (this action + confirmTutoringRequestAction below) must
+  // respect the same gate as Direct Booking's.
+  if (closedBetaFinancialGateActive()) {
+    return { success: false, error: t("betaBookingsUnavailable"), retryable: false, reason: "beta_gate" };
+  }
+
   const session = await auth();
   // Phase H.7 — the actor may be the Parent who created this request.
   // canPayForStudent below (checked against request.studentProfileId, the
@@ -233,6 +255,16 @@ export async function confirmTutoringRequestAction(
   formData: FormData
 ): Promise<TutoringRequestActionState> {
   const t = await getTranslations("quickMatch.errors");
+
+  // BETA-HARDEN1 — defense-in-depth: this is the actual financial-boundary
+  // crossing point for Quick Match (locks the quote, flips the request to
+  // MATCHING, and kicks off real tutor dispatch), so it is gated
+  // independently of preparePaymentForRequestAction above rather than
+  // trusting that step to have already been called.
+  if (closedBetaFinancialGateActive()) {
+    return { error: t("betaBookingsUnavailable") };
+  }
+
   const session = await auth();
   // Phase H.7 — same widening as preparePaymentForRequestAction; the real
   // gate remains canPayForStudent against request.studentProfileId below.

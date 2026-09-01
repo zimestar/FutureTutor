@@ -105,9 +105,10 @@ export function QuickMatchPriceReview({
           {(preparationView.state === "failed-retryable" || preparationView.state === "failed-terminal") && (
             <div className="mb-3 rounded-md bg-error-light p-3">
               <p role="alert" className="text-sm font-semibold text-error">{preparationView.error}</p>
-              {preparationView.state === "failed-terminal" && (
-                <p className="mt-2 text-sm text-text-secondary">{t("review.restartPaymentFlow")}</p>
-              )}
+              {preparationView.state === "failed-terminal" &&
+                !(prepareResult?.success === false && prepareResult.reason === "beta_gate") && (
+                  <p className="mt-2 text-sm text-text-secondary">{t("review.restartPaymentFlow")}</p>
+                )}
             </div>
           )}
           {preparationView.state !== "failed-terminal" && (

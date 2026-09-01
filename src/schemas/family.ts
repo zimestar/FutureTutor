@@ -49,10 +49,38 @@ export const claimInvitationSchema = z.object({
 /** Used only on the claim page's new-account-creation branch (§19 of the
  * H.4 prompt) — email is intentionally NOT part of this schema, since it is
  * always bound to the invitation's own invitedEmailNormalized, never taken
- * from client input. */
+ * from client input.
+ *
+ * BETA-HARDEN1 — deliberately kept WITHOUT a termsAccepted field: this
+ * schema is still used by claimStudentLoginWithNewAccountAction, whose
+ * restricted STUDENT_LOGIN account never gains self-managed/financial
+ * authority (confirmed against studentAuthorization.ts — approval only sets
+ * StudentProfile.userId, managementMode stays GUARDIAN_MANAGED). Per the
+ * mission's explicit instruction, that path's existing consent model (the
+ * inviting guardian's own authority) is preserved unchanged. The Terms
+ * requirement below is added only for the Parent-creating-account path, via
+ * the separate claimNewGuardianAccountSchema. */
 export const claimNewAccountSchema = z.object({
   token: z.string().trim().min(1),
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
   password: z.string().min(8).max(72),
+});
+
+/** BETA-HARDEN1 — claimWithNewAccountAction's schema: identical to
+ * claimNewAccountSchema plus a required Terms acceptance checkbox, mirroring
+ * registerSchema's own termsAccepted field exactly (src/schemas/auth.ts) so
+ * the two consent-capture points behave identically. This closes the gap
+ * BETA-USER1 found: a brand-new, fully financially-capable Parent account
+ * created via GUARDIAN_LINK claim previously never passed through any
+ * Terms-of-Service control at all. */
+export const claimNewGuardianAccountSchema = z.object({
+  token: z.string().trim().min(1),
+  firstName: z.string().trim().min(1).max(50),
+  lastName: z.string().trim().min(1).max(50),
+  password: z.string().min(8).max(72),
+  termsAccepted: z.preprocess(
+    (value) => (value === null ? undefined : value),
+    z.string().trim().min(1)
+  ),
 });

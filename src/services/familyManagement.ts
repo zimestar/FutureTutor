@@ -3,6 +3,7 @@ import { randomBytes, createHash } from "crypto";
 import { Prisma } from "@/generated/prisma/client";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { hasActiveGuardianAuthority } from "@/services/studentAuthorization";
 
@@ -225,6 +226,10 @@ export async function createGuardianManagedStudent(
         academicLevelId: input.academicLevelId ?? null,
         managementMode: "GUARDIAN_MANAGED",
         userId: null,
+        // BETA-HARDEN1 — see signup.ts's identical comment: defaults new
+        // rows to ONLINE while the Closed Beta gate is active instead of
+        // the schema's own BOTH default, without touching any existing row.
+        tutoringMode: closedBetaOnlineOnlyActive() ? ("ONLINE" as const) : ("BOTH" as const),
       },
     });
 

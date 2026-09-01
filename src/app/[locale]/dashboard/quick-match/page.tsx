@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect, Link } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { QuickMatchRequestForm } from "@/components/dashboard/QuickMatchRequestForm";
@@ -208,7 +209,12 @@ export default async function StudentQuickMatchPage({
               {t("status.NO_TUTOR_FOUND.description", { round: latestRequest.dispatchRound })}
             </p>
           )}
-          <QuickMatchRequestForm subjects={subjectOptions} levels={levelOptions} studentProfileId={selectedStudentProfileId} />
+          <QuickMatchRequestForm
+            subjects={subjectOptions}
+            levels={levelOptions}
+            studentProfileId={selectedStudentProfileId}
+            betaOnlineOnly={closedBetaOnlineOnlyActive()}
+          />
         </>
       )}
     </DashboardShell>

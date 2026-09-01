@@ -8,6 +8,7 @@ import {
   getFamilyManagementDetail,
   revokeGuardianRelationship,
   createStudentLoginInvitation,
+  createGuardianManagedStudent,
   NotAuthorizedError,
   CannotRevokeOtherGuardianError,
 } from "./familyManagement";
@@ -15,6 +16,7 @@ import {
   getStudentProfileForActor,
   updateStudentProfileForActor,
   ForbiddenFieldError,
+  BetaOnlineOnlyModeError,
   type StudentProfileUpdateInput,
 } from "./profileManagement";
 
@@ -454,6 +456,112 @@ describe("Profile Edit", () => {
     const refetched = await db.studentProfile.findUniqueOrThrow({ where: { id: studentProfile.id } });
     expect(refetched.city).toBe("OriginalCity");
     expect(refetched.preferredLanguage).toBe("en");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BETA-HARDEN1 — Closed Beta online-only enforcement in
+// updateStudentProfileForActor (src/lib/closedBetaConfig.ts's
+// closedBetaOnlineOnlyActive()). CLOSED_BETA_MODE is set/restored around
+// each test so these assertions don't depend on ambient environment state.
+// ---------------------------------------------------------------------------
+
+describe("BETA-HARDEN1 — online-only tutoringMode gate", () => {
+  const ORIGINAL_MODE = process.env.CLOSED_BETA_MODE;
+  afterEach(() => {
+    if (ORIGINAL_MODE === undefined) delete process.env.CLOSED_BETA_MODE;
+    else process.env.CLOSED_BETA_MODE = ORIGINAL_MODE;
+  });
+
+  it("32. gate active: a self-managed Student cannot change tutoringMode to IN_PERSON", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, studentProfile } = await createSelfManagedStudent();
+    await expect(
+      updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "IN_PERSON" })
+    ).rejects.toThrow(BetaOnlineOnlyModeError);
+  });
+
+  it("33. gate active: an ACTIVE guardian cannot change a child's tutoringMode to BOTH", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, parentProfile } = await createParentUser();
+    const { studentProfile } = await createGuardianManagedChild(parentProfile.id);
+    await expect(
+      updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "BOTH" })
+    ).rejects.toThrow(BetaOnlineOnlyModeError);
+  });
+
+  it("34. gate active: changing tutoringMode to ONLINE always succeeds", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, studentProfile } = await createSelfManagedStudent();
+    const updated = await updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "ONLINE" });
+    expect(updated.tutoringMode).toBe("ONLINE");
+  });
+
+  it("35. gate active: resubmitting a historical profile's existing non-ONLINE value unchanged is a harmless no-op, not rejected — and does not block a concurrent edit to a different field", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, parentProfile } = await createParentUser();
+    const { studentProfile } = await createGuardianManagedChild(parentProfile.id);
+    // Simulate a profile created before this gate existed.
+    await db.studentProfile.update({ where: { id: studentProfile.id }, data: { tutoringMode: "BOTH" } });
+
+    const updated = await updateStudentProfileForActor(db, user.id, studentProfile.id, {
+      tutoringMode: "BOTH",
+      city: "Ottawa",
+    });
+    expect(updated.tutoringMode).toBe("BOTH");
+    expect(updated.city).toBe("Ottawa");
+  });
+
+  it("36. gate active: a historical non-ONLINE profile still cannot be changed to a DIFFERENT non-ONLINE value", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, parentProfile } = await createParentUser();
+    const { studentProfile } = await createGuardianManagedChild(parentProfile.id);
+    await db.studentProfile.update({ where: { id: studentProfile.id }, data: { tutoringMode: "BOTH" } });
+
+    await expect(
+      updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "IN_PERSON" })
+    ).rejects.toThrow(BetaOnlineOnlyModeError);
+  });
+
+  it("37. gate inactive (CLOSED_BETA_MODE=inactive): IN_PERSON/BOTH are accepted exactly as before this mission", async () => {
+    process.env.CLOSED_BETA_MODE = "inactive";
+    const { user, studentProfile } = await createSelfManagedStudent();
+    const updated = await updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "IN_PERSON" });
+    expect(updated.tutoringMode).toBe("IN_PERSON");
+  });
+
+  it("38. createGuardianManagedStudent (the real service function, not this file's raw-Prisma test fixture) defaults new children to ONLINE while the gate is active, not the schema's own BOTH default", async () => {
+    process.env.CLOSED_BETA_MODE = "active";
+    const { user, parentProfile } = await createParentUser();
+    const { studentProfile } = await createGuardianManagedStudent(db, user.id, {
+      firstName: "Gate",
+      lastName: "Default",
+      dateOfBirth: new Date("2015-01-01T00:00:00.000Z"),
+    });
+    createdStudentProfileIds.push(studentProfile.id);
+    const relationship = await db.parentStudentRelationship.findFirstOrThrow({
+      where: { studentProfileId: studentProfile.id, parentProfileId: parentProfile.id },
+    });
+    createdRelationshipIds.push(relationship.id);
+
+    expect(studentProfile.tutoringMode).toBe("ONLINE");
+  });
+
+  it("39. createGuardianManagedStudent defaults new children to BOTH when the gate is explicitly inactive — unchanged pre-mission behavior", async () => {
+    process.env.CLOSED_BETA_MODE = "inactive";
+    const { user, parentProfile } = await createParentUser();
+    const { studentProfile } = await createGuardianManagedStudent(db, user.id, {
+      firstName: "Gate",
+      lastName: "Inactive",
+      dateOfBirth: new Date("2015-01-01T00:00:00.000Z"),
+    });
+    createdStudentProfileIds.push(studentProfile.id);
+    const relationship = await db.parentStudentRelationship.findFirstOrThrow({
+      where: { studentProfileId: studentProfile.id, parentProfileId: parentProfile.id },
+    });
+    createdRelationshipIds.push(relationship.id);
+
+    expect(studentProfile.tutoringMode).toBe("BOTH");
   });
 });
 

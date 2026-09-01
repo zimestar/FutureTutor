@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { closedBetaFinancialGateActive } from "@/lib/closedBetaConfig";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
@@ -57,6 +58,16 @@ export async function createBookingAction(
   formData: FormData
 ): Promise<BookingActionState> {
   const t = await getTranslations("booking.errors");
+
+  // BETA-HARDEN1 — defense-in-depth: preparePaymentForBookingQuoteAction
+  // (src/lib/actions/payments.ts) already refuses to create a Stripe
+  // PaymentIntent while the gate is active, so a well-behaved client can
+  // never reach this action with a usable payment. This second check
+  // closes the same door for a crafted request that skips payment prep
+  // entirely and calls this action directly.
+  if (closedBetaFinancialGateActive()) {
+    return { error: t("betaBookingsUnavailable") };
+  }
 
   const session = await auth();
   // Phase H.7 — the actor may now legitimately be a PARENT booking for a

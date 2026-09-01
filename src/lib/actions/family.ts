@@ -15,7 +15,9 @@ import {
   revokeGuardianSchema,
   claimInvitationSchema,
   claimNewAccountSchema,
+  claimNewGuardianAccountSchema,
 } from "@/schemas/family";
+import { TERMS_VERSION } from "@/content/legal/termsContent.en";
 import { createUserForSignup, createStudentLoginUser } from "@/services/signup";
 import {
   createGuardianManagedStudent,
@@ -257,12 +259,18 @@ export async function claimWithNewAccountAction(
   formData: FormData
 ): Promise<FamilyActionState> {
   const t = await getTranslations("family.errors");
+  const locale = await getLocale();
 
-  const parsed = claimNewAccountSchema.safeParse({
+  // BETA-HARDEN1 — this schema requires termsAccepted (unlike
+  // claimNewAccountSchema, still used by the STUDENT_LOGIN claim path); a
+  // crafted request omitting it fails validation here, before any account
+  // is created.
+  const parsed = claimNewGuardianAccountSchema.safeParse({
     token: formData.get("token"),
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     password: formData.get("password"),
+    termsAccepted: formData.get("termsAccepted"),
   });
   if (!parsed.success) return { error: t("invalidInput") };
 
@@ -293,6 +301,13 @@ export async function claimWithNewAccountAction(
     email: invitation.invitedEmailNormalized,
     passwordHash,
     role: "PARENT",
+    // BETA-HARDEN1 — same three fields, same values registerAction stamps
+    // on an ordinary direct signup (src/lib/actions/auth.ts), so this
+    // second real account-creation path captures consent identically
+    // rather than leaving it null.
+    termsAcceptedAt: new Date(),
+    termsAcceptedVersion: TERMS_VERSION,
+    termsAcceptedLocale: locale,
   });
 
   await signIn("credentials", { email: invitation.invitedEmailNormalized, password: parsed.data.password, redirect: false });

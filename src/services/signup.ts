@@ -1,5 +1,6 @@
 import "server-only";
 import type { PrismaClient, Prisma } from "@/generated/prisma/client";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 
 /**
  * Phase H.3 — the atomic User+profile creation core shared by every signup
@@ -52,7 +53,19 @@ export async function createUserForSignup(client: SignupClient, input: CreateUse
     }
     profileData = {
       studentProfile: {
-        create: { firstName, lastName, managementMode: "SELF_MANAGED" as const, dateOfBirth },
+        // BETA-HARDEN1 — new Student profiles default to ONLINE while the
+        // Closed Beta's online-only gate is active, instead of the schema's
+        // own BOTH default (BETA-USER1 §20 #5 found every new profile
+        // silently defaulting to BOTH, exposing an unguarded in-person
+        // path). Historical rows are never touched — this only changes what
+        // a brand-new row is created with.
+        create: {
+          firstName,
+          lastName,
+          managementMode: "SELF_MANAGED" as const,
+          dateOfBirth,
+          tutoringMode: closedBetaOnlineOnlyActive() ? ("ONLINE" as const) : ("BOTH" as const),
+        },
       },
     };
   } else if (role === "PARENT") {

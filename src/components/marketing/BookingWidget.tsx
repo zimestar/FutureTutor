@@ -363,7 +363,7 @@ export function BookingWidget({
                 >
                   {t("retryPaymentCta")}
                 </button>
-              ) : (
+              ) : payment?.success === false && payment.reason === "beta_gate" ? null : (
                 <p className="mt-2 text-sm text-text-secondary">{t("restartPaymentFlow")}</p>
               )}
             </div>

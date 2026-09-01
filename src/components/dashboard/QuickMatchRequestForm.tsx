@@ -27,10 +27,15 @@ export function QuickMatchRequestForm({
   subjects,
   levels,
   studentProfileId,
+  betaOnlineOnly = false,
 }: {
   subjects: QuickMatchOption[];
   levels: QuickMatchOption[];
   studentProfileId: string;
+  /** BETA-HARDEN1 — computed server-side via closedBetaOnlineOnlyActive().
+   * When true, the mode selector never offers IN_PERSON, so the location
+   * fields it would otherwise reveal are unreachable through this form. */
+  betaOnlineOnly?: boolean;
 }) {
   const t = useTranslations("quickMatch");
   const [state, formAction, pending] = useActionState(createTutoringRequestAction, undefined);
@@ -72,7 +77,7 @@ export function QuickMatchRequestForm({
         </Select>
       </div>
 
-      <TutoringModeSelector value={tutoringMode} onChange={setTutoringMode} />
+      <TutoringModeSelector value={tutoringMode} onChange={setTutoringMode} betaOnlineOnly={betaOnlineOnly} />
 
       <div>
         <label htmlFor="durationMinutes" className="mb-1.5 block text-sm font-semibold text-navy">

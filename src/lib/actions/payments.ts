@@ -4,12 +4,17 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { closedBetaFinancialGateActive } from "@/lib/closedBetaConfig";
 import { preparePaymentForQuote, getOrCreatePaymentForQuote, ensureStripePaymentIntent } from "@/services/payments";
 import { canPayForStudent } from "@/services/studentAuthorization";
 
 export type PreparePaymentState =
   | { success: true; paymentId: string; clientSecret: string | null; usesStripe: boolean }
-  | { success: false; error: string; retryable: boolean };
+  // `reason: "beta_gate"` lets the UI distinguish "the Closed Beta financial
+  // gate is active" (not retryable by the user, ever, regardless of
+  // selection) from an ordinary transient payment-preparation failure —
+  // see BookingWidget.tsx/QuickMatchPriceReview.tsx.
+  | { success: false; error: string; retryable: boolean; reason?: "beta_gate" };
 
 /** Direct booking's equivalent of tutoringRequests.ts's
  * preparePaymentForRequestAction — same shape, anchored on a
@@ -17,6 +22,17 @@ export type PreparePaymentState =
  * so there's no TutoringRequest to validate against). */
 export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: string): Promise<PreparePaymentState> {
   const t = await getTranslations("booking.errors");
+
+  // BETA-HARDEN1 — the Closed Beta financial gate. Checked first, before
+  // any session/authorization work, so a crafted direct call fails closed
+  // regardless of who the caller is. This is the exact choke point that
+  // BETA-USER1 identified as auto-firing a live Stripe PaymentIntent off a
+  // single slot selection — no Stripe object is created past this point
+  // while the gate is active.
+  if (closedBetaFinancialGateActive()) {
+    return { success: false, error: t("betaBookingsUnavailable"), retryable: false, reason: "beta_gate" };
+  }
+
   const session = await auth();
   // Phase H.7 — the actor may be the Parent who created this quote.
   // canPayForStudent below (checked against quote.studentProfileId, the

@@ -10,6 +10,7 @@ import {
   updateParentProfileForActor,
   ForbiddenFieldError,
   InvalidFieldValueError,
+  BetaOnlineOnlyModeError,
   ParentProfileNotFoundError,
 } from "@/services/profileManagement";
 import { NotAuthorizedError } from "@/services/familyManagement";
@@ -19,6 +20,7 @@ export type ProfileActionState = { error?: string; success?: boolean } | undefin
 function mapErrorToKey(error: unknown): string {
   if (error instanceof NotAuthorizedError) return "notAuthorized";
   if (error instanceof ForbiddenFieldError) return "forbiddenField";
+  if (error instanceof BetaOnlineOnlyModeError) return "betaOnlineOnly";
   if (error instanceof InvalidFieldValueError) return "invalidInput";
   if (error instanceof ParentProfileNotFoundError) return "notAuthorized";
   return "generic";

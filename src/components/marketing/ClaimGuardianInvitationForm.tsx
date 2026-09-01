@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { claimInvitationAction, claimWithNewAccountAction } from "@/lib/actions/family";
@@ -20,6 +21,10 @@ export function ClaimGuardianInvitationForm({
   sessionRole: string | null;
 }) {
   const t = useTranslations("family.claimPage");
+  // BETA-HARDEN1 — reuses the exact same Terms/Privacy copy the ordinary
+  // signup form shows (src/components/marketing/SignupForm.tsx), rather
+  // than duplicating equivalent strings under a second namespace.
+  const tAuth = useTranslations("auth.signup");
   const [claimState, claimAction, claimPending] = useActionState(claimInvitationAction, undefined);
   const [newAccountState, newAccountAction, newAccountPending] = useActionState(claimWithNewAccountAction, undefined);
 
@@ -106,6 +111,27 @@ export function ClaimGuardianInvitationForm({
           <Input id="claim-password" name="password" type="password" minLength={8} required />
           <p className="mt-1.5 text-xs text-slate">{t("passwordHint")}</p>
         </div>
+
+        <label className="flex items-start gap-2.5 text-sm text-slate">
+          <input
+            type="checkbox"
+            name="termsAccepted"
+            value="true"
+            required
+            className="mt-0.5 size-4 shrink-0 accent-blue"
+          />
+          <span>
+            {tAuth("termsAcceptancePrefix")}{" "}
+            <Link href="/terms" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
+              {tAuth("termsAcceptanceLink")}
+            </Link>{" "}
+            {tAuth("privacyAcknowledgementPrefix")}{" "}
+            <Link href="/privacy" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
+              {tAuth("privacyAcknowledgementLink")}
+            </Link>
+            .
+          </span>
+        </label>
 
         <Button type="submit" disabled={newAccountPending} data-testid="create-account-and-claim">
           {newAccountPending ? t("creating") : t("createAndClaimCta")}

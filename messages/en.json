@@ -1481,7 +1481,8 @@
       "notYours": "You can't manage this booking.",
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
       "paymentPreparationFailed": "Payment setup could not be completed. Please try again.",
-      "alreadyStarted": "This session has already started and can no longer be cancelled."
+      "alreadyStarted": "This session has already started and can no longer be cancelled.",
+      "betaBookingsUnavailable": "Bookings will be available soon. During our Closed Beta you can create an account, browse tutors, and set up your student profile — paid bookings open shortly."
     }
   },
   "inPersonTutoring": {
@@ -1607,6 +1608,8 @@
       "invitationNoLongerAvailable": "This request is no longer available — it may have expired or been taken by another tutor.",
       "paymentFailed": "This session could not be confirmed because the payment could not be completed.",
       "paymentPreparationFailed": "Payment setup could not be completed. Please try again.",
+      "betaBookingsUnavailable": "Bookings will be available soon. During our Closed Beta you can create an account, browse tutors, and set up your student profile — paid bookings open shortly.",
+      "betaOnlineOnly": "During our Closed Beta, tutoring is online-only — in-person requests aren't available yet.",
       "generic": "Something went wrong. Please try again."
     }
   },
@@ -1974,6 +1977,7 @@
       "notAuthorized": "You don't have permission to do that.",
       "invalidInput": "Please check your information and try again.",
       "forbiddenField": "You don't have permission to update that field.",
+      "betaOnlineOnly": "During our Closed Beta, tutoring is online-only — in-person mode isn't available yet.",
       "generic": "Something went wrong. Please try again."
     },
     "studentForm": {
@@ -1989,6 +1993,7 @@
       "academicLevelLabel": "Academic level",
       "anyLevel": "Not set",
       "tutoringModeLabel": "Tutoring mode",
+      "tutoringModeBetaNote": "Online-only during our Closed Beta.",
       "tutoringMode": {
         "ONLINE": "Online",
         "IN_PERSON": "In person",
