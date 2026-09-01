@@ -274,7 +274,10 @@ describe("Tutor Agreement page + navigation surfaces — FG-LEGAL2", () => {
   });
 
   it("§65: tutor dashboard navigation exposes a Tutor Agreement link in both onboarding and approved modes", () => {
-    const matches = tutorNav.match(/\/tutor-agreement/g) ?? [];
+    // Matches the href config exactly (as the other tests in this file
+    // already do), not any mention of the string "/tutor-agreement"
+    // anywhere in the file (e.g. an explanatory code comment).
+    const matches = tutorNav.match(/href: "\/tutor-agreement"/g) ?? [];
     expect(matches.length).toBe(2);
   });
 

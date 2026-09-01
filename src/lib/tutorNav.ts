@@ -13,7 +13,12 @@ export function tutorNavItems(
       { label: tNav("availability"), href: "/tutor/availability", group: tNav("tutoringGroup") },
       { label: tNav("payouts"), href: "/tutor/payouts", group: tNav("tutoringGroup") },
       { label: tNav("profile"), href: "/tutor/profile", group: tNav("tutoringGroup") },
-      { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("tutoringGroup") },
+      // PROD-TUTOR-UX2 — /tutor-agreement is a public marketing route (no
+      // Tutor sidebar of its own, shared with Terms/Privacy/Cookies); opens
+      // in a new tab so the dashboard tab/sidebar is never navigated away
+      // from, matching the exact convention already used for this same link
+      // elsewhere in the app (TutorAgreementBanner.tsx, TutorProfileForm.tsx).
+      { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("tutoringGroup"), openInNewTab: true },
     ];
   }
 
@@ -24,6 +29,6 @@ export function tutorNavItems(
     { label: tNav("training"), href: "/tutor/training", group: tNav("approvalGroup") },
     { label: tNav("exam"), href: "/tutor/exam", group: tNav("approvalGroup") },
     { label: tNav("availability"), href: "/tutor/availability", group: tNav("approvalGroup") },
-    { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("approvalGroup") },
+    { label: tNav("tutorAgreement"), href: "/tutor-agreement", group: tNav("approvalGroup"), openInNewTab: true },
   ];
 }

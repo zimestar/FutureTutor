@@ -19,6 +19,17 @@ export interface DashboardNavItem {
   label: string;
   href: string;
   group?: string;
+  /**
+   * PROD-TUTOR-UX2 — a small number of nav items point outside this app's
+   * authenticated shell (e.g. the public /tutor-agreement legal page, shared
+   * with the marketing site's Terms/Privacy/Cookies pages, has no Tutor
+   * sidebar of its own). Opening those in a new tab, matching the exact
+   * convention this codebase already uses for the same link elsewhere
+   * (TutorAgreementBanner.tsx, TutorProfileForm.tsx — both target="_blank"),
+   * keeps the current dashboard tab (and its sidebar) untouched rather than
+   * navigating the tutor away from their own navigation entirely.
+   */
+  openInNewTab?: boolean;
 }
 
 const navIcons: Record<string, typeof LayoutDashboard> = {
@@ -79,6 +90,7 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     onClick={onNavigate}
+                    {...(item.openInNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={cn(
                       "group flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
                       active ? "bg-blue/10 text-blue" : "text-neutral-600 hover:bg-neutral-100 hover:text-navy"
