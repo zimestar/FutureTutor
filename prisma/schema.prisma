@@ -487,6 +487,13 @@ model TutorProfile {
   reviewCount            Int                    @default(0)
   stripeConnectAccountId String?
   stripeConnectStatus    StripeConnectStatus    @default(NOT_STARTED)
+  /// PROD-CONNECT-RETRYFIX1 — participates in the Connect account-creation
+  /// idempotency key (`connect-account:${tutorProfileId}:${epoch}`).
+  /// Advances only after a confirmed pre-creation Stripe rejection
+  /// (StripeInvalidRequestError from accounts.create — proven nothing was
+  /// created); never on network/5xx/ambiguous outcomes, and never once
+  /// stripeConnectAccountId is set. See ensureConnectAccount.
+  stripeConnectAttemptEpoch Int                 @default(0)
   /// FG-LEGAL2 — Tutor Independent Service Provider Agreement acceptance
   /// record. Mirrors User.termsAcceptedAt/Version/Locale's shape (see
   /// migration 20260828213506_add_terms_acceptance_record) but lives here

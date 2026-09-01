@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { randomUUID } from "crypto";
+import Stripe from "stripe";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
@@ -48,7 +49,7 @@ interface FakeStripeAccount {
  * paths, deterministic fake ids). */
 function makeFakeStripeClient(
   opts: {
-    onCreateAccount?: () => FakeStripeAccount | "throw";
+    onCreateAccount?: () => FakeStripeAccount | "throw" | { throwError: unknown };
     onCreateAccountLink?: () => { url: string } | "throw";
   } = {}
 ) {
@@ -65,6 +66,7 @@ function makeFakeStripeClient(
         if (opts.onCreateAccount) {
           const result = opts.onCreateAccount();
           if (result === "throw") throw new Error("simulated Stripe account creation failure");
+          if (typeof result === "object" && result !== null && "throwError" in result) throw result.throwError;
           return result;
         }
         return {
@@ -239,6 +241,201 @@ describe("ensureConnectAccount", () => {
     const unchanged = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
     expect(unchanged.stripeConnectAccountId).toBeNull();
     expect(unchanged.stripeConnectStatus).toBe("NOT_STARTED");
+  });
+});
+
+describe("ensureConnectAccount — PROD-CONNECT-RETRYFIX1 idempotency epoch recovery", () => {
+  it("1/10: confirmed pre-creation 4xx (StripeInvalidRequestError) advances the epoch for the NEXT attempt, without persisting an account", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient({
+      onCreateAccount: () => ({
+        throwError: new Stripe.errors.StripeInvalidRequestError({
+          message: "You must complete your platform profile to use Connect and create live connected accounts.",
+          statusCode: 400,
+          type: "invalid_request_error",
+          headers: {},
+        }),
+      }),
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await expect(ensureConnectAccount(tutorProfile.id)).rejects.toThrow(/platform profile/);
+
+    const afterFailure = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    expect(afterFailure.stripeConnectAccountId).toBeNull();
+    expect(afterFailure.stripeConnectAttemptEpoch).toBe(1); // advanced for the NEXT attempt
+    expect(fake.__createAccountCalls[0].idempotencyKey).toBe(`connect-account:${tutorProfile.id}:0`);
+  });
+
+  it("2/10: the next explicit attempt after a confirmed 4xx uses a fresh idempotency key and can succeed", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    let callCount = 0;
+    const fake = makeFakeStripeClient({
+      onCreateAccount: () => {
+        callCount += 1;
+        if (callCount === 1) {
+          return {
+            throwError: new Stripe.errors.StripeInvalidRequestError({
+              message: "You must complete your platform profile to use Connect and create live connected accounts.",
+              statusCode: 400,
+              type: "invalid_request_error",
+              headers: {},
+            }),
+          };
+        }
+        return {
+          id: "acct_fake_after_fix",
+          capabilities: { transfers: "inactive" as const },
+          payouts_enabled: false,
+          details_submitted: false,
+          requirements: { disabled_reason: null, currently_due: [], past_due: [] },
+        };
+      },
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await expect(ensureConnectAccount(tutorProfile.id)).rejects.toThrow(/platform profile/);
+    const accountId = await ensureConnectAccount(tutorProfile.id); // simulates a later, explicit user click
+
+    expect(accountId).toBe("acct_fake_after_fix");
+    expect(fake.__createAccountCalls[0].idempotencyKey).toBe(`connect-account:${tutorProfile.id}:0`);
+    expect(fake.__createAccountCalls[1].idempotencyKey).toBe(`connect-account:${tutorProfile.id}:1`);
+    expect(fake.__createAccountCalls[0].idempotencyKey).not.toBe(fake.__createAccountCalls[1].idempotencyKey);
+  });
+
+  it("3/10: two ordinary calls within the same (unadvanced) epoch use the identical idempotency key", async () => {
+    // Mirrors production's crash-recovery case: a retry before any epoch
+    // advancement must reuse the exact same key so Stripe's own idempotency
+    // layer can safely rediscover a possibly-already-created account.
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await ensureConnectAccount(tutorProfile.id);
+    await ensureConnectAccount(tutorProfile.id); // short-circuits on stripeConnectAccountId, but if it hadn't...
+
+    expect(fake.__createAccountCalls).toHaveLength(1); // second call never reached Stripe at all (existing account)
+  });
+
+  it("4/10: Stripe 5xx (StripeAPIError) does NOT advance the epoch — outcome is indeterminate, same key must be reused", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient({
+      onCreateAccount: () => ({
+        throwError: new Stripe.errors.StripeAPIError({
+          message: "Stripe internal error",
+          statusCode: 500,
+          type: "api_error",
+          headers: {},
+        }),
+      }),
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await expect(ensureConnectAccount(tutorProfile.id)).rejects.toThrow(/Stripe internal error/);
+
+    const afterFailure = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    expect(afterFailure.stripeConnectAttemptEpoch).toBe(0);
+    expect(afterFailure.stripeConnectAccountId).toBeNull();
+  });
+
+  it("5/10: a network/connection error (StripeConnectionError) does NOT advance the epoch", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient({
+      onCreateAccount: () => ({
+        throwError: new Stripe.errors.StripeConnectionError({ message: "socket hang up" }),
+      }),
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await expect(ensureConnectAccount(tutorProfile.id)).rejects.toThrow(/socket hang up/);
+
+    const afterFailure = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    expect(afterFailure.stripeConnectAttemptEpoch).toBe(0);
+  });
+
+  it("6/10: a successful Account creation never advances the epoch (irrelevant once an account exists)", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await ensureConnectAccount(tutorProfile.id);
+
+    const after = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    expect(after.stripeConnectAttemptEpoch).toBe(0);
+    expect(after.stripeConnectAccountId).not.toBeNull();
+  });
+
+  it("7/10: Stripe success + a subsequent (simulated) persistence gap does not risk a duplicate account — the retry reuses the same epoch/key", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await ensureConnectAccount(tutorProfile.id); // Stripe succeeds, persisted normally
+    // Simulate the narrow crash window: Stripe created the account, but the
+    // local row never recorded it (e.g. a crash between Step B and Step C).
+    // The epoch was never touched by the successful call (case 6), so a
+    // recovery retry must derive the exact same idempotency key.
+    await db.tutorProfile.update({ where: { id: tutorProfile.id }, data: { stripeConnectAccountId: null } });
+
+    await ensureConnectAccount(tutorProfile.id);
+
+    expect(fake.__createAccountCalls).toHaveLength(2);
+    expect(fake.__createAccountCalls[0].idempotencyKey).toBe(fake.__createAccountCalls[1].idempotencyKey);
+  });
+
+  it("8/10: an existing stripeConnectAccountId short-circuits before Stripe is ever called (epoch irrelevant)", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    await db.tutorProfile.update({
+      where: { id: tutorProfile.id },
+      data: { stripeConnectAccountId: "acct_preexisting", stripeConnectStatus: "PENDING" },
+    });
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    const accountId = await ensureConnectAccount(tutorProfile.id);
+
+    expect(accountId).toBe("acct_preexisting");
+    expect(fake.accounts.create).not.toHaveBeenCalled();
+  });
+
+  it("9/10: concurrent requests hitting the same confirmed 4xx advance the epoch exactly once, not twice", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient({
+      onCreateAccount: () => ({
+        throwError: new Stripe.errors.StripeInvalidRequestError({
+          message: "You must complete your platform profile to use Connect and create live connected accounts.",
+          statusCode: 400,
+          type: "invalid_request_error",
+          headers: {},
+        }),
+      }),
+    });
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    const results = await Promise.allSettled([
+      ensureConnectAccount(tutorProfile.id),
+      ensureConnectAccount(tutorProfile.id),
+    ]);
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+
+    const after = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfile.id } });
+    // The compare-and-swap update means only the first writer's updateMany
+    // actually matches; the second's WHERE no longer matches and is a no-op.
+    expect(after.stripeConnectAttemptEpoch).toBe(1);
+    expect(after.stripeConnectAccountId).toBeNull();
+  });
+
+  it("10/10: the default epoch produces a key distinct from the historical (pre-fix) permanent key", async () => {
+    const { tutorProfile } = await createTutorProfile();
+    const fake = makeFakeStripeClient();
+    vi.mocked(getStripeClient).mockReturnValue(fake as never);
+
+    await ensureConnectAccount(tutorProfile.id);
+
+    const historicalPoisonedKey = `connect-account:${tutorProfile.id}`; // the pre-fix, unversioned key
+    const actualKeyUsed = fake.__createAccountCalls[0].idempotencyKey;
+    expect(actualKeyUsed).toBe(`connect-account:${tutorProfile.id}:0`);
+    expect(actualKeyUsed).not.toBe(historicalPoisonedKey);
   });
 });
 

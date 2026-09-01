@@ -1,5 +1,5 @@
 import "server-only";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 import type { StripeConnectStatus } from "@/generated/prisma/enums";
@@ -45,7 +45,27 @@ export function deriveTutorStripeConnectStatus(account: Stripe.Account): StripeC
 
 /** Step A/B/C — idempotent by construction: TutorProfile.stripeConnectAccountId
  * is the durable anchor; a retry finds the existing account rather than
- * creating a second one. */
+ * creating a second one.
+ *
+ * PROD-CONNECT-RETRYFIX1 — the Stripe idempotency key additionally includes
+ * stripeConnectAttemptEpoch. Stripe caches a POST's result under its
+ * idempotency key regardless of outcome, including a 4xx — so a permanent,
+ * un-varying key would replay a confirmed pre-creation rejection (e.g. an
+ * incomplete Connect platform profile) forever, even after the underlying
+ * condition is fixed, since nothing about the key ever changes. The epoch
+ * advances only when accounts.create throws StripeInvalidRequestError — the
+ * one error class Stripe's own SDK reserves for a definitive 400/404
+ * rejection of the request itself, which by construction means no Account
+ * object was created (confirmed empirically: zero connected accounts existed
+ * after every such failure during PROD-CONNECT1). Every other outcome
+ * (5xx/StripeAPIError, network/StripeConnectionError, rate limits, auth/
+ * permission errors) is treated by Stripe's own documentation as ambiguous
+ * or definitively NOT a proof-of-non-creation, so the epoch — and therefore
+ * the idempotency key — must stay unchanged, preserving the original
+ * crash-recovery guarantee (a retry safely rediscovers a possibly-already-
+ * created account instead of risking a duplicate). The advancing update is
+ * a guarded compare-and-swap on the exact epoch just used, so two concurrent
+ * requests hitting the same confirmed rejection can't double-advance. */
 export async function ensureConnectAccount(tutorProfileId: string): Promise<string> {
   const tutor = await db.tutorProfile.findUniqueOrThrow({
     where: { id: tutorProfileId },
@@ -54,15 +74,29 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
   if (tutor.stripeConnectAccountId) return tutor.stripeConnectAccountId;
 
   const stripe = getStripeClient();
-  const account = await stripe.accounts.create(
-    {
-      type: "express",
-      email: tutor.user.email,
-      capabilities: { transfers: { requested: true } },
-      metadata: { tutorProfileId },
-    },
-    { idempotencyKey: `connect-account:${tutorProfileId}` }
-  );
+  const attemptEpoch = tutor.stripeConnectAttemptEpoch;
+  const idempotencyKey = `connect-account:${tutorProfileId}:${attemptEpoch}`;
+
+  let account: Stripe.Account;
+  try {
+    account = await stripe.accounts.create(
+      {
+        type: "express",
+        email: tutor.user.email,
+        capabilities: { transfers: { requested: true } },
+        metadata: { tutorProfileId },
+      },
+      { idempotencyKey }
+    );
+  } catch (error) {
+    if (error instanceof Stripe.errors.StripeInvalidRequestError) {
+      await db.tutorProfile.updateMany({
+        where: { id: tutorProfileId, stripeConnectAccountId: null, stripeConnectAttemptEpoch: attemptEpoch },
+        data: { stripeConnectAttemptEpoch: { increment: 1 } },
+      });
+    }
+    throw error;
+  }
 
   const status = deriveTutorStripeConnectStatus(account);
   await db.tutorProfile.updateMany({
