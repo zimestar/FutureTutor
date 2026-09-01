@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
@@ -24,12 +24,28 @@ export function InterviewRubricForm({
 }) {
   const t = useTranslations("admin.tutorDetail.interview");
   const [pending, startTransition] = useTransition();
+  // Immediate, transient feedback that the save itself succeeded — the
+  // persistent completed-state summary (AdminInterviewSection, driven by
+  // fresh server data after revalidatePath) is the durable signal a
+  // returning admin sees; this local message is just the instant ack.
+  const [justSaved, setJustSaved] = useState(false);
 
   return (
     <form
-      action={(formData) => startTransition(() => saveInterviewRubricAction(tutorInterviewId, formData))}
+      action={(formData) => {
+        setJustSaved(false);
+        startTransition(async () => {
+          await saveInterviewRubricAction(tutorInterviewId, formData);
+          setJustSaved(true);
+        });
+      }}
       className="flex flex-col gap-4"
     >
+      {justSaved && !pending && (
+        <p role="status" className="rounded-md bg-success-light px-4 py-3 text-sm font-semibold text-success">
+          {t("saveSuccess")}
+        </p>
+      )}
       {CRITERIA.map((criterion) => (
         <div key={criterion} className="rounded-lg border border-neutral-200 p-3">
           <p className="mb-2 text-sm font-semibold text-navy">{t(`criteria.${criterion}`)}</p>

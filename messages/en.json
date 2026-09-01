@@ -1360,7 +1360,22 @@
         "selectScore": "Score (1-5)",
         "notesPlaceholder": "Notes (optional)",
         "saving": "Saving…",
-        "saveRubric": "Save rubric"
+        "saveRubric": "Save rubric",
+        "saveSuccess": "Interview evaluation saved successfully.",
+        "completedBadge": "Completed",
+        "completedMessage": "Interview completed successfully",
+        "completedOn": "Completed {date}",
+        "finalScore": "Final score: {score} / {max}",
+        "criterionScore": "{score} / {max}",
+        "editInterview": "Edit interview",
+        "cancelEdit": "Cancel edit",
+        "rescheduleInterview": "Reschedule",
+        "status": {
+          "SCHEDULED": "Scheduled",
+          "COMPLETED": "Completed",
+          "CANCELLED": "Cancelled",
+          "NO_SHOW": "No-show"
+        }
       },
       "trainingTitle": "Training",
       "examTitle": "Exam attempts",

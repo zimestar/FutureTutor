@@ -1360,7 +1360,22 @@
         "selectScore": "Note (1-5)",
         "notesPlaceholder": "Notes (optionnel)",
         "saving": "Enregistrement…",
-        "saveRubric": "Enregistrer la grille"
+        "saveRubric": "Enregistrer la grille",
+        "saveSuccess": "Évaluation d'entrevue enregistrée avec succès.",
+        "completedBadge": "Terminée",
+        "completedMessage": "Entrevue terminée avec succès",
+        "completedOn": "Terminée le {date}",
+        "finalScore": "Note finale : {score} / {max}",
+        "criterionScore": "{score} / {max}",
+        "editInterview": "Modifier l'entrevue",
+        "cancelEdit": "Annuler la modification",
+        "rescheduleInterview": "Reprogrammer",
+        "status": {
+          "SCHEDULED": "Planifiée",
+          "COMPLETED": "Terminée",
+          "CANCELLED": "Annulée",
+          "NO_SHOW": "Absence"
+        }
       },
       "trainingTitle": "Formation",
       "examTitle": "Tentatives d'examen",

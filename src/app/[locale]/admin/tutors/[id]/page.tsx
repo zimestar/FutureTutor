@@ -7,7 +7,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
-import { InterviewRubricForm } from "@/components/dashboard/InterviewRubricForm";
+import { AdminInterviewSection } from "@/components/dashboard/AdminInterviewSection";
 import { TutorPayoutTierSelect } from "@/components/dashboard/TutorPayoutTierSelect";
 import {
   hasApprovedEducationDocument,
@@ -26,7 +26,6 @@ import {
 } from "@/lib/actions/adminTutorReview";
 import { approveDocumentAction, rejectDocumentAction } from "@/lib/actions/tutorDocuments";
 import { verifyEducationAction, verifyCertificationAction } from "@/lib/actions/tutorEducation";
-import { scheduleInterviewAction } from "@/lib/actions/tutorInterview";
 import { requireTrainingAction } from "@/lib/actions/tutorTraining";
 import { requireExamAction } from "@/lib/actions/tutorExam";
 import { adminNavItems } from "@/lib/adminNav";
@@ -358,33 +357,22 @@ export default async function AdminTutorDetailPage({
       {/* --- Interview --- */}
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold text-navy">{t("interviewTitle")}</h2>
-        {status === "INTERVIEW_REQUIRED" || latestInterview ? (
-          <div className="rounded-lg border border-neutral-200 bg-white p-4">
-            <form action={scheduleInterviewAction.bind(null, tutor.id)} className="flex flex-wrap items-center gap-2">
-              <input
-                type="datetime-local"
-                name="scheduledAt"
-                defaultValue={latestInterview?.scheduledAt?.toISOString().slice(0, 16)}
-                className="h-9 rounded-md border border-neutral-300 px-2 text-sm"
-              />
-              <Button type="submit" variant="outline" size="sm">
-                {t("scheduleInterview")}
-              </Button>
-            </form>
-            {latestInterview && (
-              <div className="mt-4">
-                <InterviewRubricForm
-                  tutorInterviewId={latestInterview.id}
-                  existingScores={Object.fromEntries(
-                    latestInterview.evaluations.map((e) => [e.criterion, { score: e.score, notes: e.notes }])
-                  )}
-                />
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-slate">{t("interviewNotYet")}</p>
-        )}
+        <AdminInterviewSection
+          tutorProfileId={tutor.id}
+          showInitial={status === "INTERVIEW_REQUIRED" || Boolean(latestInterview)}
+          interview={
+            latestInterview
+              ? {
+                  id: latestInterview.id,
+                  scheduledAt: latestInterview.scheduledAt ? latestInterview.scheduledAt.toISOString() : null,
+                  completedAt: latestInterview.completedAt ? latestInterview.completedAt.toISOString() : null,
+                  status: latestInterview.status,
+                  evaluations: latestInterview.evaluations.map((e) => ({ criterion: e.criterion, score: e.score, notes: e.notes })),
+                }
+              : null
+          }
+          locale={locale}
+        />
       </section>
 
       {/* --- Training --- */}
