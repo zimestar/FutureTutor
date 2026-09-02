@@ -461,6 +461,14 @@
       "title": "Réinitialiser le mot de passe",
       "description": "Choisissez un nouveau mot de passe pour votre compte FutureTutor."
     },
+    "checkEmail": {
+      "title": "Vérifiez votre courriel",
+      "description": "Activez votre compte FutureTutor en confirmant votre adresse courriel."
+    },
+    "verifyEmail": {
+      "title": "Activez votre compte",
+      "description": "Confirmez votre adresse courriel pour activer votre compte FutureTutor."
+    },
     "about": {
       "title": "À propos",
       "description": "Découvrez la mission de FutureTutor : rendre l'accompagnement scolaire personnalisé accessible."
@@ -568,6 +576,39 @@
       "invalidDescription": "Le lien est invalide, expiré ou a déjà été utilisé. Demandez un nouveau lien pour continuer.",
       "requestAnother": "Demander un autre lien de réinitialisation"
     },
+    "checkEmail": {
+      "title": "Vérifiez votre courriel",
+      "subtitle": "Une dernière étape avant de pouvoir vous connecter.",
+      "withEmailDescription": "Nous avons envoyé un courriel d'activation à {email}. Ouvrez-le et cliquez sur « Activer mon compte » pour terminer la configuration de votre compte FutureTutor.",
+      "genericDescription": "Saisissez votre courriel ci-dessous et nous vous enverrons un lien d'activation si un compte est en attente de vérification.",
+      "steps": {
+        "title": "Que faire ensuite",
+        "check": "Ouvrez le courriel de FutureTutor et cliquez sur « Activer mon compte ».",
+        "spam": "Vous ne le voyez pas? Vérifiez votre dossier de courrier indésirable.",
+        "expiry": "Le lien d'activation expire dans 24 heures.",
+        "resend": "Toujours rien? Vous pouvez demander un nouveau courriel d'activation ci-dessous."
+      },
+      "resendTitle": "Renvoyer le courriel d'activation",
+      "emailLabel": "Adresse courriel",
+      "resendCta": "Renvoyer le courriel d'activation",
+      "resending": "Envoi en cours…",
+      "resendSubmittedTitle": "Si ce compte doit être activé, un courriel est en route",
+      "resendSubmittedDescription": "Vérifiez votre boîte de réception (et vos courriers indésirables) pour le lien d'activation.",
+      "backToLogin": "Retour à la connexion"
+    },
+    "verifyEmail": {
+      "title": "Activez votre compte",
+      "subtitle": "Un clic et vous êtes prêt.",
+      "description": "Cliquez sur le bouton ci-dessous pour confirmer qu'il s'agit de votre adresse courriel et activer votre compte FutureTutor.",
+      "activateCta": "Activer mon compte",
+      "activating": "Activation…",
+      "successTitle": "Compte activé",
+      "successDescription": "Votre courriel est vérifié et votre compte est prêt. Vous pouvez maintenant vous connecter.",
+      "loginAction": "Se connecter",
+      "invalidTitle": "Ce lien d'activation n'est plus valide",
+      "invalidDescription": "Le lien est invalide, expiré ou a déjà été utilisé. Demandez un nouveau courriel d'activation pour continuer.",
+      "requestAnother": "Demander un nouveau courriel d'activation"
+    },
     "errors": {
       "invalidInput": "Veuillez vérifier vos informations et réessayer.",
       "emailTaken": "Un compte existe déjà avec ce courriel.",
@@ -581,7 +622,8 @@
       "dateOfBirthInvalid": "Saisissez une date de naissance valide qui n'est pas dans le futur.",
       "termsAcceptedInvalid": "Vous devez accepter les Conditions d'utilisation pour créer un compte.",
       "signupFailed": "Nous n'avons pas pu créer votre compte. Veuillez réessayer.",
-      "accountCreatedSignInFailed": "Votre compte a été créé, mais nous n'avons pas pu vous connecter automatiquement. Veuillez vous connecter avec votre nouveau compte."
+      "accountCreatedSignInFailed": "Votre compte a été créé, mais nous n'avons pas pu vous connecter automatiquement. Veuillez vous connecter avec votre nouveau compte.",
+      "verificationEmailFailed": "Votre compte a été créé, mais nous n'avons pas pu envoyer votre courriel d'activation. Veuillez en demander un nouveau depuis la page de vérification des courriels."
     }
   },
   "passwordResetEmail": {
@@ -592,6 +634,17 @@
     "buttonLabel": "Réinitialiser le mot de passe",
     "expiryNotice": "Ce lien expirera dans {hours, plural, one {# heure} other {# heures}} et ne peut être utilisé qu'une seule fois.",
     "ignoreNotice": "Si vous n'avez pas demandé la réinitialisation de votre mot de passe, vous pouvez ignorer cet e-mail en toute sécurité — votre mot de passe ne sera pas modifié.",
+    "linkFallback": "Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
+    "footer": "FutureTutor — aider les élèves à apprendre avec le bon tuteur."
+  },
+  "verificationEmail": {
+    "subject": "Activez votre compte FutureTutor",
+    "heading": "Activez votre compte",
+    "greeting": "Bonjour,",
+    "intro": "Merci d'avoir créé un compte FutureTutor. Cliquez sur le bouton ci-dessous pour confirmer qu'il s'agit de votre adresse courriel et activer votre compte.",
+    "buttonLabel": "Activer mon compte",
+    "expiryNotice": "Ce lien expirera dans {hours, plural, one {# heure} other {# heures}} et ne peut être utilisé qu'une seule fois.",
+    "ignoreNotice": "Si vous n'avez pas créé de compte FutureTutor, vous pouvez ignorer cet e-mail en toute sécurité — aucun compte ne sera activé.",
     "linkFallback": "Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
     "footer": "FutureTutor — aider les élèves à apprendre avec le bon tuteur."
   },
@@ -1883,6 +1936,8 @@
       "creating": "Création…",
       "successTitle": "Demande envoyée",
       "successDescription": "Un parent ou tuteur légal actif pour cet élève doit approuver votre demande avant que vous n'ayez accès. Nous vous informerons une fois que ce sera fait.",
+      "verificationRequiredTitle": "Vérifiez votre courriel pour activer votre compte",
+      "verificationRequiredDescription": "Votre demande pour devenir tuteur légal a été envoyée, mais vous devez d'abord activer votre nouveau compte FutureTutor. Vérifiez votre courriel pour trouver un lien d'activation. Une fois activé, vous pourrez vous connecter — le tuteur légal existant devra tout de même approuver votre demande séparément.",
       "wrongEmailDescription": "Vous êtes connecté avec une adresse courriel différente de celle à laquelle cette invitation a été envoyée. Déconnectez-vous et réessayez, ou créez un nouveau compte avec l'adresse courriel invitée."
     },
     "studentLoginInvite": {
@@ -1923,7 +1978,9 @@
       "createAndClaimCta": "Créer le compte et accepter",
       "creating": "Création…",
       "successTitle": "Demande envoyée",
-      "successDescription": "Un parent ou tuteur légal de cet élève doit approuver votre demande avant que votre accès soit actif. Nous vous informerons une fois que ce sera fait."
+      "successDescription": "Un parent ou tuteur légal de cet élève doit approuver votre demande avant que votre accès soit actif. Nous vous informerons une fois que ce sera fait.",
+      "verificationRequiredTitle": "Vérifiez votre courriel pour activer votre compte",
+      "verificationRequiredDescription": "Votre demande a été envoyée, mais vous devez d'abord activer votre nouveau compte FutureTutor. Vérifiez votre courriel pour trouver un lien d'activation. Une fois activé, vous pourrez vous connecter — un parent ou tuteur légal devra tout de même approuver votre demande séparément."
     },
     "studentPendingActivation": {
       "title": "Votre compte est en attente d'approbation",
@@ -2458,7 +2515,8 @@
       "imageAlt": "Une apprenante participant à une séance de tutorat en ligne avec concentration",
       "login": { "statement": "Parfois, comprendre commence lorsqu’une personne explique autrement.", "support": "Retrouvez votre espace d’apprentissage, de tutorat ou familial avec des personnes et des prochaines étapes toujours claires." },
       "signup": { "statement": "Chaque chemin vers l’avant commence par une première rencontre.", "support": "Créez le compte correspondant à votre rôle. FutureTutor rendra la prochaine étape claire." },
-      "recovery": { "statement": "Retrouver son accès devrait être simple et rassurant.", "support": "Récupérez votre compte sans exposer d’information et sans modifier le fonctionnement de votre rôle FutureTutor." }
+      "recovery": { "statement": "Retrouver son accès devrait être simple et rassurant.", "support": "Récupérez votre compte sans exposer d’information et sans modifier le fonctionnement de votre rôle FutureTutor." },
+      "verification": { "statement": "Une confirmation, et vous êtes prêt à commencer.", "support": "Vérifier votre courriel garde votre compte FutureTutor sécurisé — pour vous et pour les personnes avec qui vous travaillerez." }
     },
     "subjects": {
       "metaTitle": "Matières de tutorat",

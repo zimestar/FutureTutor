@@ -28,6 +28,19 @@ export function ClaimGuardianInvitationForm({
   const [claimState, claimAction, claimPending] = useActionState(claimInvitationAction, undefined);
   const [newAccountState, newAccountAction, newAccountPending] = useActionState(claimWithNewAccountAction, undefined);
 
+  // BETA-EMAILVERIFY1 — the new-account path now returns
+  // requiresVerification: true (a brand-new User that must activate its
+  // email before login works), distinct from the already-authenticated
+  // claimAction path, which needs no such step.
+  if (newAccountState?.success && newAccountState.requiresVerification) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-8" data-testid="claim-success">
+        <p className="text-lg font-bold text-navy">{t("verificationRequiredTitle")}</p>
+        <p className="mt-2 text-slate">{t("verificationRequiredDescription")}</p>
+      </div>
+    );
+  }
+
   if (claimState?.success || newAccountState?.success) {
     return (
       <div className="rounded-xl border border-neutral-200 bg-white p-8" data-testid="claim-success">

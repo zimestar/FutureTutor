@@ -26,6 +26,17 @@ export function ClaimStudentLoginInvitationForm({
     undefined
   );
 
+  // BETA-EMAILVERIFY1 — see ClaimGuardianInvitationForm.tsx's identical
+  // comment: the new-account path now returns requiresVerification: true.
+  if (newAccountState?.success && newAccountState.requiresVerification) {
+    return (
+      <div className="rounded-xl border border-neutral-200 bg-white p-8" data-testid="claim-success">
+        <p className="text-lg font-bold text-navy">{t("verificationRequiredTitle")}</p>
+        <p className="mt-2 text-slate">{t("verificationRequiredDescription")}</p>
+      </div>
+    );
+  }
+
   if (claimState?.success || newAccountState?.success) {
     return (
       <div className="rounded-xl border border-neutral-200 bg-white p-8" data-testid="claim-success">

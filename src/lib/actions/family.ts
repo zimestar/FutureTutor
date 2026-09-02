@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { getTranslations, getLocale } from "next-intl/server";
-import { auth, signIn } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/appUrl";
 import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
@@ -19,6 +19,8 @@ import {
 } from "@/schemas/family";
 import { TERMS_VERSION } from "@/content/legal/termsContent.en";
 import { createUserForSignup, createStudentLoginUser } from "@/services/signup";
+import { sendVerificationEmailForAccount } from "@/services/emailVerification";
+import { resolveSendVerificationEmail } from "@/lib/email/sendVerificationEmail";
 import {
   createGuardianManagedStudent,
   createGuardianInvitation,
@@ -49,7 +51,12 @@ import {
 } from "@/services/familyManagement";
 import bcrypt from "bcryptjs";
 
-export type FamilyActionState = { error?: string; success?: boolean } | undefined;
+// BETA-EMAILVERIFY1 — `requiresVerification` is additive: only ever set
+// `true` by the two "claim by creating a brand-new account" actions below,
+// distinguishing "your request was sent AND you must activate your new
+// account first" from every other success shape in this file (an
+// already-authenticated session claiming, which needs no such step).
+export type FamilyActionState = { error?: string; success?: boolean; requiresVerification?: boolean } | undefined;
 
 export type InviteGuardianState =
   | { success: true; inviteUrl: string; expiresAt: string }
@@ -310,7 +317,28 @@ export async function claimWithNewAccountAction(
     termsAcceptedLocale: locale,
   });
 
-  await signIn("credentials", { email: invitation.invitedEmailNormalized, password: parsed.data.password, redirect: false });
+  // BETA-EMAILVERIFY1 — this is a brand-new User receiving login
+  // credentials, so it must prove email ownership before normal
+  // authenticated access, exactly like ordinary signup. No auto sign-in
+  // (previously called here) — the account exists with emailVerified:
+  // null; authorize() (src/lib/auth.ts) enforces the gate server-side.
+  // Claiming the invitation still happens now (unchanged): it only proves
+  // "this account holds the invitation token," a fact independent of
+  // email ownership — see this file's own module doc comment on why
+  // verification must never be collapsed into family-approval semantics.
+  try {
+    const appBaseUrl = await getAppBaseUrl();
+    await sendVerificationEmailForAccount(db, newUser, {
+      locale,
+      sendEmail: resolveSendVerificationEmail(),
+      buildVerifyUrl: (rawToken) => `${appBaseUrl}/${locale}/verify-email?token=${encodeURIComponent(rawToken)}`,
+    });
+  } catch {
+    // A verification-email send failure must not lose the fact that the
+    // account and the claim both already succeeded — same reasoning as
+    // registerAction's own handling. The user can always request another
+    // activation email from /check-email.
+  }
 
   try {
     await claimGuardianInvitation(db, parsed.data.token, { id: newUser.id, role: "PARENT", email: newUser.email });
@@ -318,7 +346,7 @@ export async function claimWithNewAccountAction(
     return { error: t(mapErrorToKey(error)) };
   }
 
-  return { success: true };
+  return { success: true, requiresVerification: true };
 }
 
 /** Phase H.5 — claim by an already-authenticated existing STUDENT account
@@ -395,7 +423,26 @@ export async function claimStudentLoginWithNewAccountAction(
     passwordHash,
   });
 
-  await signIn("credentials", { email: invitation.invitedEmailNormalized, password: parsed.data.password, redirect: false });
+  // BETA-EMAILVERIFY1 — same treatment as claimWithNewAccountAction above:
+  // a brand-new User receiving login credentials, no auto sign-in, must
+  // verify email before authorize() will let it log in. Verification here
+  // proves only email ownership — it does NOT convert this account's
+  // linked StudentProfile from GUARDIAN_MANAGED to SELF_MANAGED, and does
+  // not grant any authority beyond what claimStudentLoginInvitation's own
+  // (unchanged) approval step already governs.
+  const locale = await getLocale();
+  try {
+    const appBaseUrl = await getAppBaseUrl();
+    await sendVerificationEmailForAccount(db, newUser, {
+      locale,
+      sendEmail: resolveSendVerificationEmail(),
+      buildVerifyUrl: (rawToken) => `${appBaseUrl}/${locale}/verify-email?token=${encodeURIComponent(rawToken)}`,
+    });
+  } catch {
+    // Same reasoning as claimWithNewAccountAction — the account and claim
+    // both already succeeded; the user can request another activation
+    // email from /check-email.
+  }
 
   try {
     await claimStudentLoginInvitation(db, parsed.data.token, { id: newUser.id, role: "STUDENT", email: newUser.email });
@@ -403,5 +450,5 @@ export async function claimStudentLoginWithNewAccountAction(
     return { error: t(mapErrorToKey(error)) };
   }
 
-  return { success: true };
+  return { success: true, requiresVerification: true };
 }

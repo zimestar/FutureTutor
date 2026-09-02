@@ -95,6 +95,16 @@ export const RATE_LIMITS = {
   resetPasswordByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
   invitationClaimByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
   adminSetupByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
+  // BETA-EMAILVERIFY1 — mirrors forgotPassword's identifier+IP pair exactly
+  // (same enumeration-safety reasoning: the identifier bucket is keyed on
+  // the submitted email regardless of whether an account exists for it).
+  emailVerificationResendByEmail: { windowMs: 60 * 60_000, max: 5 } satisfies RateLimitConfig,
+  emailVerificationResendByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
+  // Mirrors resetPasswordByIp — the verification token itself is
+  // cryptographically random and single-use, so there's no meaningful
+  // account identifier to key an identifier-scoped bucket on; this guards
+  // against automated scanning across many guessed tokens.
+  verifyEmailByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
 } as const;
 
 /** Checks both an identifier-scoped bucket (the primary, non-spoofable gate)

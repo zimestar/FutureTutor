@@ -94,3 +94,22 @@ export const resetPasswordSchema = z.object({
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+/** BETA-EMAILVERIFY1 — request body for "activate my account." Only the raw
+ * verification token is ever accepted from the client — mirrors
+ * resetPasswordSchema's own security contract (never a userId, target
+ * account, or verification state). */
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+/** BETA-EMAILVERIFY1 — request body for "resend verification email."
+ * Deliberately just an email — mirrors forgotPasswordSchema's own
+ * enumeration-safety contract exactly. */
+export const resendVerificationEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+});
+
+export type ResendVerificationEmailInput = z.infer<typeof resendVerificationEmailSchema>;

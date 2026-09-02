@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => {
   class InvalidOrExpiredResetTokenError extends Error {}
   class ResetPasswordPolicyError extends Error {}
+  class InvalidOrExpiredVerificationTokenError extends Error {}
   return {
     findUnique: vi.fn(),
     createUserForSignup: vi.fn(),
     signIn: vi.fn(),
+    signOut: vi.fn(),
     redirect: vi.fn(),
     hash: vi.fn(),
     requestPasswordReset: vi.fn(),
@@ -15,8 +17,14 @@ const mocks = vi.hoisted(() => {
     resolveSendPasswordResetEmail: vi.fn(),
     consoleDevSendPasswordResetEmail: vi.fn(),
     checkActionRateLimit: vi.fn(),
+    sendVerificationEmailForAccount: vi.fn(),
+    resendEmailVerification: vi.fn(),
+    verifyEmail: vi.fn(),
+    consoleDevSendVerificationEmail: vi.fn(),
+    resolveSendVerificationEmail: vi.fn(),
     InvalidOrExpiredResetTokenError,
     ResetPasswordPolicyError,
+    InvalidOrExpiredVerificationTokenError,
   };
 });
 
@@ -35,6 +43,7 @@ vi.mock("@/lib/rateLimit", () => ({
   RATE_LIMITS: {
     loginByEmail: {}, loginByIp: {}, registerByIp: {}, forgotPasswordByEmail: {},
     forgotPasswordByIp: {}, resetPasswordByIp: {}, invitationClaimByIp: {}, adminSetupByIp: {},
+    verifyEmailByIp: {}, emailVerificationResendByEmail: {}, emailVerificationResendByIp: {},
   },
 }));
 
@@ -48,7 +57,7 @@ vi.mock("@/lib/db", () => ({
     tutorProfile: { findUnique: vi.fn() },
   },
 }));
-vi.mock("@/lib/auth", () => ({ signIn: mocks.signIn, signOut: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ signIn: mocks.signIn, signOut: mocks.signOut }));
 vi.mock("@/i18n/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/appUrl", () => ({ getAppBaseUrl: mocks.getAppBaseUrl }));
 vi.mock("@/services/signup", () => ({ createUserForSignup: mocks.createUserForSignup }));
@@ -72,10 +81,20 @@ vi.mock("@/services/passwordReset", () => ({
 vi.mock("@/lib/email/sendPasswordResetEmail", () => ({
   resolveSendPasswordResetEmail: mocks.resolveSendPasswordResetEmail,
 }));
+// BETA-EMAILVERIFY1 — mirrors the passwordReset mocking shape exactly.
+vi.mock("@/services/emailVerification", () => ({
+  sendVerificationEmailForAccount: mocks.sendVerificationEmailForAccount,
+  resendEmailVerification: mocks.resendEmailVerification,
+  verifyEmail: mocks.verifyEmail,
+  consoleDevSendVerificationEmail: mocks.consoleDevSendVerificationEmail,
+  InvalidOrExpiredVerificationTokenError: mocks.InvalidOrExpiredVerificationTokenError,
+}));
+vi.mock("@/lib/email/sendVerificationEmail", () => ({
+  resolveSendVerificationEmail: mocks.resolveSendVerificationEmail,
+}));
 vi.mock("bcryptjs", () => ({ default: { hash: mocks.hash } }));
 
-import { registerAction, forgotPasswordAction, resetPasswordAction } from "./auth";
-import { signInResultHasError } from "@/services/signupAuthResult";
+import { registerAction, forgotPasswordAction, resetPasswordAction, verifyEmailAction, resendVerificationEmailAction } from "./auth";
 
 function parentForm(email = "parent.qa@futuretutor.local") {
   const form = new FormData();
@@ -88,14 +107,23 @@ function parentForm(email = "parent.qa@futuretutor.local") {
   return form;
 }
 
-describe("registerAction — Parent signup hardening", () => {
+// BETA-EMAILVERIFY1 — registerAction no longer auto-signs-in; it must
+// create the account (emailVerified stays null, enforced by
+// createUserForSignup/authorize() elsewhere), send a verification email,
+// and redirect to /check-email WITHOUT ever calling signIn(). These tests
+// replace the old "auto sign-in" test suite entirely.
+describe("registerAction — Parent signup, no auto sign-in, verification email required", () => {
+  const resolvedSendEmail = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.findUnique.mockResolvedValue(null);
     mocks.hash.mockResolvedValue("test-hash");
-    mocks.createUserForSignup.mockResolvedValue({ id: "parent-user" });
-    mocks.signIn.mockResolvedValue("http://localhost:3100/en/signup");
+    mocks.createUserForSignup.mockResolvedValue({ id: "parent-user", email: "parent.qa@futuretutor.local" });
     mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
+    mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
+    mocks.resolveSendVerificationEmail.mockReturnValue(resolvedSendEmail);
+    mocks.sendVerificationEmailForAccount.mockResolvedValue(undefined);
   });
 
   it("accepts a real Parent FormData payload where dateOfBirth is absent", async () => {
@@ -105,7 +133,34 @@ describe("registerAction — Parent signup hardening", () => {
       expect.anything(),
       expect.objectContaining({ role: "PARENT", dateOfBirth: undefined })
     );
-    expect(mocks.redirect).toHaveBeenCalledWith({ href: "/dashboard", locale: "en" });
+  });
+
+  it("never calls signIn — no auto sign-in after signup", async () => {
+    await registerAction(undefined, parentForm());
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
+  it("sends a verification email for the newly-created account", async () => {
+    await registerAction(undefined, parentForm());
+    expect(mocks.sendVerificationEmailForAccount).toHaveBeenCalledTimes(1);
+    const [, user] = mocks.sendVerificationEmailForAccount.mock.calls[0];
+    expect(user).toEqual({ id: "parent-user", email: "parent.qa@futuretutor.local" });
+  });
+
+  it("builds a locale-aware absolute activation URL using the request's own origin", async () => {
+    await registerAction(undefined, parentForm());
+    const deps = mocks.sendVerificationEmailForAccount.mock.calls[0][2];
+    expect(deps.buildVerifyUrl("raw-token-abc")).toBe("http://localhost:3100/en/verify-email?token=raw-token-abc");
+    expect(deps.locale).toBe("en");
+    expect(deps.sendEmail).toBe(resolvedSendEmail);
+  });
+
+  it("redirects to /check-email with the submitted email, never to a dashboard", async () => {
+    await registerAction(undefined, parentForm("parent.qa@futuretutor.local"));
+    expect(mocks.redirect).toHaveBeenCalledWith({
+      href: "/check-email?email=parent.qa%40futuretutor.local",
+      locale: "en",
+    });
   });
 
   it("returns an actionable field error without exposing raw Zod details", async () => {
@@ -115,33 +170,23 @@ describe("registerAction — Parent signup hardening", () => {
     expect(mocks.createUserForSignup).not.toHaveBeenCalled();
   });
 
-  it("preserves the created account and returns recovery guidance when Auth.js returns a failure URL", async () => {
-    mocks.signIn.mockResolvedValue("http://localhost:3100/login?error=CredentialsSignin&code=credentials");
+  it("returns a recoverable error, without losing the created account, when the verification email fails to send", async () => {
+    mocks.sendVerificationEmailForAccount.mockRejectedValue(new Error("Resend outage"));
 
     const result = await registerAction(undefined, parentForm());
 
-    expect(result).toEqual({ error: "accountCreatedSignInFailed", accountCreated: true });
+    expect(result).toEqual({ error: "verificationEmailFailed", accountCreated: true });
     expect(mocks.createUserForSignup).toHaveBeenCalledTimes(1);
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
-  it("does not create a duplicate profile when signup is retried after create-success/sign-in-failure", async () => {
-    mocks.signIn.mockResolvedValue("http://localhost:3100/login?error=CredentialsSignin");
+  it("does not create a duplicate profile when signup is retried after an account already exists", async () => {
     await registerAction(undefined, parentForm());
     mocks.findUnique.mockResolvedValue({ id: "parent-user", role: "PARENT" });
 
     const retry = await registerAction(undefined, parentForm());
 
     expect(retry).toEqual({ error: "emailTaken" });
-    expect(mocks.createUserForSignup).toHaveBeenCalledTimes(1);
-  });
-
-  it("returns the same recovery guidance when automatic sign-in throws", async () => {
-    mocks.signIn.mockRejectedValue(new Error("sign-in unavailable"));
-
-    const result = await registerAction(undefined, parentForm());
-
-    expect(result).toEqual({ error: "accountCreatedSignInFailed", accountCreated: true });
     expect(mocks.createUserForSignup).toHaveBeenCalledTimes(1);
   });
 
@@ -152,14 +197,6 @@ describe("registerAction — Parent signup hardening", () => {
 
     expect(result).toEqual({ error: "tooManyAttempts" });
     expect(mocks.createUserForSignup).not.toHaveBeenCalled();
-  });
-});
-
-describe("signInResultHasError", () => {
-  it("recognizes Auth.js error URLs and fails closed for unexpected results", () => {
-    expect(signInResultHasError("/login?error=CredentialsSignin")).toBe(true);
-    expect(signInResultHasError("http://localhost:3100/en/signup")).toBe(false);
-    expect(signInResultHasError(undefined)).toBe(true);
   });
 });
 
@@ -292,5 +329,105 @@ describe("resetPasswordAction", () => {
     const result = await resetPasswordAction(undefined, form("a-raw-token-value", "ValidPassword123!"));
     expect(result).toEqual({ error: "reset_failed" });
     expect(mocks.resetPassword).not.toHaveBeenCalled();
+  });
+});
+
+// BETA-EMAILVERIFY1 — mirrors resetPasswordAction's test shape exactly: the
+// real token generation/hashing/expiry/guarded-consumption logic is
+// exercised for real in src/services/emailVerification.integration.test.ts;
+// these assert only the thin wrapper's own responsibilities.
+
+describe("verifyEmailAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
+  });
+
+  function form(token: string) {
+    const f = new FormData();
+    f.set("token", token);
+    return f;
+  }
+
+  it("returns success when the service succeeds", async () => {
+    mocks.verifyEmail.mockResolvedValue({ userId: "user-1" });
+    const result = await verifyEmailAction(undefined, form("a-raw-token-value"));
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects a malformed request (missing token) before ever calling the service", async () => {
+    const result = await verifyEmailAction(undefined, new FormData());
+    expect(result).toEqual({ error: "invalid_request" });
+    expect(mocks.verifyEmail).not.toHaveBeenCalled();
+  });
+
+  it("maps InvalidOrExpiredVerificationTokenError to a generic invalid_or_expired_token outcome", async () => {
+    mocks.verifyEmail.mockRejectedValue(new mocks.InvalidOrExpiredVerificationTokenError());
+    const result = await verifyEmailAction(undefined, form("a-raw-token-value"));
+    expect(result).toEqual({ error: "invalid_or_expired_token" });
+  });
+
+  it("maps an unexpected error to the same generic outcome without leaking details", async () => {
+    mocks.verifyEmail.mockRejectedValue(new Error("unexpected db failure"));
+    const result = await verifyEmailAction(undefined, form("a-raw-token-value"));
+    expect(result).toEqual({ error: "invalid_or_expired_token" });
+  });
+
+  it("returns invalid_or_expired_token and never calls the service when the IP bucket is exceeded", async () => {
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 300 });
+    const result = await verifyEmailAction(undefined, form("a-raw-token-value"));
+    expect(result).toEqual({ error: "invalid_or_expired_token" });
+    expect(mocks.verifyEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("resendVerificationEmailAction", () => {
+  const resolvedSendEmail = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
+    mocks.resendEmailVerification.mockResolvedValue(undefined);
+    mocks.resolveSendVerificationEmail.mockReturnValue(resolvedSendEmail);
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
+  });
+
+  function form(email: string) {
+    const f = new FormData();
+    f.set("email", email);
+    return f;
+  }
+
+  it("returns the generic {submitted:true} outcome for a validly-formatted, real-looking email", async () => {
+    const result = await resendVerificationEmailAction(undefined, form("someone@example.com"));
+    expect(result).toEqual({ submitted: true });
+    expect(mocks.resendEmailVerification).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the SAME generic outcome for a malformed email, without ever invoking the service (no enumeration signal)", async () => {
+    const result = await resendVerificationEmailAction(undefined, form("not-an-email"));
+    expect(result).toEqual({ submitted: true });
+    expect(mocks.resendEmailVerification).not.toHaveBeenCalled();
+  });
+
+  it("returns the SAME generic outcome even when the underlying service throws (infra failure never leaks to the browser)", async () => {
+    mocks.resendEmailVerification.mockRejectedValue(new Error("db unreachable"));
+    const result = await resendVerificationEmailAction(undefined, form("someone@example.com"));
+    expect(result).toEqual({ submitted: true });
+  });
+
+  it("builds a locale-aware absolute activation URL using the request's own origin", async () => {
+    await resendVerificationEmailAction(undefined, form("someone@example.com"));
+    const deps = mocks.resendEmailVerification.mock.calls[0][2];
+    expect(deps.buildVerifyUrl("raw-token-abc")).toBe("http://localhost:3100/en/verify-email?token=raw-token-abc");
+    expect(deps.locale).toBe("en");
+    expect(deps.sendEmail).toBe(resolvedSendEmail);
+  });
+
+  it("returns the SAME generic outcome when rate-limited, and never calls the service (no enumeration signal)", async () => {
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: false, retryAfterSeconds: 300 });
+    const result = await resendVerificationEmailAction(undefined, form("someone@example.com"));
+    expect(result).toEqual({ submitted: true });
+    expect(mocks.resendEmailVerification).not.toHaveBeenCalled();
   });
 });

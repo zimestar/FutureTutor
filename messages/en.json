@@ -461,6 +461,14 @@
       "title": "Reset Password",
       "description": "Choose a new password for your FutureTutor account."
     },
+    "checkEmail": {
+      "title": "Check Your Email",
+      "description": "Activate your FutureTutor account by confirming your email address."
+    },
+    "verifyEmail": {
+      "title": "Activate Your Account",
+      "description": "Confirm your email address to activate your FutureTutor account."
+    },
     "about": {
       "title": "About",
       "description": "Learn about FutureTutor's mission to make personalized academic support accessible."
@@ -568,6 +576,39 @@
       "invalidDescription": "The link is invalid, expired, or has already been used. Request a new link to continue.",
       "requestAnother": "Request another reset link"
     },
+    "checkEmail": {
+      "title": "Check your email",
+      "subtitle": "One more step before you can sign in.",
+      "withEmailDescription": "We sent an activation email to {email}. Open it and click \"Activate my account\" to finish setting up your FutureTutor account.",
+      "genericDescription": "Enter your email below and we'll send you an activation link if an account is waiting to be verified.",
+      "steps": {
+        "title": "What to do next",
+        "check": "Open the email from FutureTutor and click \"Activate my account.\"",
+        "spam": "Don't see it? Check your spam or junk folder.",
+        "expiry": "The activation link expires in 24 hours.",
+        "resend": "Still nothing? You can request a new activation email below."
+      },
+      "resendTitle": "Resend activation email",
+      "emailLabel": "Email address",
+      "resendCta": "Resend activation email",
+      "resending": "Sending…",
+      "resendSubmittedTitle": "If that account needs activating, an email is on its way",
+      "resendSubmittedDescription": "Check your inbox (and spam folder) for the activation link.",
+      "backToLogin": "Back to login"
+    },
+    "verifyEmail": {
+      "title": "Activate your account",
+      "subtitle": "One click and you're ready to go.",
+      "description": "Click the button below to confirm this is your email address and activate your FutureTutor account.",
+      "activateCta": "Activate my account",
+      "activating": "Activating…",
+      "successTitle": "Account activated",
+      "successDescription": "Your email is verified and your account is ready. You can now log in.",
+      "loginAction": "Log in",
+      "invalidTitle": "This activation link is no longer valid",
+      "invalidDescription": "The link is invalid, expired, or has already been used. Request a new activation email to continue.",
+      "requestAnother": "Request a new activation email"
+    },
     "errors": {
       "invalidInput": "Please check your information and try again.",
       "emailTaken": "An account with this email already exists.",
@@ -581,7 +622,8 @@
       "dateOfBirthInvalid": "Enter a valid date of birth that is not in the future.",
       "termsAcceptedInvalid": "You must agree to the Terms of Service to create an account.",
       "signupFailed": "We couldn't create your account. Please try again.",
-      "accountCreatedSignInFailed": "Your account was created, but we couldn't sign you in automatically. Please log in with your new account."
+      "accountCreatedSignInFailed": "Your account was created, but we couldn't sign you in automatically. Please log in with your new account.",
+      "verificationEmailFailed": "Your account was created, but we couldn't send your activation email. Please request a new one from the check-your-email page."
     }
   },
   "passwordResetEmail": {
@@ -592,6 +634,17 @@
     "buttonLabel": "Reset Password",
     "expiryNotice": "This link will expire in {hours, plural, one {# hour} other {# hours}} and can only be used once.",
     "ignoreNotice": "If you didn't request a password reset, you can safely ignore this email — your password will not be changed.",
+    "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
+    "footer": "FutureTutor — helping students learn with the right tutor."
+  },
+  "verificationEmail": {
+    "subject": "Activate your FutureTutor account",
+    "heading": "Activate your account",
+    "greeting": "Hello,",
+    "intro": "Thanks for creating a FutureTutor account. Click the button below to confirm this is your email address and activate your account.",
+    "buttonLabel": "Activate my account",
+    "expiryNotice": "This link will expire in {hours, plural, one {# hour} other {# hours}} and can only be used once.",
+    "ignoreNotice": "If you didn't create a FutureTutor account, you can safely ignore this email — no account will be activated.",
     "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
     "footer": "FutureTutor — helping students learn with the right tutor."
   },
@@ -1883,6 +1936,8 @@
       "creating": "Creating…",
       "successTitle": "Request sent",
       "successDescription": "An existing guardian for this student needs to approve your request before you gain access. We'll let you know once they do.",
+      "verificationRequiredTitle": "Check your email to activate your account",
+      "verificationRequiredDescription": "Your request to become a guardian has been sent, but you'll first need to activate your new FutureTutor account. Check your email for an activation link. Once activated, you can log in — the existing guardian will still need to approve your request separately.",
       "wrongEmailDescription": "You're signed in with a different email than this invitation was sent to. Sign out and try again, or create a new account with the invited email."
     },
     "studentLoginInvite": {
@@ -1923,7 +1978,9 @@
       "createAndClaimCta": "Create Account & Accept",
       "creating": "Creating…",
       "successTitle": "Request sent",
-      "successDescription": "A parent or guardian for this student needs to approve your request before your login is active. We'll let you know once they do."
+      "successDescription": "A parent or guardian for this student needs to approve your request before your login is active. We'll let you know once they do.",
+      "verificationRequiredTitle": "Check your email to activate your account",
+      "verificationRequiredDescription": "Your request has been sent, but you'll first need to activate your new FutureTutor account. Check your email for an activation link. Once activated, you can log in — a parent or guardian will still need to approve your request separately."
     },
     "studentPendingActivation": {
       "title": "Your account is waiting for approval",
@@ -2458,7 +2515,8 @@
         "imageAlt": "A FutureTutor learner, tutor or family member ready to move forward",
       "login": { "statement": "Sometimes understanding begins with one person explaining it differently.", "support": "Return to your learning, tutoring or family experience with the people and next steps kept clear." },
       "signup": { "statement": "Every path forward begins with a first connection.", "support": "Create the account that fits your role. FutureTutor will keep the next step clear from there." },
-      "recovery": { "statement": "A secure return should feel simple and calm.", "support": "Recover access without exposing account information or changing the way your FutureTutor role works." }
+      "recovery": { "statement": "A secure return should feel simple and calm.", "support": "Recover access without exposing account information or changing the way your FutureTutor role works." },
+      "verification": { "statement": "One confirmation, and you're ready to begin.", "support": "Verifying your email keeps your FutureTutor account secure — for you and for the people you'll work with." }
     },
     "subjects": {
       "metaTitle": "Tutoring Subjects",

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { loginSchema } from "@/schemas/auth";
 import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
+import { isEmailVerificationRequiredForUser } from "@/lib/emailVerificationConfig";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Credentials provider requires JWT sessions — it intentionally isn't
@@ -49,6 +50,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.passwordHash
         );
         if (!passwordMatches) return null;
+
+        // BETA-EMAILVERIFY1 — checked only after the password has already
+        // been confirmed correct, so this rejection is never reachable by
+        // someone who doesn't already hold the right credentials (no
+        // enumeration signal). Migration-free, createdAt-cutoff gate — see
+        // src/lib/emailVerificationConfig.ts's own doc comment for why an
+        // emailVerified-only check would have locked out every existing
+        // production user, including the platform's own admin account.
+        // Returns null uniformly, exactly like every other rejection
+        // reason above (wrong password, deactivated, no such user) — this
+        // function has never distinguished rejection reasons to its
+        // caller, and this doesn't start now.
+        if (isEmailVerificationRequiredForUser(user)) return null;
 
         return {
           id: user.id,

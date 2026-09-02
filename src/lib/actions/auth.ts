@@ -9,9 +9,15 @@ import { redirect } from "@/i18n/navigation";
 import { getAppBaseUrl } from "@/lib/appUrl";
 import { checkActionRateLimit, getClientIp, RATE_LIMITS } from "@/lib/rateLimit";
 import { homePathForRole } from "@/lib/authorization";
-import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/schemas/auth";
+import {
+  loginSchema,
+  registerSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationEmailSchema,
+} from "@/schemas/auth";
 import { createUserForSignup } from "@/services/signup";
-import { signInResultHasError } from "@/services/signupAuthResult";
 import {
   requestPasswordReset,
   resetPassword,
@@ -19,6 +25,13 @@ import {
   ResetPasswordPolicyError,
 } from "@/services/passwordReset";
 import { resolveSendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
+import {
+  sendVerificationEmailForAccount,
+  resendEmailVerification,
+  verifyEmail,
+  InvalidOrExpiredVerificationTokenError,
+} from "@/services/emailVerification";
+import { resolveSendVerificationEmail } from "@/lib/email/sendVerificationEmail";
 
 import { TERMS_VERSION } from "@/content/legal/termsContent.en";
 
@@ -92,8 +105,9 @@ export async function registerAction(
     return { error: t("signupFailed") };
   }
 
+  let newUser: { id: string; email: string };
   try {
-    await createUserForSignup(db, {
+    newUser = await createUserForSignup(db, {
       firstName,
       lastName,
       email,
@@ -110,17 +124,26 @@ export async function registerAction(
     return { error: t("signupFailed") };
   }
 
+  // BETA-EMAILVERIFY1 — no auto sign-in. The account exists with
+  // emailVerified: null; the user must prove ownership of the email before
+  // any authenticated access is possible (enforced server-side in
+  // src/lib/auth.ts's authorize()). A failure to SEND the verification
+  // email is a genuine infrastructure failure, logged and surfaced — the
+  // account already exists at this point (accountCreated: true), so the
+  // user isn't silently stuck with no way to know what happened.
   try {
-    const signInResult = await signIn("credentials", { email, password, redirect: false });
-    if (signInResultHasError(signInResult)) {
-      logAuthFailure("automatic-sign-in", new Error("Auth.js returned an error URL"));
-      return { error: t("accountCreatedSignInFailed"), accountCreated: true };
-    }
+    const appBaseUrl = await getAppBaseUrl();
+    await sendVerificationEmailForAccount(db, newUser, {
+      locale,
+      sendEmail: resolveSendVerificationEmail(),
+      buildVerifyUrl: (rawToken) => `${appBaseUrl}/${locale}/verify-email?token=${encodeURIComponent(rawToken)}`,
+    });
   } catch (error) {
-    logAuthFailure("automatic-sign-in", error);
-    return { error: t("accountCreatedSignInFailed"), accountCreated: true };
+    logAuthFailure("verification-email-send", error);
+    return { error: t("verificationEmailFailed"), accountCreated: true };
   }
-  redirect({ href: homePathForRole(role), locale });
+
+  redirect({ href: `/check-email?email=${encodeURIComponent(email)}`, locale });
 }
 
 export async function loginAction(
@@ -298,6 +321,109 @@ export async function resetPasswordAction(
   }
 
   return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// BETA-EMAILVERIFY1 — Email Ownership Verification. Mirrors L1-01A's own
+// division of labor exactly: these are thin wrappers (parse input, resolve
+// locale/origin, translate domain errors into a generic outcome); the real
+// logic lives in src/services/emailVerification.ts.
+// ---------------------------------------------------------------------------
+
+export type VerifyEmailActionState =
+  | { error: "invalid_request" | "invalid_or_expired_token" }
+  | { success: true }
+  | undefined;
+
+/**
+ * The single authoritative "activate my account" entry point. Validates
+ * only a raw token string (never a userId/target account/verification
+ * state — same client-input contract as resetPasswordAction), then
+ * delegates to verifyEmail's guarded transactional core.
+ */
+export async function verifyEmailAction(
+  _prevState: VerifyEmailActionState,
+  formData: FormData
+): Promise<VerifyEmailActionState> {
+  const parsed = verifyEmailSchema.safeParse({ token: formData.get("token") });
+  if (!parsed.success) {
+    return { error: "invalid_request" };
+  }
+
+  // IP-scoped only — same reasoning as resetPasswordAction: the token
+  // itself is cryptographically random and single-use, so there is no
+  // meaningful account identifier to key an identifier-scoped bucket on.
+  const ip = getClientIp(await headers());
+  const rateLimit = await checkActionRateLimit({
+    action: "verifyEmail",
+    identifier: null,
+    ip,
+    identifierLimit: RATE_LIMITS.verifyEmailByIp,
+    ipLimit: RATE_LIMITS.verifyEmailByIp,
+  });
+  if (!rateLimit.allowed) {
+    return { error: "invalid_or_expired_token" };
+  }
+
+  try {
+    await verifyEmail(db, parsed.data.token);
+  } catch (error) {
+    if (error instanceof InvalidOrExpiredVerificationTokenError) {
+      return { error: "invalid_or_expired_token" };
+    }
+    logAuthFailure("verify-email", error);
+    return { error: "invalid_or_expired_token" };
+  }
+
+  return { success: true };
+}
+
+export type ResendVerificationEmailActionState = { submitted: true } | undefined;
+
+/**
+ * ALWAYS resolves to the same `{ submitted: true }` outcome regardless of
+ * whether the submitted email is validly formatted, belongs to a real
+ * account, belongs to an already-verified account, or belongs to no
+ * account at all — mirrors forgotPasswordAction's own no-enumeration
+ * contract exactly, with no exception for "obviously malformed input" or
+ * "already verified" either, so this invariant can never accidentally leak
+ * a distinguishing branch in the future.
+ */
+export async function resendVerificationEmailAction(
+  _prevState: ResendVerificationEmailActionState,
+  formData: FormData
+): Promise<ResendVerificationEmailActionState> {
+  const locale = await getLocale();
+  const parsed = resendVerificationEmailSchema.safeParse({ email: formData.get("email") });
+
+  const ip = getClientIp(await headers());
+  const rateLimit = parsed.success
+    ? await checkActionRateLimit({
+        action: "emailVerificationResend",
+        identifier: parsed.data.email,
+        ip,
+        identifierLimit: RATE_LIMITS.emailVerificationResendByEmail,
+        ipLimit: RATE_LIMITS.emailVerificationResendByIp,
+      })
+    : { allowed: true, retryAfterSeconds: 0 };
+
+  if (parsed.success && rateLimit.allowed) {
+    try {
+      const appBaseUrl = await getAppBaseUrl();
+      await resendEmailVerification(db, parsed.data.email, {
+        locale,
+        sendEmail: resolveSendVerificationEmail(),
+        buildVerifyUrl: (rawToken) => `${appBaseUrl}/${locale}/verify-email?token=${encodeURIComponent(rawToken)}`,
+      });
+    } catch (error) {
+      // A genuine infrastructure failure — logged server-side only; the
+      // browser-facing outcome is unchanged either way, preserving the
+      // no-enumeration invariant even on error.
+      logAuthFailure("resend-verification-email", error);
+    }
+  }
+
+  return { submitted: true };
 }
 
 const DIACRITIC_MARKS = new RegExp("[\\u0300-\\u036f]", "g");
