@@ -231,6 +231,9 @@ describe("ensureConnectAccount", () => {
     expect(fake.v2.core.accounts.create).toHaveBeenCalledTimes(1);
     expect(fake.__createAccountCalls[0].params).toMatchObject({
       dashboard: "express",
+      // PROD-CONNECT-V2-COUNTRYFIX1 — the field LIVE2's live attempt found
+      // missing (StripeInvalidRequestError, identity_country_required).
+      identity: { country: "CA" },
       defaults: { responsibilities: { fees_collector: "application", losses_collector: "application" } },
       configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
       metadata: { tutorProfileId: tutorProfile.id },

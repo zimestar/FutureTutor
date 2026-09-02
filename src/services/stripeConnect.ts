@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
+import { stripeConnectAccountCountry } from "@/lib/stripeConnectCountry";
 import type { StripeConnectStatus } from "@/generated/prisma/enums";
 
 /**
@@ -127,6 +128,11 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
   const stripe = getStripeClient();
   const attemptEpoch = tutor.stripeConnectAttemptEpoch;
   const idempotencyKey = `connect-account:${tutorProfileId}:${attemptEpoch}`;
+  // PROD-CONNECT-V2-COUNTRYFIX1 — resolved as its own statement, before the
+  // Stripe call below, so an unsupported/misconfigured country fails
+  // structurally before any Stripe SDK network operation — not merely as
+  // a side effect of object-literal evaluation order.
+  const accountCountry = stripeConnectAccountCountry();
 
   // PROD-CONNECT-V2-MIGRATION2 — Accounts v2, per the certified migration
   // plan's §7 configuration (recipient + Express Dashboard access +
@@ -134,12 +140,22 @@ export async function ensureConnectAccount(tutorProfileId: string): Promise<stri
   // acknowledgements already accepted on the Stripe Dashboard). `include`
   // requests the recipient capability status inline so
   // deriveInitialStatusFromV2Account below has real data to read.
+  //
+  // PROD-CONNECT-V2-COUNTRYFIX1 — LIVE2's controlled live attempt found
+  // Stripe now requires identity.country before configuration.recipient
+  // can be set (StripeInvalidRequestError, code identity_country_required
+  // — the platform-activation blocker itself was separately confirmed
+  // resolved). stripeConnectAccountCountry() is the sole, fail-closed
+  // source for this value — see its own doc comment.
   let account: Stripe.V2.Core.Account;
   try {
     account = await stripe.v2.core.accounts.create(
       {
         contact_email: tutor.user.email,
         dashboard: "express",
+        identity: {
+          country: accountCountry,
+        },
         defaults: {
           responsibilities: {
             fees_collector: "application",
