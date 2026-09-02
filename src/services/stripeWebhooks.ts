@@ -30,18 +30,26 @@ const STALE_PROCESSING_THRESHOLD_MS = 5 * 60 * 1000;
  * remains retryable — the exact contradiction Correction 3 of the Phase G
  * plan fixed (a naive "duplicate insert -> return 200" check would have
  * silently swallowed a legitimate retry of a previously-failed event).
+ *
+ * PROD-CONNECT-WEBHOOKV2-1 — extracted as its own generic function (was
+ * previously inlined in processStripeWebhookEvent below) so the new
+ * Accounts v2 Connect webhook (src/services/stripeConnectWebhooks.ts) can
+ * reuse the identical claim/idempotency machinery against its own,
+ * differently-shaped thin event notifications, without coupling to this
+ * file's v1-specific runStripeEventBusinessLogic switch. Behavior for the
+ * existing v1 platform webhook below is unchanged by this extraction.
  */
-export async function processStripeWebhookEvent(event: Stripe.Event): Promise<void> {
-  let record = await db.stripeWebhookEvent.findUnique({ where: { stripeEventId: event.id } });
+export async function claimAndProcessWebhookEvent(eventId: string, eventType: string, run: () => Promise<void>): Promise<void> {
+  let record = await db.stripeWebhookEvent.findUnique({ where: { stripeEventId: eventId } });
   if (!record) {
     try {
       record = await db.stripeWebhookEvent.create({
-        data: { stripeEventId: event.id, type: event.type, processingStatus: "RECEIVED" },
+        data: { stripeEventId: eventId, type: eventType, processingStatus: "RECEIVED" },
       });
     } catch {
       // Race: a concurrent delivery just created it — re-read rather than
       // treat this as a failure.
-      record = await db.stripeWebhookEvent.findUnique({ where: { stripeEventId: event.id } });
+      record = await db.stripeWebhookEvent.findUnique({ where: { stripeEventId: eventId } });
       if (!record) throw new Error("Failed to create or find StripeWebhookEvent");
     }
   }
@@ -61,7 +69,7 @@ export async function processStripeWebhookEvent(event: Stripe.Event): Promise<vo
   }
 
   try {
-    await runStripeEventBusinessLogic(event);
+    await run();
     await db.stripeWebhookEvent.updateMany({
       where: { id: record.id, processingStatus: "PROCESSING" },
       data: { processingStatus: "PROCESSED", processedAt: new Date() },
@@ -76,6 +84,10 @@ export async function processStripeWebhookEvent(event: Stripe.Event): Promise<vo
     });
     throw error; // the route handler returns non-2xx so Stripe retries
   }
+}
+
+export async function processStripeWebhookEvent(event: Stripe.Event): Promise<void> {
+  await claimAndProcessWebhookEvent(event.id, event.type, () => runStripeEventBusinessLogic(event));
 }
 
 function getPaymentIntentId(value: string | Stripe.PaymentIntent | null): string | null {

@@ -242,8 +242,22 @@ export async function createOnboardingLink(tutorProfileId: string, returnUrl: st
 export async function syncTutorConnectStatusFromStripe(tutorProfileId: string): Promise<void> {
   const tutor = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutorProfileId } });
   if (!tutor.stripeConnectAccountId) return;
+  await syncTutorConnectStatusFromAccountId(tutor.stripeConnectAccountId);
+}
+
+/**
+ * PROD-CONNECT-WEBHOOKV2-1 — the single "given a Stripe account id, fetch
+ * its authoritative current v1-shaped state and converge" primitive.
+ * Extracted so the new Accounts v2 Connect webhook (which only ever learns
+ * an account id — from a thin event's related_object.id, never an embedded
+ * account snapshot) can reuse it, rather than duplicating the retrieve +
+ * derive + persist sequence a second time. A retrieval failure here throws
+ * before syncTutorConnectStatusFromAccount is ever reached — no partial or
+ * inferred status is ever persisted from an incomplete Stripe response.
+ */
+export async function syncTutorConnectStatusFromAccountId(accountId: string): Promise<void> {
   const stripe = getStripeClient();
-  const account = await stripe.accounts.retrieve(tutor.stripeConnectAccountId);
+  const account = await stripe.accounts.retrieve(accountId);
   await syncTutorConnectStatusFromAccount(account);
 }
 
