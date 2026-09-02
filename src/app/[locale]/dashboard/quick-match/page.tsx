@@ -213,6 +213,7 @@ export default async function StudentQuickMatchPage({
             subjects={subjectOptions}
             levels={levelOptions}
             studentProfileId={selectedStudentProfileId}
+            initialAcademicLevelId={selectedStudent.academicLevelId}
             betaOnlineOnly={closedBetaOnlineOnlyActive()}
           />
         </>

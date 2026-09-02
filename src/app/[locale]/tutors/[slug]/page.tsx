@@ -193,7 +193,11 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                   levels={tutor.levels.map((l) => ({ id: l.academicLevel.id, label: tLevels(l.academicLevel.slug) }))}
                   useStripe={paymentsUseStripe()}
                   stripePublishableKey={process.env.STRIPE_PUBLISHABLE_KEY ?? null}
-                  bookableStudents={bookableStudents.map((s) => ({ id: s.id, label: `${s.firstName} ${s.lastName}` }))}
+                  bookableStudents={bookableStudents.map((s) => ({
+                    id: s.id,
+                    label: `${s.firstName} ${s.lastName}`,
+                    academicLevelId: s.academicLevelId,
+                  }))}
                   actorIsParent={session?.user?.role === "PARENT"}
                 />
               ) : (

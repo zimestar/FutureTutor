@@ -250,6 +250,12 @@ describe("BETA-HARDEN1 — Closed Beta online-only enforcement (createTutoringRe
     const fd = new FormData();
     fd.set("studentProfileId", "student-1");
     fd.set("subjectId", "subject-1");
+    // BETA-PRICINGFIX1 — academicLevelId is now required by
+    // createTutoringRequestSchema (see FutureTutor_BETA_PRICINGGAP_AUDIT1
+    // /FIX1 reports); unrelated to what this describe block actually tests
+    // (the online-only gate), so a fixed, valid value keeps that intent
+    // isolated from this schema change.
+    fd.set("academicLevelId", "level-1");
     fd.set("tutoringMode", tutoringMode);
     fd.set("durationMinutes", "60");
     fd.set("requestedStartAt", new Date(Date.now() + 3600_000).toISOString());

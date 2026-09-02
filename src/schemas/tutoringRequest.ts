@@ -14,7 +14,10 @@ export const createTutoringRequestSchema = z
     // client input, re-authorized server-side against H.2 before use.
     studentProfileId: z.string().min(1),
     subjectId: z.string().min(1),
-    academicLevelId: z.string().min(1).optional(),
+    // BETA-PRICINGFIX1 — required, not optional: see the identical comment
+    // in src/schemas/pricing.ts. An unresolved/"Any level" academic level
+    // must never reach quote generation.
+    academicLevelId: z.string().min(1),
     tutoringMode: z.enum(["ONLINE", "IN_PERSON", "BOTH"]),
     durationMinutes: z.coerce.number().int().min(15).max(240),
     requestedStartAt: z.coerce.date(),

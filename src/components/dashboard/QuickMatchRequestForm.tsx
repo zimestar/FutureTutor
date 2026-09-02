@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/Input";
 import { createTutoringRequestAction } from "@/lib/actions/tutoringRequests";
 import { LocationForm, TutoringModeSelector, type RequestTutoringMode } from "@/components/dashboard/InPersonTutoringLocation";
+import { resolveInitialAcademicLevel } from "@/lib/pricingLevelSelection";
 
 export interface QuickMatchOption {
   id: string;
@@ -27,11 +28,21 @@ export function QuickMatchRequestForm({
   subjects,
   levels,
   studentProfileId,
+  initialAcademicLevelId = null,
   betaOnlineOnly = false,
 }: {
   subjects: QuickMatchOption[];
   levels: QuickMatchOption[];
   studentProfileId: string;
+  /** BETA-PRICINGFIX1 — the learner's own canonical academic level
+   * (StudentProfile.academicLevelId), resolved server-side by the caller
+   * (dashboard/quick-match/page.tsx, from the already-authorized
+   * `selectedStudent`). Used to preselect the level field instead of
+   * defaulting to an unpriced "Any level" state — see
+   * FutureTutor_BETA_PRICINGGAP_AUDIT1_REPORT.md. Not a second source of
+   * truth: read once from the same StudentProfile row the page already
+   * resolved, never re-derived here. */
+  initialAcademicLevelId?: string | null;
   /** BETA-HARDEN1 — computed server-side via closedBetaOnlineOnlyActive().
    * When true, the mode selector never offers IN_PERSON, so the location
    * fields it would otherwise reveal are unreachable through this form. */
@@ -40,6 +51,7 @@ export function QuickMatchRequestForm({
   const t = useTranslations("quickMatch");
   const [state, formAction, pending] = useActionState(createTutoringRequestAction, undefined);
   const [tutoringMode, setTutoringMode] = useState<RequestTutoringMode>("ONLINE");
+  const defaultAcademicLevelId = resolveInitialAcademicLevel(initialAcademicLevelId, levels);
 
   return (
     <form action={formAction} className="mt-6 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-6">
@@ -67,8 +79,14 @@ export function QuickMatchRequestForm({
         <label htmlFor="academicLevelId" className="mb-1.5 block text-sm font-semibold text-navy">
           {t("form.levelLabel")}
         </label>
-        <Select id="academicLevelId" name="academicLevelId" defaultValue="">
-          <option value="">{t("form.anyLevel")}</option>
+        <Select id="academicLevelId" name="academicLevelId" required defaultValue={defaultAcademicLevelId}>
+          {/* BETA-PRICINGFIX1 — a real, priceable level must be chosen
+              explicitly; this placeholder is never itself a valid, submittable
+              selection (native `required` + the server-side schema both
+              reject it — see src/schemas/tutoringRequest.ts). */}
+          <option value="" disabled>
+            {t("form.selectLevelPlaceholder")}
+          </option>
           {levels.map((level) => (
             <option key={level.id} value={level.id}>
               {level.label}

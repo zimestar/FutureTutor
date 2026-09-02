@@ -7,7 +7,13 @@ export const createPriceQuoteSchema = z.object({
   studentProfileId: z.string().min(1),
   tutorProfileId: z.string().min(1),
   subjectId: z.string().min(1),
-  academicLevelId: z.string().min(1).optional(),
+  // BETA-PRICINGFIX1 — required, not optional: an unresolved/"Any level"
+  // academic level must never reach quote generation (see
+  // FutureTutor_BETA_PRICINGGAP_AUDIT1_REPORT.md). The UI never submits a
+  // quote request without a concrete level (see BookingWidget.tsx's
+  // quoteKey gating); this is the server-authoritative backstop for a
+  // crafted/bypassed request.
+  academicLevelId: z.string().min(1),
   startAt: z.coerce.date(),
 });
 

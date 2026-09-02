@@ -10,6 +10,7 @@ import { preparePaymentForBookingQuoteAction, type PreparePaymentState } from "@
 import { StripePaymentForm } from "@/components/payments/StripePaymentForm";
 import { acquirePreparationLock, paymentPreparationView } from "@/lib/paymentPreparation";
 import { shouldAutoFinalizeBooking } from "@/lib/bookingAutoFinalize";
+import { resolveInitialAcademicLevel } from "@/lib/pricingLevelSelection";
 
 export interface BookingWidgetDaySlot {
   date: string;
@@ -24,6 +25,12 @@ export interface BookingWidgetOption {
 export interface BookableStudentOption {
   id: string;
   label: string;
+  /** BETA-PRICINGFIX1 — the student's own canonical academic level
+   * (StudentProfile.academicLevelId), used to preselect the pricing form's
+   * level field instead of defaulting to an unpriced "Any level" state. Not
+   * a second source of truth — read once, server-side, from the same
+   * StudentProfile row listBookableStudentsForActor already resolves. */
+  academicLevelId: string | null;
 }
 
 export function BookingWidget({
@@ -58,15 +65,20 @@ export function BookingWidget({
   const [selectedDate, setSelectedDate] = useState(days[0]?.date ?? "");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
-  const [academicLevelId, setAcademicLevelId] = useState("");
+  const [academicLevelId, setAcademicLevelId] = useState(() =>
+    resolveInitialAcademicLevel(bookableStudents[0]?.academicLevelId, levels)
+  );
   const [studentProfileId, setStudentProfileId] = useState(bookableStudents[0]?.id ?? "");
   // Keyed by the exact selection it was fetched for — a stale quote from a
   // superseded selection is detected during render (a pure comparison)
   // rather than cleared via a synchronous setState inside the effect body.
   const [quoteState, setQuoteState] = useState<{ key: string; result: PriceQuoteResult } | null>(null);
   const [quotePending, startQuoteTransition] = useTransition();
+  // BETA-PRICINGFIX1 — academicLevelId is now part of the truthiness gate,
+  // not just the key: quote generation must not run while the level is
+  // still unresolved (see resolveInitialLevel's doc comment above).
   const quoteKey =
-    selectedSlot && subjectId && studentProfileId
+    selectedSlot && subjectId && studentProfileId && academicLevelId
       ? `${studentProfileId}|${selectedSlot}|${subjectId}|${academicLevelId}`
       : null;
   const quote = quoteState && quoteState.key === quoteKey ? quoteState.result : null;
@@ -209,7 +221,17 @@ export function BookingWidget({
           <Select
             id="learnerSelect"
             value={studentProfileId}
-            onChange={(e) => setStudentProfileId(e.target.value)}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setStudentProfileId(nextId);
+              // BETA-PRICINGFIX1 — switching learners re-derives the level
+              // preselection from the newly selected student's own profile
+              // rather than carrying over a level that may not apply to
+              // them (or may not even be one of this tutor's offered
+              // levels).
+              const nextStudent = bookableStudents.find((s) => s.id === nextId);
+              setAcademicLevelId(resolveInitialAcademicLevel(nextStudent?.academicLevelId, levels));
+            }}
           >
             {bookableStudents.map((student) => (
               <option key={student.id} value={student.id}>
@@ -298,10 +320,16 @@ export function BookingWidget({
         </label>
         <Select
           id="academicLevelId"
+          required
           value={academicLevelId}
           onChange={(e) => setAcademicLevelId(e.target.value)}
         >
-          <option value="">{t("anyLevel")}</option>
+          {/* BETA-PRICINGFIX1 — a real, priceable level must be chosen
+              explicitly; this placeholder is never itself a valid selection
+              for quote generation (see quoteKey's gating above). */}
+          <option value="" disabled>
+            {t("selectLevelPlaceholder")}
+          </option>
           {levels.map((level) => (
             <option key={level.id} value={level.id}>
               {level.label}
@@ -312,7 +340,12 @@ export function BookingWidget({
 
       {selectedSlot && (
         <div className="rounded-md border border-neutral-200 bg-off-white p-4" data-testid="price-summary">
-          {quotePending && <p className="text-sm text-slate">{t("calculatingPrice")}</p>}
+          {!academicLevelId && (
+            <p className="text-sm text-slate" data-testid="level-required-hint">
+              {t("selectLevelToSeePricing")}
+            </p>
+          )}
+          {academicLevelId && quotePending && <p className="text-sm text-slate">{t("calculatingPrice")}</p>}
           {!quotePending && quote?.success && (
             <div className="flex flex-col gap-1 text-sm">
               <div className="flex justify-between text-slate">
