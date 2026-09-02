@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { startStripeOnboardingAction } from "@/lib/actions/stripeConnect";
-import { syncTutorConnectStatusFromStripe } from "@/services/stripeConnect";
+import { syncTutorConnectStatusFromStripe, shouldResyncStripeConnectStatus } from "@/services/stripeConnect";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
 import { EmptyState } from "@/components/ui/Feedback";
@@ -51,9 +51,15 @@ export default async function TutorPayoutsPage({
     include: { user: { select: { image: true } } },
   });
 
-  // Returning from Stripe onboarding — re-sync status from Stripe before
-  // rendering, rather than waiting for the next account.updated webhook.
-  if (tutorProfile?.stripeConnectAccountId && onboarding === "return" && paymentsUseStripe()) {
+  // Returning from Stripe onboarding, OR the local status is still
+  // unsettled (PROD-CONNECT-SYNCFIX1 — defense-in-depth against a missed
+  // or delayed account.updated webhook) — re-sync status from Stripe
+  // before rendering, rather than relying solely on the webhook.
+  if (
+    tutorProfile?.stripeConnectAccountId &&
+    shouldResyncStripeConnectStatus(tutorProfile.stripeConnectStatus, onboarding) &&
+    paymentsUseStripe()
+  ) {
     await syncTutorConnectStatusFromStripe(tutorProfile.id).catch(() => {});
     tutorProfile = await db.tutorProfile.findUnique({
       where: { userId: user.id },

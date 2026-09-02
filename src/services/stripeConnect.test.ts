@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type Stripe from "stripe";
-import { deriveTutorStripeConnectStatus, deriveInitialStatusFromV2Account } from "./stripeConnect";
+import { deriveTutorStripeConnectStatus, deriveInitialStatusFromV2Account, shouldResyncStripeConnectStatus } from "./stripeConnect";
 
 // PAY-1B onboarding-regression fix — pure unit coverage for
 // deriveTutorStripeConnectStatus, isolated from the DB/Stripe-client
@@ -115,5 +115,29 @@ describe("deriveInitialStatusFromV2Account", () => {
 
   it("no configuration.recipient in the response at all falls through safely to PENDING, never throws", () => {
     expect(deriveInitialStatusFromV2Account(v2Account(undefined))).toBe("PENDING");
+  });
+});
+
+// PROD-CONNECT-SYNCFIX1 — pure unit coverage for the on-page-load resync
+// trigger condition (src/app/[locale]/tutor/payouts/page.tsx), isolated
+// from the page component so the defense-in-depth "unsettled status keeps
+// re-checking" behavior is testable directly.
+describe("shouldResyncStripeConnectStatus", () => {
+  it("onboarding=return always triggers a resync, regardless of current status", () => {
+    expect(shouldResyncStripeConnectStatus("ACTIVE", "return")).toBe(true);
+    expect(shouldResyncStripeConnectStatus("DISABLED", "return")).toBe(true);
+    expect(shouldResyncStripeConnectStatus("NOT_STARTED", "return")).toBe(true);
+  });
+
+  it("an unsettled status (NOT_STARTED/PENDING/RESTRICTED) triggers a resync even without onboarding=return — the missed-webhook self-healing path", () => {
+    expect(shouldResyncStripeConnectStatus("NOT_STARTED", undefined)).toBe(true);
+    expect(shouldResyncStripeConnectStatus("PENDING", undefined)).toBe(true);
+    expect(shouldResyncStripeConnectStatus("RESTRICTED", undefined)).toBe(true);
+  });
+
+  it("a settled status (ACTIVE/DISABLED) does NOT trigger a resync on an ordinary page load — avoids a Stripe call on every visit once synced", () => {
+    expect(shouldResyncStripeConnectStatus("ACTIVE", undefined)).toBe(false);
+    expect(shouldResyncStripeConnectStatus("DISABLED", undefined)).toBe(false);
+    expect(shouldResyncStripeConnectStatus("ACTIVE", "error")).toBe(false);
   });
 });

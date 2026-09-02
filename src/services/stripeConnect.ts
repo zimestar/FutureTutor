@@ -247,6 +247,26 @@ export async function syncTutorConnectStatusFromStripe(tutorProfileId: string): 
   await syncTutorConnectStatusFromAccount(account);
 }
 
+/**
+ * PROD-CONNECT-SYNCFIX1 — the single trigger condition for an authenticated,
+ * on-page-load resync (src/app/[locale]/tutor/payouts/page.tsx), extracted
+ * so it's unit-testable without rendering the page. Two independent reasons
+ * to resync:
+ *   - `onboarding === "return"`: the tutor just came back from Stripe-hosted
+ *     onboarding (unchanged from the original, pre-existing behavior).
+ *   - status is not yet a terminal/settled value (anything other than
+ *     ACTIVE/DISABLED): defense-in-depth against a missed or delayed
+ *     webhook — investigated in PROD-CONNECT-ONBOARD1/SYNCFIX1, where a
+ *     real connected account reached Stripe's fully-active state while
+ *     FutureTutor's local record stayed stuck at its account-creation-time
+ *     value with no webhook ever having arrived to correct it. Once a
+ *     tutor's status is genuinely ACTIVE or DISABLED, this stops firing on
+ *     every page load — only an unsettled status keeps re-checking.
+ */
+export function shouldResyncStripeConnectStatus(status: StripeConnectStatus, onboardingParam: string | undefined): boolean {
+  return onboardingParam === "return" || (status !== "ACTIVE" && status !== "DISABLED");
+}
+
 /** Called from the account.updated webhook — resolves which TutorProfile the
  * account belongs to via server-set metadata first, falling back to the
  * stored stripeConnectAccountId. */
