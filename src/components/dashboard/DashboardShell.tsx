@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth";
 import { Avatar } from "@/components/ui/Avatar";
 import { InstallFutureTutor } from "@/components/pwa/InstallFutureTutor";
+import { FeedbackLink } from "@/components/dashboard/FeedbackLink";
 
 export interface DashboardNavItem {
   label: string;
@@ -135,6 +136,7 @@ export function DashboardShell({ navItems, userName, userImage, children }: { na
         <div className="border-t border-border p-4">
           <AccountArea userName={userName} userImage={userImage} />
           <InstallFutureTutor className="mt-2" />
+          <FeedbackLink className="mt-2" />
           <form action={signOutAction} className="mt-2">
             <button type="submit" className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary">
               <LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}
@@ -160,6 +162,7 @@ export function DashboardShell({ navItems, userName, userImage, children }: { na
         <div className="border-t border-border p-4">
           <AccountArea userName={userName} userImage={userImage} />
           <InstallFutureTutor className="mt-2" />
+          <FeedbackLink className="mt-2" />
           <form action={signOutAction} className="mt-2">
             <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary"><LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}</button>
           </form>

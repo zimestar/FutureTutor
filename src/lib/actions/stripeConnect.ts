@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/appUrl";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
 import { createOnboardingLink } from "@/services/stripeConnect";
 
 /**
@@ -24,6 +25,17 @@ import { createOnboardingLink } from "@/services/stripeConnect";
 export async function startStripeOnboardingAction(formData: FormData): Promise<void> {
   const session = await auth();
   if (!session?.user || session.user.role !== "TUTOR") return;
+
+  // BETA-LAUNCHFIX1 — checked before any database read, matching this
+  // codebase's established early-rejection discipline (e.g. BETA-AGE1's
+  // age-eligibility check, BETA-PRICINGFIX1's academic-level requiredness).
+  // A normal tutor never reaches this branch — /tutor/payouts doesn't render
+  // the CTA while Connect is unavailable — so this fires only for a
+  // crafted/direct invocation, which is exactly what it exists to stop. The
+  // true authoritative backstop is ensureConnectAccount's own check
+  // (services/stripeConnect.ts) — this is the fast, cheap first line of
+  // defense, not the only one.
+  if (!stripeConnectOnboardingAvailable()) return;
 
   const locale = String(formData.get("locale") ?? "en");
   const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: session.user.id } });

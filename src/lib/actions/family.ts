@@ -56,7 +56,28 @@ import bcrypt from "bcryptjs";
 // distinguishing "your request was sent AND you must activate your new
 // account first" from every other success shape in this file (an
 // already-authenticated session claiming, which needs no such step).
-export type FamilyActionState = { error?: string; success?: boolean; requiresVerification?: boolean } | undefined;
+//
+// BETA-LAUNCHFIX1 — `fieldErrors` is likewise additive: only
+// createChildAction currently populates it (mirroring AuthActionState's
+// identical shape and registerAction's exact population pattern in
+// src/lib/actions/auth.ts), so every other action in this file keeps
+// returning its existing top-level-only `error` shape unchanged.
+export type CreateChildField = "firstName" | "lastName" | "dateOfBirth" | "academicLevelId";
+
+export type FamilyActionState =
+  | {
+      error?: string;
+      success?: boolean;
+      requiresVerification?: boolean;
+      fieldErrors?: Partial<Record<CreateChildField, string>>;
+    }
+  | undefined;
+
+const CREATE_CHILD_FIELDS = new Set<CreateChildField>(["firstName", "lastName", "dateOfBirth", "academicLevelId"]);
+
+function isCreateChildField(value: string): value is CreateChildField {
+  return CREATE_CHILD_FIELDS.has(value as CreateChildField);
+}
 
 export type InviteGuardianState =
   | { success: true; inviteUrl: string; expiresAt: string }
@@ -96,7 +117,16 @@ export async function createChildAction(_prevState: FamilyActionState, formData:
     dateOfBirth: formData.get("dateOfBirth"),
     academicLevelId: raw && String(raw).length > 0 ? raw : undefined,
   });
-  if (!parsed.success) return { error: t("invalidInput") };
+  if (!parsed.success) {
+    const fieldErrors: Partial<Record<CreateChildField, string>> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0];
+      if (typeof field === "string" && isCreateChildField(field) && !fieldErrors[field]) {
+        fieldErrors[field] = t(`${field}Invalid`);
+      }
+    }
+    return { error: t("invalidInput"), fieldErrors };
+  }
 
   try {
     await createGuardianManagedStudent(db, session.user.id, {

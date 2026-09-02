@@ -686,6 +686,10 @@
     "openNavigation": "Open dashboard navigation",
     "closeNavigation": "Close dashboard navigation",
     "signedInAs": "Signed in as",
+    "feedback": {
+      "linkLabel": "Send feedback",
+      "emailSubject": "FutureTutor Beta Feedback"
+    },
     "nav": {
       "overview": "Overview",
       "applicationOverview": "Application Overview",
@@ -1712,6 +1716,7 @@
     "continueSetupCta": "Continue setup",
     "onboardingPending": "Opening Stripe…",
     "onboardingError": "We couldn't start Stripe onboarding — please try again.",
+    "connectUnavailableNotice": "Payout setup is not yet available during the closed beta. We'll let you know when it becomes available.",
     "devModeNotice": "Payments are running in development mode — no real Stripe account is required yet.",
     "earningsTitle": "Your earnings",
     "earningsEmptyTitle": "No earnings yet",
@@ -2032,6 +2037,10 @@
     "errors": {
       "notAuthorized": "You don't have permission to do that.",
       "invalidInput": "Please check your information and try again.",
+      "firstNameInvalid": "Enter a first name between 1 and 50 characters.",
+      "lastNameInvalid": "Enter a last name between 1 and 50 characters.",
+      "dateOfBirthInvalid": "Enter a valid date of birth that is not in the future.",
+      "academicLevelIdInvalid": "Choose a valid academic level, or leave it unset.",
       "invitationInvalid": "This invitation is no longer valid.",
       "invitationExpired": "This invitation has expired.",
       "invitationAlreadyClaimed": "This invitation has already been claimed.",
@@ -2510,9 +2519,9 @@
     "contact": {
       "metaTitle": "Contact and Support",
       "metaDescription": "Find the right FutureTutor support route for account access, tutoring questions and tutor guidance.",
-      "hero": { "eyebrow": "Contact and support", "title": "Start with the path that fits your question.", "description": "FutureTutor is building clear support around the moments that matter. These routes can help you move forward without a pretend contact form.", "primary": "Understand the experience", "secondary": "Log in" },
+      "hero": { "eyebrow": "Contact and support", "title": "Start with the path that fits your question.", "description": "FutureTutor is building clear support around the moments that matter. These routes can help you move forward quickly.", "primary": "Understand the experience", "secondary": "Log in" },
       "routes": { "0": { "title": "Account access", "description": "Forgot your password? Use the secure recovery flow without exposing whether an email belongs to an account.", "cta": "Reset your password" }, "1": { "title": "Students and families", "description": "Learn how finding a tutor, booking and sessions work before creating an account.", "cta": "See how it works" }, "2": { "title": "Tutor questions", "description": "Explore the application, profile, availability, session and payout experience at a high level.", "cta": "Visit Tutor Resources" } },
-      "general": { "title": "Looking for a general contact address?", "description": "A verified general support address is not yet published. Until it is, use the routes above for account access, tutoring information and Tutor guidance." }
+      "general": { "title": "Help us improve FutureTutor", "description": "Found an issue or have a suggestion? Send us your feedback.", "cta": "Send feedback", "emailSubject": "FutureTutor Beta Feedback" }
     },
     "forTutors": {
       "metaTitle": "Become a Tutor",

@@ -686,6 +686,10 @@
     "openNavigation": "Ouvrir la navigation du tableau de bord",
     "closeNavigation": "Fermer la navigation du tableau de bord",
     "signedInAs": "Connecté en tant que",
+    "feedback": {
+      "linkLabel": "Envoyer des commentaires",
+      "emailSubject": "Commentaires bêta FutureTutor"
+    },
     "nav": {
       "overview": "Aperçu",
       "applicationOverview": "Aperçu de la candidature",
@@ -1712,6 +1716,7 @@
     "continueSetupCta": "Continuer la configuration",
     "onboardingPending": "Ouverture de Stripe…",
     "onboardingError": "Nous n'avons pas pu démarrer la configuration Stripe — veuillez réessayer.",
+    "connectUnavailableNotice": "La configuration des versements n'est pas encore disponible pendant la bêta fermée. Nous vous informerons lorsqu'elle sera disponible.",
     "devModeNotice": "Les paiements fonctionnent en mode développement — aucun compte Stripe réel n'est encore requis.",
     "earningsTitle": "Vos gains",
     "earningsEmptyTitle": "Aucun gain",
@@ -2032,6 +2037,10 @@
     "errors": {
       "notAuthorized": "Vous n'avez pas la permission de faire cela.",
       "invalidInput": "Veuillez vérifier vos informations et réessayer.",
+      "firstNameInvalid": "Saisissez un prénom de 1 à 50 caractères.",
+      "lastNameInvalid": "Saisissez un nom de 1 à 50 caractères.",
+      "dateOfBirthInvalid": "Saisissez une date de naissance valide qui n'est pas dans le futur.",
+      "academicLevelIdInvalid": "Choisissez un niveau scolaire valide, ou laissez ce champ vide.",
       "invitationInvalid": "Cette invitation n'est plus valide.",
       "invitationExpired": "Cette invitation a expiré.",
       "invitationAlreadyClaimed": "Cette invitation a déjà été réclamée.",
@@ -2510,9 +2519,9 @@
     "contact": {
       "metaTitle": "Contact et soutien",
       "metaDescription": "Trouvez le bon parcours FutureTutor pour l’accès au compte, les questions de tutorat et l’accompagnement des tuteurs.",
-      "hero": { "eyebrow": "Contact et soutien", "title": "Commencez par le parcours qui correspond à votre question.", "description": "FutureTutor construit un soutien clair autour des moments importants. Ces parcours vous aident à avancer sans faux formulaire de contact.", "primary": "Comprendre l’expérience", "secondary": "Se connecter" },
+      "hero": { "eyebrow": "Contact et soutien", "title": "Commencez par le parcours qui correspond à votre question.", "description": "FutureTutor construit un soutien clair autour des moments importants. Ces parcours vous aident à avancer rapidement.", "primary": "Comprendre l’expérience", "secondary": "Se connecter" },
       "routes": { "0": { "title": "Accès au compte", "description": "Mot de passe oublié? Utilisez le parcours sécurisé sans révéler si une adresse est liée à un compte.", "cta": "Réinitialiser le mot de passe" }, "1": { "title": "Élèves et familles", "description": "Découvrez la recherche d’un tuteur, la réservation et les séances avant de créer un compte.", "cta": "Voir comment ça marche" }, "2": { "title": "Questions des tuteurs", "description": "Explorez à un niveau général la candidature, le profil, les disponibilités, les séances et les versements.", "cta": "Voir les ressources pour tuteurs" } },
-      "general": { "title": "Vous cherchez une adresse de contact générale?", "description": "Aucune adresse générale de soutien vérifiée n’est encore publiée. D’ici là, utilisez les parcours ci-dessus pour l’accès au compte, l’information sur le tutorat et l’accompagnement des tuteurs." }
+      "general": { "title": "Aidez-nous à améliorer FutureTutor", "description": "Vous avez rencontré un problème ou avez une suggestion ? Envoyez-nous vos commentaires.", "cta": "Envoyer des commentaires", "emailSubject": "Commentaires bêta FutureTutor" }
     },
     "forTutors": {
       "metaTitle": "Devenir tuteur",

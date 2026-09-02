@@ -2,7 +2,16 @@ import "server-only";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
+import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
 import type { StripeConnectStatus } from "@/generated/prisma/enums";
+
+/**
+ * BETA-LAUNCHFIX1 — thrown by ensureConnectAccount when Stripe Connect
+ * onboarding is not currently available (see stripeConnectConfig.ts). Kept
+ * distinct from any Stripe SDK error class since it never reaches Stripe at
+ * all — this is a pre-Stripe, config-level rejection.
+ */
+export class StripeConnectDisabledError extends Error {}
 
 /**
  * The ONLY place in the codebase allowed to interpret raw Stripe Account
@@ -99,6 +108,16 @@ export function deriveInitialStatusFromV2Account(account: Stripe.V2.Core.Account
  * a guarded compare-and-swap on the exact epoch just used, so two concurrent
  * requests hitting the same confirmed rejection can't double-advance. */
 export async function ensureConnectAccount(tutorProfileId: string): Promise<string> {
+  // BETA-LAUNCHFIX1 — the single authoritative choke point: checked here,
+  // not only in startStripeOnboardingAction, so that ANY caller of this
+  // function (present or future) is stopped before any Stripe SDK network
+  // operation, regardless of how it was reached. This is deliberately the
+  // very first line — before even the DB read below — so a disabled gate
+  // costs nothing but a string comparison.
+  if (!stripeConnectOnboardingAvailable()) {
+    throw new StripeConnectDisabledError("Stripe Connect onboarding is not currently available.");
+  }
+
   const tutor = await db.tutorProfile.findUniqueOrThrow({
     where: { id: tutorProfileId },
     include: { user: { select: { email: true } } },

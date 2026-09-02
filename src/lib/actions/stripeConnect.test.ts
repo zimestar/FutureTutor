@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   getAppBaseUrl: vi.fn(),
   paymentsUseStripe: vi.fn(),
+  stripeConnectOnboardingAvailable: vi.fn(),
   createOnboardingLink: vi.fn(),
   redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
@@ -28,6 +29,7 @@ vi.mock("@/lib/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/lib/db", () => ({ db: { tutorProfile: { findUnique: mocks.findUnique } } }));
 vi.mock("@/lib/appUrl", () => ({ getAppBaseUrl: mocks.getAppBaseUrl }));
 vi.mock("@/lib/paymentMode", () => ({ paymentsUseStripe: mocks.paymentsUseStripe }));
+vi.mock("@/lib/stripeConnectConfig", () => ({ stripeConnectOnboardingAvailable: mocks.stripeConnectOnboardingAvailable }));
 vi.mock("@/services/stripeConnect", () => ({ createOnboardingLink: mocks.createOnboardingLink }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
@@ -67,6 +69,11 @@ describe("startStripeOnboardingAction — Stripe Connect authorization hardening
     vi.clearAllMocks();
     mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
     mocks.paymentsUseStripe.mockReturnValue(true);
+    // BETA-LAUNCHFIX1 — this file's own tests are about role/applicationStatus
+    // authorization, not the Connect availability gate (see the dedicated
+    // stripeConnectGate.test.ts for that). Defaulting to available here keeps
+    // every existing test's original intent isolated from the new gate.
+    mocks.stripeConnectOnboardingAvailable.mockReturnValue(true);
   });
 
   it("unauthenticated -> denied, no DB lookup, no Stripe call, no redirect", async () => {

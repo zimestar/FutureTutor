@@ -8,6 +8,7 @@ import { tutorNavItems } from "@/lib/tutorNav";
 import { startStripeOnboardingAction } from "@/lib/actions/stripeConnect";
 import { syncTutorConnectStatusFromStripe } from "@/services/stripeConnect";
 import { paymentsUseStripe } from "@/lib/paymentMode";
+import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
 import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
@@ -77,6 +78,13 @@ export default async function TutorPayoutsPage({
     : [[], []];
 
   const status = tutorProfile?.stripeConnectStatus ?? "NOT_STARTED";
+  // BETA-LAUNCHFIX1 — server-computed, never trusted from the client. When
+  // false, the actionable CTA below is not rendered at all (hiding the
+  // button is a UX courtesy here, not the security boundary — the real
+  // boundary is startStripeOnboardingAction's + ensureConnectAccount's own
+  // checks, which hold even if this render were somehow bypassed).
+  const connectAvailable = stripeConnectOnboardingAvailable();
+  const setupNotStarted = status !== "ACTIVE" && status !== "DISABLED";
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "CAD" });
   const eligibilityDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
@@ -98,7 +106,7 @@ export default async function TutorPayoutsPage({
               <Badge variant={STATUS_BADGE[status] ?? "outline"}>{t(`stripeStatus.${status}`)}</Badge>
             </div>
           </div>
-          {status !== "ACTIVE" && status !== "DISABLED" && (
+          {setupNotStarted && connectAvailable && (
             <form action={startStripeOnboardingAction}>
               <input type="hidden" name="locale" value={locale} />
               <StripeOnboardingSubmitButton
@@ -108,6 +116,11 @@ export default async function TutorPayoutsPage({
             </form>
           )}
         </div>
+        {setupNotStarted && !connectAvailable && (
+          <p className="mt-3 text-sm text-slate" data-testid="connect-unavailable-notice">
+            {t("connectUnavailableNotice")}
+          </p>
+        )}
         {onboarding === "error" && <p className="mt-3 text-sm font-semibold text-error">{t("onboardingError")}</p>}
         {!paymentsUseStripe() && <p className="mt-3 text-sm text-slate">{t("devModeNotice")}</p>}
       </Surface>

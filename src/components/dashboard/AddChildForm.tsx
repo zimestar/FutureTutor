@@ -56,12 +56,22 @@ export function AddChildForm({ academicLevels }: { academicLevels: AcademicLevel
             {t("addChildForm.firstNameLabel")}
           </label>
           <Input id="child-firstName" name="firstName" required />
+          {state?.fieldErrors?.firstName && (
+            <p role="alert" className="mt-1 text-sm text-error">
+              {state.fieldErrors.firstName}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor="child-lastName" className="mb-1.5 block text-sm font-semibold text-navy">
             {t("addChildForm.lastNameLabel")}
           </label>
           <Input id="child-lastName" name="lastName" required />
+          {state?.fieldErrors?.lastName && (
+            <p role="alert" className="mt-1 text-sm text-error">
+              {state.fieldErrors.lastName}
+            </p>
+          )}
         </div>
       </div>
 
@@ -70,6 +80,11 @@ export function AddChildForm({ academicLevels }: { academicLevels: AcademicLevel
           {t("addChildForm.dateOfBirthLabel")}
         </label>
         <Input id="child-dateOfBirth" name="dateOfBirth" type="date" required data-testid="child-dob" />
+        {state?.fieldErrors?.dateOfBirth && (
+          <p role="alert" className="mt-1 text-sm text-error">
+            {state.fieldErrors.dateOfBirth}
+          </p>
+        )}
       </div>
 
       <div>
@@ -84,6 +99,11 @@ export function AddChildForm({ academicLevels }: { academicLevels: AcademicLevel
             </option>
           ))}
         </Select>
+        {state?.fieldErrors?.academicLevelId && (
+          <p role="alert" className="mt-1 text-sm text-error">
+            {state.fieldErrors.academicLevelId}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-3">
