@@ -61,6 +61,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2010-06-15T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(user.id);
 
@@ -70,6 +71,41 @@ describe("createUserForSignup — STUDENT", () => {
     createdStudentProfileIds.push(studentProfile!.id);
     expect(studentProfile!.managementMode).toBe("SELF_MANAGED");
     expect(studentProfile!.userId).toBe(user.id);
+  });
+
+  it("BETA-AGE1: persists province exactly as given, for any of the 13 canonical codes", async () => {
+    const email = uniqueEmail("student-province");
+    const user = await createUserForSignup(db, {
+      firstName: "Prov",
+      lastName: "Student",
+      email,
+      passwordHash: "hash",
+      role: "STUDENT",
+      dateOfBirth: new Date("2000-01-01T00:00:00.000Z"),
+      province: "BC",
+    });
+    createdUserIds.push(user.id);
+    const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
+    createdStudentProfileIds.push(studentProfile!.id);
+
+    expect(studentProfile!.province).toBe("BC");
+  });
+
+  it("BETA-AGE1: throws when province is missing for role STUDENT (defensive — the Zod schema + registerAction's own eligibility check are the primary gates)", async () => {
+    const email = uniqueEmail("student-missing-province");
+    await expect(
+      createUserForSignup(db, {
+        firstName: "No",
+        lastName: "Province",
+        email,
+        passwordHash: "hash",
+        role: "STUDENT",
+        dateOfBirth: new Date("2000-01-01T00:00:00.000Z"),
+      })
+    ).rejects.toThrow(/province is required/);
+
+    // Confirms the throw happened before any DB write — nothing to clean up.
+    expect(await db.user.findUnique({ where: { email } })).toBeNull();
   });
 
   it("LEGAL-19: records termsAcceptedAt/Version/Locale exactly as given", async () => {
@@ -82,6 +118,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2010-06-15T00:00:00.000Z"),
+      province: "ON",
       termsAcceptedAt: acceptedAt,
       termsAcceptedVersion: "2026-08-30",
       termsAcceptedLocale: "fr",
@@ -104,6 +141,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2010-06-15T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(user.id);
     const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
@@ -124,6 +162,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: dob,
+      province: "ON",
     });
     createdUserIds.push(user.id);
 
@@ -141,6 +180,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2008-01-01T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(user.id);
     const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
@@ -169,6 +209,7 @@ describe("createUserForSignup — STUDENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2005-03-20T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(user.id);
     const studentProfile = await db.studentProfile.findUnique({ where: { userId: user.id } });
@@ -234,6 +275,7 @@ describe("createUserForSignup — PARENT", () => {
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2012-09-01T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(studentUser.id);
     const studentProfile = await db.studentProfile.findUnique({ where: { userId: studentUser.id } });
@@ -348,6 +390,7 @@ describe("createUserForSignup — role isolation across independent signups", ()
       passwordHash: "hash",
       role: "STUDENT",
       dateOfBirth: new Date("2011-04-04T00:00:00.000Z"),
+      province: "ON",
     });
     createdUserIds.push(studentUser.id);
     const studentProfile = await db.studentProfile.findUnique({ where: { userId: studentUser.id } });

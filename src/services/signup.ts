@@ -28,6 +28,14 @@ export interface CreateUserForSignupInput {
   role: "STUDENT" | "TUTOR" | "PARENT";
   /** Required (and only meaningful) when role === "STUDENT". */
   dateOfBirth?: Date;
+  /** BETA-AGE1 — required (and only meaningful) when role === "STUDENT".
+   * The province/territory collected at signup, used by
+   * src/lib/studentAgePolicy.ts's eligibility check BEFORE this function is
+   * ever called for a STUDENT — by the time it reaches here it is already
+   * a validated CanadianProvinceCode. Persisted directly as
+   * StudentProfile.province so the Student is never asked for the same
+   * information again during profile completion (mission §6). */
+  province?: string;
   /** Only meaningful when role === "TUTOR" — the caller resolves a unique
    * slug before calling in, since slug generation itself queries the DB. */
   tutorSlug?: string;
@@ -43,13 +51,16 @@ export interface CreateUserForSignupInput {
 }
 
 export async function createUserForSignup(client: SignupClient, input: CreateUserForSignupInput) {
-  const { firstName, lastName, email, passwordHash, role, dateOfBirth, tutorSlug, termsAcceptedAt, termsAcceptedVersion, termsAcceptedLocale } = input;
+  const { firstName, lastName, email, passwordHash, role, dateOfBirth, province, tutorSlug, termsAcceptedAt, termsAcceptedVersion, termsAcceptedLocale } = input;
   const name = `${firstName} ${lastName}`;
 
   let profileData;
   if (role === "STUDENT") {
     if (!dateOfBirth) {
       throw new Error("createUserForSignup: dateOfBirth is required for role STUDENT");
+    }
+    if (!province) {
+      throw new Error("createUserForSignup: province is required for role STUDENT");
     }
     profileData = {
       studentProfile: {
@@ -64,6 +75,10 @@ export async function createUserForSignup(client: SignupClient, input: CreateUse
           lastName,
           managementMode: "SELF_MANAGED" as const,
           dateOfBirth,
+          // BETA-AGE1 — the same province already validated by
+          // registerAction's age-of-majority eligibility check, persisted
+          // directly as the profile's canonical province value.
+          province,
           tutoringMode: closedBetaOnlineOnlyActive() ? ("ONLINE" as const) : ("BOTH" as const),
         },
       },

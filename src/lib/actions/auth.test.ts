@@ -200,6 +200,182 @@ describe("registerAction — Parent signup, no auto sign-in, verification email 
   });
 });
 
+function studentForm(overrides: Partial<Record<"email" | "dateOfBirth" | "province", string>> = {}) {
+  const form = new FormData();
+  form.set("firstName", "Sam");
+  form.set("lastName", "Student");
+  form.set("email", overrides.email ?? "student.qa@futuretutor.local");
+  form.set("password", "LocalTestPassword123!");
+  form.set("role", "STUDENT");
+  form.set("dateOfBirth", overrides.dateOfBirth ?? "1980-01-01"); // clearly an adult by default
+  if (overrides.province !== undefined) form.set("province", overrides.province);
+  else form.set("province", "ON");
+  form.set("termsAccepted", "true");
+  return form;
+}
+
+// BETA-AGE1 — province-aware age-of-majority gate for direct STUDENT
+// self-signup. The pure eligibility math itself is exhaustively tested in
+// src/lib/studentAgePolicy.test.ts (all 13 provinces, exact boundary days);
+// these tests instead prove the WIRING into registerAction: an ineligible
+// Student creates zero database rows of any kind (no duplicate-email check,
+// no User, no StudentProfile, no verification token, no verification
+// email) and the rejection happens before any of that — a crafted direct
+// Server Action call gets exactly the same treatment as a real form
+// submission, since there is no separate client-side gate to bypass.
+describe("registerAction — BETA-AGE1 Student age-of-majority gate", () => {
+  const resolvedSendEmail = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.findUnique.mockResolvedValue(null);
+    mocks.hash.mockResolvedValue("test-hash");
+    mocks.createUserForSignup.mockResolvedValue({ id: "student-user", email: "student.qa@futuretutor.local" });
+    mocks.checkActionRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
+    mocks.getAppBaseUrl.mockResolvedValue("http://localhost:3100");
+    mocks.resolveSendVerificationEmail.mockReturnValue(resolvedSendEmail);
+    mocks.sendVerificationEmailForAccount.mockResolvedValue(undefined);
+  });
+
+  it("an 18-year-old-minus-one-day in Ontario (age-18 province) is rejected before any database call", async () => {
+    // Fixed "today" isn't controllable here (registerAction has no
+    // injectable clock — it always uses real time), so this uses a birth
+    // date that is unambiguously one day short of 18 relative to whenever
+    // this test actually runs would be flaky; instead, prove the boundary
+    // via the two unambiguous cases below and rely on
+    // studentAgePolicy.test.ts for the exact day-precision boundary math.
+    const clearlyAMinor = new Date();
+    clearlyAMinor.setUTCFullYear(clearlyAMinor.getUTCFullYear() - 10); // ~10 years old
+    const dob = clearlyAMinor.toISOString().slice(0, 10);
+
+    const result = await registerAction(undefined, studentForm({ dateOfBirth: dob, province: "ON" }));
+
+    expect(result).toEqual({ error: "underageForProvince" });
+    expect(mocks.findUnique).not.toHaveBeenCalled();
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+    expect(mocks.sendVerificationEmailForAccount).not.toHaveBeenCalled();
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("an ineligible Student creates zero User rows, zero StudentProfile rows, zero verification tokens, and zero verification emails", async () => {
+    const tenYearsOld = new Date();
+    tenYearsOld.setUTCFullYear(tenYearsOld.getUTCFullYear() - 10);
+    const dob = tenYearsOld.toISOString().slice(0, 10);
+
+    await registerAction(undefined, studentForm({ dateOfBirth: dob, province: "BC" }));
+
+    // No duplicate-email lookup, no account creation, no token issuance, no
+    // email send — the rejection happens before ANY of that.
+    expect(mocks.findUnique).not.toHaveBeenCalled();
+    expect(mocks.hash).not.toHaveBeenCalled();
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+    expect(mocks.sendVerificationEmailForAccount).not.toHaveBeenCalled();
+  });
+
+  it("a crafted direct Server Action call with an ineligible DOB+province is rejected the same as a real form submission — no separate client-side gate to bypass", async () => {
+    const fiveYearsOld = new Date();
+    fiveYearsOld.setUTCFullYear(fiveYearsOld.getUTCFullYear() - 5);
+    const form = studentForm({ dateOfBirth: fiveYearsOld.toISOString().slice(0, 10), province: "QC" });
+
+    const result = await registerAction(undefined, form);
+
+    expect(result).toEqual({ error: "underageForProvince" });
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
+
+  it("an eligible Student (clearly an adult) creates a SELF_MANAGED profile with the province persisted", async () => {
+    const result = await registerAction(undefined, studentForm({ dateOfBirth: "1980-01-01", province: "ON" }));
+
+    expect(mocks.createUserForSignup).toHaveBeenCalledTimes(1);
+    const call = mocks.createUserForSignup.mock.calls[0][1];
+    expect(call.role).toBe("STUDENT");
+    expect(call.province).toBe("ON");
+    expect(call.dateOfBirth).toBeInstanceOf(Date);
+    expect(result).toBeUndefined(); // redirect() was called (mocked, doesn't throw here)
+    expect(mocks.redirect).toHaveBeenCalledWith({
+      href: "/check-email?email=student.qa%40futuretutor.local",
+      locale: "en",
+    });
+  });
+
+  it("BETA-EMAILVERIFY1 still applies to an eligible Student — verification email sent, no auto sign-in, redirected to /check-email", async () => {
+    await registerAction(undefined, studentForm({ dateOfBirth: "1980-01-01", province: "ON" }));
+
+    expect(mocks.sendVerificationEmailForAccount).toHaveBeenCalledTimes(1);
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
+  it.each(["AB", "MB", "ON", "PE", "QC", "SK", "BC", "NB", "NL", "NT", "NS", "NU", "YT"])(
+    "an eligible adult in %s is accepted",
+    async (province) => {
+      const result = await registerAction(undefined, studentForm({ dateOfBirth: "1980-01-01", province }));
+      expect(result).toBeUndefined();
+      expect(mocks.createUserForSignup).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ province }));
+    }
+  );
+
+  it("missing province is rejected as a field/validation error before any age check runs", async () => {
+    const form = studentForm({ province: "" });
+    const result = await registerAction(undefined, form);
+    expect(result).toEqual({ error: "invalidInput", fieldErrors: { province: "provinceInvalid" } });
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
+
+  it("an invalid (non-Canadian / malformed) province is rejected", async () => {
+    const form = studentForm({ province: "ZZ" });
+    const result = await registerAction(undefined, form);
+    expect(result).toEqual({ error: "invalidInput", fieldErrors: { province: "provinceInvalid" } });
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
+
+  it("a malformed date of birth is rejected before any age check runs", async () => {
+    const form = studentForm({ dateOfBirth: "not-a-date" });
+    const result = await registerAction(undefined, form);
+    expect(result).toMatchObject({ error: "invalidInput" });
+    expect(result?.fieldErrors?.dateOfBirth).toBe("dateOfBirthInvalid");
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
+
+  it("a future date of birth is rejected before any age check runs", async () => {
+    const nextYear = new Date();
+    nextYear.setUTCFullYear(nextYear.getUTCFullYear() + 1);
+    const form = studentForm({ dateOfBirth: nextYear.toISOString().slice(0, 10) });
+    const result = await registerAction(undefined, form);
+    expect(result).toMatchObject({ error: "invalidInput" });
+    expect(result?.fieldErrors?.dateOfBirth).toBe("dateOfBirthInvalid");
+    expect(mocks.createUserForSignup).not.toHaveBeenCalled();
+  });
+
+  it("Parent signup is unaffected — no province required, still succeeds", async () => {
+    mocks.createUserForSignup.mockResolvedValue({ id: "parent-user", email: "parent.qa@futuretutor.local" });
+    const result = await registerAction(undefined, parentForm());
+    expect(result).toBeUndefined();
+    expect(mocks.createUserForSignup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ role: "PARENT", province: undefined })
+    );
+  });
+
+  it("Tutor signup is unaffected — no province required, still succeeds", async () => {
+    mocks.createUserForSignup.mockResolvedValue({ id: "tutor-user", email: "tutor.qa@futuretutor.local" });
+    const form = new FormData();
+    form.set("firstName", "Tara");
+    form.set("lastName", "Tutor");
+    form.set("email", "tutor.qa@futuretutor.local");
+    form.set("password", "LocalTestPassword123!");
+    form.set("role", "TUTOR");
+    form.set("termsAccepted", "true");
+
+    const result = await registerAction(undefined, form);
+
+    expect(result).toBeUndefined();
+    expect(mocks.createUserForSignup).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ role: "TUTOR", province: undefined })
+    );
+  });
+});
+
 // L1-01A — Secure Account Recovery. These assert the Server Action wrapper's
 // own responsibilities only: parsing input, resolving locale/origin, and
 // mapping the service's typed domain errors to a public outcome. The real

@@ -19,7 +19,7 @@ const BASE = {
 
 describe("registerSchema — role whitelist", () => {
   it("1. accepts STUDENT with a valid past date of birth", () => {
-    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: "2010-05-14" });
+    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: "2010-05-14", province: "ON" });
     expect(result.success).toBe(true);
   });
 
@@ -83,13 +83,17 @@ describe("registerSchema — date of birth (STUDENT only)", () => {
   });
 
   it("11. accepts STUDENT with a very old date of birth — no arbitrary max-age policy is enforced", () => {
-    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: "1930-01-01" });
+    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: "1930-01-01", province: "ON" });
     expect(result.success).toBe(true);
   });
 
   it("12. accepts STUDENT with a very recent (infant) date of birth — no arbitrary min-age policy is enforced", () => {
+    // Note: registerSchema itself imposes no min-age rule (that's this test's
+    // point) — the separate BETA-AGE1 age-of-majority gate lives in
+    // registerAction, not in this schema, so an infant DOB still passes
+    // schema-level validation as long as province is present and valid.
     const yesterday = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().slice(0, 10);
-    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: yesterday });
+    const result = registerSchema.safeParse({ ...BASE, role: "STUDENT", dateOfBirth: yesterday, province: "ON" });
     expect(result.success).toBe(true);
   });
 });

@@ -5,6 +5,7 @@ import { ExternalLink, Home, MapPin, Monitor, ShieldCheck } from "lucide-react";
 import { Input, Select } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Form";
 import { buildDirectionsHref } from "@/lib/inPersonLocationPresentation";
+import { CANADIAN_PROVINCES_AND_TERRITORIES } from "@/lib/canadianProvinces";
 import type {
   ApproximateTutoringLocation,
   ConfirmedTutoringLocation,
@@ -52,7 +53,7 @@ export function LocationForm() {
       <div><label htmlFor="addressLine2" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.addressLine2")}</label><Input id="addressLine2" name="addressLine2" autoComplete="address-line2" /></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div><label htmlFor="city" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.city")}</label><Input id="city" name="city" required autoComplete="address-level2" /></div>
-        <div><label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.province")}</label><Select id="province" name="province" required defaultValue=""><option value="" disabled>{t("form.provincePlaceholder")}</option>{["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"].map((province) => <option key={province} value={province}>{province}</option>)}</Select></div>
+        <div><label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.province")}</label><Select id="province" name="province" required defaultValue=""><option value="" disabled>{t("form.provincePlaceholder")}</option>{CANADIAN_PROVINCES_AND_TERRITORIES.map((province) => <option key={province} value={province}>{province}</option>)}</Select></div>
       </div>
       <div><label htmlFor="postalCode" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.postalCode")}</label><Input id="postalCode" name="postalCode" required autoComplete="postal-code" inputMode="text" /></div>
       <div><label htmlFor="arrivalInstructions" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.arrivalInstructions")}</label><Textarea id="arrivalInstructions" name="arrivalInstructions" rows={3} maxLength={500} placeholder={t("form.arrivalInstructionsPlaceholder")} /></div>

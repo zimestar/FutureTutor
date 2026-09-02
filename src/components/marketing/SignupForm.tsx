@@ -3,11 +3,12 @@
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Input } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { registerAction } from "@/lib/actions/auth";
+import { CANADIAN_PROVINCES_AND_TERRITORIES } from "@/lib/canadianProvinces";
 
 export function SignupForm() {
   const t = useTranslations("auth.signup");
@@ -87,6 +88,22 @@ export function SignupForm() {
           </label>
           <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
           {state?.fieldErrors?.dateOfBirth && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.dateOfBirth}</p>}
+        </div>
+      )}
+
+      {role === "STUDENT" && (
+        <div>
+          <label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">
+            {t("provinceLabel")}
+          </label>
+          <Select id="province" name="province" required defaultValue="">
+            <option value="" disabled>{t("provincePlaceholder")}</option>
+            {CANADIAN_PROVINCES_AND_TERRITORIES.map((province) => (
+              <option key={province} value={province}>{province}</option>
+            ))}
+          </Select>
+          <p className="mt-1.5 text-xs text-slate">{t("provinceHint")}</p>
+          {state?.fieldErrors?.province && <p role="alert" className="mt-1 text-sm text-error">{state.fieldErrors.province}</p>}
         </div>
       )}
 

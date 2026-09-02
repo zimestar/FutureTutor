@@ -32,10 +32,11 @@ import {
   InvalidOrExpiredVerificationTokenError,
 } from "@/services/emailVerification";
 import { resolveSendVerificationEmail } from "@/lib/email/sendVerificationEmail";
+import { isEligibleForSelfManagedSignup, type CanadianProvinceCode } from "@/lib/studentAgePolicy";
 
 import { TERMS_VERSION } from "@/content/legal/termsContent.en";
 
-type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth" | "termsAccepted";
+type RegisterField = "firstName" | "lastName" | "email" | "password" | "role" | "dateOfBirth" | "province" | "termsAccepted";
 
 export type AuthActionState = {
   error?: string;
@@ -57,6 +58,7 @@ export async function registerAction(
     password: formData.get("password"),
     role: formData.get("role"),
     dateOfBirth: formData.get("dateOfBirth"),
+    province: formData.get("province"),
     termsAccepted: formData.get("termsAccepted"),
   });
 
@@ -83,8 +85,26 @@ export async function registerAction(
   });
   if (!rateLimit.allowed) return { error: t("tooManyAttempts") };
 
-  const { firstName, lastName, email, password, role, dateOfBirth } = parsed.data;
+  const { firstName, lastName, email, password, role, dateOfBirth, province } = parsed.data;
   const name = `${firstName} ${lastName}`;
+
+  // BETA-AGE1 — province-aware age-of-majority eligibility, checked before
+  // ANY database call (mission §2: rejection must happen before User
+  // creation, StudentProfile creation, verification token creation, or
+  // verification email sending — no partial account may remain). The
+  // schema above already guarantees `dateOfBirth` is a real past calendar
+  // date and `province` is one of the 13 canonical codes whenever
+  // role === "STUDENT", so both are safe to use directly here. This check
+  // applies ONLY to direct independent Student self-signup — the Parent
+  // "Add a Child" (GUARDIAN_MANAGED) and STUDENT_LOGIN claim paths are
+  // untouched (see src/services/familyManagement.ts /
+  // src/lib/actions/family.ts — neither calls this function).
+  if (role === "STUDENT") {
+    const dobDate = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (!isEligibleForSelfManagedSignup(dobDate, province as CanadianProvinceCode)) {
+      return { error: t("underageForProvince") };
+    }
+  }
 
   let existing;
   try {
@@ -114,6 +134,7 @@ export async function registerAction(
       passwordHash,
       role,
       dateOfBirth: role === "STUDENT" ? new Date(`${dateOfBirth}T00:00:00.000Z`) : undefined,
+      province: role === "STUDENT" ? province : undefined,
       tutorSlug: role === "TUTOR" ? await generateTutorSlug(name) : undefined,
       termsAcceptedAt: new Date(),
       termsAcceptedVersion: TERMS_VERSION,
@@ -435,6 +456,7 @@ const REGISTER_FIELDS = new Set<RegisterField>([
   "password",
   "role",
   "dateOfBirth",
+  "province",
   "termsAccepted",
 ]);
 

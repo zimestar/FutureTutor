@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isCanadianProvinceCode } from "@/lib/canadianProvinces";
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -48,6 +49,15 @@ export const registerSchema = z
       (value) => (value === null || value === "" ? undefined : value),
       z.string().trim().optional()
     ),
+    // BETA-AGE1 — required only for STUDENT (see superRefine below), same
+    // preprocess-to-optional shape as dateOfBirth so an absent/empty field
+    // from PARENT/TUTOR submissions is never even considered "present."
+    // Validated against the canonical CANADIAN_PROVINCES_AND_TERRITORIES
+    // list, not a second competing enum.
+    province: z.preprocess(
+      (value) => (value === null || value === "" ? undefined : value),
+      z.string().trim().optional()
+    ),
     // FG-LEGAL1A — a required acceptance checkbox; the browser only ever
     // sends this field at all when checked, so its mere presence (any
     // non-empty value) is what "checked" means here, not a specific string.
@@ -60,15 +70,24 @@ export const registerSchema = z
     if (data.role !== "STUDENT") return;
     if (!data.dateOfBirth) {
       ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "required" });
-      return;
+    } else {
+      const parsed = parseStrictCalendarDate(data.dateOfBirth);
+      if (!parsed) {
+        ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "invalid" });
+      } else if (parsed.getTime() > Date.now()) {
+        ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "future" });
+      }
     }
-    const parsed = parseStrictCalendarDate(data.dateOfBirth);
-    if (!parsed) {
-      ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "invalid" });
-      return;
-    }
-    if (parsed.getTime() > Date.now()) {
-      ctx.addIssue({ code: "custom", path: ["dateOfBirth"], message: "future" });
+    // BETA-AGE1 — format/presence validation only (is this one of the 13
+    // canonical codes at all). Whether the Student has actually reached
+    // the age of majority applicable to this province is a business-policy
+    // question, deliberately NOT decided here — see
+    // src/lib/studentAgePolicy.ts and registerAction's own explicit
+    // eligibility check, which runs after this schema already passed.
+    if (!data.province) {
+      ctx.addIssue({ code: "custom", path: ["province"], message: "required" });
+    } else if (!isCanadianProvinceCode(data.province)) {
+      ctx.addIssue({ code: "custom", path: ["province"], message: "invalid" });
     }
   });
 
