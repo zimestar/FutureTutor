@@ -45,6 +45,10 @@ export function TutoringModeSelector({ value, onChange, betaOnlineOnly = false }
 
 export function LocationForm() {
   const t = useTranslations("inPersonTutoring");
+  // BETA-UX-PROVINCES1 — display-only full names for the canonical
+  // AB/BC/... codes; the <option value> (submitted/stored) stays the
+  // abbreviation, only the visible label changes.
+  const tProvinces = useTranslations("provinces");
   return (
     <fieldset className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-off-white p-4" data-testid="in-person-location-fields">
       <legend className="px-1 text-sm font-bold text-navy">{t("form.title")}</legend>
@@ -53,7 +57,7 @@ export function LocationForm() {
       <div><label htmlFor="addressLine2" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.addressLine2")}</label><Input id="addressLine2" name="addressLine2" autoComplete="address-line2" /></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div><label htmlFor="city" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.city")}</label><Input id="city" name="city" required autoComplete="address-level2" /></div>
-        <div><label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.province")}</label><Select id="province" name="province" required defaultValue=""><option value="" disabled>{t("form.provincePlaceholder")}</option>{CANADIAN_PROVINCES_AND_TERRITORIES.map((province) => <option key={province} value={province}>{province}</option>)}</Select></div>
+        <div><label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.province")}</label><Select id="province" name="province" required defaultValue=""><option value="" disabled>{t("form.provincePlaceholder")}</option>{CANADIAN_PROVINCES_AND_TERRITORIES.map((province) => <option key={province} value={province}>{tProvinces(province)}</option>)}</Select></div>
       </div>
       <div><label htmlFor="postalCode" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.postalCode")}</label><Input id="postalCode" name="postalCode" required autoComplete="postal-code" inputMode="text" /></div>
       <div><label htmlFor="arrivalInstructions" className="mb-1.5 block text-sm font-semibold text-navy">{t("form.arrivalInstructions")}</label><Textarea id="arrivalInstructions" name="arrivalInstructions" rows={3} maxLength={500} placeholder={t("form.arrivalInstructionsPlaceholder")} /></div>

@@ -12,6 +12,10 @@ import { CANADIAN_PROVINCES_AND_TERRITORIES } from "@/lib/canadianProvinces";
 
 export function SignupForm() {
   const t = useTranslations("auth.signup");
+  // BETA-UX-PROVINCES1 — display-only full names for the canonical
+  // AB/BC/... codes; the <option value> (submitted/stored) stays the
+  // abbreviation, only the visible label changes.
+  const tProvinces = useTranslations("provinces");
   const [state, formAction, pending] = useActionState(registerAction, undefined);
   const [role, setRole] = useState<"STUDENT" | "TUTOR" | "PARENT">("STUDENT");
 
@@ -99,7 +103,7 @@ export function SignupForm() {
           <Select id="province" name="province" required defaultValue="">
             <option value="" disabled>{t("provincePlaceholder")}</option>
             {CANADIAN_PROVINCES_AND_TERRITORIES.map((province) => (
-              <option key={province} value={province}>{province}</option>
+              <option key={province} value={province}>{tProvinces(province)}</option>
             ))}
           </Select>
           <p className="mt-1.5 text-xs text-slate">{t("provinceHint")}</p>
