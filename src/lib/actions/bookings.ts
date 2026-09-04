@@ -8,6 +8,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { closedBetaFinancialGateActive } from "@/lib/closedBetaConfig";
+import { financialE2EEnabled, isFinancialE2EExceptionAllowed, auditFinancialE2EExceptionUsed } from "@/lib/financialE2EConfig";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
@@ -66,7 +67,35 @@ export async function createBookingAction(
   // closes the same door for a crafted request that skips payment prep
   // entirely and calls this action directly.
   if (closedBetaFinancialGateActive()) {
-    return { error: t("betaBookingsUnavailable") };
+    // PROD-FINANCIAL-E2E1-GATE1 — defense-in-depth re-check of the same
+    // temporary, narrowly-scoped exception preparePaymentForBookingQuoteAction
+    // already evaluated (src/lib/financialE2EConfig.ts). Never relies on
+    // that earlier check alone — independently re-derives the actor from
+    // this request's own session and re-validates the full scenario from
+    // the database. financialE2EEnabled() is a zero-I/O env check, so the
+    // ordinary case (unconfigured, as it is everywhere right now)
+    // short-circuits with the exact same call pattern as before this
+    // mission.
+    if (!financialE2EEnabled()) {
+      return { error: t("betaBookingsUnavailable") };
+    }
+    const e2eSession = await auth();
+    const e2eActorId = e2eSession?.user?.id;
+    const rawQuoteId = formData.get("customerPriceQuoteId");
+    const e2eQuoteId = rawQuoteId ? String(rawQuoteId) : null;
+    const e2eAllowed =
+      e2eActorId && e2eQuoteId
+        ? await isFinancialE2EExceptionAllowed({ actorUserId: e2eActorId, customerPriceQuoteId: e2eQuoteId })
+        : false;
+    if (!e2eAllowed) {
+      return { error: t("betaBookingsUnavailable") };
+    }
+    await auditFinancialE2EExceptionUsed({
+      actorUserId: e2eActorId!,
+      tutorProfileId: process.env.FINANCIAL_E2E_TUTOR_PROFILE_ID!,
+    });
+    // Falls through to the normal booking-creation flow below, exactly as
+    // if the Closed Beta gate were inactive.
   }
 
   const session = await auth();

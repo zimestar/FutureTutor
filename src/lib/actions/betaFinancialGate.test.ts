@@ -40,6 +40,9 @@ const mocks = vi.hoisted(() => ({
   createTutoringRequestForLearnerInOwnTransaction: vi.fn(),
   dbFindUnique: vi.fn(),
   dbTransaction: vi.fn(),
+  financialE2EEnabled: vi.fn(),
+  isFinancialE2EExceptionAllowed: vi.fn(),
+  auditFinancialE2EExceptionUsed: vi.fn(),
 }));
 
 vi.mock("next-intl/server", () => ({
@@ -50,6 +53,11 @@ vi.mock("@/lib/paymentMode", () => ({ paymentsUseStripe: mocks.paymentsUseStripe
 vi.mock("@/lib/closedBetaConfig", () => ({
   closedBetaFinancialGateActive: mocks.closedBetaFinancialGateActive,
   closedBetaOnlineOnlyActive: mocks.closedBetaOnlineOnlyActive,
+}));
+vi.mock("@/lib/financialE2EConfig", () => ({
+  financialE2EEnabled: mocks.financialE2EEnabled,
+  isFinancialE2EExceptionAllowed: mocks.isFinancialE2EExceptionAllowed,
+  auditFinancialE2EExceptionUsed: mocks.auditFinancialE2EExceptionUsed,
 }));
 vi.mock("@/lib/db", () => ({
   db: {
@@ -160,6 +168,11 @@ describe("BETA-HARDEN1 — Closed Beta financial gate", () => {
     mocks.auth.mockResolvedValue(sessionFor("STUDENT"));
     mocks.paymentsUseStripe.mockReturnValue(true);
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(false);
+    // PROD-FINANCIAL-E2E1-GATE1 — unconfigured by default, exactly its real
+    // production state everywhere right now. Every existing test in this
+    // file (below) exercises that default and must observe byte-identical
+    // behavior to before this mission existed.
+    mocks.financialE2EEnabled.mockReturnValue(false);
   });
 
   describe("Direct Booking", () => {
@@ -202,6 +215,92 @@ describe("BETA-HARDEN1 — Closed Beta financial gate", () => {
     });
   });
 
+  describe("PROD-FINANCIAL-E2E1-GATE1 — temporary single-scenario exception", () => {
+    it("preparePaymentForBookingQuoteAction: gate active + E2E unconfigured -> beta_gate exactly as before, no auth() call at all", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(false);
+      const result = await preparePaymentForBookingQuoteAction("quote-1");
+      expect(result).toMatchObject({ success: false, retryable: false, reason: "beta_gate" });
+      expect(mocks.auth).not.toHaveBeenCalled();
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+      expect(mocks.auditFinancialE2EExceptionUsed).not.toHaveBeenCalled();
+    });
+
+    it("preparePaymentForBookingQuoteAction: gate active + E2E enabled but scenario does not match -> still beta_gate, no audit write", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(false);
+      const result = await preparePaymentForBookingQuoteAction("quote-1");
+      expect(result).toMatchObject({ success: false, retryable: false, reason: "beta_gate" });
+      expect(mocks.auditFinancialE2EExceptionUsed).not.toHaveBeenCalled();
+    });
+
+    it("preparePaymentForBookingQuoteAction: gate active + unauthenticated -> beta_gate, isFinancialE2EExceptionAllowed never even called", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.auth.mockResolvedValue(null);
+      const result = await preparePaymentForBookingQuoteAction("quote-1");
+      expect(result).toMatchObject({ success: false, retryable: false, reason: "beta_gate" });
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+    });
+
+    it("preparePaymentForBookingQuoteAction: gate active + exact valid exception -> proceeds past the gate, writes exactly one audit entry", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.auth.mockResolvedValue(sessionFor("STUDENT", "controlled-actor"));
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
+      mocks.dbFindUnique.mockResolvedValue(null); // quote lookup below the gate — not found, but proves the gate let it through
+      const result = await preparePaymentForBookingQuoteAction("quote-1");
+      expect(mocks.isFinancialE2EExceptionAllowed).toHaveBeenCalledWith({ actorUserId: "controlled-actor", customerPriceQuoteId: "quote-1" });
+      expect(mocks.auditFinancialE2EExceptionUsed).toHaveBeenCalledTimes(1);
+      expect((result as { reason?: string }).reason).not.toBe("beta_gate");
+    });
+
+    it("createBookingAction: gate active + E2E unconfigured -> beta_gate exactly as before, no auth() call at all", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(false);
+      const result = await createBookingAction(undefined, bookingFormData());
+      expect(result).toMatchObject({ error: "betaBookingsUnavailable" });
+      expect(mocks.auth).not.toHaveBeenCalled();
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+    });
+
+    it("createBookingAction: gate active + E2E enabled but scenario does not match -> still beta_gate, reservation never reached", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(false);
+      const result = await createBookingAction(undefined, bookingFormData());
+      expect(result).toMatchObject({ error: "betaBookingsUnavailable" });
+      expect(mocks.reserveBookingPendingPayment).not.toHaveBeenCalled();
+      expect(mocks.captureAuthorizedPayment).not.toHaveBeenCalled();
+    });
+
+    it("createBookingAction: gate active + exact valid exception (independent, defense-in-depth re-check) -> proceeds past the gate", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.auth.mockResolvedValue(sessionFor("STUDENT", "controlled-actor"));
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
+      await createBookingAction(undefined, bookingFormData());
+      expect(mocks.isFinancialE2EExceptionAllowed).toHaveBeenCalledWith({ actorUserId: "controlled-actor", customerPriceQuoteId: "quote-1" });
+      expect(mocks.auditFinancialE2EExceptionUsed).toHaveBeenCalledTimes(1);
+      // auth() is called a second time by the normal (post-gate) flow below
+      // — proves control genuinely fell through to the ordinary booking path
+      // rather than being special-cased.
+      expect(mocks.auth).toHaveBeenCalledTimes(2);
+    });
+
+    it("createBookingAction: missing customerPriceQuoteId in the form -> beta_gate, exception never evaluated", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.auth.mockResolvedValue(sessionFor("STUDENT", "controlled-actor"));
+      const fd = bookingFormData();
+      fd.delete("customerPriceQuoteId");
+      const result = await createBookingAction(undefined, fd);
+      expect(result).toMatchObject({ error: "betaBookingsUnavailable" });
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Quick Match", () => {
     it("preparePaymentForRequestAction: gate active -> fails closed before any session/DB/Stripe work, tagged reason=beta_gate", async () => {
       mocks.closedBetaFinancialGateActive.mockReturnValue(true);
@@ -235,6 +334,28 @@ describe("BETA-HARDEN1 — Closed Beta financial gate", () => {
       mocks.closedBetaFinancialGateActive.mockReturnValue(false);
       await confirmTutoringRequestAction(undefined, confirmFormData());
       expect(mocks.auth).toHaveBeenCalled();
+    });
+
+    it("PROD-FINANCIAL-E2E1-GATE1 — Quick Match remains fully beta-gated even with the E2E exception fully enabled and permissive: preparePaymentForRequestAction", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
+      const result = await preparePaymentForRequestAction("request-1");
+      expect(result).toMatchObject({ success: false, retryable: false, reason: "beta_gate" });
+      // tutoringRequests.ts never imports financialE2EConfig at all — this
+      // is the structural guarantee, not just an observed outcome.
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+      expect(mocks.auditFinancialE2EExceptionUsed).not.toHaveBeenCalled();
+    });
+
+    it("PROD-FINANCIAL-E2E1-GATE1 — Quick Match remains fully beta-gated even with the E2E exception fully enabled and permissive: confirmTutoringRequestAction", async () => {
+      mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+      mocks.financialE2EEnabled.mockReturnValue(true);
+      mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
+      const result = await confirmTutoringRequestAction(undefined, confirmFormData());
+      expect(result).toMatchObject({ error: "betaBookingsUnavailable" });
+      expect(mocks.isFinancialE2EExceptionAllowed).not.toHaveBeenCalled();
+      expect(mocks.auditFinancialE2EExceptionUsed).not.toHaveBeenCalled();
     });
   });
 });

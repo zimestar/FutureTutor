@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { closedBetaFinancialGateActive } from "@/lib/closedBetaConfig";
+import { financialE2EEnabled, isFinancialE2EExceptionAllowed, auditFinancialE2EExceptionUsed } from "@/lib/financialE2EConfig";
 import { preparePaymentForQuote, getOrCreatePaymentForQuote, ensureStripePaymentIntent } from "@/services/payments";
 import { canPayForStudent } from "@/services/studentAuthorization";
 
@@ -30,7 +31,32 @@ export async function preparePaymentForBookingQuoteAction(customerPriceQuoteId: 
   // single slot selection — no Stripe object is created past this point
   // while the gate is active.
   if (closedBetaFinancialGateActive()) {
-    return { success: false, error: t("betaBookingsUnavailable"), retryable: false, reason: "beta_gate" };
+    // PROD-FINANCIAL-E2E1-GATE1 — a temporary, narrowly-scoped exception for
+    // exactly one controlled certification scenario (see
+    // src/lib/financialE2EConfig.ts). financialE2EEnabled() is a zero-I/O
+    // env check, so the ordinary case (this mechanism unconfigured, as it
+    // is everywhere in production right now) short-circuits here with the
+    // exact same call pattern as before this mission — no auth() call, no
+    // DB read, no behavior change for any ordinary user.
+    if (!financialE2EEnabled()) {
+      return { success: false, error: t("betaBookingsUnavailable"), retryable: false, reason: "beta_gate" };
+    }
+    const e2eSession = await auth();
+    const e2eActorId = e2eSession?.user?.id;
+    const e2eAllowed = e2eActorId
+      ? await isFinancialE2EExceptionAllowed({ actorUserId: e2eActorId, customerPriceQuoteId })
+      : false;
+    if (!e2eAllowed) {
+      return { success: false, error: t("betaBookingsUnavailable"), retryable: false, reason: "beta_gate" };
+    }
+    // Not client-controllable — tutorProfileId comes only from the server's
+    // own FINANCIAL_E2E_TUTOR_PROFILE_ID, already re-verified above.
+    await auditFinancialE2EExceptionUsed({
+      actorUserId: e2eActorId!,
+      tutorProfileId: process.env.FINANCIAL_E2E_TUTOR_PROFILE_ID!,
+    });
+    // Falls through to the normal payment-preparation flow below, exactly
+    // as if the Closed Beta gate were inactive.
   }
 
   const session = await auth();
