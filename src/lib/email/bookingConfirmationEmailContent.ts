@@ -1,13 +1,20 @@
 import "server-only";
-import { getTranslations } from "next-intl/server";
+import { createEmailTranslator, resolveEmailLocale } from "@/lib/email/emailTranslation";
 
 /**
  * PROD-BOOKING-NOTIFICATIONS1 — locale-aware booking-confirmation email
  * copy for both recipients (tutor, payer). Mirrors
- * passwordResetEmailContent.ts's established shape exactly: next-intl's
- * normal messages/en.json + messages/fr.json mechanism (namespaces
+ * passwordResetEmailContent.ts's established shape: the same
+ * messages/en.json + messages/fr.json mechanism (namespaces
  * "tutorBookingEmail" / "payerBookingEmail"), an explicit `locale` param
  * (never inferred), and the same inline-styled single-table HTML shell.
+ *
+ * PROD-BOOKING-NOTIFICATIONS1-I18NFIX1: unlike passwordResetEmailContent.ts
+ * (still request-bound via next-intl/server, safe there because it's only
+ * ever called from within a real Server Action request), this module is
+ * called from convergeToCaptured's post-commit dispatch, which must also
+ * work from a background/server-job context — so translation goes through
+ * emailTranslation.ts's request-independent createEmailTranslator instead.
  *
  * Unlike the password-reset flow (one template), this feature has two
  * distinct templates sharing one delivery mechanism — so, deliberately
@@ -135,16 +142,23 @@ function renderShell(params: { locale: string; title: string; heading: string; b
 }
 
 export async function buildTutorBookingEmailContent(context: BookingEmailContext): Promise<BookingEmailContent> {
-  const t = await getTranslations({ locale: context.locale, namespace: "tutorBookingEmail" });
-  const tSubjects = await getTranslations({ locale: context.locale, namespace: "subjects.items" });
-  const tLevels = await getTranslations({ locale: context.locale, namespace: "gradeLevels" });
+  // Resolved once, up front, so the translator and every Intl formatter
+  // agree on the same (possibly-fallen-back) locale — a raw invalid
+  // context.locale (e.g. "") reaching Intl.DateTimeFormat/NumberFormat
+  // directly throws RangeError, whereas createEmailTranslator alone would
+  // silently fall back only for the translated copy, leaving the
+  // date/time/amount formatting on an unresolved, invalid locale.
+  const locale = resolveEmailLocale(context.locale);
+  const t = createEmailTranslator(locale, "tutorBookingEmail");
+  const tSubjects = createEmailTranslator(locale, "subjects.items");
+  const tLevels = createEmailTranslator(locale, "gradeLevels");
 
   const subject = t("subject");
   const heading = t("heading");
   const greeting = t("greeting", { name: context.tutorFirstName });
   const intro = t("intro");
   const modeLabel = context.mode === "ONLINE" ? t("modeOnline") : t("modeInPerson");
-  const { dateLabel, startTimeLabel, endTimeLabel } = formatBookingDateParts(context.startAt, context.endAt, context.timezone, context.locale);
+  const { dateLabel, startTimeLabel, endTimeLabel } = formatBookingDateParts(context.startAt, context.endAt, context.timezone, locale);
 
   const rows: EmailRow[] = [
     { label: t("learnerLabel"), value: context.learnerFirstName },
@@ -158,7 +172,7 @@ export async function buildTutorBookingEmailContent(context: BookingEmailContext
   const bodyRows = [greeting, intro, ...(context.mode === "ONLINE" ? [t("onlineNote")] : [])];
 
   const html = renderShell({
-    locale: context.locale,
+    locale,
     title: subject,
     heading,
     bodyRows,
@@ -186,16 +200,17 @@ export async function buildTutorBookingEmailContent(context: BookingEmailContext
 }
 
 export async function buildPayerBookingEmailContent(context: BookingEmailContext): Promise<BookingEmailContent> {
-  const t = await getTranslations({ locale: context.locale, namespace: "payerBookingEmail" });
-  const tSubjects = await getTranslations({ locale: context.locale, namespace: "subjects.items" });
-  const tLevels = await getTranslations({ locale: context.locale, namespace: "gradeLevels" });
+  const locale = resolveEmailLocale(context.locale);
+  const t = createEmailTranslator(locale, "payerBookingEmail");
+  const tSubjects = createEmailTranslator(locale, "subjects.items");
+  const tLevels = createEmailTranslator(locale, "gradeLevels");
 
   const subject = t("subject");
   const heading = t("heading");
   const greeting = t("greeting", { name: context.payerFirstName });
   const intro = t("intro", { tutor: context.tutorFirstName });
   const modeLabel = context.mode === "ONLINE" ? t("modeOnline") : t("modeInPerson");
-  const { dateLabel, startTimeLabel, endTimeLabel } = formatBookingDateParts(context.startAt, context.endAt, context.timezone, context.locale);
+  const { dateLabel, startTimeLabel, endTimeLabel } = formatBookingDateParts(context.startAt, context.endAt, context.timezone, locale);
 
   const rows: EmailRow[] = [
     { label: t("tutorLabel"), value: context.tutorFirstName },
@@ -205,13 +220,13 @@ export async function buildPayerBookingEmailContent(context: BookingEmailContext
     { label: t("dateLabel"), value: dateLabel },
     { label: t("timeLabel"), value: `${startTimeLabel}–${endTimeLabel} (${context.timezone})` },
     { label: t("modeLabel"), value: modeLabel },
-    { label: t("amountLabel"), value: formatAmount(context.amountCents, context.currency, context.locale) },
+    { label: t("amountLabel"), value: formatAmount(context.amountCents, context.currency, locale) },
   ];
 
   const bodyRows = [greeting, intro, ...(context.mode === "ONLINE" ? [t("onlineNote")] : [])];
 
   const html = renderShell({
-    locale: context.locale,
+    locale,
     title: subject,
     heading,
     bodyRows,

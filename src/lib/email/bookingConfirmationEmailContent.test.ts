@@ -1,43 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // PROD-BOOKING-NOTIFICATIONS1 — permanent unit tests for the locale-aware
-// tutor/payer booking-confirmation email copy. Mirrors
-// passwordResetEmailContent.test.ts's real-messages-file fake translator
-// (next-intl/server transitively touches next/headers, unusable under
-// vitest) — extended here to resolve a dotted namespace path
-// ("subjects.items") and simple `{var}` interpolation, since this
-// template (unlike password-reset) also reads subject/level names and
-// interpolates a tutor/learner name.
-function resolveNamespace(messages: Record<string, unknown>, namespace: string): Record<string, string> {
-  const parts = namespace.split(".");
-  let node: unknown = messages;
-  for (const part of parts) {
-    node = (node as Record<string, unknown>)?.[part];
-  }
-  if (!node || typeof node !== "object") throw new Error(`test fake translator: missing namespace "${namespace}"`);
-  return node as Record<string, string>;
-}
-
-function fakeTranslator(messages: Record<string, unknown>, namespace: string) {
-  const ns = resolveNamespace(messages, namespace);
-  return (key: string, values?: Record<string, string | number>) => {
-    let raw = ns[key];
-    if (raw === undefined) throw new Error(`test fake translator: missing key "${namespace}.${key}"`);
-    if (values) {
-      for (const [varName, varValue] of Object.entries(values)) {
-        raw = raw.replace(new RegExp(`\\{${varName}\\}`, "g"), String(varValue));
-      }
-    }
-    return raw;
-  };
-}
-
-vi.mock("next-intl/server", () => ({
-  getTranslations: async ({ locale, namespace }: { locale: string; namespace: string }) => {
-    const messagesModule = await import(`../../../messages/${locale}.json`);
-    return fakeTranslator(messagesModule.default, namespace);
-  },
-}));
+// tutor/payer booking-confirmation email copy.
+//
+// PROD-BOOKING-NOTIFICATIONS1-I18NFIX1: no next-intl/server mock is needed
+// any more. The production code now goes through emailTranslation.ts's
+// createEmailTranslator (use-intl/core's createTranslator, built directly
+// from the real messages/en.json + messages/fr.json) instead of
+// next-intl/server's getTranslations — a pure function with no next/headers
+// dependency, so it runs for real under vitest exactly like it runs in a
+// background job, with no fake/mocked translator standing in for it.
 
 import { buildTutorBookingEmailContent, buildPayerBookingEmailContent, type BookingEmailContext } from "./bookingConfirmationEmailContent";
 import enMessages from "../../../messages/en.json";
@@ -184,5 +156,34 @@ describe("buildPayerBookingEmailContent", () => {
     const url = "https://futuretutor.ca/en/dashboard/bookings";
     const content = await buildPayerBookingEmailContent(baseContext({ bookingUrl: url }));
     expect(content.html).toContain(`<a href="${url}"`);
+  });
+});
+
+describe("PROD-BOOKING-NOTIFICATIONS1-I18NFIX1 — request-independent translation", () => {
+  // Items 1-4: these are proven by every test above already running with no
+  // next/headers, no next-intl/server mock, and no Next.js request context
+  // (vitest never provides one) — if the builders still depended on
+  // getTranslations()'s request-bound config resolution, every test in this
+  // file would already be throwing "Couldn't find next-intl config file."
+  // This block adds the fallback/negative-space assertions that aren't
+  // otherwise implied by the happy-path tests above.
+
+  it("item 5 — no next-intl/server or next/headers import statement exists in the booking email content module or its translation helper (doc-comment mentions of the old dependency, explaining what was removed, are fine)", async () => {
+    const fs = await import("node:fs/promises");
+    const contentSource = await fs.readFile(new URL("./bookingConfirmationEmailContent.ts", import.meta.url), "utf-8");
+    const translationSource = await fs.readFile(new URL("./emailTranslation.ts", import.meta.url), "utf-8");
+    const importStatementPattern = /(?:from|require\()\s*["']next-intl\/server["']|(?:from|require\()\s*["']next\/headers["']/;
+    expect(contentSource).not.toMatch(importStatementPattern);
+    expect(translationSource).not.toMatch(importStatementPattern);
+  });
+
+  it("item 7 — a missing locale (empty string) falls back to the documented default (en), not an error", async () => {
+    const content = await buildTutorBookingEmailContent(baseContext({ locale: "" }));
+    expect(content.subject).toBe(enMessages.tutorBookingEmail.subject);
+  });
+
+  it("item 8 — an unsupported locale (e.g. 'de') falls back to the documented default (en), matching i18n/request.ts's own hasLocale-based policy", async () => {
+    const content = await buildPayerBookingEmailContent(baseContext({ locale: "de" }));
+    expect(content.subject).toBe(enMessages.payerBookingEmail.subject);
   });
 });
