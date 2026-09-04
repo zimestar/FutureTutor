@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   studentProfileFindUnique: vi.fn(),
   userFindUnique: vi.fn(),
   parentProfileFindUnique: vi.fn(),
-  getAppBaseUrl: vi.fn(),
+  resolveBookingEmailBaseUrl: vi.fn(),
   buildTutorBookingEmailContent: vi.fn(),
   buildPayerBookingEmailContent: vi.fn(),
   resolveSendBookingConfirmationEmail: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock("@/lib/db", () => ({
     parentProfile: { findUnique: mocks.parentProfileFindUnique },
   },
 }));
-vi.mock("@/lib/appUrl", () => ({ getAppBaseUrl: mocks.getAppBaseUrl }));
+vi.mock("@/lib/email/resolveBookingEmailBaseUrl", () => ({ resolveBookingEmailBaseUrl: mocks.resolveBookingEmailBaseUrl }));
 vi.mock("@/lib/email/bookingConfirmationEmailContent", () => ({
   buildTutorBookingEmailContent: mocks.buildTutorBookingEmailContent,
   buildPayerBookingEmailContent: mocks.buildPayerBookingEmailContent,
@@ -90,7 +90,7 @@ function mockFullBookingContext(overrides: { payerIsLearner?: boolean } = {}) {
   mocks.studentProfileFindUnique.mockResolvedValue({ firstName: "Hamed", userId: "student-user-1", preferredLanguage: "en" });
   mocks.userFindUnique.mockResolvedValue({ name: "Payer Name", email: "payer@example.com" });
   mocks.parentProfileFindUnique.mockResolvedValue(overrides.payerIsLearner === false ? { preferredLanguage: "fr" } : null);
-  mocks.getAppBaseUrl.mockResolvedValue("https://futuretutor.ca");
+  mocks.resolveBookingEmailBaseUrl.mockReturnValue("https://www.futuretutor.ca");
   mocks.buildTutorBookingEmailContent.mockResolvedValue({ subject: "tutor subject", html: "<p>tutor</p>", text: "tutor text" });
   mocks.buildPayerBookingEmailContent.mockResolvedValue({ subject: "payer subject", html: "<p>payer</p>", text: "payer text" });
   mocks.resolveSendBookingConfirmationEmail.mockReturnValue(mocks.sendEmail);
@@ -118,6 +118,50 @@ describe("dispatchBookingConfirmationEmails", () => {
     for (const call of mocks.updateMany.mock.calls) {
       expect(call[0].data.status).toBe("SENT");
     }
+
+    // BASEURLFIX1 — the generated CTA uses the resolved base URL (the
+    // production case: site.url via resolveBookingEmailBaseUrl), not
+    // next/headers, and never a localhost origin.
+    const tutorContentCall = mocks.buildTutorBookingEmailContent.mock.calls[0][0];
+    const payerContentCall = mocks.buildPayerBookingEmailContent.mock.calls[0][0];
+    expect(tutorContentCall.bookingUrl).toBe("https://www.futuretutor.ca/en/tutor/bookings");
+    expect(payerContentCall.bookingUrl).toBe("https://www.futuretutor.ca/en/dashboard/bookings");
+    expect(tutorContentCall.bookingUrl).not.toContain("localhost");
+    expect(payerContentCall.bookingUrl).not.toContain("localhost");
+  });
+
+  it("BASEURLFIX1 — dispatch works with an explicit trusted baseUrl and no request context (deps.baseUrl overrides the default site.url)", async () => {
+    mocks.findMany.mockResolvedValue([{ id: "row-tutor", recipientRole: "TUTOR", recipientUserId: "tutor-user-1" }]);
+    mockFullBookingContext();
+    mocks.resolveBookingEmailBaseUrl.mockReturnValue("https://explicit.futuretutor.ca");
+
+    await dispatchBookingConfirmationEmails("booking-1", { baseUrl: "https://explicit.futuretutor.ca" });
+
+    expect(mocks.resolveBookingEmailBaseUrl).toHaveBeenCalledWith("https://explicit.futuretutor.ca");
+    const tutorContentCall = mocks.buildTutorBookingEmailContent.mock.calls[0][0];
+    expect(tutorContentCall.bookingUrl).toBe("https://explicit.futuretutor.ca/en/tutor/bookings");
+  });
+
+  it("BASEURLFIX1 — missing/invalid base URL configuration fails safely: no send attempted, rows stay untouched", async () => {
+    mocks.findMany.mockResolvedValue([{ id: "row-tutor", recipientRole: "TUTOR", recipientUserId: "tutor-user-1" }]);
+    mocks.resolveBookingEmailBaseUrl.mockReturnValue(null);
+
+    await dispatchBookingConfirmationEmails("booking-1");
+
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
+    expect(mocks.updateMany).not.toHaveBeenCalled();
+    // resolution is checked before context is even loaded from the DB
+    expect(mocks.bookingFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("BASEURLFIX1 — a malformed explicit baseUrl (rejected by resolveBookingEmailBaseUrl) is treated identically to missing configuration", async () => {
+    mocks.findMany.mockResolvedValue([{ id: "row-tutor", recipientRole: "TUTOR", recipientUserId: "tutor-user-1" }]);
+    mocks.resolveBookingEmailBaseUrl.mockReturnValue(null);
+
+    await dispatchBookingConfirmationEmails("booking-1", { baseUrl: "not-a-valid-url" });
+
+    expect(mocks.resolveBookingEmailBaseUrl).toHaveBeenCalledWith("not-a-valid-url");
+    expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
 
   it("test matrix item 11/12 — no PENDING/FAILED rows (already fully sent, or webhook replay after a prior dispatch) => no email sent at all", async () => {

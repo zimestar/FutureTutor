@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { getAppBaseUrl } from "@/lib/appUrl";
+import { resolveBookingEmailBaseUrl } from "@/lib/email/resolveBookingEmailBaseUrl";
 import type { BookingEmailContext } from "@/lib/email/bookingConfirmationEmailContent";
 
 /**
@@ -149,9 +149,6 @@ async function loadBookingEmailContext(bookingId: string): Promise<{
   });
   const payerLocale = payerParentProfile?.preferredLanguage ?? (payerIsLearner ? studentProfile.preferredLanguage : "en");
 
-  const baseUrl = await getAppBaseUrl().catch(() => null);
-  if (!baseUrl) return null;
-
   return {
     tutorUserId: tutorProfile.userId,
     tutorEmail: tutorProfile.user.email,
@@ -179,12 +176,23 @@ async function loadBookingEmailContext(bookingId: string): Promise<{
 
 export async function dispatchBookingConfirmationEmails(
   bookingId: string,
-  deps: { sendEmail?: SendBookingConfirmationEmail } = {}
+  deps: { sendEmail?: SendBookingConfirmationEmail; baseUrl?: string } = {}
 ): Promise<void> {
   const pending = await db.bookingEmailNotification.findMany({
     where: { bookingId, status: { in: ["PENDING", "FAILED"] } },
   });
   if (pending.length === 0) return;
+
+  // Request-independent by design (PROD-BOOKING-NOTIFICATIONS1-BASEURLFIX1)
+  // — never derived from next/headers. `deps.baseUrl` is for a controlled,
+  // reviewed one-off invocation; the default is the existing trusted
+  // canonical site.url. Either way, resolveBookingEmailBaseUrl validates
+  // HTTPS/non-localhost and fails closed (null) rather than guessing — a
+  // rejection here means the rows simply stay PENDING/FAILED for a later,
+  // correctly-configured retry, exactly like the old "no request context"
+  // case did, but now unreachable via the normal default path.
+  const resolvedBaseUrl = resolveBookingEmailBaseUrl(deps.baseUrl);
+  if (!resolvedBaseUrl) return;
 
   const loaded = await loadBookingEmailContext(bookingId);
   if (!loaded) return; // nothing safe to send yet/anymore — rows stay PENDING/FAILED for a later retry
@@ -203,7 +211,6 @@ export async function dispatchBookingConfirmationEmails(
     import("@/lib/email/bookingConfirmationEmailContent"),
   ]);
   const sendEmail = deps.sendEmail ?? resolveSendBookingConfirmationEmail();
-  const baseUrl = await getAppBaseUrl().catch(() => null);
 
   for (const row of pending) {
     try {
@@ -211,14 +218,14 @@ export async function dispatchBookingConfirmationEmails(
         const content = await buildTutorBookingEmailContent({
           ...loaded.context,
           locale: loaded.tutorLocale,
-          bookingUrl: baseUrl ? `${baseUrl}/${loaded.tutorLocale}/tutor/bookings` : "",
+          bookingUrl: `${resolvedBaseUrl}/${loaded.tutorLocale}/tutor/bookings`,
         });
         await sendEmail({ to: loaded.tutorEmail, ...content });
       } else {
         const content = await buildPayerBookingEmailContent({
           ...loaded.context,
           locale: loaded.payerLocale,
-          bookingUrl: baseUrl ? `${baseUrl}/${loaded.payerLocale}/dashboard/bookings` : "",
+          bookingUrl: `${resolvedBaseUrl}/${loaded.payerLocale}/dashboard/bookings`,
         });
         await sendEmail({ to: loaded.payerEmail, ...content });
       }
