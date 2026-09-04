@@ -199,6 +199,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                     academicLevelId: s.academicLevelId,
                   }))}
                   actorIsParent={session?.user?.role === "PARENT"}
+                  tutorLearningMode={tutor.learningMode ?? "BOTH"}
                 />
               ) : (
                 <p className="mt-6 text-sm text-slate">{tBooking("noAvailability")}</p>

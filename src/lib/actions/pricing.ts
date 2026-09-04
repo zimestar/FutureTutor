@@ -3,6 +3,8 @@
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
+import { resolveRequestedTutoringMode } from "@/lib/tutoringModeResolution";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { createPriceQuoteSchema } from "@/schemas/pricing";
 import { createCustomerPriceQuote, PricingRuleNotFoundError, type PriceAdjustment } from "@/services/customerPricing";
@@ -32,6 +34,7 @@ export async function createPriceQuoteAction(input: {
   subjectId: string;
   academicLevelId?: string;
   startAt: string;
+  tutoringMode?: "ONLINE" | "IN_PERSON";
 }): Promise<PriceQuoteResult> {
   const t = await getTranslations("booking.errors");
 
@@ -67,13 +70,43 @@ export async function createPriceQuoteAction(input: {
   const tutorProfile = await db.tutorProfile.findUnique({ where: { id: parsed.data.tutorProfileId } });
   if (!tutorProfile) return { success: false, error: t("invalidInput") };
 
+  // PROD-DIRECT-BOOKING-MODEFIX1 — tutorProfile.learningMode is the tutor's
+  // CAPABILITY (ONLINE/IN_PERSON/BOTH — "what this tutor is willing to
+  // offer"), never the actual session mode on its own. resolveRequestedTutoringMode
+  // is the one place that gets turned into the real requested mode; a
+  // BOTH-capable tutor requires an explicit client choice and is never
+  // inferred silently. createBookingAction independently re-derives and
+  // re-validates this exact same way (defense-in-depth) — this check alone
+  // is not the only thing standing between a mismatched mode and a Booking.
+  const effectiveMode = resolveRequestedTutoringMode({
+    tutorCapability: tutorProfile.learningMode ?? "BOTH",
+    requestedMode: parsed.data.tutoringMode,
+  });
+  if (!effectiveMode) return { success: false, error: t("invalidInput") };
+
+  // Direct booking collects no address at all today (see Booking's location
+  // snapshot fields — populated only by Quick Match). An IN_PERSON direct
+  // booking would therefore reach CONFIRMED with no location a tutor could
+  // ever be given — fail closed unconditionally until that's built, not
+  // just while Closed Beta is active (see the mission's Part 8).
+  if (effectiveMode === "IN_PERSON") {
+    return { success: false, error: t("directInPersonUnavailable") };
+  }
+  // Belt-and-suspenders alongside the unconditional check above: once
+  // in-person support ships and the check above is relaxed, this keeps the
+  // existing Closed Beta online-only invariant (already enforced for Quick
+  // Match — see tutoringRequests.ts) wired in for direct booking too.
+  if (closedBetaOnlineOnlyActive() && effectiveMode !== "ONLINE") {
+    return { success: false, error: t("betaOnlineOnly") };
+  }
+
   try {
     const customerQuote = await createCustomerPriceQuote({
       createdByUserId: session.user.id,
       studentProfileId: studentProfile.id,
       subjectId: parsed.data.subjectId,
       academicLevelId: parsed.data.academicLevelId ?? null,
-      tutoringMode: tutorProfile.learningMode ?? "BOTH",
+      tutoringMode: effectiveMode,
       durationMinutes: SESSION_DURATION_MINUTES,
       requestedStartAt: parsed.data.startAt,
     });
@@ -83,7 +116,7 @@ export async function createPriceQuoteAction(input: {
         tutorProfileId: tutorProfile.id,
         subjectId: parsed.data.subjectId,
         academicLevelId: parsed.data.academicLevelId ?? null,
-        tutoringMode: tutorProfile.learningMode ?? "BOTH",
+        tutoringMode: effectiveMode,
         durationMinutes: SESSION_DURATION_MINUTES,
         requestedStartAt: parsed.data.startAt,
       },

@@ -8,6 +8,12 @@ export const createBookingSchema = z.object({
   subjectId: z.string().min(1),
   academicLevelId: z.string().min(1).optional(),
   startAt: z.coerce.date(),
+  // PROD-DIRECT-BOOKING-MODEFIX1 — see schemas/pricing.ts's identical field
+  // for the full rationale. Must be the same value submitted at quote-
+  // creation time; a mismatch is caught by the quote's own contextHash
+  // check inside reserveBookingPendingPayment (QuoteContextMismatchError),
+  // not by anything in this schema.
+  tutoringMode: z.enum(["ONLINE", "IN_PERSON"]).optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

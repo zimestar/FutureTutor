@@ -7,8 +7,9 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
-import { closedBetaFinancialGateActive } from "@/lib/closedBetaConfig";
+import { closedBetaFinancialGateActive, closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { financialE2EEnabled, isFinancialE2EExceptionAllowed, auditFinancialE2EExceptionUsed } from "@/lib/financialE2EConfig";
+import { resolveRequestedTutoringMode } from "@/lib/tutoringModeResolution";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
@@ -106,12 +107,14 @@ export async function createBookingAction(
   }
 
   const academicLevelId = formData.get("academicLevelId");
+  const tutoringModeRaw = formData.get("tutoringMode");
   const parsed = createBookingSchema.safeParse({
     studentProfileId: formData.get("studentProfileId"),
     tutorProfileId: formData.get("tutorProfileId"),
     subjectId: formData.get("subjectId"),
     academicLevelId: academicLevelId ? String(academicLevelId) : undefined,
     startAt: formData.get("startAt"),
+    tutoringMode: tutoringModeRaw ? String(tutoringModeRaw) : undefined,
   });
   if (!parsed.success) return { error: t("invalidInput") };
   const { studentProfileId, tutorProfileId, subjectId, academicLevelId: levelId, startAt } = parsed.data;
@@ -133,6 +136,31 @@ export async function createBookingAction(
     db.tutorProfile.findUnique({ where: { id: tutorProfileId } }),
   ]);
   if (!studentProfile || !tutorProfile) return { error: t("invalidInput") };
+
+  // PROD-DIRECT-BOOKING-MODEFIX1 — independent, defense-in-depth re-check of
+  // the exact same resolution createPriceQuoteAction already performed when
+  // the quote being consumed below was created. Never trusts that earlier
+  // result — re-derives the effective mode fresh from this request's own
+  // tutorProfile.learningMode + this request's own submitted tutoringMode.
+  // If a client tampers with the mode between quote creation and this call,
+  // the two can only ever disagree in a way that reserveBookingPendingPayment
+  // itself catches (QuoteContextMismatchError, via the quote's own locked
+  // contextHash) — never a way that silently produces a BOTH-mode Booking.
+  const effectiveMode = resolveRequestedTutoringMode({
+    tutorCapability: tutorProfile.learningMode ?? "BOTH",
+    requestedMode: parsed.data.tutoringMode,
+  });
+  if (!effectiveMode) return { error: t("invalidInput") };
+
+  // Direct booking collects no address at all today — see
+  // createPriceQuoteAction's identical check for the full rationale. Fails
+  // closed unconditionally, not just while Closed Beta is active.
+  if (effectiveMode === "IN_PERSON") {
+    return { error: t("directInPersonUnavailable") };
+  }
+  if (closedBetaOnlineOnlyActive() && effectiveMode !== "ONLINE") {
+    return { error: t("betaOnlineOnly") };
+  }
 
   // FG-LEGAL2 — deliberately checked here (the direct-booking Server Action
   // entry point), not inside reserveBookingPendingPayment: that shared
@@ -167,7 +195,6 @@ export async function createBookingAction(
   if (!isValidSlot) return { error: t("slotTaken") };
 
   const endAt = new Date(startAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
-  const mode = tutorProfile.learningMode ?? "BOTH";
 
   // Payment preparation happens outside any DB transaction — see the
   // Payment model's schema domain comment for why an external call must
@@ -222,7 +249,7 @@ export async function createBookingAction(
             startAt,
             endAt,
             timezone,
-            mode,
+            mode: effectiveMode,
             paymentId,
             customerPriceQuoteId,
             tutorPayoutQuoteId,

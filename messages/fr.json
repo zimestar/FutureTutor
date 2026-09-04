@@ -1513,6 +1513,10 @@
     "anyLevel": "Tous les niveaux",
     "selectLevelPlaceholder": "Choisir le niveau scolaire",
     "selectLevelToSeePricing": "Choisissez un niveau scolaire pour voir le prix.",
+    "modeLabel": "Type de séance",
+    "selectModePlaceholder": "Choisissez un type de séance",
+    "modeOnline": "En ligne",
+    "modeInPerson": "En personne",
     "confirmCta": "Confirmer la réservation",
     "confirming": "Réservation…",
     "preparingPayment": "Préparation du paiement sécurisé…",
@@ -1561,7 +1565,9 @@
       "pricingUnavailable": "La tarification n'est pas disponible pour cette sélection en ce moment — veuillez essayer un autre horaire ou une autre matière.",
       "paymentPreparationFailed": "La configuration du paiement n'a pas pu être complétée. Veuillez réessayer.",
       "alreadyStarted": "Cette séance a déjà commencé et ne peut plus être annulée.",
-      "betaBookingsUnavailable": "Les réservations seront bientôt disponibles. Pendant notre bêta fermée, vous pouvez créer un compte, parcourir les tuteurs et configurer le profil de l'élève — les réservations payantes ouvriront sous peu."
+      "betaBookingsUnavailable": "Les réservations seront bientôt disponibles. Pendant notre bêta fermée, vous pouvez créer un compte, parcourir les tuteurs et configurer le profil de l'élève — les réservations payantes ouvriront sous peu.",
+      "betaOnlineOnly": "Pendant notre bêta fermée, le tutorat est uniquement en ligne — les demandes en personne ne sont pas encore disponibles.",
+      "directInPersonUnavailable": "La réservation en personne n'est pas encore disponible — veuillez choisir En ligne."
     }
   },
   "inPersonTutoring": {

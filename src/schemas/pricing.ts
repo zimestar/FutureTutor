@@ -15,6 +15,12 @@ export const createPriceQuoteSchema = z.object({
   // crafted/bypassed request.
   academicLevelId: z.string().min(1),
   startAt: z.coerce.date(),
+  // PROD-DIRECT-BOOKING-MODEFIX1 — the customer's actual requested session
+  // mode, required only when the tutor's own capability is BOTH (see
+  // resolveRequestedTutoringMode). Never "BOTH" — that value is rejected by
+  // the resolver, not by this schema, so the same malformed-input path is
+  // exercised for every illegal value rather than splitting the check here.
+  tutoringMode: z.enum(["ONLINE", "IN_PERSON"]).optional(),
 });
 
 export type CreatePriceQuoteInput = z.infer<typeof createPriceQuoteSchema>;

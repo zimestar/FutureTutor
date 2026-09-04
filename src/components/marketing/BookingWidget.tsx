@@ -43,6 +43,7 @@ export function BookingWidget({
   stripePublishableKey,
   bookableStudents,
   actorIsParent,
+  tutorLearningMode,
 }: {
   tutorProfileId: string;
   timezone: string;
@@ -58,6 +59,11 @@ export function BookingWidget({
   // every linked child they may currently book for.
   bookableStudents: BookableStudentOption[];
   actorIsParent: boolean;
+  // PROD-DIRECT-BOOKING-MODEFIX1 — the tutor's own CAPABILITY
+  // (TutorProfile.learningMode), never the actual session mode on its own.
+  // ONLINE/IN_PERSON tutors resolve to that one mode deterministically, no
+  // selector shown; BOTH-capable tutors require an explicit choice below.
+  tutorLearningMode: "ONLINE" | "IN_PERSON" | "BOTH";
 }) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -69,6 +75,13 @@ export function BookingWidget({
     resolveInitialAcademicLevel(bookableStudents[0]?.academicLevelId, levels)
   );
   const [studentProfileId, setStudentProfileId] = useState(bookableStudents[0]?.id ?? "");
+  // PROD-DIRECT-BOOKING-MODEFIX1 — deterministic for a single-mode tutor
+  // (matches tutorLearningMode exactly); starts unset for a BOTH-capable
+  // tutor, requiring an explicit choice before any quote can be requested
+  // (see the quoteKey gate below) — never silently inferred.
+  const [requestedMode, setRequestedMode] = useState<"ONLINE" | "IN_PERSON" | "">(
+    tutorLearningMode === "BOTH" ? "" : tutorLearningMode
+  );
   // Keyed by the exact selection it was fetched for — a stale quote from a
   // superseded selection is detected during render (a pure comparison)
   // rather than cleared via a synchronous setState inside the effect body.
@@ -77,9 +90,12 @@ export function BookingWidget({
   // BETA-PRICINGFIX1 — academicLevelId is now part of the truthiness gate,
   // not just the key: quote generation must not run while the level is
   // still unresolved (see resolveInitialLevel's doc comment above).
+  // PROD-DIRECT-BOOKING-MODEFIX1 — requestedMode joins the same gate: a
+  // BOTH-capable tutor's quote must not be requested until the customer has
+  // explicitly picked Online or In person.
   const quoteKey =
-    selectedSlot && subjectId && studentProfileId && academicLevelId
-      ? `${studentProfileId}|${selectedSlot}|${subjectId}|${academicLevelId}`
+    selectedSlot && subjectId && studentProfileId && academicLevelId && requestedMode
+      ? `${studentProfileId}|${selectedSlot}|${subjectId}|${academicLevelId}|${requestedMode}`
       : null;
   const quote = quoteState && quoteState.key === quoteKey ? quoteState.result : null;
   const selectedStudent = bookableStudents.find((s) => s.id === studentProfileId) ?? null;
@@ -159,13 +175,14 @@ export function BookingWidget({
         subjectId,
         academicLevelId: academicLevelId || undefined,
         startAt: selectedSlot,
+        tutoringMode: requestedMode || undefined,
       });
       if (!cancelled) setQuoteState({ key: quoteKey, result });
     });
     return () => {
       cancelled = true;
     };
-  }, [quoteKey, selectedSlot, subjectId, academicLevelId, tutorProfileId, studentProfileId]);
+  }, [quoteKey, selectedSlot, subjectId, academicLevelId, tutorProfileId, studentProfileId, requestedMode]);
 
   // In live mode, once a real quote exists, prepare (or reuse) the Payment
   // + PaymentIntent for it so the card form can render.
@@ -338,6 +355,29 @@ export function BookingWidget({
         </Select>
       </div>
 
+      {/* PROD-DIRECT-BOOKING-MODEFIX1 — only a BOTH-capable tutor is
+          ambiguous enough to need this; a single-mode tutor's session mode
+          is already unambiguous and shown nowhere else needs a control. */}
+      {tutorLearningMode === "BOTH" && (
+        <div>
+          <label htmlFor="tutoringMode" className="mb-1.5 block text-sm font-semibold text-navy">
+            {t("modeLabel")}
+          </label>
+          <Select
+            id="tutoringMode"
+            required
+            value={requestedMode}
+            onChange={(e) => setRequestedMode(e.target.value as "ONLINE" | "IN_PERSON")}
+          >
+            <option value="" disabled>
+              {t("selectModePlaceholder")}
+            </option>
+            <option value="ONLINE">{t("modeOnline")}</option>
+            <option value="IN_PERSON">{t("modeInPerson")}</option>
+          </Select>
+        </div>
+      )}
+
       {selectedSlot && (
         <div className="rounded-md border border-neutral-200 bg-off-white p-4" data-testid="price-summary">
           {!academicLevelId && (
@@ -425,6 +465,7 @@ export function BookingWidget({
           <input type="hidden" name="startAt" value={selectedSlot} />
           <input type="hidden" name="subjectId" value={subjectId} />
           <input type="hidden" name="academicLevelId" value={academicLevelId} />
+          <input type="hidden" name="tutoringMode" value={requestedMode} />
           <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
           <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
           <button

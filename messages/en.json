@@ -1513,6 +1513,10 @@
     "anyLevel": "Any level",
     "selectLevelPlaceholder": "Select academic level",
     "selectLevelToSeePricing": "Select an academic level to see pricing.",
+    "modeLabel": "Session type",
+    "selectModePlaceholder": "Choose a session type",
+    "modeOnline": "Online",
+    "modeInPerson": "In person",
     "confirmCta": "Confirm Booking",
     "confirming": "Booking…",
     "preparingPayment": "Preparing secure payment…",
@@ -1561,7 +1565,9 @@
       "pricingUnavailable": "Pricing isn't available for this selection right now — please try a different time or subject.",
       "paymentPreparationFailed": "Payment setup could not be completed. Please try again.",
       "alreadyStarted": "This session has already started and can no longer be cancelled.",
-      "betaBookingsUnavailable": "Bookings will be available soon. During our Closed Beta you can create an account, browse tutors, and set up your student profile — paid bookings open shortly."
+      "betaBookingsUnavailable": "Bookings will be available soon. During our Closed Beta you can create an account, browse tutors, and set up your student profile — paid bookings open shortly.",
+      "betaOnlineOnly": "During our Closed Beta, tutoring is online-only — in-person requests aren't available yet.",
+      "directInPersonUnavailable": "In-person booking isn't available yet — please choose Online."
     }
   },
   "inPersonTutoring": {
