@@ -457,43 +457,43 @@ enum TutorTier {
 }
 
 model TutorProfile {
-  id                     String                 @id @default(cuid())
-  userId                 String                 @unique
-  slug                   String                 @unique
-  headline               String?
-  bio                    String?                @db.Text
-  yearsExperience        Int?
+  id                            String                 @id @default(cuid())
+  userId                        String                 @unique
+  slug                          String                 @unique
+  headline                      String?
+  bio                           String?                @db.Text
+  yearsExperience               Int?
   /// @deprecated Kept only for Phase C booking-flow compatibility. FutureTutor's
   /// business model does not let tutors set the customer price — a dedicated
   /// Customer Price Engine / Tutor Payout Engine replaces this field in the
   /// phase immediately after Tutor Validation Depth. Do not build new features
   /// that treat this as a quality/tier signal or a permanent tutor capability.
-  hourlyRateCents        Int?
-  currency               String                 @default("CAD")
-  applicationStatus      TutorApplicationStatus @default(DRAFT)
+  hourlyRateCents               Int?
+  currency                      String                 @default("CAD")
+  applicationStatus             TutorApplicationStatus @default(DRAFT)
   /// null = not yet approved under either process; 1 = approved under the old
   /// simplified process (historical, not retroactively changed); 2 = approved
   /// under the full Tutor Validation Depth pipeline.
-  validationVersion      Int?
+  validationVersion             Int?
   // Phase E — simple explicit payout tier, see TutorTier enum comment.
-  payoutTier             TutorTier              @default(NEW)
-  learningMode           TutoringMode?
-  city                   String?
-  province               String?
-  travelRadiusKm         Int?
-  latitude               Float?
-  longitude              Float?
-  ratingAverage          Float                  @default(0)
-  reviewCount            Int                    @default(0)
-  stripeConnectAccountId String?
-  stripeConnectStatus    StripeConnectStatus    @default(NOT_STARTED)
+  payoutTier                    TutorTier              @default(NEW)
+  learningMode                  TutoringMode?
+  city                          String?
+  province                      String?
+  travelRadiusKm                Int?
+  latitude                      Float?
+  longitude                     Float?
+  ratingAverage                 Float                  @default(0)
+  reviewCount                   Int                    @default(0)
+  stripeConnectAccountId        String?
+  stripeConnectStatus           StripeConnectStatus    @default(NOT_STARTED)
   /// PROD-CONNECT-RETRYFIX1 — participates in the Connect account-creation
   /// idempotency key (`connect-account:${tutorProfileId}:${epoch}`).
   /// Advances only after a confirmed pre-creation Stripe rejection
   /// (StripeInvalidRequestError from accounts.create — proven nothing was
   /// created); never on network/5xx/ambiguous outcomes, and never once
   /// stripeConnectAccountId is set. See ensureConnectAccount.
-  stripeConnectAttemptEpoch Int                 @default(0)
+  stripeConnectAttemptEpoch     Int                    @default(0)
   /// FG-LEGAL2 — Tutor Independent Service Provider Agreement acceptance
   /// record. Mirrors User.termsAcceptedAt/Version/Locale's shape (see
   /// migration 20260828213506_add_terms_acceptance_record) but lives here
@@ -503,32 +503,33 @@ model TutorProfile {
   tutorAgreementAcceptedAt      DateTime?
   tutorAgreementAcceptedVersion String?
   tutorAgreementAcceptedLocale  String?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
+  createdAt                     DateTime               @default(now())
+  updatedAt                     DateTime               @updatedAt
 
-  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subjects               TutorSubject[]
-  levels                 TutorLevel[]
-  languages              TutorLanguage[]
-  education              TutorEducation[]
-  certifications         TutorCertification[]
-  availability           TutorAvailability[]
-  availabilityExceptions TutorAvailabilityException[]
-  verifications          TutorVerification[]
-  media                  TutorMedia[]
-  documents              TutorDocument[]
-  interviews             TutorInterview[]
-  trainingProgress       TutorTrainingProgress[]
-  examAttempts           TutorExamAttempt[]
-  scores                 TutorScore[]
-  scoreSnapshots         TutorScoreSnapshot[]
-  bookings               Booking[]
-  favoritedBy            TutorFavorite[]
-  reviews                Review[]
-  payoutQuotes           TutorPayoutQuote[]
-  invitations            TutorInvitation[]
-  earnings               TutorEarning[]
-  transfers              TutorTransfer[]
+  user                     User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects                 TutorSubject[]
+  levels                   TutorLevel[]
+  languages                TutorLanguage[]
+  education                TutorEducation[]
+  certifications           TutorCertification[]
+  availability             TutorAvailability[]
+  availabilityExceptions   TutorAvailabilityException[]
+  verifications            TutorVerification[]
+  media                    TutorMedia[]
+  documents                TutorDocument[]
+  interviews               TutorInterview[]
+  trainingProgress         TutorTrainingProgress[]
+  examAttempts             TutorExamAttempt[]
+  scores                   TutorScore[]
+  scoreSnapshots           TutorScoreSnapshot[]
+  bookings                 Booking[]
+  favoritedBy              TutorFavorite[]
+  reviews                  Review[]
+  payoutQuotes             TutorPayoutQuote[]
+  invitations              TutorInvitation[]
+  earnings                 TutorEarning[]
+  transfers                TutorTransfer[]
+  applicationNotifications TutorApplicationNotification[]
 
   @@index([applicationStatus])
   @@index([city, province])
@@ -995,25 +996,25 @@ model Booking {
   // already used for pricing. locationNote (above) stays a separate,
   // free-text supplementary field (e.g. "buzz #402"), not the authoritative
   // address.
-  tutoringRequestId   String?
-  bookingAddressLine1 String?
-  bookingAddressLine2 String?
-  bookingCity         String?
-  bookingProvince     String?
-  bookingPostalCode   String?
+  tutoringRequestId          String?
+  bookingAddressLine1        String?
+  bookingAddressLine2        String?
+  bookingCity                String?
+  bookingProvince            String?
+  bookingPostalCode          String?
   // BETA-IP1-C — same snapshot principle as the five fields above, for the
   // TutoringRequest.arrivalInstructions this Booking was claimed against.
   // Immutable once set; a later edit to a (currently nonexistent) saved
   // location can never retroactively change an already-snapshotted Booking.
   bookingArrivalInstructions String?
 
-  studentProfile     StudentProfile         @relation(fields: [studentProfileId], references: [id])
-  tutorProfile       TutorProfile           @relation(fields: [tutorProfileId], references: [id])
-  subject            Subject                @relation(fields: [subjectId], references: [id])
-  academicLevel      AcademicLevel?         @relation(fields: [academicLevelId], references: [id])
-  customerPriceQuote CustomerPriceQuote?    @relation(fields: [customerPriceQuoteId], references: [id])
-  tutorPayoutQuote   TutorPayoutQuote?      @relation(fields: [tutorPayoutQuoteId], references: [id])
-  tutoringRequest    TutoringRequest?       @relation(fields: [tutoringRequestId], references: [id])
+  studentProfile     StudentProfile             @relation(fields: [studentProfileId], references: [id])
+  tutorProfile       TutorProfile               @relation(fields: [tutorProfileId], references: [id])
+  subject            Subject                    @relation(fields: [subjectId], references: [id])
+  academicLevel      AcademicLevel?             @relation(fields: [academicLevelId], references: [id])
+  customerPriceQuote CustomerPriceQuote?        @relation(fields: [customerPriceQuoteId], references: [id])
+  tutorPayoutQuote   TutorPayoutQuote?          @relation(fields: [tutorPayoutQuoteId], references: [id])
+  tutoringRequest    TutoringRequest?           @relation(fields: [tutoringRequestId], references: [id])
   winningInvitation  TutorInvitation?
   statusHistory      BookingStatusHistory[]
   session            Session_?
@@ -1452,23 +1453,23 @@ enum TutoringRequestStatus {
 }
 
 model TutoringRequest {
-  id               String       @id @default(cuid())
-  createdByUserId  String
-  studentProfileId String
-  subjectId        String
-  academicLevelId  String?
-  tutoringMode     TutoringMode
-  durationMinutes  Int
-  requestedStartAt DateTime
+  id                  String       @id @default(cuid())
+  createdByUserId     String
+  studentProfileId    String
+  subjectId           String
+  academicLevelId     String?
+  tutoringMode        TutoringMode
+  durationMinutes     Int
+  requestedStartAt    DateTime
   // Request location (private, full precision) — required by
   // src/schemas/tutoringRequest.ts whenever tutoringMode !== ONLINE;
   // addressLine1/addressLine2/postalCode stay null for ONLINE requests.
   // Never copied onto TutorInvitation — see TutorInvitation's own comment.
-  addressLine1     String?
-  addressLine2     String?
-  city             String?
-  province         String?
-  postalCode       String?
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  province            String?
+  postalCode          String?
   // BETA-IP1-C — optional free-text arrival guidance (e.g. "use the side
   // entrance", "ring apartment 302"). Same privacy tier as the address
   // fields above: private, never copied onto TutorInvitation, only ever
@@ -1476,8 +1477,8 @@ model TutoringRequest {
   // Booking reaches an access-granting state (src/services/
   // bookingLocationAccess.ts). Always null for ONLINE requests.
   arrivalInstructions String?
-  notes            String?
-  currency         String       @default("CAD")
+  notes               String?
+  currency            String       @default("CAD")
 
   // Locked price snapshot — filled in when the linked CustomerPriceQuote
   // moves ACTIVE -> LOCKED (PRICED -> CONFIRMED). Null before then.
@@ -2017,7 +2018,7 @@ enum BookingEmailDeliveryStatus {
 }
 
 model BookingEmailNotification {
-  id              String                      @id @default(cuid())
+  id              String                     @id @default(cuid())
   bookingId       String
   recipientRole   BookingEmailRecipientRole
   // Resolved and stamped at row-creation time from the authoritative
@@ -2026,15 +2027,15 @@ model BookingEmailNotification {
   // rather than trusting anything cached here, but the recipient's
   // identity itself (who this row is for) is fixed at creation.
   recipientUserId String
-  status          BookingEmailDeliveryStatus  @default(PENDING)
-  attemptCount    Int                         @default(0)
+  status          BookingEmailDeliveryStatus @default(PENDING)
+  attemptCount    Int                        @default(0)
   lastAttemptAt   DateTime?
   sentAt          DateTime?
   // Sanitized failure reason only (provider error name/message) — never a
   // raw exception, stack trace, or PII. Mirrors resendSendPasswordResetEmail's
   // own "never logs the email body/token" discipline.
   error           String?
-  createdAt       DateTime                    @default(now())
+  createdAt       DateTime                   @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -2043,6 +2044,90 @@ model BookingEmailNotification {
   // "booking_confirmed:<role>:<bookingId>".
   @@unique([bookingId, recipientRole])
   @@index([status])
+}
+
+// PROD-TUTOR-APPLICATION-NOTIFICATIONS1 — durable outbox for tutor
+// application-lifecycle emails, mirroring BookingEmailNotification's exact
+// design (PENDING -> SENT | FAILED, retriable, created inside the same
+// transaction that commits the workflow transition in
+// tutorApplicationWorkflow.ts, dispatched afterward outside it). The
+// in-app Notification row for the same business event is written in that
+// same transaction via notifyUser — one trigger, two channels, never two
+// independent decisions that could disagree.
+//
+// Idempotency is content-based, not merely transaction-based:
+// `dedupeKey` is a deterministic string derived from the specific
+// underlying record the event concerns (e.g. `document:<id>:APPROVED`,
+// `interview:<id>:scheduled:<epochMs>`, `tutorProfile:<id>:APPROVED`) so a
+// repeated Admin click, browser retry, or Railway restart can never
+// produce a second row for the same real occurrence, while a genuinely
+// new occurrence (a different document, a real reschedule to a new time,
+// a second suspend/reactivate cycle) always gets a fresh key. See
+// src/services/tutorApplicationNotifications.ts for the exact key
+// construction per event.
+enum TutorApplicationNotificationEvent {
+  APPLICATION_SUBMITTED
+  APPLICATION_UNDER_REVIEW
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  ADDITIONAL_INFORMATION_REQUIRED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_RESCHEDULED
+  INTERVIEW_COMPLETED
+  TRAINING_UNLOCKED
+  TRAINING_COMPLETED
+  EXAM_UNLOCKED
+  EXAM_PASSED
+  EXAM_FAILED
+  FINAL_REVIEW_STARTED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  APPLICATION_SUSPENDED
+  APPLICATION_REACTIVATED
+}
+
+enum TutorApplicationNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model TutorApplicationNotification {
+  id                String                             @id @default(cuid())
+  tutorProfileId    String
+  event             TutorApplicationNotificationEvent
+  // Deterministic, content-derived idempotency key — see the module doc
+  // comment above and src/services/tutorApplicationNotifications.ts.
+  dedupeKey         String
+  // Resolved and stamped at row-creation time from TutorProfile.userId —
+  // the dispatcher re-resolves the actual email address fresh from User
+  // at send time rather than trusting anything cached here, same
+  // discipline as BookingEmailNotification.recipientUserId.
+  recipientUserId   String
+  status            TutorApplicationNotificationStatus @default(PENDING)
+  attemptCount      Int                                @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  // Sanitized failure reason only — never a raw exception/stack trace.
+  error             String?
+  // Safe Resend-returned message id, for delivery tracing/support only —
+  // never a provider secret. May be null even on a SENT row if the
+  // adapter could not safely obtain one.
+  providerMessageId String?
+  // Frozen, event-specific display data resolved once at trigger time
+  // (e.g. { documentType, reason } or { scheduledAtIso }) — the dispatcher
+  // renders from this snapshot, never by re-querying possibly-since-
+  // changed live records, so the email always matches the event that was
+  // actually recorded.
+  contextSnapshot   Json
+  createdAt         DateTime                           @default(now())
+
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+
+  // The hard idempotency guarantee: at most one row per dedupeKey, ever.
+  @@unique([dedupeKey])
+  @@index([status])
+  @@index([tutorProfileId, createdAt])
 }
 
 // ---------------------------------------------------------------------------

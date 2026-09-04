@@ -704,6 +704,110 @@
     "buttonLabel": "Voir vos réservations",
     "footer": "Des questions sur cette réservation? Visitez votre tableau de bord FutureTutor."
   },
+  "tutorApplicationEmail": {
+    "greeting": "Bonjour {name},",
+    "updatedByTeam": "Votre dossier a été mis à jour par l'équipe FutureTutor.",
+    "currentStageLabel": "Étape actuelle",
+    "reasonLabel": "Raison",
+    "interviewTimeLabel": "Heure de l'entrevue",
+    "actionRequiredLabel": "Action requise",
+    "noActionLabel": "Aucune action requise pour le moment",
+    "ctaLabel": "Accéder à votre tableau de bord tuteur",
+    "footer": "Vous recevez cet e-mail au sujet de votre dossier de tuteur FutureTutor.",
+    "approvedNextStep": "Vous pouvez maintenant terminer la configuration de votre espace de travail de tutorat. Certaines fonctionnalités peuvent encore nécessiter des étapes de configuration supplémentaires, que votre tableau de bord vous guidera à réaliser.",
+    "events": {
+      "APPLICATION_SUBMITTED": {
+        "subject": "Nous avons reçu votre dossier FutureTutor",
+        "heading": "Dossier reçu",
+        "intro": "Merci d'avoir posé votre candidature pour devenir tuteur sur FutureTutor. Nous avons bien reçu votre dossier, qui se trouve maintenant dans notre file de révision."
+      },
+      "APPLICATION_UNDER_REVIEW": {
+        "subject": "Votre dossier FutureTutor est en révision",
+        "heading": "Dossier en révision",
+        "intro": "Notre équipe a commencé à examiner les informations et documents que vous avez soumis."
+      },
+      "DOCUMENT_APPROVED": {
+        "subject": "Votre document a été approuvé — FutureTutor",
+        "heading": "Document approuvé",
+        "intro": "Un de vos documents soumis a été approuvé : {documentType}."
+      },
+      "DOCUMENT_REJECTED": {
+        "subject": "Une action est requise pour votre dossier FutureTutor",
+        "heading": "Un document nécessite votre attention",
+        "intro": "Un de vos documents soumis n'a pas été accepté : {documentType}."
+      },
+      "ADDITIONAL_INFORMATION_REQUIRED": {
+        "subject": "Une action est requise pour votre dossier FutureTutor",
+        "heading": "Nous avons besoin d'informations à jour",
+        "intro": "Nous avons besoin que vous soumettiez à nouveau un document : {documentType}."
+      },
+      "INTERVIEW_SCHEDULED": {
+        "subject": "Votre entrevue FutureTutor est planifiée",
+        "heading": "Entrevue planifiée",
+        "intro": "Votre entrevue avec l'équipe FutureTutor a été planifiée."
+      },
+      "INTERVIEW_RESCHEDULED": {
+        "subject": "Votre entrevue FutureTutor a été replanifiée",
+        "heading": "Entrevue replanifiée",
+        "intro": "L'heure de votre entrevue a changé."
+      },
+      "INTERVIEW_COMPLETED": {
+        "subject": "Votre entrevue FutureTutor est terminée",
+        "heading": "Entrevue complétée",
+        "intro": "Merci d'avoir complété votre entrevue. Nous préparons votre prochaine étape."
+      },
+      "TRAINING_UNLOCKED": {
+        "subject": "La formation est maintenant disponible — FutureTutor",
+        "heading": "Formation débloquée",
+        "intro": "Vos modules de formation sont maintenant disponibles à compléter."
+      },
+      "TRAINING_COMPLETED": {
+        "subject": "Formation complétée — FutureTutor",
+        "heading": "Formation complétée",
+        "intro": "Vous avez complété tous les modules de formation requis."
+      },
+      "EXAM_UNLOCKED": {
+        "subject": "L'examen de la plateforme est maintenant disponible — FutureTutor",
+        "heading": "Examen débloqué",
+        "intro": "L'examen de la plateforme est maintenant ouvert pour vous."
+      },
+      "EXAM_PASSED": {
+        "subject": "Vous avez réussi l'examen FutureTutor",
+        "heading": "Examen réussi",
+        "intro": "Félicitations — vous avez réussi l'examen de la plateforme."
+      },
+      "EXAM_FAILED": {
+        "subject": "Votre résultat d'examen FutureTutor",
+        "heading": "Résultat de la tentative d'examen",
+        "intro": "Votre dernière tentative d'examen n'a pas atteint la note de passage. Vous pouvez réessayer."
+      },
+      "FINAL_REVIEW_STARTED": {
+        "subject": "Votre dossier FutureTutor est en révision finale",
+        "heading": "Révision finale",
+        "intro": "Votre dossier est passé à l'étape de révision finale."
+      },
+      "APPLICATION_APPROVED": {
+        "subject": "Votre profil de tuteur FutureTutor est approuvé",
+        "heading": "Vous êtes approuvé!",
+        "intro": "Félicitations — votre dossier de tuteur FutureTutor a été approuvé."
+      },
+      "APPLICATION_REJECTED": {
+        "subject": "Une mise à jour sur votre dossier FutureTutor",
+        "heading": "Décision concernant le dossier",
+        "intro": "Après révision, nous ne sommes pas en mesure de poursuivre avec votre dossier pour le moment."
+      },
+      "APPLICATION_SUSPENDED": {
+        "subject": "Votre compte tuteur FutureTutor a été suspendu",
+        "heading": "Compte suspendu",
+        "intro": "Votre compte tuteur a été suspendu."
+      },
+      "APPLICATION_REACTIVATED": {
+        "subject": "Votre compte tuteur FutureTutor est réactivé",
+        "heading": "Compte réactivé",
+        "intro": "Votre compte tuteur a été réactivé et est de nouveau actif."
+      }
+    }
+  },
   "pwa": {
     "install": {
       "action": "Installer FutureTutor",

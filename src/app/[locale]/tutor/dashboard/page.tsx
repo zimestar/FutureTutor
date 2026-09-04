@@ -5,6 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { TutorApprovalJourney } from "@/components/dashboard/TutorApprovalJourney";
+import { TutorApplicationTimeline } from "@/components/dashboard/TutorApplicationTimeline";
 import { TutorAgreementBanner } from "@/components/dashboard/TutorAgreementBanner";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -53,6 +54,24 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
     const experience = getTutorExperience(status);
     const stateKey = `experience.states.${status}` as const;
 
+    // PROD-TUTOR-APPLICATION-NOTIFICATIONS1 — a read-only history view over
+    // the same rows the notification outbox already creates, not a second
+    // source of truth (see TutorApplicationTimeline's own doc comment).
+    const applicationEvents = tutorProfile
+      ? await db.tutorApplicationNotification.findMany({
+          where: { tutorProfileId: tutorProfile.id },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, event: true, createdAt: true },
+        })
+      : [];
+    const tTimelineEvent = await getTranslations({ locale, namespace: "tutorApplicationEmail.events" });
+    const timelineDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+    const timelineItems = applicationEvents.map((row) => ({
+      id: row.id,
+      label: tTimelineEvent(`${row.event}.heading`),
+      dateLabel: timelineDateFormatter.format(row.createdAt),
+    }));
+
     return (
       <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""} userImage={userImage}>
         <PageHeader
@@ -93,6 +112,12 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
                 })}
               />
             </Surface>
+
+            {timelineItems.length > 0 && (
+              <Surface>
+                <TutorApplicationTimeline title={t("lifecycle.title")} items={timelineItems} />
+              </Surface>
+            )}
           </div>
 
           <Surface className="h-fit" aria-labelledby="what-happens-next-title">
