@@ -512,6 +512,14 @@ export function BookingWidget({
             <input type="hidden" name="startAt" value={selectedSlot} />
             <input type="hidden" name="subjectId" value={subjectId} />
             <input type="hidden" name="academicLevelId" value={academicLevelId} />
+            {/* PROD-DIRECT-BOOKING-MODEFIX2 — missing from this form since
+                PROD-DIRECT-BOOKING-MODEFIX1 (the non-Stripe form above had it,
+                this one silently didn't). This is the form the real
+                production (Stripe/live) path actually submits, so a
+                BOTH-capable tutor's booking always failed
+                resolveRequestedTutoringMode's own "missing => reject" rule
+                after a real card authorization had already succeeded. */}
+            <input type="hidden" name="tutoringMode" value={requestedMode} />
             <input type="hidden" name="customerPriceQuoteId" value={quote?.success ? quote.customerPriceQuoteId : ""} />
             <input type="hidden" name="tutorPayoutQuoteId" value={quote?.success ? quote.tutorPayoutQuoteId : ""} />
             <input type="hidden" name="stripePaymentIntentId" value={authorizedPiId} />

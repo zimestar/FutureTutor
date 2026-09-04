@@ -19,6 +19,9 @@ const mocks = vi.hoisted(() => ({
   canInitiatePaidBooking: vi.fn(),
   getAvailableSlots: vi.fn(),
   paymentsUseStripe: vi.fn(),
+  financialE2EEnabled: vi.fn(),
+  isFinancialE2EExceptionAllowed: vi.fn(),
+  auditFinancialE2EExceptionUsed: vi.fn(),
 }));
 
 vi.mock("next-intl/server", () => ({
@@ -31,9 +34,9 @@ vi.mock("@/lib/closedBetaConfig", () => ({
   closedBetaOnlineOnlyActive: mocks.closedBetaOnlineOnlyActive,
 }));
 vi.mock("@/lib/financialE2EConfig", () => ({
-  financialE2EEnabled: vi.fn().mockReturnValue(false),
-  isFinancialE2EExceptionAllowed: vi.fn(),
-  auditFinancialE2EExceptionUsed: vi.fn(),
+  financialE2EEnabled: mocks.financialE2EEnabled,
+  isFinancialE2EExceptionAllowed: mocks.isFinancialE2EExceptionAllowed,
+  auditFinancialE2EExceptionUsed: mocks.auditFinancialE2EExceptionUsed,
 }));
 vi.mock("@/lib/paymentMode", () => ({ paymentsUseStripe: mocks.paymentsUseStripe }));
 vi.mock("@/lib/availability", () => ({ getAvailableSlots: mocks.getAvailableSlots }));
@@ -112,6 +115,7 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(false);
     mocks.dbStudentProfileFindUnique.mockResolvedValue({ id: "student-1" });
     mocks.canInitiatePaidBooking.mockResolvedValue(true);
+    mocks.financialE2EEnabled.mockReturnValue(false);
     // getAvailableSlots throwing proves control reached past the mode gate
     // — every rejection test below asserts this mock was never called.
     mocks.getAvailableSlots.mockRejectedValue(new Error("reached past the mode gate"));
@@ -179,5 +183,29 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
     const result = await createBookingAction(undefined, formData({ tutoringMode: "BOTH" }));
     expect(result).toMatchObject({ error: "invalidInput" });
+  });
+
+  // PROD-DIRECT-BOOKING-MODEFIX2 — the two combined scenarios the mission
+  // explicitly asked to see spelled out, on top of the matrix above.
+  it("IN_PERSON during Closed Beta -> rejected (both the permanent direct-IN_PERSON block and the online-only invariant would independently reject it)", async () => {
+    mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    const result = await createBookingAction(undefined, formData({ tutoringMode: "IN_PERSON" }));
+    expect(result).toMatchObject({ error: "directInPersonUnavailable" });
+    expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
+  });
+
+  it("ONLINE during Closed Beta + a valid, matching financial E2E exception -> passes both the E2E gate and the mode gate", async () => {
+    mocks.closedBetaFinancialGateActive.mockReturnValue(true);
+    mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
+    mocks.financialE2EEnabled.mockReturnValue(true);
+    mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
+    mocks.auth.mockResolvedValue({ user: { id: "controlled-actor", role: "STUDENT" } });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    await expect(
+      createBookingAction(undefined, formData({ tutoringMode: "ONLINE" }))
+    ).rejects.toThrow("reached past the mode gate");
+    expect(mocks.isFinancialE2EExceptionAllowed).toHaveBeenCalledWith({ actorUserId: "controlled-actor", customerPriceQuoteId: "quote-1" });
+    expect(mocks.auditFinancialE2EExceptionUsed).toHaveBeenCalledTimes(1);
   });
 });
