@@ -668,6 +668,42 @@
     "linkFallback": "Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
     "footer": "FutureTutor — aider les élèves à apprendre avec le bon tuteur."
   },
+  "tutorBookingEmail": {
+    "subject": "Nouvelle séance de tutorat réservée — FutureTutor",
+    "heading": "Nouvelle séance réservée",
+    "greeting": "Bonjour {name},",
+    "intro": "Un élève a réservé une séance avec vous sur FutureTutor.",
+    "learnerLabel": "Élève",
+    "subjectLabel": "Matière",
+    "levelLabel": "Niveau",
+    "dateLabel": "Date",
+    "timeLabel": "Heure",
+    "modeLabel": "Format",
+    "modeOnline": "En ligne",
+    "modeInPerson": "En personne",
+    "onlineNote": "Vous pourrez accéder à la salle de classe depuis votre tableau de bord FutureTutor lorsqu'elle ouvrira.",
+    "buttonLabel": "Voir vos réservations",
+    "footer": "Vous recevez cet e-mail parce que vous êtes tuteur sur FutureTutor."
+  },
+  "payerBookingEmail": {
+    "subject": "Votre séance de tutorat est confirmée — FutureTutor",
+    "heading": "Votre séance est confirmée",
+    "greeting": "Bonjour {name},",
+    "intro": "Votre séance de tutorat avec {tutor} a été réservée et payée.",
+    "tutorLabel": "Tuteur",
+    "learnerLabel": "Pour",
+    "subjectLabel": "Matière",
+    "levelLabel": "Niveau",
+    "dateLabel": "Date",
+    "timeLabel": "Heure",
+    "modeLabel": "Format",
+    "modeOnline": "En ligne",
+    "modeInPerson": "En personne",
+    "amountLabel": "Montant payé",
+    "onlineNote": "Vous pourrez rejoindre la salle de classe en ligne depuis votre tableau de bord lorsqu'elle ouvrira.",
+    "buttonLabel": "Voir vos réservations",
+    "footer": "Des questions sur cette réservation? Visitez votre tableau de bord FutureTutor."
+  },
   "pwa": {
     "install": {
       "action": "Installer FutureTutor",

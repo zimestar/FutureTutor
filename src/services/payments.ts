@@ -15,6 +15,7 @@ import { validateAndConsumeTutorPayoutQuote, cancelTutorPayoutQuote } from "@/se
 import { notifyUser } from "@/lib/notify";
 import { writeAuditLog } from "@/lib/audit";
 import { toExactLocationDto } from "@/services/bookingLocationAccess";
+import { createPendingBookingEmailNotifications, dispatchBookingConfirmationEmails } from "@/services/bookingNotifications";
 
 export class PaymentIntentVerificationError extends Error {}
 export class PaymentNotAuthorizedError extends Error {}
@@ -729,6 +730,17 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
                   ? ({ bookingId: booking.id, location: toExactLocationDto(booking) } as unknown as Prisma.InputJsonValue)
                   : { bookingId: booking.id },
               });
+
+              // PROD-BOOKING-NOTIFICATIONS1 — durable outbox rows only
+              // (no network I/O) inside this same one-time-guarded block;
+              // actual delivery is dispatched post-commit, below, outside
+              // this transaction — see bookingNotifications.ts's own doc
+              // comment for why.
+              await createPendingBookingEmailNotifications(tx, {
+                bookingId: booking.id,
+                tutorUserId: tutor.userId,
+                payerUserId: payment.payerUserId,
+              });
             }
           }
 
@@ -759,6 +771,25 @@ export async function convergeToCaptured(paymentId: string): Promise<void> {
   // sweep) also calls it concurrently for the same booking.
   if (outcome.authoritativeStatus === "CANCELLED" && outcome.bookingId) {
     await convergeCancelledBookingPayment(outcome.bookingId);
+  }
+
+  // PROD-BOOKING-NOTIFICATIONS1 — dispatched only when the authoritative
+  // status observed inside the transaction was CONFIRMED (never merely
+  // because an authorization/PaymentIntent exists — the exact distinction
+  // the first controlled E2E attempt's own incident proved matters).
+  // Fully outside the transaction and never rethrown: an email provider
+  // outage must never be mistaken for, or affect, a payment/booking
+  // failure. Safe to call on every convergeToCaptured invocation for this
+  // booking (webhook replay, Server Action retry) — it only ever acts on
+  // rows still PENDING/FAILED, so an already-fully-sent booking is a fast
+  // no-op.
+  if (outcome.authoritativeStatus === "CONFIRMED" && outcome.bookingId) {
+    await dispatchBookingConfirmationEmails(outcome.bookingId).catch((error) => {
+      console.error(
+        "[bookingNotifications] dispatchBookingConfirmationEmails failed",
+        error instanceof Error ? error.message : String(error)
+      );
+    });
   }
 }
 

@@ -668,6 +668,42 @@
     "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
     "footer": "FutureTutor — helping students learn with the right tutor."
   },
+  "tutorBookingEmail": {
+    "subject": "New tutoring session booked — FutureTutor",
+    "heading": "New session booked",
+    "greeting": "Hi {name},",
+    "intro": "A learner has booked a session with you on FutureTutor.",
+    "learnerLabel": "Learner",
+    "subjectLabel": "Subject",
+    "levelLabel": "Level",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "modeLabel": "Format",
+    "modeOnline": "Online",
+    "modeInPerson": "In person",
+    "onlineNote": "You'll be able to access the classroom from your FutureTutor dashboard once it opens.",
+    "buttonLabel": "View your bookings",
+    "footer": "You're receiving this email because you're a tutor on FutureTutor."
+  },
+  "payerBookingEmail": {
+    "subject": "Your tutoring session is confirmed — FutureTutor",
+    "heading": "Your session is confirmed",
+    "greeting": "Hi {name},",
+    "intro": "Your tutoring session with {tutor} has been booked and paid.",
+    "tutorLabel": "Tutor",
+    "learnerLabel": "For",
+    "subjectLabel": "Subject",
+    "levelLabel": "Level",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "modeLabel": "Format",
+    "modeOnline": "Online",
+    "modeInPerson": "In person",
+    "amountLabel": "Amount paid",
+    "onlineNote": "You'll be able to join the online classroom from your dashboard once it opens.",
+    "buttonLabel": "View your bookings",
+    "footer": "Questions about this booking? Visit your FutureTutor dashboard."
+  },
   "pwa": {
     "install": {
       "action": "Install FutureTutor",
