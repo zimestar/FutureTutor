@@ -1775,6 +1775,14 @@
       "REFUNDED": "Remboursée",
       "RESCHEDULED": "Reportée"
     },
+    "cancelDialog": {
+      "title": "Annuler cette séance ?",
+      "description": "Vous êtes sur le point d'annuler votre séance de {subject} avec {name} le {when}.",
+      "keepLabel": "Conserver ma séance",
+      "confirmLabel": "Confirmer l'annulation",
+      "confirmingLabel": "Annulation…",
+      "irreversibleNote": "Cette action est définitive."
+    },
     "errors": {
       "notAStudent": "Seuls les élèves peuvent réserver des séances.",
       "invalidInput": "Veuillez choisir une matière et un créneau horaire.",

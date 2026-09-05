@@ -42,6 +42,7 @@ export default async function TutorBookingsPage({
   const t = await getTranslations({ locale, namespace: "dashboard.tutor.bookings" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const tStatus = await getTranslations({ locale, namespace: "booking.status" });
+  const tCancelDialog = await getTranslations({ locale, namespace: "booking.cancelDialog" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const tPayouts = await getTranslations({ locale, namespace: "tutorPayouts" });
   const tSession = await getTranslations({ locale, namespace: "sessionExperience" });
@@ -166,6 +167,15 @@ export default async function TutorBookingsPage({
                               amountCents: 0,
                               currency: booking.currency,
                             })}
+                            dialogTitle={tCancelDialog("title")}
+                            dialogDescription={tCancelDialog("description", {
+                              subject: tSubjects(booking.subject.slug),
+                              name: booking.studentProfile.firstName,
+                              when: formatBookingTime(booking.startAt, booking.timezone, locale),
+                            })}
+                            keepLabel={tCancelDialog("keepLabel")}
+                            confirmLabel={tCancelDialog("confirmLabel")}
+                            irreversibleNote={tCancelDialog("irreversibleNote")}
                           />
                         )}
                       </div>
