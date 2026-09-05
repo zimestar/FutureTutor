@@ -1724,6 +1724,19 @@
       "invalidInput": "Veuillez vérifier vos horaires — l'heure de fin doit suivre l'heure de début pour chaque jour activé."
     }
   },
+  "notifications": {
+    "bellLabel": "Notifications ({count} non lues)",
+    "title": "Notifications",
+    "recentSubtitle": "Vos notifications les plus récentes",
+    "markAllRead": "Tout marquer comme lu",
+    "unreadLabel": "Non lu",
+    "empty": "Vous n'avez aucune notification pour le moment.",
+    "viewAll": "Voir toutes les notifications",
+    "close": "Fermer",
+    "pageTitle": "Notifications",
+    "pageDescription": "Un historique des mises à jour concernant vos réservations, séances et votre compte.",
+    "loadMore": "Afficher plus"
+  },
   "booking": {
     "widgetTitle": "Réserver une séance",
     "noAvailability": "Ce tuteur n'a pas encore défini ses disponibilités.",

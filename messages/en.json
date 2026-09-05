@@ -1724,6 +1724,19 @@
       "invalidInput": "Please check your hours — the end time must be after the start time on each enabled day."
     }
   },
+  "notifications": {
+    "bellLabel": "Notifications ({count} unread)",
+    "title": "Notifications",
+    "recentSubtitle": "Your most recent notifications",
+    "markAllRead": "Mark all as read",
+    "unreadLabel": "Unread",
+    "empty": "You don't have any notifications yet.",
+    "viewAll": "View all notifications",
+    "close": "Close",
+    "pageTitle": "Notifications",
+    "pageDescription": "A record of updates about your bookings, sessions, and account.",
+    "loadMore": "Load more"
+  },
   "booking": {
     "widgetTitle": "Book a session",
     "noAvailability": "This tutor hasn't set their availability yet.",

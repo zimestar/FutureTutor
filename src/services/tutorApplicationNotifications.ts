@@ -94,6 +94,13 @@ export async function emitTutorApplicationEvent(tx: Prisma.TransactionClient, pa
     type: `tutor_application.${params.event.toLowerCase()}`,
     title: params.inAppTitle,
     body: params.inAppBody,
+    // NOTIFICATION-CENTER1 — tutorProfileId isn't actually needed to build
+    // this event's deep link (resolveNotificationLink sends every
+    // tutor_application.* type to the fixed /tutor/dashboard route, which
+    // needs no id since it's always "the viewer's own" dashboard), but is
+    // recorded anyway for support/audit consistency with every other
+    // producer's metadata shape.
+    metadata: { tutorProfileId: params.tutorProfileId },
   });
 
   await tx.tutorApplicationNotification.createMany({

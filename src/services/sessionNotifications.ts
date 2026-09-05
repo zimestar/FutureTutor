@@ -92,6 +92,11 @@ export async function emitSessionNotificationEvent(tx: Prisma.TransactionClient,
     type: `session.${params.event.toLowerCase()}`,
     title: params.inAppTitle,
     body: params.inAppBody,
+    // NOTIFICATION-CENTER1 — bookingId is what lets the in-app notification
+    // center deep-link this row to /session/<bookingId> (resolveNotificationLink),
+    // matching the exact metadata shape payments.ts's own booking-related
+    // notifyUser calls already use.
+    metadata: { bookingId: params.bookingId },
   });
 
   await tx.sessionNotification.createMany({
