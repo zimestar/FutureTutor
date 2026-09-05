@@ -41,6 +41,15 @@ describe("resolveNotificationLink", () => {
   it("never derives a link by parsing body text — only ever reads the structured metadata object", () => {
     expect(resolveNotificationLink("booking.confirmed", "bookingId: b1")).toBeNull();
   });
+
+  it("MESSAGING-MVP1C item 10 — message.new resolves to /messages/<conversationId>", () => {
+    expect(resolveNotificationLink("message.new", { conversationId: "conv-1" })).toBe("/messages/conv-1");
+  });
+
+  it("MESSAGING-MVP1C — message.new without a conversationId has no link, never guesses", () => {
+    expect(resolveNotificationLink("message.new", {})).toBeNull();
+    expect(resolveNotificationLink("message.new", { conversationId: 123 })).toBeNull();
+  });
 });
 
 describe("toNotificationDto", () => {

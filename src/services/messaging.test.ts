@@ -31,6 +31,10 @@ const mocks = vi.hoisted(() => ({
   messageFindMany: vi.fn(),
   messageFindFirst: vi.fn(),
   messageCount: vi.fn(),
+  notificationFindFirst: vi.fn(),
+  notificationCreate: vi.fn(),
+  notificationUpdate: vi.fn(),
+  notificationUpdateMany: vi.fn(),
   transaction: vi.fn(),
 }));
 
@@ -58,6 +62,12 @@ vi.mock("@/lib/db", () => ({
     },
     conversationParticipant: { upsert: mocks.conversationParticipantUpsert, findUnique: mocks.conversationParticipantFindUnique },
     message: { create: mocks.messageCreate, findMany: mocks.messageFindMany, findFirst: mocks.messageFindFirst, count: mocks.messageCount },
+    notification: {
+      findFirst: mocks.notificationFindFirst,
+      create: mocks.notificationCreate,
+      update: mocks.notificationUpdate,
+      updateMany: mocks.notificationUpdateMany,
+    },
     $transaction: mocks.transaction,
   },
 }));
@@ -101,6 +111,10 @@ beforeEach(() => {
   mocks.messageFindMany.mockResolvedValue([]);
   mocks.messageFindFirst.mockResolvedValue(null);
   mocks.messageCount.mockResolvedValue(0);
+  mocks.notificationFindFirst.mockResolvedValue(null);
+  mocks.notificationCreate.mockResolvedValue({});
+  mocks.notificationUpdate.mockResolvedValue({});
+  mocks.notificationUpdateMany.mockResolvedValue({ count: 0 });
   mocks.transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
     fn({
       message: { create: mocks.messageCreate },
@@ -250,13 +264,7 @@ describe("sendMessage", () => {
     expect(source).not.toMatch(/db\.payment\.|db\.refund\.|db\.tutorEarning\.|db\.tutorTransfer\.|db\.booking\.(update|create|delete)/);
   });
 
-  it("item 36 — never creates a Notification row", async () => {
-    const fs = await import("node:fs/promises");
-    const source = await fs.readFile(new URL("./messaging.ts", import.meta.url), "utf-8");
-    expect(source).not.toMatch(/notification\.create|notifyUser/);
-  });
-
-  it("item 37 — never calls an email provider", async () => {
+  it("MESSAGING-MVP1C — message.new Notification writes are now expected (superseded by the dedicated describe block below); this module still never calls an email provider", async () => {
     const fs = await import("node:fs/promises");
     const source = await fs.readFile(new URL("./messaging.ts", import.meta.url), "utf-8");
     expect(source.toLowerCase()).not.toMatch(/resend|sendemail|email\.send/);
@@ -490,5 +498,198 @@ describe("listNewerMessages (polling)", () => {
     const result = await listNewerMessages(ACTOR, CONVERSATION_ID, new Date());
     expect(result).toEqual({ ok: false, reason: "NOT_AUTHORIZED" });
     expect(mocks.messageFindMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("sendMessage — message.new Notification integration", () => {
+  const TUTOR_USER_ID = "tutor-user-1";
+  const STUDENT_USER_ID = "student-user-1";
+  const GUARDIAN_A = "guardian-user-a";
+  const GUARDIAN_B = "guardian-user-b";
+
+  function selfManagedConversationRow() {
+    return {
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Sam", userId: STUDENT_USER_ID, managementMode: "SELF_MANAGED" },
+      tutorProfile: { userId: TUTOR_USER_ID, user: { name: "Matthew Allen" } },
+    };
+  }
+
+  function guardianManagedConversationRow() {
+    return {
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Emma", userId: "emma-restricted-login", managementMode: "GUARDIAN_MANAGED" },
+      tutorProfile: { userId: TUTOR_USER_ID, user: { name: "Matthew Allen" } },
+    };
+  }
+
+  it("item 1/3 — self-managed: tutor sends -> the student is notified", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    expect(mocks.notificationCreate).toHaveBeenCalledTimes(1);
+    const call = mocks.notificationCreate.mock.calls[0]![0];
+    expect(call.data.userId).toBe(STUDENT_USER_ID);
+    expect(call.data.type).toBe("message.new");
+  });
+
+  it("item 2/4 — self-managed: student sends -> the tutor is notified, sender never notified", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+
+    await sendMessage(STUDENT_USER_ID, CONVERSATION_ID, "hello");
+
+    expect(mocks.notificationCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.notificationCreate.mock.calls[0]![0].data.userId).toBe(TUTOR_USER_ID);
+  });
+
+  it("item 5/6 — guardian-managed: a guardian sends -> tutor + the OTHER active guardian notified, sender excluded", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(guardianManagedConversationRow());
+    mocks.parentStudentRelationshipFindMany.mockResolvedValue([
+      { parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } },
+      { parentProfile: { userId: GUARDIAN_B, firstName: "Alex" } },
+    ]);
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) =>
+      userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A || userId === GUARDIAN_B ? "GUARDIAN" : null
+    );
+
+    await sendMessage(GUARDIAN_A, CONVERSATION_ID, "hello");
+
+    const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId).sort();
+    expect(notifiedUserIds).toEqual([GUARDIAN_B, TUTOR_USER_ID].sort());
+  });
+
+  it("item 5 — guardian-managed: tutor sends -> ALL active guardians notified", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(guardianManagedConversationRow());
+    mocks.parentStudentRelationshipFindMany.mockResolvedValue([
+      { parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } },
+      { parentProfile: { userId: GUARDIAN_B, firstName: "Alex" } },
+    ]);
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) =>
+      userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A || userId === GUARDIAN_B ? "GUARDIAN" : null
+    );
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId).sort();
+    expect(notifiedUserIds).toEqual([GUARDIAN_A, GUARDIAN_B].sort());
+  });
+
+  it("item 7 — a REVOKED guardian (absent from the authoritative party directory) is never notified", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(guardianManagedConversationRow());
+    // Only the still-ACTIVE guardian is returned — a revoked one is simply
+    // absent, exactly like getConversationParties itself derives it.
+    mocks.parentStudentRelationshipFindMany.mockResolvedValue([{ parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } }]);
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A ? "GUARDIAN" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId);
+    expect(notifiedUserIds).toEqual([GUARDIAN_A]);
+  });
+
+  it("item 8 — a GUARDIAN_MANAGED student's own userId is never notified", async () => {
+    const row = guardianManagedConversationRow();
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(row);
+    mocks.parentStudentRelationshipFindMany.mockResolvedValue([{ parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } }]);
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A ? "GUARDIAN" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId);
+    expect(notifiedUserIds).not.toContain(row.studentProfile.userId);
+  });
+
+  it("item 9 — notification metadata carries ONLY conversationId", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    const call = mocks.notificationCreate.mock.calls[0]![0];
+    expect(call.data.metadata).toEqual({ conversationId: CONVERSATION_ID });
+    expect(Object.keys(call.data.metadata)).toEqual(["conversationId"]);
+  });
+
+  it("item 12 — no message body is ever included in the Notification title/body", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "this is the private message body");
+
+    const call = mocks.notificationCreate.mock.calls[0]![0];
+    expect(call.data.title).not.toContain("this is the private message body");
+    expect(call.data.body).not.toContain("this is the private message body");
+  });
+
+  it("item 13 — a second rapid message from the same sender UPDATES the existing unread notification rather than creating a second row", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+    mocks.notificationFindFirst.mockResolvedValue({ id: "existing-notif-1" });
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "second message");
+
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+    expect(mocks.notificationUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "existing-notif-1" } }));
+  });
+
+  it("item 14/15 — the collapse lookup is scoped to BOTH the specific recipient and the specific conversation", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: STUDENT_USER_ID,
+          type: "message.new",
+          readAt: null,
+          metadata: { path: ["conversationId"], equals: CONVERSATION_ID },
+        }),
+      })
+    );
+  });
+
+  it("item 17 — a Notification failure never fails or rolls back the Message send", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
+    mocks.notificationFindFirst.mockRejectedValue(new Error("notification db down"));
+
+    const result = await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    expect(result.ok).toBe(true);
+  });
+
+  it("no notification is ever attempted for an unauthorized/failed send", async () => {
+    mocks.canSendConversationMessage.mockResolvedValue({ ok: false, reason: "OUTSIDE_COMMUNICATION_WINDOW" });
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+    expect(mocks.notificationUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("markConversationRead — Notification read sync", () => {
+  it("item 16 — marking a conversation read also marks its unread message.new Notification read, scoped to the caller only", async () => {
+    await markConversationRead(ACTOR, CONVERSATION_ID);
+    expect(mocks.notificationUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: ACTOR,
+          type: "message.new",
+          readAt: null,
+          metadata: { path: ["conversationId"], equals: CONVERSATION_ID },
+        }),
+      })
+    );
+  });
+
+  it("a failure marking notifications read never fails the primary mark-read operation", async () => {
+    mocks.notificationUpdateMany.mockRejectedValue(new Error("db down"));
+    const result = await markConversationRead(ACTOR, CONVERSATION_ID);
+    expect(result).toEqual({ ok: true });
   });
 });

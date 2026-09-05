@@ -56,6 +56,16 @@ enum AdminPermission {
   ADMIN_PRICING_MANAGE
   ADMIN_ADMINS_VIEW
   ADMIN_ADMINS_MANAGE
+  // MESSAGING-MVP1C — a dedicated pair rather than reusing an existing
+  // permission: private message content is materially more sensitive than
+  // the aggregate/financial data every other existing admin permission
+  // gates, so no existing permission is a safe semantic fit. Deliberately
+  // NOT auto-granted to any existing ADMIN (only SUPER_ADMIN gets it
+  // automatically, per adminNavItems' existing "SUPER_ADMIN -> all
+  // permissions" rule) — normal admin access must be explicitly assigned,
+  // per this mission's own requirement.
+  ADMIN_MESSAGE_REPORTS_READ
+  ADMIN_MESSAGE_REPORTS_MANAGE
 }
 
 model User {
@@ -89,6 +99,8 @@ model User {
   tutorProfile                    TutorProfile?
   sentMessages                    Message[]                   @relation("MessageSender")
   conversations                   ConversationParticipant[]
+  messageReportsFiled             MessageReport[]             @relation("MessageReportReporter")
+  messageReportsResolved          MessageReport[]             @relation("MessageReportResolvedBy")
   notifications                   Notification[]
   notificationPreference          NotificationPreference?
   auditLogs                       AuditLog[]                  @relation("AuditActor")
@@ -1943,6 +1955,7 @@ model Conversation {
   tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id])
   participants   ConversationParticipant[]
   messages       Message[]
+  reports        MessageReport[]
 
   @@unique([studentProfileId, tutorProfileId])
   @@index([tutorProfileId, lastMessageAt])
@@ -1981,8 +1994,60 @@ model Message {
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation("MessageSender", fields: [senderUserId], references: [id])
+  reports      MessageReport[]
 
   @@index([conversationId, createdAt])
+}
+
+enum MessageReportReason {
+  INAPPROPRIATE_CONTENT
+  HARASSMENT
+  OFF_PLATFORM_REQUEST
+  SAFETY_CONCERN
+  SPAM
+  OTHER
+}
+
+enum MessageReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+}
+
+/// MESSAGING-MVP1C — reporting is participant-initiated only (see
+/// messageReports.ts: reporterUserId is always the authenticated caller,
+/// and creation requires canReadConversation on the reported Message's own
+/// Conversation at write time — a client-supplied messageId alone never
+/// grants access to an unrelated conversation). @@unique below makes a
+/// second report by the SAME user for the SAME message a DB-enforced
+/// no-op path (the service treats a race/duplicate as idempotent), never a
+/// duplicate row — different participants may each independently report
+/// the same Message, which is exactly what the absence of any other
+/// uniqueness constraint here permits.
+model MessageReport {
+  id               String              @id @default(cuid())
+  messageId        String
+  conversationId   String
+  reporterUserId   String
+  reason           MessageReportReason
+  /// Plain text only, bounded (1000 chars, enforced at the service
+  /// boundary before this row is ever written) — same "never HTML, never
+  /// Markdown" discipline as Message.body.
+  detail           String?             @db.Text
+  status           MessageReportStatus @default(OPEN)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+
+  message        Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  reporter       User         @relation("MessageReportReporter", fields: [reporterUserId], references: [id])
+  resolvedByUser User?        @relation("MessageReportResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([messageId, reporterUserId])
+  @@index([status, createdAt])
+  @@index([conversationId])
 }
 
 // ---------------------------------------------------------------------------

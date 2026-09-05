@@ -934,6 +934,7 @@
       "payments": "Paiements des clients",
       "financialOps": "Opérations financières",
       "messages": "Messages",
+      "messageReports": "Signalements de messages",
       "family": "Mes élèves",
       "familyInvitations": "Invitations familiales",
       "findTutor": "Trouver un tuteur",
@@ -1550,6 +1551,48 @@
       "empty": "Aucune rémunération de tuteur ne correspond à ces filtres.",
       "bankPayoutNote": "FutureTutor ne suit pas localement l'état du dépôt bancaire. Une rémunération « Transférée » signifie que FutureTutor a envoyé les fonds au compte de versement connecté du tuteur — Stripe effectue ensuite le dépôt dans le compte bancaire du tuteur selon le calendrier propre à ce compte."
     },
+    "messageReports": {
+      "title": "Signalements de messages",
+      "description": "Examinez les messages signalés par un participant. C'est le seul moyen de consulter le contenu privé d'une conversation — il n'existe aucune boîte de réception générale.",
+      "empty": "Aucun signalement ne correspond à ces filtres.",
+      "reportedBy": "{reporter} a signalé un message de {sender}",
+      "viewDetail": "Voir le signalement",
+      "nextPage": "Page suivante",
+      "detailTitle": "Détail du signalement",
+      "detailDescription": "Contexte de conversation limité autour du message signalé, à des fins d'examen de sécurité uniquement.",
+      "guardianContext": "Tuteur légal : {names}",
+      "reportedByLine": "Signalé par {reporter}",
+      "contextTitle": "Contexte de la conversation",
+      "contextBoundedNote": "Affiche jusqu'à 5 messages avant et après le message signalé — pas l'historique complet de la conversation.",
+      "reportedMessageLabel": "Message signalé",
+      "filters": {
+        "status": "État",
+        "reason": "Motif",
+        "from": "À partir de",
+        "to": "Jusqu'à",
+        "all": "Tous",
+        "apply": "Appliquer les filtres"
+      },
+      "status": {
+        "OPEN": "Ouvert",
+        "UNDER_REVIEW": "En cours d'examen",
+        "RESOLVED": "Résolu"
+      },
+      "reason": {
+        "label": "Motif",
+        "INAPPROPRIATE_CONTENT": "Contenu inapproprié",
+        "HARASSMENT": "Harcèlement",
+        "OFF_PLATFORM_REQUEST": "Demande de communiquer hors plateforme",
+        "SAFETY_CONCERN": "Préoccupation de sécurité",
+        "SPAM": "Pourriel",
+        "OTHER": "Autre"
+      },
+      "actions": {
+        "markUnderReview": "Marquer en cours d'examen",
+        "markResolved": "Marquer résolu",
+        "error": "Impossible de mettre à jour ce signalement — veuillez réessayer."
+      }
+    },
     "pricing": {
       "title": "Tarification et rémunération",
       "description": "FutureTutor établit indépendamment les prix clients et la rémunération des tuteurs. Modifier une règle déjà utilisée par un devis crée une nouvelle version sans réécrire l’historique.",
@@ -1883,6 +1926,29 @@
         "NOT_AUTHORIZED": "Vous n'avez plus accès à cette conversation.",
         "READ_ONLY": "Cette conversation est actuellement en lecture seule.",
         "UNAVAILABLE": "Nous n'avons pas pu envoyer votre message. Veuillez réessayer."
+      }
+    },
+    "report": {
+      "action": "Signaler",
+      "title": "Signaler ce message",
+      "description": "Faites-nous savoir si ce message n'a pas sa place sur FutureTutor. Notre équipe l'examinera.",
+      "reasonLabel": "Motif",
+      "detailLabel": "Détails supplémentaires (facultatif)",
+      "cancel": "Annuler",
+      "submit": "Envoyer le signalement",
+      "submitting": "Envoi…",
+      "close": "Fermer",
+      "done": "Terminé",
+      "success": "Merci — votre signalement a été soumis pour examen.",
+      "alreadyReported": "Vous avez déjà signalé ce message. Notre équipe en est informée.",
+      "error": "Nous n'avons pas pu envoyer votre signalement. Veuillez réessayer.",
+      "reasons": {
+        "INAPPROPRIATE_CONTENT": "Contenu inapproprié",
+        "HARASSMENT": "Harcèlement",
+        "OFF_PLATFORM_REQUEST": "Demande de communiquer hors plateforme",
+        "SAFETY_CONCERN": "Préoccupation de sécurité",
+        "SPAM": "Pourriel",
+        "OTHER": "Autre"
       }
     }
   },

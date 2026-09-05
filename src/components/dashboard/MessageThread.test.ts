@@ -68,7 +68,22 @@ describe("MessageThread.tsx", () => {
     expect(source).toMatch(/data-testid=\{sessionContext\.kind === "upcoming" \? "upcoming-session-banner" : "recent-session-banner"\}/);
   });
 
-  it("item 40/41/42 — no Notification/email/financial call exists in this component", () => {
+  it("no Notification/email/financial call exists directly in this component", () => {
     expect(source).not.toMatch(/notifyUser|notification\.create|resend|stripe|payment\.|refund\./i);
+  });
+
+  it("a Report action is offered only on OTHER participants' messages, never on the viewer's own", () => {
+    expect(source).toMatch(/\{!isOwn && \(/);
+    expect(source).toContain('data-testid="report-message-button"');
+  });
+
+  it("reporting never edits/hides/deletes the message from the thread — it only opens the report dialog", () => {
+    expect(source).toContain("setReportingMessageId(message.id)");
+    expect(source).not.toMatch(/setMessages\([^)]*filter/);
+  });
+
+  it("renders exactly one MessageReportDialog instance, reused across messages via state", () => {
+    const matches = source.match(/<MessageReportDialog/g) ?? [];
+    expect(matches).toHaveLength(1);
   });
 });

@@ -32,6 +32,13 @@ export function resolveNotificationLink(type: string, metadata: unknown): string
   if (type.startsWith("tutor_application.")) return "/tutor/dashboard";
   if (type === "tutor_transfer.completed") return "/tutor/payouts";
   if (type.startsWith("quickmatch.")) return "/tutor/quick-match";
+  // MESSAGING-MVP1C — metadata carries only { conversationId }, an opaque
+  // id, never authorization: /messages/[conversationId] independently
+  // re-authorizes via canReadConversation on every load, exactly like
+  // /session/<bookingId> already does for the booking-family types above.
+  if (type === "message.new" && typeof meta.conversationId === "string" && meta.conversationId.length > 0) {
+    return `/messages/${meta.conversationId}`;
+  }
   return null;
 }
 

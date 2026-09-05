@@ -934,6 +934,7 @@
       "payments": "Payments",
       "financialOps": "Financial Operations",
       "messages": "Messages",
+      "messageReports": "Message Reports",
       "family": "My Students",
       "familyInvitations": "Family Invitations",
       "findTutor": "Find a Tutor",
@@ -1550,6 +1551,48 @@
       "empty": "No tutor earnings match these filters.",
       "bankPayoutNote": "FutureTutor does not track bank deposit status locally. A \"Transferred\" earning means FutureTutor has sent funds to the tutor's connected payout account — Stripe still deposits to the tutor's bank according to that account's own payout schedule."
     },
+    "messageReports": {
+      "title": "Message Reports",
+      "description": "Review messages reported by a participant. This is the only way to view private conversation content — there is no general browse-all inbox.",
+      "empty": "No reports match these filters.",
+      "reportedBy": "{reporter} reported a message from {sender}",
+      "viewDetail": "View report",
+      "nextPage": "Next page",
+      "detailTitle": "Report detail",
+      "detailDescription": "Bounded conversation context around the reported message, for safety review only.",
+      "guardianContext": "Guardian: {names}",
+      "reportedByLine": "Reported by {reporter}",
+      "contextTitle": "Conversation context",
+      "contextBoundedNote": "Showing up to 5 messages before and after the reported message — not the full conversation history.",
+      "reportedMessageLabel": "Reported message",
+      "filters": {
+        "status": "Status",
+        "reason": "Reason",
+        "from": "From",
+        "to": "To",
+        "all": "All",
+        "apply": "Apply filters"
+      },
+      "status": {
+        "OPEN": "Open",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Resolved"
+      },
+      "reason": {
+        "label": "Reason",
+        "INAPPROPRIATE_CONTENT": "Inappropriate content",
+        "HARASSMENT": "Harassment",
+        "OFF_PLATFORM_REQUEST": "Request to communicate off-platform",
+        "SAFETY_CONCERN": "Safety concern",
+        "SPAM": "Spam",
+        "OTHER": "Other"
+      },
+      "actions": {
+        "markUnderReview": "Mark under review",
+        "markResolved": "Mark resolved",
+        "error": "Couldn't update this report — please try again."
+      }
+    },
     "pricing": {
       "title": "Pricing & Payouts",
       "description": "FutureTutor sets customer prices and Tutor payouts independently. Editing a rule already used by a quote creates a new version instead of rewriting history.",
@@ -1883,6 +1926,29 @@
         "NOT_AUTHORIZED": "You no longer have access to this conversation.",
         "READ_ONLY": "This conversation is currently read-only.",
         "UNAVAILABLE": "We couldn't send your message. Please try again."
+      }
+    },
+    "report": {
+      "action": "Report",
+      "title": "Report this message",
+      "description": "Let us know if this message doesn't belong on FutureTutor. Our team will review it.",
+      "reasonLabel": "Reason",
+      "detailLabel": "Additional details (optional)",
+      "cancel": "Cancel",
+      "submit": "Submit report",
+      "submitting": "Submitting…",
+      "close": "Close",
+      "done": "Done",
+      "success": "Thanks — your report has been submitted for review.",
+      "alreadyReported": "You've already reported this message. Our team is aware.",
+      "error": "We couldn't submit your report. Please try again.",
+      "reasons": {
+        "INAPPROPRIATE_CONTENT": "Inappropriate content",
+        "HARASSMENT": "Harassment",
+        "OFF_PLATFORM_REQUEST": "Request to communicate off-platform",
+        "SAFETY_CONCERN": "Safety concern",
+        "SPAM": "Spam",
+        "OTHER": "Other"
       }
     }
   },

@@ -173,7 +173,140 @@ export async function sendMessage(actorUserId: string, conversationId: string, r
     return created;
   });
 
+  // Notification side effects run strictly AFTER the Message transaction
+  // has committed, and are wrapped so they can never surface a failure to
+  // this function's caller — a successful send must never be undone or
+  // reported as failed merely because notification delivery had a problem.
+  // See notifyMessageRecipients' own doc comment for the full design.
+  await notifyMessageRecipients(conversationId, actorUserId).catch(() => {});
+
   return { ok: true, message };
+}
+
+// ---------------------------------------------------------------------------
+// MESSAGING-MVP1C — new-message Notification Center integration.
+//
+// Recipients are derived from the SAME authoritative party directory
+// getConversationParties already uses for thread display names (never from
+// ConversationParticipant rows, never from stale membership) — this is what
+// makes "notify every currently-authorized OTHER participant" automatically
+// correct: a REVOKED guardian's userId is already absent from that map, and
+// a GUARDIAN_MANAGED student's own userId was never in it to begin with.
+//
+// Burst collapsing: reuses (does not replace) the existing Notification
+// model — no schema change was needed. For a given (recipientUserId,
+// conversationId), an already-unread message.new Notification is UPDATED
+// in place (new title/body, createdAt bumped to now so it correctly
+// re-sorts to the top of a chronological list) rather than a second row
+// being inserted; only when no unread row exists yet is a new one created.
+// This intentionally reuses Notification.createdAt as a plain writable
+// column — nothing elsewhere in this codebase treats a Notification row's
+// createdAt as an immutable historical fact the way AuditLog.createdAt is
+// (AuditLog remains the actual immutable audit trail; Notification has
+// always been a mutable-by-mark-read inbox item, and this collapse
+// behavior is a small, consistent extension of that, not a new global
+// semantic). A benign, accepted race exists if two messages from the same
+// sender in the same conversation are sent at truly the same instant
+// (extremely unlikely given messages are sent sequentially, awaited one at
+// a time) — worst case is two rows instead of one, never a correctness or
+// privacy issue.
+// ---------------------------------------------------------------------------
+
+const MESSAGE_NOTIFICATION_TYPE = "message.new";
+
+const MESSAGE_NOTIFICATION_COPY: Record<"en" | "fr", { title: (sender: string) => string; body: (student: string, tutor: string) => string }> = {
+  en: {
+    title: (sender) => `New message from ${sender}`,
+    body: (student, tutor) => `${student}'s tutoring with ${tutor}`,
+  },
+  fr: {
+    title: (sender) => `Nouveau message de ${sender}`,
+    body: (student, tutor) => `Tutorat de ${student} avec ${tutor}`,
+  },
+};
+
+/** TutorProfile has no locale field anywhere in the schema — established
+ * convention (sessionNotifications.ts): a tutor recipient always gets "en".
+ * A student/guardian recipient's own preferredLanguage is authoritative. */
+async function resolveMessageRecipientLocale(
+  recipientUserId: string,
+  role: "TUTOR" | "GUARDIAN" | "STUDENT",
+  studentProfileId: string
+): Promise<"en" | "fr"> {
+  if (role === "TUTOR") return "en";
+  if (role === "STUDENT") {
+    const student = await db.studentProfile.findUnique({ where: { id: studentProfileId }, select: { preferredLanguage: true } });
+    return student?.preferredLanguage === "fr" ? "fr" : "en";
+  }
+  const guardian = await db.parentProfile.findUnique({ where: { userId: recipientUserId }, select: { preferredLanguage: true } });
+  return guardian?.preferredLanguage === "fr" ? "fr" : "en";
+}
+
+async function upsertMessageNotification(recipientUserId: string, conversationId: string, title: string, body: string): Promise<void> {
+  const existing = await db.notification.findFirst({
+    where: {
+      userId: recipientUserId,
+      type: MESSAGE_NOTIFICATION_TYPE,
+      readAt: null,
+      metadata: { path: ["conversationId"], equals: conversationId },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await db.notification.update({ where: { id: existing.id }, data: { title, body, createdAt: new Date() } });
+    return;
+  }
+
+  await db.notification.create({
+    data: {
+      userId: recipientUserId,
+      type: MESSAGE_NOTIFICATION_TYPE,
+      title,
+      body,
+      channel: "IN_APP",
+      metadata: { conversationId },
+    },
+  });
+}
+
+async function notifyMessageRecipients(conversationId: string, senderUserId: string): Promise<void> {
+  const parties = await getConversationParties(senderUserId, conversationId);
+  if (!parties) return; // defensive — the sender was already authorized to send
+
+  const senderName = parties.names[senderUserId] ?? "";
+  const recipientUserIds = Object.keys(parties.names).filter((id) => id !== senderUserId);
+
+  for (const recipientUserId of recipientUserIds) {
+    const role = await resolveParticipantRole(db, recipientUserId, {
+      conversationId,
+      studentProfileId: parties.studentProfileId,
+      tutorProfileId: parties.tutorProfileId,
+    });
+    if (!role) continue; // defensive — every key in parties.names should always resolve a role
+
+    const locale = await resolveMessageRecipientLocale(recipientUserId, role, parties.studentProfileId);
+    const copy = MESSAGE_NOTIFICATION_COPY[locale];
+    await upsertMessageNotification(recipientUserId, conversationId, copy.title(senderName), copy.body(parties.studentFirstName, parties.tutorFirstName));
+  }
+}
+
+/** Marks any unread message.new Notification for this (user, conversation)
+ * pair as read — called from markConversationRead so the bell never shows
+ * a stale "new message" notification for a thread the user just opened.
+ * Idempotent (guarded on readAt: null) and scoped entirely to the caller's
+ * own userId. Best-effort: never allowed to fail the primary mark-read
+ * operation it's attached to. */
+async function markMessageNotificationsRead(userId: string, conversationId: string): Promise<void> {
+  await db.notification.updateMany({
+    where: {
+      userId,
+      type: MESSAGE_NOTIFICATION_TYPE,
+      readAt: null,
+      metadata: { path: ["conversationId"], equals: conversationId },
+    },
+    data: { readAt: new Date() },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -548,6 +681,11 @@ export async function markConversationRead(actorUserId: string, conversationId: 
     create: { conversationId, userId: actorUserId, role, lastReadAt: now },
     update: { lastReadAt: now },
   });
+
+  // Keeps the Notification Center bell from showing a stale "new message"
+  // notification for a thread the user just opened — see the doc comment
+  // on markMessageNotificationsRead for the full rationale.
+  await markMessageNotificationsRead(actorUserId, conversationId).catch(() => {});
 
   return { ok: true };
 }

@@ -4,7 +4,7 @@ import { useCallback, useState, type ReactNode } from "react";
 import {
   BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText,
   GraduationCap, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search,
-  SlidersHorizontal, Sparkles, UserRound, UsersRound, WalletCards,
+  ShieldAlert, SlidersHorizontal, Sparkles, UserRound, UsersRound, WalletCards,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -64,6 +64,7 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/admin/quick-match": Sparkles,
   "/admin/payments": CreditCard,
   "/admin/financial-ops": WalletCards,
+  "/admin/message-reports": ShieldAlert,
 };
 
 function isActiveRoute(pathname: string, href: string) {

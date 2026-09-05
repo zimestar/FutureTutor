@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Alert } from "@/components/ui/Feedback";
 import { MessageComposer } from "@/components/dashboard/MessageComposer";
+import { MessageReportDialog } from "@/components/dashboard/MessageReportDialog";
 import {
   getNewerMessagesAction,
   getOlderMessagesAction,
@@ -53,6 +54,7 @@ export function MessageThread({
   const [olderCursor, setOlderCursor] = useState(initialCursor);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [showNewMessagesBanner, setShowNewMessagesBanner] = useState(false);
+  const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -199,7 +201,19 @@ export function MessageThread({
                     >
                       <p className="whitespace-pre-wrap break-words text-[15px]">{message.body}</p>
                     </div>
-                    <span className="mt-0.5 text-[11px] text-text-muted">{dateTimeFormatter.format(new Date(message.createdAt))}</span>
+                    <span className="mt-0.5 flex items-center gap-2 text-[11px] text-text-muted">
+                      {dateTimeFormatter.format(new Date(message.createdAt))}
+                      {!isOwn && (
+                        <button
+                          type="button"
+                          onClick={() => setReportingMessageId(message.id)}
+                          className="font-semibold text-text-muted underline-offset-2 hover:text-error hover:underline"
+                          data-testid="report-message-button"
+                        >
+                          {t("report.action")}
+                        </button>
+                      )}
+                    </span>
                   </li>
                 );
               })}
@@ -228,6 +242,8 @@ export function MessageThread({
           <MessageComposer onSend={handleSend} disabled={!canSend} disabledReason={disabledReason} placeholder={t("composer.placeholder")} />
         </div>
       </div>
+
+      <MessageReportDialog messageId={reportingMessageId} open={reportingMessageId !== null} onClose={() => setReportingMessageId(null)} />
     </div>
   );
 }
