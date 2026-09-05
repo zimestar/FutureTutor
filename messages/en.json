@@ -704,6 +704,87 @@
     "buttonLabel": "View your bookings",
     "footer": "Questions about this booking? Visit your FutureTutor dashboard."
   },
+  "sessionNotificationEmail": {
+    "greeting": "Hi {name},",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "modeLabel": "Format",
+    "modeOnline": "Online",
+    "modeInPerson": "In person",
+    "subjectLabel": "Subject",
+    "levelLabel": "Level",
+    "ctaLabel": "View session details",
+    "footer": "You're receiving this email about an upcoming FutureTutor session.",
+    "onlineNote": "You'll be able to join the online classroom from your dashboard shortly before the session starts.",
+    "cancelledByYouLabel": "You cancelled this session.",
+    "cancelledByOtherPartyLabel": "The session was cancelled.",
+    "cancelledByPlatformLabel": "The session was cancelled by the FutureTutor team.",
+    "adjustmentNote": "Any applicable payment adjustment will be shown in your account.",
+    "tutor": {
+      "SESSION_REMINDER_24H": {
+        "subject": "Reminder: your session is tomorrow — FutureTutor",
+        "heading": "Upcoming session tomorrow",
+        "intro": "This is a reminder that you have a tutoring session with {learner} tomorrow."
+      },
+      "SESSION_REMINDER_2H": {
+        "subject": "Reminder: your session starts soon — FutureTutor",
+        "heading": "Upcoming session soon",
+        "intro": "This is a reminder that you have a tutoring session with {learner} starting soon."
+      },
+      "SESSION_CANCELLED": {
+        "subject": "A session was cancelled — FutureTutor",
+        "heading": "Session cancelled",
+        "intro": "Your session with {learner} has been cancelled."
+      },
+      "SESSION_NO_SHOW_TUTOR": {
+        "subject": "Missed session — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show you did not check in for your session with {learner}."
+      },
+      "SESSION_NO_SHOW_LEARNER": {
+        "subject": "Your learner did not check in — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show {learner} did not check in for your session."
+      },
+      "SESSION_NO_SHOW_UNRESOLVED": {
+        "subject": "Session marked as missed — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show neither you nor {learner} checked in for this session."
+      }
+    },
+    "payer": {
+      "SESSION_REMINDER_24H": {
+        "subject": "Reminder: your session is tomorrow — FutureTutor",
+        "heading": "Upcoming session tomorrow",
+        "intro": "This is a reminder that your session with {tutor} is tomorrow."
+      },
+      "SESSION_REMINDER_2H": {
+        "subject": "Reminder: your session starts soon — FutureTutor",
+        "heading": "Upcoming session soon",
+        "intro": "This is a reminder that your session with {tutor} is starting soon."
+      },
+      "SESSION_CANCELLED": {
+        "subject": "Your session was cancelled — FutureTutor",
+        "heading": "Session cancelled",
+        "intro": "Your session with {tutor} has been cancelled."
+      },
+      "SESSION_NO_SHOW_TUTOR": {
+        "subject": "Your tutor did not check in — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show {tutor} did not check in for this session."
+      },
+      "SESSION_NO_SHOW_LEARNER": {
+        "subject": "Missed session — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show no one checked in on your side for the session with {tutor}."
+      },
+      "SESSION_NO_SHOW_UNRESOLVED": {
+        "subject": "Session marked as missed — FutureTutor",
+        "heading": "Session marked as missed",
+        "intro": "Our records show neither side checked in for the session with {tutor}."
+      }
+    }
+  },
   "tutorApplicationEmail": {
     "greeting": "Hi {name},",
     "updatedByTeam": "Your application was updated by the FutureTutor team.",

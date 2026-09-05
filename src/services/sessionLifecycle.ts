@@ -10,6 +10,8 @@ import {
   type SessionCheckInActorRole,
   type SessionViewerRole,
 } from "@/services/sessionAuthorization";
+import { emitSessionNotificationEvent, dispatchSessionNotificationsAfterCommit } from "@/services/sessionNotifications";
+import type { SessionNotificationEvent } from "@/generated/prisma/enums";
 
 /**
  * Session Lifecycle Phase 2 — the transactional check-in service and the
@@ -396,6 +398,51 @@ async function applyNoShowConvergenceIfDue(
     select: { status: true },
   });
 
+  // PROD-SESSION-NOTIFICATIONS1 — notify only when THIS invocation's own
+  // updateMany performed the write (transitioned === true), never on a
+  // redundant/concurrent observation of an already-converged session —
+  // this is exactly what `transitioned` exists to distinguish, and it's
+  // why the notification hook lives here rather than in either caller:
+  // this is the single guarded write path both callers share, so neither
+  // can advance Session_ to NO_SHOW without this notification firing
+  // exactly once. `decision` is guaranteed to be one of the three
+  // terminal outcomes here (isTerminalNoShowDecision gated the write
+  // above) — never NOT_APPLICABLE/NOT_YET_DUE/NO_TRANSITION_DUAL_PRESENT.
+  if (transitioned) {
+    const event: SessionNotificationEvent =
+      decision === "STUDENT_NO_SHOW"
+        ? "SESSION_NO_SHOW_LEARNER"
+        : decision === "TUTOR_NO_SHOW"
+          ? "SESSION_NO_SHOW_TUTOR"
+          : "SESSION_NO_SHOW_UNRESOLVED";
+    const payment = await tx.payment.findUnique({ where: { bookingId: facts.bookingId }, select: { payerUserId: true } });
+
+    const inAppCopy = {
+      title: "Session marked as missed",
+      body: "This session was marked as missed based on check-in records.",
+    };
+    await emitSessionNotificationEvent(tx, {
+      bookingId: facts.bookingId,
+      recipientUserId: facts.tutorProfileUserId,
+      recipientRole: "TUTOR",
+      event,
+      dedupeKey: `session:${facts.bookingId}:${event}:TUTOR`,
+      inAppTitle: inAppCopy.title,
+      inAppBody: inAppCopy.body,
+    });
+    if (payment) {
+      await emitSessionNotificationEvent(tx, {
+        bookingId: facts.bookingId,
+        recipientUserId: payment.payerUserId,
+        recipientRole: "PAYER",
+        event,
+        dedupeKey: `session:${facts.bookingId}:${event}:PAYER`,
+        inAppTitle: inAppCopy.title,
+        inAppBody: inAppCopy.body,
+      });
+    }
+  }
+
   return { decision, transitioned, sessionStatus: finalSession.status, tutorHasCheckedIn, studentHasCheckedIn };
 }
 
@@ -595,6 +642,15 @@ export async function recordSessionCheckIn(
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     )
   );
+
+  // PROD-SESSION-NOTIFICATIONS1 — dispatch strictly after commit,
+  // regardless of whether this check-in is about to be rejected below:
+  // step 3.5's embedded convergence may have performed (and already
+  // notified for) a NO_SHOW write even on a call that ultimately throws.
+  // Cheap no-op the vast majority of the time (dispatchSessionNotifications'
+  // own `pending.length === 0` early-return, since most check-ins never
+  // trigger convergence at all).
+  await dispatchSessionNotificationsAfterCommit(bookingId);
 
   // The convergence-first step (3.5) returns a marker rather than throwing,
   // so that its own NO_SHOW write (if this call's own updateMany performed
@@ -915,7 +971,7 @@ export async function resolveSessionNoShowConvergence(
 ): Promise<SessionNoShowConvergenceResult> {
   const clock = options.clock ?? (() => new Date());
 
-  return withSerializableRetry(() =>
+  const result = await withSerializableRetry(() =>
     db.$transaction(
       async (tx) => {
         // Fresh-read Booking + Session_ + attendance evidence, inside the
@@ -939,6 +995,16 @@ export async function resolveSessionNoShowConvergence(
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
     )
   );
+
+  // PROD-SESSION-NOTIFICATIONS1 — dispatch strictly after commit, never
+  // inside the transaction above. Cheap no-op when `transitioned` is
+  // false (dispatchSessionNotifications' own `pending.length === 0`
+  // early-return) or when a concurrent caller already handled it.
+  if (result.transitioned) {
+    await dispatchSessionNotificationsAfterCommit(result.bookingId);
+  }
+
+  return result;
 }
 
 export interface SweepDueNoShowConvergenceResult {

@@ -7,8 +7,8 @@ import { convergeCancelledBookingPayment } from "@/services/payments";
 import { revokeVideoAccessForCancelledBooking } from "@/services/videoSession";
 import { createDailyVideoProvider } from "@/services/dailyVideoProvider";
 import { writeAuditLog } from "@/lib/audit";
-import { notifyUser } from "@/lib/notify";
 import { withSerializableRetry } from "@/lib/serializableRetry";
+import { emitSessionNotificationEvent, dispatchSessionNotificationsAfterCommit } from "@/services/sessionNotifications";
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -352,16 +352,40 @@ export async function cancelBookingWithRefund(
         });
       }
 
-      // Tutor notification — always fires on any cancellation (unless the
-      // tutor is the one who cancelled, they already know), independent of
-      // payment outcome (§X).
+      // PROD-SESSION-NOTIFICATIONS1 — cancellation notification (email +
+      // in-app, one durable event) to whichever side(s) did NOT initiate
+      // the cancellation (they already know; mirrors this file's own
+      // prior tutor-only, in-app-only precedent, now unified and extended
+      // to the payer side too, which previously received nothing at all).
+      // cancelledByRelation is relative to the RECIPIENT, never the raw
+      // actor identity — "OTHER_PARTY" when the other side of this same
+      // booking cancelled, "PLATFORM" when neither did (an admin/
+      // super-admin action). Never invents refund status here — that
+      // remains convergeCancelledBookingPayment's job, entirely outside
+      // this transaction (Phase 2 below).
+      const isPayerCancelling = booking.payment?.payerUserId != null && booking.payment.payerUserId === actorUserId;
       if (!isTutorCancelling) {
-        await notifyUser(tx, {
-          userId: booking.tutorProfile.userId,
-          type: "booking.cancelled_notify_tutor",
-          title: "Session cancelled",
-          body: "One of your upcoming sessions was cancelled.",
-          metadata: { bookingId: booking.id },
+        await emitSessionNotificationEvent(tx, {
+          bookingId: booking.id,
+          recipientUserId: booking.tutorProfile.userId,
+          recipientRole: "TUTOR",
+          event: "SESSION_CANCELLED",
+          dedupeKey: `session:${booking.id}:SESSION_CANCELLED:TUTOR`,
+          detail: { cancelledByRelation: isPayerCancelling ? "OTHER_PARTY" : "PLATFORM" },
+          inAppTitle: "Session cancelled",
+          inAppBody: "One of your upcoming sessions was cancelled.",
+        });
+      }
+      if (!isPayerCancelling && booking.payment) {
+        await emitSessionNotificationEvent(tx, {
+          bookingId: booking.id,
+          recipientUserId: booking.payment.payerUserId,
+          recipientRole: "PAYER",
+          event: "SESSION_CANCELLED",
+          dedupeKey: `session:${booking.id}:SESSION_CANCELLED:PAYER`,
+          detail: { cancelledByRelation: isTutorCancelling ? "OTHER_PARTY" : "PLATFORM" },
+          inAppTitle: "Session cancelled",
+          inAppBody: "One of your upcoming sessions was cancelled.",
         });
       }
 
@@ -405,4 +429,12 @@ export async function cancelBookingWithRefund(
       console.error("revokeVideoAccessForCancelledBooking failed after a successful cancellation (non-fatal)", result.bookingId, error);
     }
   }
+
+  // PROD-SESSION-NOTIFICATIONS1 — email dispatch for the cancellation
+  // notification row(s) created above, strictly after commit, same
+  // non-blocking shape as the two calls above: a provider failure here
+  // never surfaces as a cancellation failure and never touches Payment/
+  // Refund/TutorEarning/TutorTransfer state (dispatchSessionNotifications
+  // only ever reads Booking/Payment for display and writes SessionNotification).
+  await dispatchSessionNotificationsAfterCommit(result.bookingId);
 }

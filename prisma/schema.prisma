@@ -1008,22 +1008,23 @@ model Booking {
   // location can never retroactively change an already-snapshotted Booking.
   bookingArrivalInstructions String?
 
-  studentProfile     StudentProfile             @relation(fields: [studentProfileId], references: [id])
-  tutorProfile       TutorProfile               @relation(fields: [tutorProfileId], references: [id])
-  subject            Subject                    @relation(fields: [subjectId], references: [id])
-  academicLevel      AcademicLevel?             @relation(fields: [academicLevelId], references: [id])
-  customerPriceQuote CustomerPriceQuote?        @relation(fields: [customerPriceQuoteId], references: [id])
-  tutorPayoutQuote   TutorPayoutQuote?          @relation(fields: [tutorPayoutQuoteId], references: [id])
-  tutoringRequest    TutoringRequest?           @relation(fields: [tutoringRequestId], references: [id])
-  winningInvitation  TutorInvitation?
-  statusHistory      BookingStatusHistory[]
-  session            Session_?
-  payment            Payment?
-  earning            TutorEarning?
-  refunds            Refund[]
-  review             Review?
-  conversation       Conversation?
-  emailNotifications BookingEmailNotification[]
+  studentProfile       StudentProfile             @relation(fields: [studentProfileId], references: [id])
+  tutorProfile         TutorProfile               @relation(fields: [tutorProfileId], references: [id])
+  subject              Subject                    @relation(fields: [subjectId], references: [id])
+  academicLevel        AcademicLevel?             @relation(fields: [academicLevelId], references: [id])
+  customerPriceQuote   CustomerPriceQuote?        @relation(fields: [customerPriceQuoteId], references: [id])
+  tutorPayoutQuote     TutorPayoutQuote?          @relation(fields: [tutorPayoutQuoteId], references: [id])
+  tutoringRequest      TutoringRequest?           @relation(fields: [tutoringRequestId], references: [id])
+  winningInvitation    TutorInvitation?
+  statusHistory        BookingStatusHistory[]
+  session              Session_?
+  payment              Payment?
+  earning              TutorEarning?
+  refunds              Refund[]
+  review               Review?
+  conversation         Conversation?
+  emailNotifications   BookingEmailNotification[]
+  sessionNotifications SessionNotification[]
 
   @@index([studentProfileId])
   @@index([tutorProfileId])
@@ -2128,6 +2129,76 @@ model TutorApplicationNotification {
   @@unique([dedupeKey])
   @@index([status])
   @@index([tutorProfileId, createdAt])
+}
+
+// PROD-SESSION-NOTIFICATIONS1 — durable outbox for session-lifecycle emails
+// (reminders, cancellation, no-show), mirroring TutorApplicationNotification's
+// exact design (content-derived dedupeKey, not merely
+// [bookingId, recipientRole], since a booking can legitimately receive
+// several distinct event types over its lifetime — a 24h reminder, a 2h
+// reminder, and, in exactly one of those or a cancellation, a terminal
+// event). Unlike TutorApplicationNotification, contextSnapshot carries
+// almost nothing frozen: subject/level/mode/startAt/endAt/timezone are
+// re-read live from Booking at dispatch time, safe to do because no
+// reschedule capability exists in this codebase (BookingStatus.RESCHEDULED
+// is a dead enum member with zero writers) — so those fields are
+// effectively immutable for the life of a Booking. contextSnapshot is used
+// only for the one genuinely event-specific fact a cancellation needs
+// (cancelledByRelation), so the same recipient never receives a
+// notification implying they cancelled their own session.
+enum SessionNotificationEvent {
+  SESSION_REMINDER_24H
+  SESSION_REMINDER_2H
+  SESSION_CANCELLED
+  SESSION_NO_SHOW_TUTOR
+  SESSION_NO_SHOW_LEARNER
+  SESSION_NO_SHOW_UNRESOLVED
+}
+
+enum SessionNotificationRecipientRole {
+  TUTOR
+  PAYER
+}
+
+enum SessionNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model SessionNotification {
+  id                String                           @id @default(cuid())
+  bookingId         String
+  event             SessionNotificationEvent
+  recipientRole     SessionNotificationRecipientRole
+  // Deterministic, content-derived idempotency key
+  // (`session:<bookingId>:<event>:<role>`) — see
+  // src/services/sessionNotifications.ts. A repeated cron tick, Railway
+  // restart, or duplicate server action can never produce a second row for
+  // the same real occurrence.
+  dedupeKey         String
+  // Resolved and stamped at row-creation time — the dispatcher re-resolves
+  // the actual email address fresh from User at send time, same discipline
+  // as BookingEmailNotification/TutorApplicationNotification.
+  recipientUserId   String
+  status            SessionNotificationStatus        @default(PENDING)
+  attemptCount      Int                              @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  error             String?
+  providerMessageId String?
+  // Event-specific detail only (e.g. { cancelledByRelation: "TUTOR" }) —
+  // never financial figures, never refund status (this layer never
+  // computes or duplicates refund/payout state — see
+  // src/services/cancellationPolicy.ts for the one authoritative source).
+  contextSnapshot   Json
+  createdAt         DateTime                         @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([dedupeKey])
+  @@index([status])
+  @@index([bookingId, createdAt])
 }
 
 // ---------------------------------------------------------------------------

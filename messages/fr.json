@@ -704,6 +704,87 @@
     "buttonLabel": "Voir vos réservations",
     "footer": "Des questions sur cette réservation? Visitez votre tableau de bord FutureTutor."
   },
+  "sessionNotificationEmail": {
+    "greeting": "Bonjour {name},",
+    "dateLabel": "Date",
+    "timeLabel": "Heure",
+    "modeLabel": "Format",
+    "modeOnline": "En ligne",
+    "modeInPerson": "En personne",
+    "subjectLabel": "Matière",
+    "levelLabel": "Niveau",
+    "ctaLabel": "Voir les détails de la séance",
+    "footer": "Vous recevez cet e-mail au sujet d'une séance FutureTutor à venir.",
+    "onlineNote": "Vous pourrez rejoindre la salle de classe en ligne depuis votre tableau de bord peu avant le début de la séance.",
+    "cancelledByYouLabel": "Vous avez annulé cette séance.",
+    "cancelledByOtherPartyLabel": "La séance a été annulée.",
+    "cancelledByPlatformLabel": "La séance a été annulée par l'équipe FutureTutor.",
+    "adjustmentNote": "Tout ajustement de paiement applicable sera indiqué dans votre compte.",
+    "tutor": {
+      "SESSION_REMINDER_24H": {
+        "subject": "Rappel : votre séance est demain — FutureTutor",
+        "heading": "Séance à venir demain",
+        "intro": "Ceci est un rappel que vous avez une séance de tutorat avec {learner} demain."
+      },
+      "SESSION_REMINDER_2H": {
+        "subject": "Rappel : votre séance commence bientôt — FutureTutor",
+        "heading": "Séance à venir bientôt",
+        "intro": "Ceci est un rappel que vous avez une séance de tutorat avec {learner} qui commence bientôt."
+      },
+      "SESSION_CANCELLED": {
+        "subject": "Une séance a été annulée — FutureTutor",
+        "heading": "Séance annulée",
+        "intro": "Votre séance avec {learner} a été annulée."
+      },
+      "SESSION_NO_SHOW_TUTOR": {
+        "subject": "Séance manquée — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent que vous ne vous êtes pas enregistré pour votre séance avec {learner}."
+      },
+      "SESSION_NO_SHOW_LEARNER": {
+        "subject": "Votre apprenant ne s'est pas enregistré — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent que {learner} ne s'est pas enregistré pour votre séance."
+      },
+      "SESSION_NO_SHOW_UNRESOLVED": {
+        "subject": "Séance marquée comme manquée — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent que ni vous ni {learner} ne vous êtes enregistrés pour cette séance."
+      }
+    },
+    "payer": {
+      "SESSION_REMINDER_24H": {
+        "subject": "Rappel : votre séance est demain — FutureTutor",
+        "heading": "Séance à venir demain",
+        "intro": "Ceci est un rappel que votre séance avec {tutor} est demain."
+      },
+      "SESSION_REMINDER_2H": {
+        "subject": "Rappel : votre séance commence bientôt — FutureTutor",
+        "heading": "Séance à venir bientôt",
+        "intro": "Ceci est un rappel que votre séance avec {tutor} commence bientôt."
+      },
+      "SESSION_CANCELLED": {
+        "subject": "Votre séance a été annulée — FutureTutor",
+        "heading": "Séance annulée",
+        "intro": "Votre séance avec {tutor} a été annulée."
+      },
+      "SESSION_NO_SHOW_TUTOR": {
+        "subject": "Votre tuteur ne s'est pas enregistré — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent que {tutor} ne s'est pas enregistré pour cette séance."
+      },
+      "SESSION_NO_SHOW_LEARNER": {
+        "subject": "Séance manquée — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent que personne ne s'est enregistré de votre côté pour la séance avec {tutor}."
+      },
+      "SESSION_NO_SHOW_UNRESOLVED": {
+        "subject": "Séance marquée comme manquée — FutureTutor",
+        "heading": "Séance marquée comme manquée",
+        "intro": "Nos registres indiquent qu'aucune des deux parties ne s'est enregistrée pour la séance avec {tutor}."
+      }
+    }
+  },
   "tutorApplicationEmail": {
     "greeting": "Bonjour {name},",
     "updatedByTeam": "Votre dossier a été mis à jour par l'équipe FutureTutor.",
