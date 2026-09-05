@@ -17,6 +17,13 @@ const items: ReadonlyArray<{ key: string; href: string; group: "operationsGroup"
   { key: "familyInvitations", href: "/admin/family", group: "operationsGroup", permission: "ADMIN_GUARDIANS_READ" },
   { key: "pricing", href: "/admin/pricing", group: "financeGroup", permission: "ADMIN_PRICING_READ" },
   { key: "payments", href: "/admin/payments", group: "financeGroup", permission: "ADMIN_PAYMENTS_READ" },
+  // ADMIN-FINANCIAL-OPS1A — reuses ADMIN_PAYMENTS_READ rather than adding a
+  // new AdminPermission enum value: this page is a read-only extension of
+  // the same "financial visibility" concern /admin/payments already gates
+  // on, and avoiding a new enum value means no migration is needed and no
+  // existing ADMIN (already granted ADMIN_PAYMENTS_READ, since that page is
+  // already live) is unexpectedly locked out of seeing it.
+  { key: "financialOps", href: "/admin/financial-ops", group: "financeGroup", permission: "ADMIN_PAYMENTS_READ" },
 ];
 
 export async function adminNavItems(tNav: (key: string) => string, user: AdminNavUser): Promise<DashboardNavItem[]> {

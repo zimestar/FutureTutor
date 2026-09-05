@@ -932,6 +932,7 @@
       "payouts": "Payouts",
       "tutorAgreement": "Tutor Agreement",
       "payments": "Payments",
+      "financialOps": "Financial Operations",
       "family": "My Students",
       "familyInvitations": "Family Invitations",
       "findTutor": "Find a Tutor",
@@ -1436,6 +1437,117 @@
       "earning": "earning: {status}",
       "checking": "Checking…",
       "reconcile": "Re-check with Stripe"
+    },
+    "financialOps": {
+      "title": "Financial Operations",
+      "description": "Read-only visibility into every Tutor earning and transfer. This page never executes a financial action — no earning, transfer, payment, or refund can be created, changed, or triggered here.",
+      "summary": {
+        "totalCount": "Earnings shown",
+        "totalAmount": "Total amount",
+        "pendingSessionOutcome": "Pending session outcome",
+        "waiting24h": "Waiting 24h delay",
+        "awaitingConvergence": "Awaiting convergence",
+        "eligible": "Eligible",
+        "held": "Held",
+        "transferPending": "Transfer pending",
+        "transferred": "Transferred",
+        "transferFailed": "Transfer failed"
+      },
+      "filters": {
+        "search": "Search",
+        "searchPlaceholder": "Tutor name, booking ID, or earning ID",
+        "earningStatus": "Earning status",
+        "transferStatus": "Transfer status",
+        "reason": "Operational reason",
+        "from": "Session from",
+        "to": "Session to",
+        "all": "All",
+        "none": "No transfer record",
+        "apply": "Apply filters"
+      },
+      "table": {
+        "tutor": "Tutor",
+        "amount": "Amount",
+        "subject": "Subject",
+        "session": "Session",
+        "sessionOutcome": "Session outcome",
+        "earningStatus": "Earning status",
+        "delayAnchor": "Delay anchor",
+        "expectedEligibility": "Expected eligibility",
+        "persistedEligibleAt": "Persisted eligible at",
+        "notYetPersisted": "Not yet persisted",
+        "transfer": "Transfer",
+        "noTransfer": "No transfer record",
+        "transferReference": "Reference",
+        "viewBooking": "View booking",
+        "viewTutor": "View tutor"
+      },
+      "delayAnchor": {
+        "completion": "Session completed",
+        "studentNoShow": "Student no-show confirmed",
+        "none": "—"
+      },
+      "sessionOutcome": {
+        "SCHEDULED": "Not yet held",
+        "IN_PROGRESS": "In progress",
+        "COMPLETED": "Completed",
+        "NO_SHOW": "No-show",
+        "INTERRUPTED": "Interrupted",
+        "CANCELLED": "Cancelled",
+        "none": "No session record"
+      },
+      "reason": {
+        "pendingSessionOutcome": {
+          "label": "Pending session outcome",
+          "description": "The session has not yet reached an authoritative payable outcome."
+        },
+        "waiting24h": {
+          "label": "Waiting 24h delay",
+          "description": "The session outcome is finalized, but the mandatory 24-hour financial delay has not yet elapsed."
+        },
+        "awaitingConvergence": {
+          "label": "Awaiting convergence",
+          "description": "The 24-hour delay has already elapsed, but eligibility has not yet been recorded for this earning. Observation only — this page cannot trigger that step."
+        },
+        "eligible": {
+          "label": "Eligible",
+          "description": "This earning is eligible for transfer. No transfer has necessarily been created yet."
+        },
+        "heldTutorNoShow": {
+          "label": "Held — tutor no-show",
+          "description": "Held because the session's persisted outcome is a tutor no-show."
+        },
+        "heldNoShowUnresolved": {
+          "label": "Held — unresolved no-show",
+          "description": "Held because neither party's attendance was confirmed for this session."
+        },
+        "heldInterrupted": {
+          "label": "Held — interrupted",
+          "description": "Held because the session ended early."
+        },
+        "heldUnknown": {
+          "label": "Held",
+          "description": "This earning is held. The underlying session facts don't map to a specific known reason — needs review."
+        },
+        "transferPending": {
+          "label": "Transfer pending",
+          "description": "A transfer record exists for this earning and has not yet completed."
+        },
+        "transferred": {
+          "label": "Transferred",
+          "description": "FutureTutor has sent this payment to the tutor's connected payout account. Bank deposit status is not tracked locally — Stripe handles the eventual deposit on that account's own schedule."
+        },
+        "transferFailed": {
+          "label": "Transfer failed",
+          "description": "The transfer attempt for this earning failed and has not been retried from this page."
+        },
+        "cancelled": {
+          "label": "Cancelled",
+          "description": "This earning was cancelled and is not progressing to transfer."
+        }
+      },
+      "empty": "No tutor earnings match these filters.",
+      "bankPayoutNote": "FutureTutor does not track bank deposit status locally. A \"Transferred\" earning means FutureTutor has sent funds to the tutor's connected payout account — Stripe still deposits to the tutor's bank according to that account's own payout schedule."
     },
     "pricing": {
       "title": "Pricing & Payouts",

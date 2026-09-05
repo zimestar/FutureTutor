@@ -932,6 +932,7 @@
       "payouts": "Paiements",
       "tutorAgreement": "Entente des tuteurs",
       "payments": "Paiements des clients",
+      "financialOps": "Opérations financières",
       "family": "Mes élèves",
       "familyInvitations": "Invitations familiales",
       "findTutor": "Trouver un tuteur",
@@ -1436,6 +1437,117 @@
       "earning": "rémunération : {status}",
       "checking": "Vérification…",
       "reconcile": "Revérifier avec Stripe"
+    },
+    "financialOps": {
+      "title": "Opérations financières",
+      "description": "Visibilité en lecture seule sur chaque rémunération et transfert de tuteur. Cette page n'exécute jamais d'action financière — aucune rémunération, transfert, paiement ou remboursement ne peut être créé, modifié ou déclenché ici.",
+      "summary": {
+        "totalCount": "Rémunérations affichées",
+        "totalAmount": "Montant total",
+        "pendingSessionOutcome": "Résultat de séance en attente",
+        "waiting24h": "Délai de 24 h en cours",
+        "awaitingConvergence": "En attente de convergence",
+        "eligible": "Admissible",
+        "held": "En suspens",
+        "transferPending": "Transfert en attente",
+        "transferred": "Transféré",
+        "transferFailed": "Transfert échoué"
+      },
+      "filters": {
+        "search": "Recherche",
+        "searchPlaceholder": "Nom du tuteur, ID de réservation ou ID de rémunération",
+        "earningStatus": "État de la rémunération",
+        "transferStatus": "État du transfert",
+        "reason": "Motif opérationnel",
+        "from": "Séance à partir de",
+        "to": "Séance jusqu'à",
+        "all": "Tous",
+        "none": "Aucun transfert",
+        "apply": "Appliquer les filtres"
+      },
+      "table": {
+        "tutor": "Tuteur",
+        "amount": "Montant",
+        "subject": "Matière",
+        "session": "Séance",
+        "sessionOutcome": "Résultat de la séance",
+        "earningStatus": "État de la rémunération",
+        "delayAnchor": "Point d'ancrage du délai",
+        "expectedEligibility": "Admissibilité prévue",
+        "persistedEligibleAt": "Admissibilité enregistrée",
+        "notYetPersisted": "Pas encore enregistrée",
+        "transfer": "Transfert",
+        "noTransfer": "Aucun transfert",
+        "transferReference": "Référence",
+        "viewBooking": "Voir la réservation",
+        "viewTutor": "Voir le tuteur"
+      },
+      "delayAnchor": {
+        "completion": "Séance terminée",
+        "studentNoShow": "Absence de l'élève confirmée",
+        "none": "—"
+      },
+      "sessionOutcome": {
+        "SCHEDULED": "Pas encore tenue",
+        "IN_PROGRESS": "En cours",
+        "COMPLETED": "Terminée",
+        "NO_SHOW": "Absence",
+        "INTERRUPTED": "Interrompue",
+        "CANCELLED": "Annulée",
+        "none": "Aucun enregistrement de séance"
+      },
+      "reason": {
+        "pendingSessionOutcome": {
+          "label": "Résultat de séance en attente",
+          "description": "La séance n'a pas encore atteint un résultat admissible et faisant autorité."
+        },
+        "waiting24h": {
+          "label": "Délai de 24 h en cours",
+          "description": "Le résultat de la séance est finalisé, mais le délai financier obligatoire de 24 heures n'est pas encore écoulé."
+        },
+        "awaitingConvergence": {
+          "label": "En attente de convergence",
+          "description": "Le délai de 24 heures est déjà écoulé, mais l'admissibilité n'a pas encore été enregistrée pour cette rémunération. Observation uniquement — cette page ne peut pas déclencher cette étape."
+        },
+        "eligible": {
+          "label": "Admissible",
+          "description": "Cette rémunération est admissible au transfert. Aucun transfert n'a nécessairement encore été créé."
+        },
+        "heldTutorNoShow": {
+          "label": "En suspens — absence du tuteur",
+          "description": "En suspens car le résultat enregistré de la séance est une absence du tuteur."
+        },
+        "heldNoShowUnresolved": {
+          "label": "En suspens — absence non résolue",
+          "description": "En suspens car la présence d'aucune des deux parties n'a été confirmée pour cette séance."
+        },
+        "heldInterrupted": {
+          "label": "En suspens — interrompue",
+          "description": "En suspens car la séance s'est terminée tôt."
+        },
+        "heldUnknown": {
+          "label": "En suspens",
+          "description": "Cette rémunération est en suspens. Les faits de la séance ne correspondent à aucun motif connu précis — nécessite une vérification."
+        },
+        "transferPending": {
+          "label": "Transfert en attente",
+          "description": "Un enregistrement de transfert existe pour cette rémunération et n'est pas encore terminé."
+        },
+        "transferred": {
+          "label": "Transféré",
+          "description": "FutureTutor a envoyé ce paiement au compte de versement connecté du tuteur. L'état du dépôt bancaire n'est pas suivi localement — Stripe gère le dépôt éventuel selon le calendrier propre à ce compte."
+        },
+        "transferFailed": {
+          "label": "Transfert échoué",
+          "description": "La tentative de transfert pour cette rémunération a échoué et n'a pas été retentée depuis cette page."
+        },
+        "cancelled": {
+          "label": "Annulé",
+          "description": "Cette rémunération a été annulée et ne progresse pas vers le transfert."
+        }
+      },
+      "empty": "Aucune rémunération de tuteur ne correspond à ces filtres.",
+      "bankPayoutNote": "FutureTutor ne suit pas localement l'état du dépôt bancaire. Une rémunération « Transférée » signifie que FutureTutor a envoyé les fonds au compte de versement connecté du tuteur — Stripe effectue ensuite le dépôt dans le compte bancaire du tuteur selon le calendrier propre à ce compte."
     },
     "pricing": {
       "title": "Tarification et rémunération",

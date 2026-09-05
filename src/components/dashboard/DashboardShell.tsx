@@ -62,6 +62,7 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/admin/pricing": SlidersHorizontal,
   "/admin/quick-match": Sparkles,
   "/admin/payments": CreditCard,
+  "/admin/financial-ops": WalletCards,
 };
 
 function isActiveRoute(pathname: string, href: string) {
