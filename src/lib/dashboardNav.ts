@@ -23,6 +23,7 @@ export function getStudentDashboardNavItems(
   if (role === "PARENT") {
     items.push({ label: tNav("family"), href: "/dashboard/family", group: tNav("accountGroup") });
   }
+  items.push({ label: tNav("payments"), href: "/dashboard/payments", group: tNav("accountGroup") });
   items.push({ label: tNav("profile"), href: "/dashboard/profile", group: tNav("accountGroup") });
   return items;
 }

@@ -1737,6 +1737,31 @@
     "pageDescription": "Un historique des mises à jour concernant vos réservations, séances et votre compte.",
     "loadMore": "Afficher plus"
   },
+  "paymentHistory": {
+    "pageTitle": "Historique des paiements",
+    "pageDescription": "Détails de paiement pour vos séances.",
+    "empty": "Vous n'avez encore aucun paiement.",
+    "loadMore": "Afficher plus",
+    "withTutor": "avec {name}",
+    "genericPaymentTitle": "Détails du paiement",
+    "sessionOn": "Séance le {when}",
+    "paidOn": "Payé le {date}",
+    "viewSession": "Voir la séance",
+    "refundedAmount": "Remboursé {amount}",
+    "netPaid": "Net payé {amount}",
+    "showRefundHistory": "Afficher l'historique des remboursements",
+    "hideRefundHistory": "Masquer l'historique des remboursements",
+    "status": {
+      "PAID": "Payé",
+      "PARTIALLY_REFUNDED": "Partiellement remboursé",
+      "REFUNDED": "Remboursé"
+    },
+    "refundStatus": {
+      "PENDING": "Remboursement en cours",
+      "SUCCEEDED": "Remboursé",
+      "FAILED": "Échec du remboursement"
+    }
+  },
   "booking": {
     "widgetTitle": "Réserver une séance",
     "noAvailability": "Ce tuteur n'a pas encore défini ses disponibilités.",

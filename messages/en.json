@@ -1737,6 +1737,31 @@
     "pageDescription": "A record of updates about your bookings, sessions, and account.",
     "loadMore": "Load more"
   },
+  "paymentHistory": {
+    "pageTitle": "Payment history",
+    "pageDescription": "Payment details for your sessions.",
+    "empty": "You don't have any payments yet.",
+    "loadMore": "Load more",
+    "withTutor": "with {name}",
+    "genericPaymentTitle": "Payment details",
+    "sessionOn": "Session on {when}",
+    "paidOn": "Paid on {date}",
+    "viewSession": "View session",
+    "refundedAmount": "Refunded {amount}",
+    "netPaid": "Net paid {amount}",
+    "showRefundHistory": "Show refund history",
+    "hideRefundHistory": "Hide refund history",
+    "status": {
+      "PAID": "Paid",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded"
+    },
+    "refundStatus": {
+      "PENDING": "Refund pending",
+      "SUCCEEDED": "Refunded",
+      "FAILED": "Refund failed"
+    }
+  },
   "booking": {
     "widgetTitle": "Book a session",
     "noAvailability": "This tutor hasn't set their availability yet.",
