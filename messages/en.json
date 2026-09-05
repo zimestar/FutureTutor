@@ -933,6 +933,7 @@
       "tutorAgreement": "Tutor Agreement",
       "payments": "Payments",
       "financialOps": "Financial Operations",
+      "messages": "Messages",
       "family": "My Students",
       "familyInvitations": "Family Invitations",
       "findTutor": "Find a Tutor",
@@ -1848,6 +1849,42 @@
     "pageTitle": "Notifications",
     "pageDescription": "A record of updates about your bookings, sessions, and account.",
     "loadMore": "Load more"
+  },
+  "messaging": {
+    "list": {
+      "title": "Messages",
+      "description": "Message your tutor or your family's tutors directly — no need to share personal contact details.",
+      "emptyTitle": "No conversations yet",
+      "emptyDescription": "Messaging becomes available once you have a confirmed tutoring session with a tutor.",
+      "guardianTitle": "{student} & {tutor}",
+      "guardianContext": "Guardian: {names}",
+      "noMessagesYet": "No messages yet — say hello!"
+    },
+    "thread": {
+      "guardianTitle": "{student} & {tutor}",
+      "you": "You",
+      "otherParticipant": "Participant",
+      "readOnlyWindow": "This conversation is read-only because there's no active or recent tutoring session. Booking another session with this tutor will reopen messaging.",
+      "readOnlyGeneric": "You can't send messages in this conversation right now.",
+      "upcomingSession": "Upcoming session",
+      "recentSession": "Recent session",
+      "loadEarlier": "Load earlier messages",
+      "loading": "Loading…",
+      "emptyFirstMessage": "No messages yet. Send the first one to get started.",
+      "newMessages": "New messages"
+    },
+    "composer": {
+      "placeholder": "Write a message…",
+      "send": "Send",
+      "sending": "Sending…",
+      "contactInfoWarning": "For your safety and support, we recommend keeping communication on FutureTutor.",
+      "error": {
+        "VALIDATION": "Your message couldn't be sent — please check its length.",
+        "NOT_AUTHORIZED": "You no longer have access to this conversation.",
+        "READ_ONLY": "This conversation is currently read-only.",
+        "UNAVAILABLE": "We couldn't send your message. Please try again."
+      }
+    }
   },
   "paymentHistory": {
     "pageTitle": "Payment history",

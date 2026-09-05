@@ -10,6 +10,7 @@ export function tutorNavItems(
       { label: tNav("overview"), href: "/tutor/dashboard", group: tNav("tutoringGroup") },
       { label: tNav("quickMatch"), href: "/tutor/quick-match", group: tNav("tutoringGroup") },
       { label: tNav("bookings"), href: "/tutor/bookings", group: tNav("tutoringGroup") },
+      { label: tNav("messages"), href: "/messages", group: tNav("tutoringGroup") },
       { label: tNav("availability"), href: "/tutor/availability", group: tNav("tutoringGroup") },
       { label: tNav("payouts"), href: "/tutor/payouts", group: tNav("tutoringGroup") },
       { label: tNav("profile"), href: "/tutor/profile", group: tNav("tutoringGroup") },

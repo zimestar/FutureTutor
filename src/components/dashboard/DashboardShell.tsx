@@ -3,7 +3,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import {
   BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText,
-  GraduationCap, Heart, LayoutDashboard, LogOut, Menu, Search,
+  GraduationCap, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search,
   SlidersHorizontal, Sparkles, UserRound, UsersRound, WalletCards,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -41,6 +41,7 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/dashboard/favorites": Heart,
   "/dashboard/quick-match": Sparkles,
   "/dashboard/bookings": CalendarDays,
+  "/messages": MessageCircle,
   "/dashboard/payments": CreditCard,
   "/dashboard/profile": UserRound,
   "/dashboard/family": UsersRound,

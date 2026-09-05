@@ -18,6 +18,7 @@ export function getStudentDashboardNavItems(
     { label: tNav("findTutor"), href: "/dashboard/find-tutors", group: tNav("learningGroup") },
     { label: tNav("quickMatch"), href: "/dashboard/quick-match", group: tNav("learningGroup") },
     { label: tNav("bookings"), href: "/dashboard/bookings", group: tNav("learningGroup") },
+    { label: tNav("messages"), href: "/messages", group: tNav("learningGroup") },
     { label: tNav("favorites"), href: "/dashboard/favorites", group: tNav("learningGroup") },
   ];
   if (role === "PARENT") {

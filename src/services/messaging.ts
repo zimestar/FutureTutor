@@ -218,6 +218,35 @@ export async function listConversationMessages(
   };
 }
 
+export type ListNewerMessagesResult =
+  | { ok: true; items: Array<{ id: string; senderUserId: string; body: string; createdAt: Date }> }
+  | { ok: false; reason: "NOT_AUTHORIZED" };
+
+/**
+ * Powers polling: every message strictly newer than `afterCreatedAt`,
+ * ascending, bounded at MESSAGE_PAGE_LIMIT. No cursor/nextCursor — a
+ * 5-10s poll interval means a burst large enough to hit the bound would be
+ * exceptional, and the UI simply polls again immediately after, rather
+ * than this function pretending to support unbounded catch-up in one call.
+ */
+export async function listNewerMessages(
+  actorUserId: string,
+  conversationId: string,
+  afterCreatedAt: Date
+): Promise<ListNewerMessagesResult> {
+  const authorized = await canReadConversation(db, actorUserId, conversationId);
+  if (!authorized) return { ok: false, reason: "NOT_AUTHORIZED" };
+
+  const items = await db.message.findMany({
+    where: { conversationId, createdAt: { gt: afterCreatedAt } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: MESSAGE_PAGE_LIMIT,
+    select: { id: true, senderUserId: true, body: true, createdAt: true },
+  });
+
+  return { ok: true, items };
+}
+
 // ---------------------------------------------------------------------------
 // Mark read
 // ---------------------------------------------------------------------------
@@ -234,6 +263,270 @@ export type MarkReadResult = { ok: true } | { ok: false; reason: "NOT_AUTHORIZED
  * row (guarded by the same upsert + unique constraint as everywhere else
  * in this file).
  */
+// ---------------------------------------------------------------------------
+// Conversation list — lazy relationship discovery
+// ---------------------------------------------------------------------------
+
+export interface ConversationSessionContext {
+  kind: "upcoming" | "recent" | "none";
+  bookingId: string | null;
+  subjectSlug: string | null;
+  startAt: Date | null;
+  endAt: Date | null;
+  timezone: string | null;
+}
+
+/** The most relevant CONFIRMED booking for a (student, tutor) pair, for
+ * display context only — never assumes one booking per conversation.
+ * Prefers the nearest upcoming/in-progress booking; falls back to the most
+ * recently ended one. No relation to the 30-day send window (a purely
+ * display-oriented lookup, re-run fresh every call). */
+async function resolveSessionContext(
+  studentProfileId: string,
+  tutorProfileId: string,
+  now: Date
+): Promise<ConversationSessionContext> {
+  const select = {
+    id: true,
+    subject: { select: { slug: true } },
+    startAt: true,
+    endAt: true,
+    timezone: true,
+  } as const;
+
+  const upcoming = await db.booking.findFirst({
+    where: { studentProfileId, tutorProfileId, status: "CONFIRMED", endAt: { gte: now } },
+    orderBy: { startAt: "asc" },
+    select,
+  });
+  if (upcoming) return { kind: "upcoming", bookingId: upcoming.id, subjectSlug: upcoming.subject.slug, startAt: upcoming.startAt, endAt: upcoming.endAt, timezone: upcoming.timezone };
+
+  const recent = await db.booking.findFirst({
+    where: { studentProfileId, tutorProfileId, status: "CONFIRMED", endAt: { lt: now } },
+    orderBy: { endAt: "desc" },
+    select,
+  });
+  if (recent) return { kind: "recent", bookingId: recent.id, subjectSlug: recent.subject.slug, startAt: recent.startAt, endAt: recent.endAt, timezone: recent.timezone };
+
+  return { kind: "none", bookingId: null, subjectSlug: null, startAt: null, endAt: null, timezone: null };
+}
+
+/** Unread = messages newer than the actor's own lastReadAt, excluding the
+ * actor's own messages. A plain count query per conversation — deliberately
+ * NOT a MessageReceipt table (see the design report): at this app's actual
+ * per-user conversation-list scale (a handful of relationships), one count
+ * query per row is cheap and exact; a disproportionately-larger scale would
+ * warrant revisiting this, not V1. */
+async function resolveUnreadCount(client: MessagingAuthorizationClient, conversationId: string, actorUserId: string): Promise<number> {
+  const participant = await client.conversationParticipant.findUnique({
+    where: { conversationId_userId: { conversationId, userId: actorUserId } },
+    select: { lastReadAt: true },
+  });
+  return client.message.count({
+    where: {
+      conversationId,
+      senderUserId: { not: actorUserId },
+      createdAt: { gt: participant?.lastReadAt ?? new Date(0) },
+    },
+  });
+}
+
+export interface ConversationSummary {
+  id: string;
+  studentProfileId: string;
+  tutorProfileId: string;
+  studentFirstName: string;
+  tutorFirstName: string;
+  /** Every currently-ACTIVE guardian's first name, for the tutor's own list
+   * view ("student name + guardian context where appropriate" — design
+   * report). Empty for a SELF_MANAGED student. */
+  guardianFirstNames: string[];
+  lastMessageAt: Date | null;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+  sessionContext: ConversationSessionContext;
+}
+
+/** Every (studentProfileId, tutorProfileId) pair this actor could
+ * legitimately have a conversation for, derived from their own CONFIRMED
+ * bookings — a discovery convenience only. Every pair returned here is
+ * still re-authorized via ensureConversationAccess before anything is
+ * created or returned to the caller (see listMyConversations below); this
+ * function itself grants nothing. A user can appear in more than one branch
+ * (e.g. a tutor who is also a parent) — not mutually exclusive. */
+async function resolveEligiblePairsForActor(actorUserId: string): Promise<Array<{ studentProfileId: string; tutorProfileId: string }>> {
+  const pairs: Array<{ studentProfileId: string; tutorProfileId: string }> = [];
+
+  const tutorProfile = await db.tutorProfile.findUnique({ where: { userId: actorUserId }, select: { id: true } });
+  if (tutorProfile) {
+    const rows = await db.booking.findMany({
+      where: { tutorProfileId: tutorProfile.id, status: "CONFIRMED" },
+      distinct: ["studentProfileId"],
+      select: { studentProfileId: true },
+    });
+    for (const row of rows) pairs.push({ studentProfileId: row.studentProfileId, tutorProfileId: tutorProfile.id });
+  }
+
+  const studentProfile = await db.studentProfile.findUnique({ where: { userId: actorUserId }, select: { id: true, managementMode: true } });
+  if (studentProfile?.managementMode === "SELF_MANAGED") {
+    const rows = await db.booking.findMany({
+      where: { studentProfileId: studentProfile.id, status: "CONFIRMED" },
+      distinct: ["tutorProfileId"],
+      select: { tutorProfileId: true },
+    });
+    for (const row of rows) pairs.push({ studentProfileId: studentProfile.id, tutorProfileId: row.tutorProfileId });
+  }
+
+  const parentProfile = await db.parentProfile.findUnique({ where: { userId: actorUserId }, select: { id: true } });
+  if (parentProfile) {
+    const relationships = await db.parentStudentRelationship.findMany({
+      where: { parentProfileId: parentProfile.id, status: "ACTIVE" },
+      select: { studentProfileId: true },
+    });
+    for (const relationship of relationships) {
+      const rows = await db.booking.findMany({
+        where: { studentProfileId: relationship.studentProfileId, status: "CONFIRMED" },
+        distinct: ["tutorProfileId"],
+        select: { tutorProfileId: true },
+      });
+      for (const row of rows) pairs.push({ studentProfileId: relationship.studentProfileId, tutorProfileId: row.tutorProfileId });
+    }
+  }
+
+  return pairs;
+}
+
+/**
+ * The /messages list entry point. Lazily ensures a Conversation row exists
+ * for every one of the actor's own legitimate relationships (bounded to
+ * their own bookings — never a global/bulk backfill), then returns a
+ * newest-activity-first summary of each. A relationship with no Conversation
+ * row yet and no messages sent still appears (lastMessageAt: null, sorted
+ * last), matching the design report's "messaging becomes available"
+ * framing rather than requiring a first message to appear in the list.
+ */
+export async function listMyConversations(actorUserId: string, now: Date = new Date()): Promise<ConversationSummary[]> {
+  const pairs = await resolveEligiblePairsForActor(actorUserId);
+
+  const conversationIds: string[] = [];
+  for (const pair of pairs) {
+    const access = await ensureConversationAccess(actorUserId, pair.studentProfileId, pair.tutorProfileId);
+    if (access.ok) conversationIds.push(access.conversationId);
+  }
+  if (conversationIds.length === 0) return [];
+
+  const conversations = await db.conversation.findMany({
+    where: { id: { in: conversationIds } },
+    select: {
+      id: true,
+      studentProfileId: true,
+      tutorProfileId: true,
+      lastMessageAt: true,
+      studentProfile: { select: { firstName: true } },
+      tutorProfile: { select: { user: { select: { name: true } } } },
+    },
+  });
+
+  const summaries = await Promise.all(
+    conversations.map(async (conversation) => {
+      const [lastMessage, unreadCount, guardianRows, sessionContext] = await Promise.all([
+        db.message.findFirst({ where: { conversationId: conversation.id }, orderBy: { createdAt: "desc" }, select: { body: true } }),
+        resolveUnreadCount(db, conversation.id, actorUserId),
+        db.parentStudentRelationship.findMany({
+          where: { studentProfileId: conversation.studentProfileId, status: "ACTIVE" },
+          select: { parentProfile: { select: { firstName: true } } },
+        }),
+        resolveSessionContext(conversation.studentProfileId, conversation.tutorProfileId, now),
+      ]);
+
+      return {
+        id: conversation.id,
+        studentProfileId: conversation.studentProfileId,
+        tutorProfileId: conversation.tutorProfileId,
+        studentFirstName: conversation.studentProfile.firstName,
+        tutorFirstName: conversation.tutorProfile.user.name?.split(" ")[0] ?? "",
+        guardianFirstNames: guardianRows.map((r) => r.parentProfile.firstName),
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessagePreview: lastMessage?.body.slice(0, 140) ?? null,
+        unreadCount,
+        sessionContext,
+      };
+    })
+  );
+
+  return summaries.sort((a, b) => (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0));
+}
+
+// ---------------------------------------------------------------------------
+// Thread page support — party directory + session context, both re-checked
+// via canReadConversation independently (never assumes the caller already
+// authorized elsewhere in the same request).
+// ---------------------------------------------------------------------------
+
+export interface ConversationPartyDirectory {
+  studentProfileId: string;
+  tutorProfileId: string;
+  studentFirstName: string;
+  tutorFirstName: string;
+  /** userId -> display first name, for every CURRENT legitimate participant
+   * (the tutor, and either the self-managed student or every ACTIVE
+   * guardian) — resolved fresh, never from stale ConversationParticipant
+   * rows, so a message from a since-revoked guardian still displays their
+   * historical name correctly even though they can no longer read/send. */
+  names: Record<string, string>;
+}
+
+export async function getConversationParties(actorUserId: string, conversationId: string): Promise<ConversationPartyDirectory | null> {
+  const authorized = await canReadConversation(db, actorUserId, conversationId);
+  if (!authorized) return null;
+
+  const conversation = await db.conversation.findUniqueOrThrow({
+    where: { id: conversationId },
+    select: {
+      studentProfileId: true,
+      tutorProfileId: true,
+      studentProfile: { select: { firstName: true, userId: true, managementMode: true } },
+      tutorProfile: { select: { userId: true, user: { select: { name: true } } } },
+    },
+  });
+
+  const names: Record<string, string> = {};
+  const tutorFirstName = conversation.tutorProfile.user.name?.split(" ")[0] ?? "";
+  names[conversation.tutorProfile.userId] = tutorFirstName;
+
+  if (conversation.studentProfile.managementMode === "SELF_MANAGED" && conversation.studentProfile.userId) {
+    names[conversation.studentProfile.userId] = conversation.studentProfile.firstName;
+  } else {
+    const guardians = await db.parentStudentRelationship.findMany({
+      where: { studentProfileId: conversation.studentProfileId, status: "ACTIVE" },
+      select: { parentProfile: { select: { userId: true, firstName: true } } },
+    });
+    for (const guardian of guardians) names[guardian.parentProfile.userId] = guardian.parentProfile.firstName;
+  }
+
+  return {
+    studentProfileId: conversation.studentProfileId,
+    tutorProfileId: conversation.tutorProfileId,
+    studentFirstName: conversation.studentProfile.firstName,
+    tutorFirstName,
+    names,
+  };
+}
+
+export async function getConversationSessionContext(
+  actorUserId: string,
+  conversationId: string,
+  now: Date = new Date()
+): Promise<ConversationSessionContext | null> {
+  const authorized = await canReadConversation(db, actorUserId, conversationId);
+  if (!authorized) return null;
+  const conversation = await db.conversation.findUniqueOrThrow({
+    where: { id: conversationId },
+    select: { studentProfileId: true, tutorProfileId: true },
+  });
+  return resolveSessionContext(conversation.studentProfileId, conversation.tutorProfileId, now);
+}
+
 export async function markConversationRead(actorUserId: string, conversationId: string): Promise<MarkReadResult> {
   const authorized = await canReadConversation(db, actorUserId, conversationId);
   if (!authorized) return { ok: false, reason: "NOT_AUTHORIZED" };

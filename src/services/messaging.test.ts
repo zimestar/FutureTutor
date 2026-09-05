@@ -15,13 +15,22 @@ const mocks = vi.hoisted(() => ({
   hasEligibleTutoringRelationship: vi.fn(),
   resolveParticipantRole: vi.fn(),
   tutorProfileFindUnique: vi.fn(),
+  studentProfileFindUnique: vi.fn(),
+  parentProfileFindUnique: vi.fn(),
+  parentStudentRelationshipFindMany: vi.fn(),
+  bookingFindMany: vi.fn(),
+  bookingFindFirst: vi.fn(),
   conversationFindUnique: vi.fn(),
+  conversationFindMany: vi.fn(),
   conversationCreate: vi.fn(),
   conversationFindUniqueOrThrow: vi.fn(),
   conversationUpdate: vi.fn(),
   conversationParticipantUpsert: vi.fn(),
+  conversationParticipantFindUnique: vi.fn(),
   messageCreate: vi.fn(),
   messageFindMany: vi.fn(),
+  messageFindFirst: vi.fn(),
+  messageCount: vi.fn(),
   transaction: vi.fn(),
 }));
 
@@ -36,19 +45,33 @@ vi.mock("@/services/messagingAuthorization", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     tutorProfile: { findUnique: mocks.tutorProfileFindUnique },
+    studentProfile: { findUnique: mocks.studentProfileFindUnique },
+    parentProfile: { findUnique: mocks.parentProfileFindUnique },
+    parentStudentRelationship: { findMany: mocks.parentStudentRelationshipFindMany },
+    booking: { findMany: mocks.bookingFindMany, findFirst: mocks.bookingFindFirst },
     conversation: {
       findUnique: mocks.conversationFindUnique,
+      findMany: mocks.conversationFindMany,
       create: mocks.conversationCreate,
       findUniqueOrThrow: mocks.conversationFindUniqueOrThrow,
       update: mocks.conversationUpdate,
     },
-    conversationParticipant: { upsert: mocks.conversationParticipantUpsert },
-    message: { create: mocks.messageCreate, findMany: mocks.messageFindMany },
+    conversationParticipant: { upsert: mocks.conversationParticipantUpsert, findUnique: mocks.conversationParticipantFindUnique },
+    message: { create: mocks.messageCreate, findMany: mocks.messageFindMany, findFirst: mocks.messageFindFirst, count: mocks.messageCount },
     $transaction: mocks.transaction,
   },
 }));
 
-import { ensureConversationAccess, listConversationMessages, markConversationRead, sendMessage } from "./messaging";
+import {
+  ensureConversationAccess,
+  getConversationParties,
+  getConversationSessionContext,
+  listConversationMessages,
+  listMyConversations,
+  listNewerMessages,
+  markConversationRead,
+  sendMessage,
+} from "./messaging";
 
 const ACTOR = "actor-1";
 const STUDENT_ID = "student-1";
@@ -58,16 +81,26 @@ const CONVERSATION_ID = "conv-1";
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.tutorProfileFindUnique.mockResolvedValue({ userId: "some-other-tutor" });
+  mocks.studentProfileFindUnique.mockResolvedValue(null);
+  mocks.parentProfileFindUnique.mockResolvedValue(null);
+  mocks.parentStudentRelationshipFindMany.mockResolvedValue([]);
+  mocks.bookingFindMany.mockResolvedValue([]);
+  mocks.bookingFindFirst.mockResolvedValue(null);
   mocks.canParticipateInTutoringConversation.mockResolvedValue(true);
   mocks.hasEligibleTutoringRelationship.mockResolvedValue(true);
   mocks.conversationFindUnique.mockResolvedValue(null);
+  mocks.conversationFindMany.mockResolvedValue([]);
   mocks.conversationCreate.mockResolvedValue({ id: CONVERSATION_ID });
   mocks.resolveParticipantRole.mockResolvedValue("STUDENT");
   mocks.conversationParticipantUpsert.mockResolvedValue({});
+  mocks.conversationParticipantFindUnique.mockResolvedValue(null);
   mocks.canSendConversationMessage.mockResolvedValue({ ok: true });
   mocks.canReadConversation.mockResolvedValue(true);
   mocks.conversationFindUniqueOrThrow.mockResolvedValue({ studentProfileId: STUDENT_ID, tutorProfileId: TUTOR_PROFILE_ID });
   mocks.messageCreate.mockResolvedValue({ id: "msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "hello", createdAt: new Date() });
+  mocks.messageFindMany.mockResolvedValue([]);
+  mocks.messageFindFirst.mockResolvedValue(null);
+  mocks.messageCount.mockResolvedValue(0);
   mocks.transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
     fn({
       message: { create: mocks.messageCreate },
@@ -279,5 +312,183 @@ describe("markConversationRead", () => {
     const result = await markConversationRead(ACTOR, CONVERSATION_ID);
     expect(result).toEqual({ ok: false, reason: "NOT_AUTHORIZED" });
     expect(mocks.conversationParticipantUpsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("listMyConversations", () => {
+  it("item 8/20/28 — a tutor's eligible relationships each produce a separate conversation, newest activity first, never merging different children", async () => {
+    mocks.tutorProfileFindUnique.mockImplementation(async ({ where }: { where: { userId?: string; id?: string } }) => {
+      if (where.userId === ACTOR) return { id: TUTOR_PROFILE_ID };
+      if (where.id === TUTOR_PROFILE_ID) return { userId: ACTOR };
+      return null;
+    });
+    mocks.bookingFindMany.mockResolvedValue([{ studentProfileId: "emma" }, { studentProfileId: "noah" }]);
+    mocks.conversationCreate.mockImplementation(async ({ data }: { data: { studentProfileId: string } }) => ({ id: `conv-${data.studentProfileId}` }));
+    mocks.resolveParticipantRole.mockResolvedValue("TUTOR");
+    mocks.conversationFindMany.mockResolvedValue([
+      {
+        id: "conv-emma",
+        studentProfileId: "emma",
+        tutorProfileId: TUTOR_PROFILE_ID,
+        lastMessageAt: new Date("2026-09-01T00:00:00.000Z"),
+        studentProfile: { firstName: "Emma" },
+        tutorProfile: { user: { name: "Matthew Allen" } },
+      },
+      {
+        id: "conv-noah",
+        studentProfileId: "noah",
+        tutorProfileId: TUTOR_PROFILE_ID,
+        lastMessageAt: new Date("2026-09-03T00:00:00.000Z"),
+        studentProfile: { firstName: "Noah" },
+        tutorProfile: { user: { name: "Matthew Allen" } },
+      },
+    ]);
+    mocks.messageFindFirst.mockResolvedValue({ body: "hello" });
+
+    const result = await listMyConversations(ACTOR);
+
+    expect(result).toHaveLength(2);
+    expect(result[0]!.id).toBe("conv-noah");
+    expect(result[1]!.id).toBe("conv-emma");
+    expect(mocks.conversationCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("item 10 — no eligible relationship anywhere yields an empty list", async () => {
+    const result = await listMyConversations(ACTOR);
+    expect(result).toEqual([]);
+  });
+
+  it("item 5 — a guardian's eligible child produces a conversation entry, with the guardian's own name attached", async () => {
+    mocks.parentProfileFindUnique.mockResolvedValue({ id: "parent-1" });
+    mocks.parentStudentRelationshipFindMany.mockImplementation(async ({ where }: { where: { parentProfileId?: string; studentProfileId?: string } }) => {
+      if (where.parentProfileId === "parent-1") return [{ studentProfileId: "emma" }];
+      if (where.studentProfileId === "emma") return [{ parentProfile: { firstName: "Sarah" } }];
+      return [];
+    });
+    mocks.bookingFindMany.mockResolvedValue([{ tutorProfileId: TUTOR_PROFILE_ID }]);
+    mocks.conversationCreate.mockResolvedValue({ id: "conv-emma" });
+    mocks.resolveParticipantRole.mockResolvedValue("GUARDIAN");
+    mocks.conversationFindMany.mockResolvedValue([
+      {
+        id: "conv-emma",
+        studentProfileId: "emma",
+        tutorProfileId: TUTOR_PROFILE_ID,
+        lastMessageAt: null,
+        studentProfile: { firstName: "Emma" },
+        tutorProfile: { user: { name: "Matthew Allen" } },
+      },
+    ]);
+
+    const result = await listMyConversations(ACTOR);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.studentFirstName).toBe("Emma");
+    expect(result[0]!.tutorFirstName).toBe("Matthew");
+  });
+});
+
+describe("getConversationParties", () => {
+  it("item 9 — SELF_MANAGED: names includes the tutor and the student's own userId", async () => {
+    mocks.canReadConversation.mockResolvedValue(true);
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Sam", userId: "student-user-1", managementMode: "SELF_MANAGED" },
+      tutorProfile: { userId: "tutor-user-1", user: { name: "Matthew Allen" } },
+    });
+
+    const parties = await getConversationParties(ACTOR, CONVERSATION_ID);
+    expect(parties).not.toBeNull();
+    expect(parties!.names["tutor-user-1"]).toBe("Matthew");
+    expect(parties!.names["student-user-1"]).toBe("Sam");
+  });
+
+  it("item 9 — GUARDIAN_MANAGED: names includes ACTIVE guardians, never the student's own userId", async () => {
+    mocks.canReadConversation.mockResolvedValue(true);
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Emma", userId: "emma-restricted-login", managementMode: "GUARDIAN_MANAGED" },
+      tutorProfile: { userId: "tutor-user-1", user: { name: "Matthew Allen" } },
+    });
+    mocks.parentStudentRelationshipFindMany.mockResolvedValue([{ parentProfile: { userId: "guardian-user-1", firstName: "Sarah" } }]);
+
+    const parties = await getConversationParties(ACTOR, CONVERSATION_ID);
+    expect(parties!.names["guardian-user-1"]).toBe("Sarah");
+    expect(parties!.names["emma-restricted-login"]).toBeUndefined();
+  });
+
+  it("item 13 — an unauthorized/nonexistent conversation returns null identically", async () => {
+    mocks.canReadConversation.mockResolvedValue(false);
+    expect(await getConversationParties(ACTOR, CONVERSATION_ID)).toBeNull();
+  });
+});
+
+describe("getConversationSessionContext", () => {
+  it("item 26 — an upcoming CONFIRMED booking is reported as 'upcoming'", async () => {
+    mocks.canReadConversation.mockResolvedValue(true);
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({ studentProfileId: STUDENT_ID, tutorProfileId: TUTOR_PROFILE_ID });
+    mocks.bookingFindFirst.mockResolvedValueOnce({
+      id: "b1",
+      subject: { slug: "math" },
+      startAt: new Date("2026-09-10T18:00:00.000Z"),
+      endAt: new Date("2026-09-10T19:00:00.000Z"),
+      timezone: "America/Edmonton",
+    });
+
+    const context = await getConversationSessionContext(ACTOR, CONVERSATION_ID, new Date("2026-09-05T00:00:00.000Z"));
+    expect(context).toMatchObject({ kind: "upcoming", subjectSlug: "math" });
+  });
+
+  it("item 27 — no upcoming booking but a recently-ended one is reported as 'recent'", async () => {
+    mocks.canReadConversation.mockResolvedValue(true);
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({ studentProfileId: STUDENT_ID, tutorProfileId: TUTOR_PROFILE_ID });
+    mocks.bookingFindFirst.mockResolvedValueOnce(null);
+    mocks.bookingFindFirst.mockResolvedValueOnce({
+      id: "b0",
+      subject: { slug: "physics" },
+      startAt: new Date("2026-09-03T17:00:00.000Z"),
+      endAt: new Date("2026-09-03T18:00:00.000Z"),
+      timezone: "America/Edmonton",
+    });
+
+    const context = await getConversationSessionContext(ACTOR, CONVERSATION_ID, new Date("2026-09-05T00:00:00.000Z"));
+    expect(context).toMatchObject({ kind: "recent", subjectSlug: "physics" });
+  });
+
+  it("no CONFIRMED booking at all is reported as 'none'", async () => {
+    mocks.canReadConversation.mockResolvedValue(true);
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({ studentProfileId: STUDENT_ID, tutorProfileId: TUTOR_PROFILE_ID });
+    const context = await getConversationSessionContext(ACTOR, CONVERSATION_ID);
+    expect(context).toMatchObject({ kind: "none", bookingId: null });
+  });
+
+  it("an unauthorized actor gets null, never a session context leak", async () => {
+    mocks.canReadConversation.mockResolvedValue(false);
+    expect(await getConversationSessionContext(ACTOR, CONVERSATION_ID)).toBeNull();
+  });
+});
+
+describe("listNewerMessages (polling)", () => {
+  it("item 29 — returns only messages strictly newer than the given timestamp, ascending", async () => {
+    const after = new Date("2026-09-05T12:00:00.000Z");
+    mocks.messageFindMany.mockResolvedValue([{ id: "m2", senderUserId: "tutor-user-1", body: "hi", createdAt: new Date("2026-09-05T12:00:05.000Z") }]);
+
+    const result = await listNewerMessages(ACTOR, CONVERSATION_ID, after);
+    expect(result.ok).toBe(true);
+    expect(mocks.messageFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { conversationId: CONVERSATION_ID, createdAt: { gt: after } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] })
+    );
+  });
+
+  it("is bounded (take is set, never unbounded)", async () => {
+    await listNewerMessages(ACTOR, CONVERSATION_ID, new Date());
+    expect(mocks.messageFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: expect.any(Number) }));
+  });
+
+  it("an unauthorized actor gets nothing from polling", async () => {
+    mocks.canReadConversation.mockResolvedValue(false);
+    const result = await listNewerMessages(ACTOR, CONVERSATION_ID, new Date());
+    expect(result).toEqual({ ok: false, reason: "NOT_AUTHORIZED" });
+    expect(mocks.messageFindMany).not.toHaveBeenCalled();
   });
 });

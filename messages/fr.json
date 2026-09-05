@@ -933,6 +933,7 @@
       "tutorAgreement": "Entente des tuteurs",
       "payments": "Paiements des clients",
       "financialOps": "Opérations financières",
+      "messages": "Messages",
       "family": "Mes élèves",
       "familyInvitations": "Invitations familiales",
       "findTutor": "Trouver un tuteur",
@@ -1848,6 +1849,42 @@
     "pageTitle": "Notifications",
     "pageDescription": "Un historique des mises à jour concernant vos réservations, séances et votre compte.",
     "loadMore": "Afficher plus"
+  },
+  "messaging": {
+    "list": {
+      "title": "Messages",
+      "description": "Communiquez directement avec votre tuteur ou les tuteurs de votre famille — sans avoir à partager vos coordonnées personnelles.",
+      "emptyTitle": "Aucune conversation pour le moment",
+      "emptyDescription": "La messagerie devient disponible dès que vous avez une séance de tutorat confirmée avec un tuteur.",
+      "guardianTitle": "{student} et {tutor}",
+      "guardianContext": "Tuteur légal : {names}",
+      "noMessagesYet": "Aucun message pour le moment — dites bonjour!"
+    },
+    "thread": {
+      "guardianTitle": "{student} et {tutor}",
+      "you": "Vous",
+      "otherParticipant": "Participant",
+      "readOnlyWindow": "Cette conversation est en lecture seule, car il n'y a pas de séance de tutorat active ou récente. Réserver une nouvelle séance avec ce tuteur réactivera la messagerie.",
+      "readOnlyGeneric": "Vous ne pouvez pas envoyer de messages dans cette conversation pour le moment.",
+      "upcomingSession": "Séance à venir",
+      "recentSession": "Séance récente",
+      "loadEarlier": "Afficher les messages précédents",
+      "loading": "Chargement…",
+      "emptyFirstMessage": "Aucun message pour le moment. Envoyez le premier pour commencer.",
+      "newMessages": "Nouveaux messages"
+    },
+    "composer": {
+      "placeholder": "Écrivez un message…",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "contactInfoWarning": "Pour votre sécurité, nous vous recommandons de garder vos échanges sur FutureTutor.",
+      "error": {
+        "VALIDATION": "Votre message n'a pas pu être envoyé — veuillez vérifier sa longueur.",
+        "NOT_AUTHORIZED": "Vous n'avez plus accès à cette conversation.",
+        "READ_ONLY": "Cette conversation est actuellement en lecture seule.",
+        "UNAVAILABLE": "Nous n'avons pas pu envoyer votre message. Veuillez réessayer."
+      }
+    }
   },
   "paymentHistory": {
     "pageTitle": "Historique des paiements",
