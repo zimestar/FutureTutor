@@ -257,6 +257,7 @@ model StudentProfile {
   tutoringRequests    TutoringRequest[]
   familyInvitations   FamilyInvitation[]
   consentRecords      ConsentRecord[]
+  conversations       Conversation[]
 }
 
 model ParentProfile {
@@ -530,6 +531,7 @@ model TutorProfile {
   earnings                 TutorEarning[]
   transfers                TutorTransfer[]
   applicationNotifications TutorApplicationNotification[]
+  conversations            Conversation[]
 
   @@index([applicationStatus])
   @@index([city, province])
@@ -1022,7 +1024,6 @@ model Booking {
   earning              TutorEarning?
   refunds              Refund[]
   review               Review?
-  conversation         Conversation?
   emailNotifications   BookingEmailNotification[]
   sessionNotifications SessionNotification[]
 
@@ -1884,50 +1885,104 @@ model StripeCustomer {
 }
 
 // ---------------------------------------------------------------------------
-// Messaging (future phase, not yet built)
+// Messaging (MESSAGING-MVP1A — schema/authorization/domain foundation only;
+// no UI, no Notification Center integration, no email yet — see
+// MESSAGING-MVP-DESIGN1's design report for the full rationale).
+//
+// Replaces the original Phase A placeholder, which modeled exactly the
+// shape this feature's own product decision rejects (one Conversation per
+// Booking, via a unique bookingId). Confirmed zero rows existed in any of
+// the three placeholder tables in every environment before this migration
+// — a pure schema replacement, not a data migration.
+//
+// IDENTITY: one persistent Conversation per (studentProfileId,
+// tutorProfileId) pair — a durable tutoring relationship, not a booking.
+// Deliberately NOT linked back from Booking (no Booking.conversationId):
+// a Booking's own studentProfileId+tutorProfileId already resolves its
+// Conversation via the unique index below with equal efficiency to a
+// direct FK, so a redundant column would only duplicate derivable state
+// (and populating it for historical Bookings would mean mutating existing
+// production rows for no benefit, which this mission's own financial/data
+// safety rules already caution against doing without cause).
 // ---------------------------------------------------------------------------
 
-enum MessageType {
-  TEXT
-  SYSTEM
+/// Which side of the tutoring relationship a ConversationParticipant row
+/// represents. STUDENT is used only when the student is SELF_MANAGED and
+/// participates directly — a GUARDIAN_MANAGED student's own User NEVER gets
+/// a row here in V1 (see the design report's Minor Safety section); GUARDIAN
+/// is used for each ACTIVE guardian of a GUARDIAN_MANAGED student.
+enum ConversationParticipantRole {
+  STUDENT
+  GUARDIAN
+  TUTOR
 }
 
+/// IMPORTANT: this table's own row/participant state is NEVER, on its own,
+/// sufficient authorization to read or send — see
+/// src/services/messagingAuthorization.ts, which re-derives every
+/// permission fact fresh from StudentProfile.managementMode /
+/// ParentStudentRelationship.status / TutorProfile.userId on every call. A
+/// stale ConversationParticipant row (e.g. for a since-REVOKED guardian)
+/// intentionally is NOT cleaned up by any MVP1A writer — leftAt exists for
+/// a future explicit "leave conversation" action or sync job, but nothing
+/// in MVP1A ever sets it. The row exists to carry lastReadAt (the V1 unread
+/// model) and a historical record of who has been part of the thread, not
+/// to gate access.
 model Conversation {
   id        String   @id @default(cuid())
-  bookingId String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  booking      Booking?                  @relation(fields: [bookingId], references: [id])
-  participants ConversationParticipant[]
-  messages     Message[]
+  studentProfileId String
+  tutorProfileId   String
+
+  createdAt     DateTime  @default(now())
+  /// Bumped transactionally alongside every Message insert — the sort key
+  /// for a future conversation list UI. Null until the first message.
+  lastMessageAt DateTime?
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id])
+  tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id])
+  participants   ConversationParticipant[]
+  messages       Message[]
+
+  @@unique([studentProfileId, tutorProfileId])
+  @@index([tutorProfileId, lastMessageAt])
+  @@index([studentProfileId, lastMessageAt])
 }
 
 model ConversationParticipant {
-  id             String   @id @default(cuid())
+  id             String                      @id @default(cuid())
   conversationId String
   userId         String
-  joinedAt       DateTime @default(now())
+  role           ConversationParticipantRole
+  joinedAt       DateTime                    @default(now())
+  /// Never set by any MVP1A writer — see the Conversation model's own doc
+  /// comment. Reserved for a future explicit leave/sync action.
+  leftAt         DateTime?
+  /// The V1 unread model (per participant, not per message) — see
+  /// messagingAuthorization.ts / the messaging domain service.
+  lastReadAt     DateTime?
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
+  @@index([userId, leftAt])
 }
 
 model Message {
-  id             String      @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
-  senderId       String
-  content        String      @db.Text
-  type           MessageType @default(TEXT)
-  sentAt         DateTime    @default(now())
-  readAt         DateTime?
+  senderUserId   String
+  /// Plain text only in V1 — never rendered as HTML, no Markdown. Trimmed
+  /// and length-bounded (4000 chars) at the domain-service boundary before
+  /// this row is ever written.
+  body           String   @db.Text
+  createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderUserId], references: [id])
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt])
 }
 
 // ---------------------------------------------------------------------------
