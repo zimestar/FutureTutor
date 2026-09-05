@@ -2008,25 +2008,51 @@
       },
       "pendingEligibility": {
         "label": "Pending eligibility",
-        "description": "This earning has an eligibility date and is waiting for the eligibility window.",
-        "eligibleAt": "Eligible on {date}"
+        "description": "Session completed — this earning is in its mandatory 24-hour review period before it can become eligible for transfer.",
+        "eligibleAt": "Available for transfer: {date}"
+      },
+      "pendingEligibilityExpected": {
+        "label": "Pending eligibility",
+        "description": "Session outcome finalized — this earning is expected to enter its mandatory 24-hour review period soon. This date is projected, not yet confirmed.",
+        "expectedEligibleAt": "Expected eligibility: {date}"
       },
       "eligible": {
-        "label": "Eligible",
-        "description": "This earning is eligible for payout processing. It has not necessarily been transferred yet."
+        "label": "Eligible for transfer",
+        "description": "This earning has completed its review period and is eligible for transfer. FutureTutor has not necessarily initiated the transfer yet."
       },
       "held": {
         "label": "On hold",
-        "description": "This earning is not currently progressing to payout automatically."
+        "description": "This earning is not currently progressing to payout automatically. Contact support if you have questions."
+      },
+      "heldTutorNoShow": {
+        "label": "On hold — attendance review",
+        "description": "This session's attendance record needs review before this earning can proceed. Contact support if you have questions."
+      },
+      "heldNoShowUnresolved": {
+        "label": "On hold — attendance review",
+        "description": "Neither party's attendance was confirmed for this session, so this earning is on hold pending review. Contact support if you have questions."
+      },
+      "heldInterrupted": {
+        "label": "On hold — session interrupted",
+        "description": "This session ended early. This earning is on hold pending review. Contact support if you have questions."
       },
       "transferred": {
         "label": "Transferred",
-        "description": "The transfer for this earning has been completed."
+        "description": "FutureTutor has sent this payment to your connected payout account. Stripe may still take additional time to deposit funds to your bank, according to your account's own payout schedule.",
+        "transferredOn": "Transferred on {date}"
       },
       "cancelled": {
         "label": "Cancelled",
         "description": "This earning was cancelled and is not progressing to payout."
       }
+    },
+    "viewSession": "View session",
+    "transparency": {
+      "title": "How payouts work",
+      "intro": "Earnings are recorded once a session reaches a valid outcome — completed, or a confirmed student no-show.",
+      "delay": "FutureTutor then applies a mandatory 24-hour review period before an earning can become eligible for transfer, counted from when that outcome was finalized — not from the session's originally scheduled end time.",
+      "eligibilityVsPayout": "Becoming eligible is not the same as being paid — FutureTutor still needs to initiate the transfer to your connected payout account.",
+      "transferVsBank": "Once FutureTutor transfers your funds to your connected payout account, Stripe deposits them to your bank according to your account's own payout schedule — timing from that point on is set by Stripe, not FutureTutor."
     },
     "transfersTitle": "Transfer history",
     "transfersEmptyTitle": "No transfers yet",

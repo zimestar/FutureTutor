@@ -9,12 +9,14 @@ import { startStripeOnboardingAction } from "@/lib/actions/stripeConnect";
 import { syncTutorConnectStatusFromStripe, shouldResyncStripeConnectStatus } from "@/services/stripeConnect";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { stripeConnectOnboardingAvailable } from "@/lib/stripeConnectConfig";
+import { formatBookingTime } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
-import { TutorEarningStatus } from "@/components/dashboard/TutorEarningStatus";
 import { StripeOnboardingSubmitButton } from "@/components/dashboard/StripeOnboardingSubmitButton";
-import { presentTutorEarning } from "@/lib/tutorEarningPresentation";
+import { TutorEarningCard } from "@/components/dashboard/TutorEarningCard";
+import { presentTutorEarningTransparency, type TutorEarningSessionFacts } from "@/lib/tutorEarningPresentation";
+import { reconstructNoShowOutcome } from "@/services/sessionLifecycle";
 
 const STATUS_BADGE: Record<string, "mint" | "outline" | "blue" | "neutral"> = {
   NOT_STARTED: "outline",
@@ -71,7 +73,28 @@ export default async function TutorPayoutsPage({
     ? await Promise.all([
         db.tutorEarning.findMany({
           where: { tutorProfileId: tutorProfile.id },
-          include: { booking: { select: { subject: { select: { slug: true } }, startAt: true } } },
+          include: {
+            booking: {
+              select: {
+                id: true,
+                subject: { select: { slug: true } },
+                startAt: true,
+                timezone: true,
+                session: {
+                  select: {
+                    status: true,
+                    completedAt: true,
+                    noShowConvergedAt: true,
+                    attendanceEvents: {
+                      where: { eventType: "CHECK_IN" },
+                      select: { participantRole: true },
+                    },
+                  },
+                },
+              },
+            },
+            transfer: { select: { completedAt: true } },
+          },
           orderBy: { createdAt: "desc" },
           take: 25,
         }),
@@ -91,7 +114,6 @@ export default async function TutorPayoutsPage({
   // checks, which hold even if this render were somehow bypassed).
   const connectAvailable = stripeConnectOnboardingAvailable();
   const setupNotStarted = status !== "ACTIVE" && status !== "DISABLED";
-  const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: "CAD" });
   const eligibilityDateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
   return (
@@ -131,6 +153,16 @@ export default async function TutorPayoutsPage({
         {!paymentsUseStripe() && <p className="mt-3 text-sm text-slate">{t("devModeNotice")}</p>}
       </Surface>
 
+      <Surface className="mt-8" padding="sm" aria-labelledby="payout-transparency-title">
+        <h2 id="payout-transparency-title" className="font-extrabold text-navy">{t("transparency.title")}</h2>
+        <ul className="mt-2 flex flex-col gap-1.5 text-sm text-text-secondary">
+          <li>{t("transparency.intro")}</li>
+          <li>{t("transparency.delay")}</li>
+          <li>{t("transparency.eligibilityVsPayout")}</li>
+          <li>{t("transparency.transferVsBank")}</li>
+        </ul>
+      </Surface>
+
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold text-navy">{t("earningsTitle")}</h2>
         {earnings.length === 0 ? (
@@ -138,24 +170,51 @@ export default async function TutorPayoutsPage({
         ) : (
           <div className="flex flex-col gap-2">
             {earnings.map((earning) => {
-              const presentation = presentTutorEarning(earning.status, earning.eligibleAt);
+              const sessionRow = earning.booking.session;
+              const sessionFacts: TutorEarningSessionFacts | null = sessionRow
+                ? {
+                    sessionStatus: sessionRow.status,
+                    completedAt: sessionRow.completedAt,
+                    noShowConvergedAt: sessionRow.noShowConvergedAt,
+                    noShowOutcome:
+                      sessionRow.status === "NO_SHOW"
+                        ? reconstructNoShowOutcome(
+                            sessionRow.attendanceEvents.some((e) => e.participantRole === "TUTOR"),
+                            sessionRow.attendanceEvents.some((e) => e.participantRole === "STUDENT")
+                          )
+                        : null,
+                  }
+                : null;
+              const transparency = presentTutorEarningTransparency(earning, sessionFacts, earning.transfer);
+              const earningCurrencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency: earning.currency });
+
               return (
-                <Surface key={earning.id} padding="sm" className="flex flex-col gap-4 text-sm sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-semibold text-navy">
-                      {tSubjects(earning.booking.subject.slug)} — {new Date(earning.booking.startAt).toLocaleDateString(locale)}
-                    </p>
-                    <p className="mt-1 text-base font-bold text-navy">{currencyFormatter.format(earning.amountCents / 100)}</p>
-                  </div>
-                  <TutorEarningStatus
-                    presentation={presentation}
-                    label={t(`earningPresentation.${presentation.key}.label`)}
-                    description={t(`earningPresentation.${presentation.key}.description`)}
-                    eligibilityDateLabel={presentation.showEligibilityDate && earning.eligibleAt
-                      ? t("earningPresentation.pendingEligibility.eligibleAt", { date: eligibilityDateFormatter.format(earning.eligibleAt) })
-                      : undefined}
-                  />
-                </Surface>
+                <TutorEarningCard
+                  key={earning.id}
+                  amountLabel={earningCurrencyFormatter.format(earning.amountCents / 100)}
+                  subjectLabel={tSubjects(earning.booking.subject.slug)}
+                  sessionDateLabel={formatBookingTime(earning.booking.startAt, earning.booking.timezone, locale)}
+                  bookingId={earning.booking.id}
+                  viewSessionLabel={t("viewSession")}
+                  reasonLabel={t(`earningPresentation.${transparency.key}.label`)}
+                  reasonDescription={t(`earningPresentation.${transparency.key}.description`)}
+                  badgeVariant={transparency.badgeVariant}
+                  eligibilityDateLabel={
+                    transparency.eligibilityDate
+                      ? t(
+                          transparency.eligibilityDateIsExpected
+                            ? "earningPresentation.pendingEligibilityExpected.expectedEligibleAt"
+                            : "earningPresentation.pendingEligibility.eligibleAt",
+                          { date: eligibilityDateFormatter.format(transparency.eligibilityDate) }
+                        )
+                      : null
+                  }
+                  transferDateLabel={
+                    transparency.transferDate
+                      ? t("earningPresentation.transferred.transferredOn", { date: eligibilityDateFormatter.format(transparency.transferDate) })
+                      : null
+                  }
+                />
               );
             })}
           </div>
@@ -172,7 +231,7 @@ export default async function TutorPayoutsPage({
               <Surface key={transfer.id} padding="sm" className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-navy">{new Date(transfer.createdAt).toLocaleDateString(locale)}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-navy">{currencyFormatter.format(transfer.amountCents / 100)}</span>
+                  <span className="text-navy">{new Intl.NumberFormat(locale, { style: "currency", currency: transfer.currency }).format(transfer.amountCents / 100)}</span>
                   <Badge variant={transfer.status === "COMPLETED" ? "mint" : "outline"}>{t(`transferStatus.${transfer.status}`)}</Badge>
                 </div>
               </Surface>

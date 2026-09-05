@@ -2008,25 +2008,51 @@
       },
       "pendingEligibility": {
         "label": "Admissibilité en attente",
-        "description": "Ce gain a une date d'admissibilité et attend la fin du délai prévu.",
-        "eligibleAt": "Admissible le {date}"
+        "description": "Séance terminée — ce gain est dans sa période d'examen obligatoire de 24 heures avant de pouvoir devenir admissible au transfert.",
+        "eligibleAt": "Disponible pour transfert : {date}"
+      },
+      "pendingEligibilityExpected": {
+        "label": "Admissibilité en attente",
+        "description": "Résultat de la séance finalisé — ce gain devrait bientôt entrer dans sa période d'examen obligatoire de 24 heures. Cette date est une projection, non encore confirmée.",
+        "expectedEligibleAt": "Admissibilité prévue : {date}"
       },
       "eligible": {
-        "label": "Admissible",
-        "description": "Ce gain est admissible au traitement du paiement. Il n'a pas nécessairement encore été transféré."
+        "label": "Admissible au transfert",
+        "description": "Ce gain a terminé sa période d'examen et est admissible au transfert. FutureTutor n'a pas nécessairement encore lancé le transfert."
       },
       "held": {
         "label": "En suspens",
-        "description": "Ce gain ne progresse pas automatiquement vers le paiement pour le moment."
+        "description": "Ce gain ne progresse pas automatiquement vers le paiement pour le moment. Contactez le soutien si vous avez des questions."
+      },
+      "heldTutorNoShow": {
+        "label": "En suspens — vérification de présence",
+        "description": "Le registre de présence de cette séance doit être vérifié avant que ce gain puisse progresser. Contactez le soutien si vous avez des questions."
+      },
+      "heldNoShowUnresolved": {
+        "label": "En suspens — vérification de présence",
+        "description": "La présence d'aucune des deux parties n'a été confirmée pour cette séance; ce gain est donc en suspens en attendant vérification. Contactez le soutien si vous avez des questions."
+      },
+      "heldInterrupted": {
+        "label": "En suspens — séance interrompue",
+        "description": "Cette séance s'est terminée tôt. Ce gain est en suspens en attendant vérification. Contactez le soutien si vous avez des questions."
       },
       "transferred": {
         "label": "Transféré",
-        "description": "Le transfert de ce gain a été effectué."
+        "description": "FutureTutor a envoyé ce paiement à votre compte de versement connecté. Stripe peut encore prendre un certain temps pour déposer les fonds dans votre compte bancaire, selon le calendrier de versement propre à votre compte.",
+        "transferredOn": "Transféré le {date}"
       },
       "cancelled": {
         "label": "Annulé",
         "description": "Ce gain a été annulé et ne progresse pas vers le paiement."
       }
+    },
+    "viewSession": "Voir la séance",
+    "transparency": {
+      "title": "Comment fonctionnent les versements",
+      "intro": "Les gains sont enregistrés une fois qu'une séance atteint un résultat valide — terminée, ou une absence de l'élève confirmée.",
+      "delay": "FutureTutor applique ensuite une période d'examen obligatoire de 24 heures avant qu'un gain puisse devenir admissible au transfert, calculée à partir du moment où ce résultat a été finalisé — et non à partir de l'heure de fin prévue de la séance.",
+      "eligibilityVsPayout": "Devenir admissible n'équivaut pas à être payé — FutureTutor doit encore lancer le transfert vers votre compte de versement connecté.",
+      "transferVsBank": "Une fois que FutureTutor a transféré vos fonds vers votre compte de versement connecté, Stripe les dépose dans votre compte bancaire selon le calendrier de versement propre à votre compte — à partir de ce moment, le délai est déterminé par Stripe, et non par FutureTutor."
     },
     "transfersTitle": "Historique des transferts",
     "transfersEmptyTitle": "Aucun transfert",
