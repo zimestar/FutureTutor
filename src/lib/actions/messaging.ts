@@ -62,18 +62,29 @@ export type SendMessageActionResult =
 
 /** senderUserId is always the authenticated caller's own id — sendMessage's
  * own signature has no parameter through which a caller could supply a
- * different one. */
-export async function sendMessageAction(conversationId: string, body: string): Promise<SendMessageActionResult> {
+ * different one.
+ *
+ * MESSAGING-DUPLICATE-SEND-FIX1 — clientMessageId is passed through
+ * unvalidated here (sendMessage re-validates its shape independently, the
+ * same "never trust a caller already validated" convention as the message
+ * body itself) purely as idempotency metadata; it is never used for
+ * authorization. */
+export async function sendMessageAction(conversationId: string, body: string, clientMessageId: string): Promise<SendMessageActionResult> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, reason: "NOT_AUTHORIZED" };
 
-  const result = await sendMessage(userId, conversationId, body);
+  const result = await sendMessage(userId, conversationId, body, clientMessageId);
   if (!result.ok) {
     if (result.reason === "VALIDATION") return { ok: false, reason: "VALIDATION" };
     if (result.reason === "OUTSIDE_COMMUNICATION_WINDOW") return { ok: false, reason: "READ_ONLY" };
     if (result.reason === "CONVERSATION_NOT_FOUND" || result.reason === "NOT_AUTHORIZED") return { ok: false, reason: "NOT_AUTHORIZED" };
-    // ACTOR_SUSPENDED / TUTOR_NOT_APPROVED — a real account-state change
-    // between page render and send; never expose which one specifically.
+    // ACTOR_SUSPENDED / TUTOR_NOT_APPROVED / IDEMPOTENCY_CONFLICT — none of
+    // these are ever exposed more specifically than a generic "unavailable,
+    // try again": the first two are a real account-state change between
+    // page render and send, and a conflict means a retried idempotency key
+    // claimed different content than its original send, which should never
+    // happen from this app's own composer and isn't a distinction a user
+    // could act on anyway.
     return { ok: false, reason: "UNAVAILABLE" };
   }
 

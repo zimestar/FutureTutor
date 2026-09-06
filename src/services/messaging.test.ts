@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   messageCreate: vi.fn(),
   messageFindMany: vi.fn(),
   messageFindFirst: vi.fn(),
+  messageFindUniqueOrThrow: vi.fn(),
   messageCount: vi.fn(),
   notificationFindFirst: vi.fn(),
   notificationCreate: vi.fn(),
@@ -61,7 +62,13 @@ vi.mock("@/lib/db", () => ({
       update: mocks.conversationUpdate,
     },
     conversationParticipant: { upsert: mocks.conversationParticipantUpsert, findUnique: mocks.conversationParticipantFindUnique },
-    message: { create: mocks.messageCreate, findMany: mocks.messageFindMany, findFirst: mocks.messageFindFirst, count: mocks.messageCount },
+    message: {
+      create: mocks.messageCreate,
+      findMany: mocks.messageFindMany,
+      findFirst: mocks.messageFindFirst,
+      findUniqueOrThrow: mocks.messageFindUniqueOrThrow,
+      count: mocks.messageCount,
+    },
     notification: {
       findFirst: mocks.notificationFindFirst,
       create: mocks.notificationCreate,
@@ -87,6 +94,8 @@ const ACTOR = "actor-1";
 const STUDENT_ID = "student-1";
 const TUTOR_PROFILE_ID = "tutor-profile-1";
 const CONVERSATION_ID = "conv-1";
+const CLIENT_MESSAGE_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+const OTHER_CLIENT_MESSAGE_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -110,6 +119,7 @@ beforeEach(() => {
   mocks.messageCreate.mockResolvedValue({ id: "msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "hello", createdAt: new Date() });
   mocks.messageFindMany.mockResolvedValue([]);
   mocks.messageFindFirst.mockResolvedValue(null);
+  mocks.messageFindUniqueOrThrow.mockResolvedValue(null);
   mocks.messageCount.mockResolvedValue(0);
   mocks.notificationFindFirst.mockResolvedValue(null);
   mocks.notificationCreate.mockResolvedValue({});
@@ -185,7 +195,7 @@ describe("ensureConversationAccess (get-or-create)", () => {
 
 describe("sendMessage", () => {
   it("item 24 — senderUserId is always the authenticated actor, never a parameter the caller could forge", async () => {
-    await sendMessage(ACTOR, CONVERSATION_ID, "hello");
+    await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(mocks.messageCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ senderUserId: ACTOR }) })
     );
@@ -193,25 +203,25 @@ describe("sendMessage", () => {
 
   it("item 25 — a message at exactly 4000 characters is accepted", async () => {
     const body = "a".repeat(4000);
-    const result = await sendMessage(ACTOR, CONVERSATION_ID, body);
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, body, CLIENT_MESSAGE_ID);
     expect(result.ok).toBe(true);
   });
 
   it("item 26 — a message over 4000 characters is rejected before ever touching the database", async () => {
     const body = "a".repeat(4001);
-    const result = await sendMessage(ACTOR, CONVERSATION_ID, body);
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, body, CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "VALIDATION" });
     expect(mocks.messageCreate).not.toHaveBeenCalled();
   });
 
   it("item 27 — an empty-after-trim message is rejected", async () => {
-    const result = await sendMessage(ACTOR, CONVERSATION_ID, "   \n\t  ");
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "   \n\t  ", CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "VALIDATION" });
     expect(mocks.messageCreate).not.toHaveBeenCalled();
   });
 
   it("item 28 — internal newlines are preserved (only leading/trailing whitespace is trimmed)", async () => {
-    await sendMessage(ACTOR, CONVERSATION_ID, "  line one\nline two  ");
+    await sendMessage(ACTOR, CONVERSATION_ID, "  line one\nline two  ", CLIENT_MESSAGE_ID);
     expect(mocks.messageCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ body: "line one\nline two" }) })
     );
@@ -219,7 +229,7 @@ describe("sendMessage", () => {
 
   it("item 29 — HTML-looking content is stored verbatim as plain text, never stripped/escaped/transformed at the storage layer (escaping is a render-time concern for a future UI, not a storage-layer transformation — double-escaping would corrupt the text)", async () => {
     const body = "<script>alert(1)</script> & <b>bold</b>";
-    await sendMessage(ACTOR, CONVERSATION_ID, body);
+    await sendMessage(ACTOR, CONVERSATION_ID, body, CLIENT_MESSAGE_ID);
     expect(mocks.messageCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ body }) })
     );
@@ -227,13 +237,13 @@ describe("sendMessage", () => {
 
   it("unauthorized send is rejected with the specific reason from the authorization layer", async () => {
     mocks.canSendConversationMessage.mockResolvedValue({ ok: false, reason: "OUTSIDE_COMMUNICATION_WINDOW" });
-    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello");
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "OUTSIDE_COMMUNICATION_WINDOW" });
     expect(mocks.messageCreate).not.toHaveBeenCalled();
   });
 
   it("item 34 — Conversation.lastMessageAt is updated in the SAME transaction as the message insert", async () => {
-    await sendMessage(ACTOR, CONVERSATION_ID, "hello");
+    await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(mocks.transaction).toHaveBeenCalledTimes(1);
     expect(mocks.messageCreate).toHaveBeenCalled();
     expect(mocks.conversationUpdate).toHaveBeenCalledWith(
@@ -242,7 +252,7 @@ describe("sendMessage", () => {
   });
 
   it("sending marks the sender's own participant row as read up to now (their own unread count stays correct)", async () => {
-    await sendMessage(ACTOR, CONVERSATION_ID, "hello");
+    await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(mocks.conversationParticipantUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { conversationId_userId: { conversationId: CONVERSATION_ID, userId: ACTOR } },
@@ -268,6 +278,116 @@ describe("sendMessage", () => {
     const fs = await import("node:fs/promises");
     const source = await fs.readFile(new URL("./messaging.ts", import.meta.url), "utf-8");
     expect(source.toLowerCase()).not.toMatch(/resend|sendemail|email\.send/);
+  });
+});
+
+describe("MESSAGING-DUPLICATE-SEND-FIX1 — sendMessage clientMessageId idempotency", () => {
+  function p2002() {
+    return new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "test" });
+  }
+
+  it("malformed UUID is rejected as VALIDATION before ever touching the database", async () => {
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello", "not-a-uuid");
+    expect(result).toEqual({ ok: false, reason: "VALIDATION" });
+    expect(mocks.messageCreate).not.toHaveBeenCalled();
+  });
+
+  it("a first send with a given clientMessageId creates exactly one Message", async () => {
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+    expect(result.ok).toBe(true);
+    expect(mocks.messageCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.messageCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ clientMessageId: CLIENT_MESSAGE_ID, senderUserId: ACTOR }) })
+    );
+  });
+
+  it("a retry with the SAME (conversationId, senderUserId, clientMessageId) and the SAME body returns the already-persisted Message instead of creating a second row", async () => {
+    mocks.messageCreate.mockRejectedValue(p2002());
+    const existing = { id: "existing-msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "hello", createdAt: new Date() };
+    mocks.messageFindUniqueOrThrow.mockResolvedValue(existing);
+
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+
+    expect(result).toEqual({ ok: true, message: existing });
+    expect(mocks.messageFindUniqueOrThrow).toHaveBeenCalledWith({
+      where: { conversationId_senderUserId_clientMessageId: { conversationId: CONVERSATION_ID, senderUserId: ACTOR, clientMessageId: CLIENT_MESSAGE_ID } },
+    });
+  });
+
+  it("a retry claiming the same clientMessageId but a DIFFERENT body is rejected as IDEMPOTENCY_CONFLICT — the key binds to the original payload, altered content is never silently accepted", async () => {
+    mocks.messageCreate.mockRejectedValue(p2002());
+    mocks.messageFindUniqueOrThrow.mockResolvedValue({ id: "existing-msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "original body", createdAt: new Date() });
+
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "a different body entirely", CLIENT_MESSAGE_ID);
+
+    expect(result).toEqual({ ok: false, reason: "IDEMPOTENCY_CONFLICT" });
+  });
+
+  it("the same body with a DIFFERENT clientMessageId is never treated as a duplicate — two legitimate, separately-persisted messages", async () => {
+    const first = await sendMessage(ACTOR, CONVERSATION_ID, "OK", CLIENT_MESSAGE_ID);
+    const second = await sendMessage(ACTOR, CONVERSATION_ID, "OK", OTHER_CLIENT_MESSAGE_ID);
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(mocks.messageCreate).toHaveBeenCalledTimes(2);
+    expect(mocks.messageCreate).toHaveBeenNthCalledWith(1, expect.objectContaining({ data: expect.objectContaining({ clientMessageId: CLIENT_MESSAGE_ID }) }));
+    expect(mocks.messageCreate).toHaveBeenNthCalledWith(2, expect.objectContaining({ data: expect.objectContaining({ clientMessageId: OTHER_CLIENT_MESSAGE_ID }) }));
+  });
+
+  it("the same clientMessageId in a DIFFERENT conversation is never treated as a collision (composite key includes conversationId)", async () => {
+    const first = await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+    const second = await sendMessage(ACTOR, "conv-2", "hello", CLIENT_MESSAGE_ID);
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(mocks.messageCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("the conflict lookup is scoped to the AUTHENTICATED sender's own id, never a client-supplied one — a different sender's identical key cannot collide", async () => {
+    mocks.messageCreate.mockRejectedValue(p2002());
+    mocks.messageFindUniqueOrThrow.mockResolvedValue({ id: "existing-msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "hello", createdAt: new Date() });
+
+    await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+
+    expect(mocks.messageFindUniqueOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ conversationId_senderUserId_clientMessageId: expect.objectContaining({ senderUserId: ACTOR }) }) })
+    );
+  });
+
+  it("a non-P2002 error from the transaction still propagates (never silently swallowed as if it were an idempotency conflict)", async () => {
+    mocks.messageCreate.mockRejectedValue(new Error("db down"));
+    await expect(sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID)).rejects.toThrow("db down");
+  });
+
+  it("notification is created exactly once for a first send", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Sam", userId: "student-user-1", managementMode: "SELF_MANAGED" },
+      tutorProfile: { userId: ACTOR, user: { name: "Matthew Allen" } },
+    });
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === ACTOR ? "TUTOR" : userId === "student-user-1" ? "STUDENT" : null));
+
+    await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+
+    expect(mocks.notificationCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("an idempotent retry (same key, same body) fires NO additional notification — a duplicate retry must not bump/recreate a collapsed notification", async () => {
+    mocks.conversationFindUniqueOrThrow.mockResolvedValue({
+      studentProfileId: STUDENT_ID,
+      tutorProfileId: TUTOR_PROFILE_ID,
+      studentProfile: { firstName: "Sam", userId: "student-user-1", managementMode: "SELF_MANAGED" },
+      tutorProfile: { userId: ACTOR, user: { name: "Matthew Allen" } },
+    });
+    mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === ACTOR ? "TUTOR" : userId === "student-user-1" ? "STUDENT" : null));
+    mocks.messageCreate.mockRejectedValue(p2002());
+    mocks.messageFindUniqueOrThrow.mockResolvedValue({ id: "existing-msg-1", conversationId: CONVERSATION_ID, senderUserId: ACTOR, body: "hello", createdAt: new Date() });
+
+    const result = await sendMessage(ACTOR, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
+
+    expect(result.ok).toBe(true);
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+    expect(mocks.notificationUpdate).not.toHaveBeenCalled();
   });
 });
 
@@ -529,7 +649,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     expect(mocks.notificationCreate).toHaveBeenCalledTimes(1);
     const call = mocks.notificationCreate.mock.calls[0]![0];
@@ -541,7 +661,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
 
-    await sendMessage(STUDENT_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(STUDENT_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     expect(mocks.notificationCreate).toHaveBeenCalledTimes(1);
     expect(mocks.notificationCreate.mock.calls[0]![0].data.userId).toBe(TUTOR_USER_ID);
@@ -557,7 +677,7 @@ describe("sendMessage — message.new Notification integration", () => {
       userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A || userId === GUARDIAN_B ? "GUARDIAN" : null
     );
 
-    await sendMessage(GUARDIAN_A, CONVERSATION_ID, "hello");
+    await sendMessage(GUARDIAN_A, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId).sort();
     expect(notifiedUserIds).toEqual([GUARDIAN_B, TUTOR_USER_ID].sort());
@@ -573,7 +693,7 @@ describe("sendMessage — message.new Notification integration", () => {
       userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A || userId === GUARDIAN_B ? "GUARDIAN" : null
     );
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId).sort();
     expect(notifiedUserIds).toEqual([GUARDIAN_A, GUARDIAN_B].sort());
@@ -586,7 +706,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.parentStudentRelationshipFindMany.mockResolvedValue([{ parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } }]);
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A ? "GUARDIAN" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId);
     expect(notifiedUserIds).toEqual([GUARDIAN_A]);
@@ -598,7 +718,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.parentStudentRelationshipFindMany.mockResolvedValue([{ parentProfile: { userId: GUARDIAN_A, firstName: "Sarah" } }]);
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === GUARDIAN_A ? "GUARDIAN" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     const notifiedUserIds = mocks.notificationCreate.mock.calls.map((c) => c[0]!.data.userId);
     expect(notifiedUserIds).not.toContain(row.studentProfile.userId);
@@ -608,7 +728,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     const call = mocks.notificationCreate.mock.calls[0]![0];
     expect(call.data.metadata).toEqual({ conversationId: CONVERSATION_ID });
@@ -619,7 +739,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "this is the private message body");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "this is the private message body", CLIENT_MESSAGE_ID);
 
     const call = mocks.notificationCreate.mock.calls[0]![0];
     expect(call.data.title).not.toContain("this is the private message body");
@@ -631,7 +751,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
     mocks.notificationFindFirst.mockResolvedValue({ id: "existing-notif-1" });
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "second message");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "second message", CLIENT_MESSAGE_ID);
 
     expect(mocks.notificationCreate).not.toHaveBeenCalled();
     expect(mocks.notificationUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "existing-notif-1" } }));
@@ -641,7 +761,7 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.conversationFindUniqueOrThrow.mockResolvedValue(selfManagedConversationRow());
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
 
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
 
     expect(mocks.notificationFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -660,13 +780,13 @@ describe("sendMessage — message.new Notification integration", () => {
     mocks.resolveParticipantRole.mockImplementation(async (_c: unknown, userId: string) => (userId === TUTOR_USER_ID ? "TUTOR" : userId === STUDENT_USER_ID ? "STUDENT" : null));
     mocks.notificationFindFirst.mockRejectedValue(new Error("notification db down"));
 
-    const result = await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    const result = await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(result.ok).toBe(true);
   });
 
   it("no notification is ever attempted for an unauthorized/failed send", async () => {
     mocks.canSendConversationMessage.mockResolvedValue({ ok: false, reason: "OUTSIDE_COMMUNICATION_WINDOW" });
-    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello");
+    await sendMessage(TUTOR_USER_ID, CONVERSATION_ID, "hello", CLIENT_MESSAGE_ID);
     expect(mocks.notificationCreate).not.toHaveBeenCalled();
     expect(mocks.notificationUpdate).not.toHaveBeenCalled();
   });

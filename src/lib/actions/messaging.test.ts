@@ -25,6 +25,7 @@ import { getNewerMessagesAction, getOlderMessagesAction, markConversationReadAct
 
 const USER_ID = "user-1";
 const CONVERSATION_ID = "conv-1";
+const CLIENT_MESSAGE_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -34,25 +35,31 @@ beforeEach(() => {
 describe("sendMessageAction", () => {
   it("item 21 — passes the authenticated user as the actor, never a client-supplied sender", async () => {
     mocks.sendMessage.mockResolvedValue({ ok: true, message: { id: "m1", conversationId: CONVERSATION_ID, senderUserId: USER_ID, body: "hi", createdAt: new Date() } });
-    await sendMessageAction(CONVERSATION_ID, "hi");
-    expect(mocks.sendMessage).toHaveBeenCalledWith(USER_ID, CONVERSATION_ID, "hi");
+    await sendMessageAction(CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
+    expect(mocks.sendMessage).toHaveBeenCalledWith(USER_ID, CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
   });
 
   it("item 22 — a failed send surfaces a reason without leaking internal account-state detail", async () => {
     mocks.sendMessage.mockResolvedValue({ ok: false, reason: "ACTOR_SUSPENDED" });
-    const result = await sendMessageAction(CONVERSATION_ID, "hi");
+    const result = await sendMessageAction(CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "UNAVAILABLE" });
   });
 
   it("maps OUTSIDE_COMMUNICATION_WINDOW to a stable READ_ONLY reason for the UI", async () => {
     mocks.sendMessage.mockResolvedValue({ ok: false, reason: "OUTSIDE_COMMUNICATION_WINDOW" });
-    const result = await sendMessageAction(CONVERSATION_ID, "hi");
+    const result = await sendMessageAction(CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "READ_ONLY" });
+  });
+
+  it("MESSAGING-DUPLICATE-SEND-FIX1 — an idempotency conflict (retried key, different body) also collapses to the generic UNAVAILABLE reason, never a distinct one a user could act on", async () => {
+    mocks.sendMessage.mockResolvedValue({ ok: false, reason: "IDEMPOTENCY_CONFLICT" });
+    const result = await sendMessageAction(CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
+    expect(result).toEqual({ ok: false, reason: "UNAVAILABLE" });
   });
 
   it("an unauthenticated caller cannot send", async () => {
     mocks.auth.mockResolvedValue(null);
-    const result = await sendMessageAction(CONVERSATION_ID, "hi");
+    const result = await sendMessageAction(CONVERSATION_ID, "hi", CLIENT_MESSAGE_ID);
     expect(result).toEqual({ ok: false, reason: "NOT_AUTHORIZED" });
     expect(mocks.sendMessage).not.toHaveBeenCalled();
   });

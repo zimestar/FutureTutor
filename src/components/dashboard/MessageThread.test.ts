@@ -87,3 +87,28 @@ describe("MessageThread.tsx", () => {
     expect(matches).toHaveLength(1);
   });
 });
+
+describe("MESSAGING-DUPLICATE-SEND-FIX1 — identity-based (Message.id) dedupe merging", () => {
+  it("imports the shared, independently-unit-tested mergeByMessageId helper rather than a local/duplicated implementation", () => {
+    expect(source).toContain('import { mergeByMessageId } from "@/lib/messagingMerge";');
+  });
+
+  it("the send-response path merges its own appended message through mergeByMessageId (guards the named send/poll race)", () => {
+    expect(source).toContain("setMessages((prev) => mergeByMessageId(prev, [result.message]));");
+  });
+
+  it("the polling path merges newly-fetched messages through mergeByMessageId, never a raw spread-append", () => {
+    expect(source).toContain("setMessages((prev) => mergeByMessageId(prev, newer));");
+    expect(source).not.toMatch(/setMessages\(\(prev\) => \[\.\.\.prev, \.\.\.newer\]\)/);
+  });
+
+  it("the older-pagination path merges through mergeByMessageId, never a raw spread-prepend", () => {
+    expect(source).toContain("setMessages((prev) => mergeByMessageId(page.items.slice().reverse(), prev));");
+    expect(source).not.toMatch(/setMessages\(\(prev\) => \[\.\.\.page\.items\.slice\(\)\.reverse\(\), \.\.\.prev\]\)/);
+  });
+
+  it("handleSend threads the composer's clientMessageId through to sendMessageAction, never inventing/omitting it", () => {
+    expect(source).toContain("async function handleSend(body: string, clientMessageId: string) {");
+    expect(source).toContain("sendMessageAction(conversationId, body, clientMessageId)");
+  });
+});

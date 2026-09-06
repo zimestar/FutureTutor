@@ -13,6 +13,7 @@ import {
   sendMessageAction,
 } from "@/lib/actions/messaging";
 import type { MessageDto, ConversationSessionContextDto } from "@/lib/messagingPresentation";
+import { mergeByMessageId } from "@/lib/messagingMerge";
 
 const POLL_INTERVAL_MS = 7000;
 const NEAR_BOTTOM_THRESHOLD_PX = 120;
@@ -95,7 +96,7 @@ export function MessageThread({
         const newer = await getNewerMessagesAction(conversationId, latestCreatedAtRef.current);
         if (newer.length === 0) return;
 
-        setMessages((prev) => [...prev, ...newer]);
+        setMessages((prev) => mergeByMessageId(prev, newer));
         latestCreatedAtRef.current = newer[newer.length - 1]!.createdAt;
 
         const anyFromOthers = newer.some((m) => m.senderUserId !== ownUserId);
@@ -120,7 +121,7 @@ export function MessageThread({
     const previousScrollHeight = el?.scrollHeight ?? 0;
     try {
       const page = await getOlderMessagesAction(conversationId, olderCursor);
-      setMessages((prev) => [...page.items.slice().reverse(), ...prev]);
+      setMessages((prev) => mergeByMessageId(page.items.slice().reverse(), prev));
       setOlderCursor(page.nextCursor);
       requestAnimationFrame(() => {
         if (el) el.scrollTop = el.scrollHeight - previousScrollHeight;
@@ -130,10 +131,10 @@ export function MessageThread({
     }
   }
 
-  async function handleSend(body: string) {
-    const result = await sendMessageAction(conversationId, body);
+  async function handleSend(body: string, clientMessageId: string) {
+    const result = await sendMessageAction(conversationId, body, clientMessageId);
     if (result.ok) {
-      setMessages((prev) => [...prev, result.message]);
+      setMessages((prev) => mergeByMessageId(prev, [result.message]));
       latestCreatedAtRef.current = result.message.createdAt;
       requestAnimationFrame(() => scrollToBottom("smooth"));
       return { ok: true };

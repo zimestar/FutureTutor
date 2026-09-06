@@ -9,7 +9,7 @@ import {
   resolveParticipantRole,
   type MessagingAuthorizationClient,
 } from "@/services/messagingAuthorization";
-import { messageBodySchema } from "@/schemas/messaging";
+import { clientMessageIdSchema, messageBodySchema } from "@/schemas/messaging";
 
 /**
  * MESSAGING-MVP1A — the domain service. Every entry point re-authorizes via
@@ -127,18 +127,49 @@ export async function ensureConversationAccess(
 
 export type SendMessageResult =
   | { ok: true; message: { id: string; conversationId: string; senderUserId: string; body: string; createdAt: Date } }
-  | { ok: false; reason: "VALIDATION" | "CONVERSATION_NOT_FOUND" | "NOT_AUTHORIZED" | "ACTOR_SUSPENDED" | "TUTOR_NOT_APPROVED" | "OUTSIDE_COMMUNICATION_WINDOW" };
+  | {
+      ok: false;
+      reason:
+        | "VALIDATION"
+        | "CONVERSATION_NOT_FOUND"
+        | "NOT_AUTHORIZED"
+        | "ACTOR_SUSPENDED"
+        | "TUTOR_NOT_APPROVED"
+        | "OUTSIDE_COMMUNICATION_WINDOW"
+        | "IDEMPOTENCY_CONFLICT";
+    };
 
 /**
  * senderUserId is ALWAYS the authenticated caller's own id — never accepted
  * as a parameter from a request body, closing the forged-sender threat by
  * construction (there is no parameter here through which a caller could
  * even attempt to supply a different one).
+ *
+ * MESSAGING-DUPLICATE-SEND-FIX1 — clientMessageId is a client-generated
+ * idempotency token for one logical send attempt (never trusted for
+ * authorization; see the Message.clientMessageId schema doc comment). This
+ * function is idempotent for (conversationId, actorUserId, clientMessageId):
+ * a retried call with the same key and the same body returns the
+ * already-persisted Message rather than creating a second row; a retry with
+ * the same key but a DIFFERENT body is rejected outright — the key binds to
+ * the original logical payload, so altered content is never silently
+ * accepted as if it were the same send. Two genuinely separate calls with
+ * the same body but DIFFERENT keys both persist — identical text is never,
+ * by itself, treated as a duplicate.
  */
-export async function sendMessage(actorUserId: string, conversationId: string, rawBody: string): Promise<SendMessageResult> {
-  const parsed = messageBodySchema.safeParse(rawBody);
-  if (!parsed.success) return { ok: false, reason: "VALIDATION" };
-  const body = parsed.data;
+export async function sendMessage(
+  actorUserId: string,
+  conversationId: string,
+  rawBody: string,
+  clientMessageId: string
+): Promise<SendMessageResult> {
+  const parsedBody = messageBodySchema.safeParse(rawBody);
+  if (!parsedBody.success) return { ok: false, reason: "VALIDATION" };
+  const body = parsedBody.data;
+
+  const parsedClientMessageId = clientMessageIdSchema.safeParse(clientMessageId);
+  if (!parsedClientMessageId.success) return { ok: false, reason: "VALIDATION" };
+  const idempotencyKey = parsedClientMessageId.data;
 
   const eligibility = await canSendConversationMessage(db, actorUserId, conversationId);
   if (!eligibility.ok) {
@@ -151,34 +182,61 @@ export async function sendMessage(actorUserId: string, conversationId: string, r
   });
 
   const now = new Date();
-  const message = await db.$transaction(async (tx) => {
-    const created = await tx.message.create({
-      data: { conversationId, senderUserId: actorUserId, body },
-    });
-    await tx.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now } });
-    // Sending implies having read up to this point — keeps the sender's own
-    // unread count correct without a separate client round-trip.
-    const role = await resolveParticipantRole(tx, actorUserId, {
-      conversationId,
-      studentProfileId: conversation.studentProfileId,
-      tutorProfileId: conversation.tutorProfileId,
-    });
-    if (role) {
-      await tx.conversationParticipant.upsert({
-        where: { conversationId_userId: { conversationId, userId: actorUserId } },
-        create: { conversationId, userId: actorUserId, role, lastReadAt: now },
-        update: { lastReadAt: now },
+  let wasNewlyCreated = true;
+  let message: { id: string; conversationId: string; senderUserId: string; body: string; createdAt: Date };
+  try {
+    message = await db.$transaction(async (tx) => {
+      const created = await tx.message.create({
+        data: { conversationId, senderUserId: actorUserId, body, clientMessageId: idempotencyKey },
       });
+      await tx.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now } });
+      // Sending implies having read up to this point — keeps the sender's own
+      // unread count correct without a separate client round-trip.
+      const role = await resolveParticipantRole(tx, actorUserId, {
+        conversationId,
+        studentProfileId: conversation.studentProfileId,
+        tutorProfileId: conversation.tutorProfileId,
+      });
+      if (role) {
+        await tx.conversationParticipant.upsert({
+          where: { conversationId_userId: { conversationId, userId: actorUserId } },
+          create: { conversationId, userId: actorUserId, role, lastReadAt: now },
+          update: { lastReadAt: now },
+        });
+      }
+      return created;
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      // Same (conversationId, senderUserId, clientMessageId) already exists —
+      // a retried/duplicated logical send, not a new message. The DB unique
+      // constraint is the actual concurrency guard (mirrors
+      // getOrCreateConversationForRelationship's own established pattern
+      // above); this just re-reads its authoritative result.
+      const existing = await db.message.findUniqueOrThrow({
+        where: {
+          conversationId_senderUserId_clientMessageId: { conversationId, senderUserId: actorUserId, clientMessageId: idempotencyKey },
+        },
+      });
+      if (existing.body !== body) {
+        return { ok: false, reason: "IDEMPOTENCY_CONFLICT" };
+      }
+      wasNewlyCreated = false;
+      message = existing;
+    } else {
+      throw error;
     }
-    return created;
-  });
+  }
 
   // Notification side effects run strictly AFTER the Message transaction
-  // has committed, and are wrapped so they can never surface a failure to
-  // this function's caller — a successful send must never be undone or
-  // reported as failed merely because notification delivery had a problem.
-  // See notifyMessageRecipients' own doc comment for the full design.
-  await notifyMessageRecipients(conversationId, actorUserId).catch(() => {});
+  // has committed, are wrapped so they can never surface a failure to this
+  // function's caller, and fire ONLY for a genuinely new Message — an
+  // idempotent retry that resolved to an already-existing row must never
+  // bump/recreate a collapsed notification a second time. See
+  // notifyMessageRecipients' own doc comment for the full design.
+  if (wasNewlyCreated) {
+    await notifyMessageRecipients(conversationId, actorUserId).catch(() => {});
+  }
 
   return { ok: true, message };
 }

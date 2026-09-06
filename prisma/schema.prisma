@@ -1991,11 +1991,26 @@ model Message {
   /// this row is ever written.
   body           String   @db.Text
   createdAt      DateTime @default(now())
+  /// MESSAGING-DUPLICATE-SEND-FIX1 — client-generated (crypto.randomUUID())
+  /// idempotency token for one logical send attempt, NOT a display id and
+  /// NEVER trusted for authorization (senderUserId still always comes from
+  /// the authenticated session). Nullable for backward compatibility: every
+  /// pre-existing Message row keeps clientMessageId = null permanently (no
+  /// backfill — see sendMessage's own doc comment), and Postgres treats
+  /// multiple NULLs in a unique index as distinct, so historical rows never
+  /// collide with each other or with new ones. Every NEW message the
+  /// application creates supplies a real UUID, and the composite unique
+  /// index below is what actually makes a retried/duplicated send
+  /// idempotent — the DB constraint is the guard, not application logic
+  /// alone (mirrors this codebase's own established
+  /// getOrCreatePaymentForQuote / Payment.bookingId @unique pattern).
+  clientMessageId String?
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation("MessageSender", fields: [senderUserId], references: [id])
   reports      MessageReport[]
 
+  @@unique([conversationId, senderUserId, clientMessageId])
   @@index([conversationId, createdAt])
 }
 

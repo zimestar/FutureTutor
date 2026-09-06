@@ -14,9 +14,18 @@ export const messageBodySchema = z
   .min(1, "empty")
   .max(MESSAGE_MAX_LENGTH, "too_long");
 
+/**
+ * MESSAGING-DUPLICATE-SEND-FIX1 — a client-generated (crypto.randomUUID())
+ * idempotency token for one logical send attempt. Validated for shape only
+ * — never trusted for authorization, and never used to derive
+ * senderUserId/conversationId (those remain server-resolved as before).
+ */
+export const clientMessageIdSchema = z.string().uuid();
+
 export const sendMessageSchema = z.object({
   conversationId: z.string().trim().min(1),
   body: messageBodySchema,
+  clientMessageId: clientMessageIdSchema,
 });
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
