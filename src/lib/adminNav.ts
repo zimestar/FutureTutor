@@ -18,6 +18,12 @@ const items: ReadonlyArray<{ key: string; href: string; group: "operationsGroup"
   // MESSAGING-MVP1C — a dedicated permission (see the AdminPermission enum's
   // own comment): not auto-granted to any existing ADMIN, only SUPER_ADMIN.
   { key: "messageReports", href: "/admin/message-reports", group: "operationsGroup", permission: "ADMIN_MESSAGE_REPORTS_READ" },
+  // ADMIN-AUDITLOG-VIEWER1 — a dedicated permission (see the
+  // AdminPermission enum's own comment): AuditLog is cross-cutting and
+  // includes safety-review activity (admin.conversation_viewed), so no
+  // existing domain-scoped permission is a safe fit. Not auto-granted to
+  // any existing ADMIN, only SUPER_ADMIN.
+  { key: "auditLog", href: "/admin/audit-log", group: "operationsGroup", permission: "ADMIN_AUDIT_LOG_READ" },
   { key: "pricing", href: "/admin/pricing", group: "financeGroup", permission: "ADMIN_PRICING_READ" },
   { key: "payments", href: "/admin/payments", group: "financeGroup", permission: "ADMIN_PAYMENTS_READ" },
   // ADMIN-FINANCIAL-OPS1A — reuses ADMIN_PAYMENTS_READ rather than adding a

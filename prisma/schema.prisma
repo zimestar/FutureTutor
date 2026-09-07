@@ -66,6 +66,20 @@ enum AdminPermission {
   // per this mission's own requirement.
   ADMIN_MESSAGE_REPORTS_READ
   ADMIN_MESSAGE_REPORTS_MANAGE
+  // ADMIN-AUDITLOG-VIEWER1 — AuditLog is genuinely cross-cutting (tutor
+  // pipeline, suspensions, message-report review, financial reconciliation,
+  // Quick Match, admin actions) and includes at least one entry
+  // (admin.conversation_viewed) that reveals safety-review activity over
+  // private messaging — no single existing permission (which are all
+  // domain-scoped: payments, tutors, bookings, etc.) is a safe semantic fit
+  // for granting visibility across all of it at once, mirroring exactly the
+  // reasoning already recorded above for ADMIN_MESSAGE_REPORTS_READ. A
+  // read-only permission only — this viewer has no mutation path, so no
+  // paired _MANAGE value is needed. Deliberately NOT auto-granted to any
+  // existing ADMIN (only SUPER_ADMIN gets it automatically, per
+  // adminNavItems' existing "SUPER_ADMIN -> all permissions" rule) — normal
+  // admin access must be explicitly assigned.
+  ADMIN_AUDIT_LOG_READ
 }
 
 model User {

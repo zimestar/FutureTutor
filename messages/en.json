@@ -935,6 +935,7 @@
       "financialOps": "Financial Operations",
       "messages": "Messages",
       "messageReports": "Message Reports",
+      "auditLog": "Audit Log",
       "family": "My Students",
       "familyInvitations": "Family Invitations",
       "findTutor": "Find a Tutor",
@@ -1597,6 +1598,56 @@
         "markUnderReview": "Mark under review",
         "markResolved": "Mark resolved",
         "error": "Couldn't update this report — please try again."
+      }
+    },
+    "auditLog": {
+      "title": "Audit Log",
+      "description": "A read-only history of sensitive operational events — tutor applications, suspensions, message-report review, financial reconciliation, and admin actions.",
+      "empty": "No audit events match these filters.",
+      "viewDetail": "View detail",
+      "nextPage": "Next page",
+      "detailTitle": "Audit event detail",
+      "detailDescription": "The exact action, actor, and safe metadata for this event. No action can be taken from this page.",
+      "timestamp": "Timestamp",
+      "action": "Action",
+      "correlationNote": "Use the entity ID above to find related events for the same booking, tutor, or report.",
+      "filters": {
+        "action": "Action",
+        "entityType": "Entity type",
+        "actor": "Actor",
+        "actorPlaceholder": "Name or email",
+        "entityId": "Entity ID",
+        "entityIdPlaceholder": "Booking, tutor, student, or report ID",
+        "from": "From",
+        "to": "To",
+        "all": "All",
+        "apply": "Apply filters"
+      },
+      "category": {
+        "AUTH_USER": "Auth & User",
+        "TUTOR_APPLICATION": "Tutor Application",
+        "BOOKING_SESSION": "Booking & Session",
+        "FINANCIAL": "Financial",
+        "MESSAGING_SAFETY": "Messaging & Safety",
+        "ADMIN": "Admin",
+        "OTHER": "Other"
+      },
+      "actor": {
+        "system": "System",
+        "unknown": "Unknown/unavailable user",
+        "unknownId": "User ID: {id}",
+        "deactivated": "(deactivated)",
+        "roleLabel": "Role"
+      },
+      "entity": {
+        "label": "Entity",
+        "none": "—",
+        "idLabel": "ID"
+      },
+      "metadata": {
+        "title": "Details",
+        "empty": "No additional details recorded for this event.",
+        "redacted": "[redacted]"
       }
     },
     "pricing": {

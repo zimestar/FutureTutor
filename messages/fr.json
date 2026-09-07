@@ -935,6 +935,7 @@
       "financialOps": "Opérations financières",
       "messages": "Messages",
       "messageReports": "Signalements de messages",
+      "auditLog": "Journal d'audit",
       "family": "Mes élèves",
       "familyInvitations": "Invitations familiales",
       "findTutor": "Trouver un tuteur",
@@ -1597,6 +1598,56 @@
         "markUnderReview": "Marquer en cours d'examen",
         "markResolved": "Marquer résolu",
         "error": "Impossible de mettre à jour ce signalement — veuillez réessayer."
+      }
+    },
+    "auditLog": {
+      "title": "Journal d'audit",
+      "description": "Un historique en lecture seule des événements opérationnels sensibles — candidatures de tuteurs, suspensions, examen des signalements de messages, rapprochement financier et actions d'administration.",
+      "empty": "Aucun événement d'audit ne correspond à ces filtres.",
+      "viewDetail": "Voir le détail",
+      "nextPage": "Page suivante",
+      "detailTitle": "Détail de l'événement d'audit",
+      "detailDescription": "L'action exacte, l'auteur et les métadonnées sûres de cet événement. Aucune action ne peut être effectuée depuis cette page.",
+      "timestamp": "Horodatage",
+      "action": "Action",
+      "correlationNote": "Utilisez l'identifiant de l'entité ci-dessus pour trouver les événements liés à la même réservation, au même tuteur ou au même signalement.",
+      "filters": {
+        "action": "Action",
+        "entityType": "Type d'entité",
+        "actor": "Auteur",
+        "actorPlaceholder": "Nom ou courriel",
+        "entityId": "Identifiant de l'entité",
+        "entityIdPlaceholder": "Identifiant de réservation, de tuteur, d'élève ou de signalement",
+        "from": "À partir de",
+        "to": "Jusqu'à",
+        "all": "Tous",
+        "apply": "Appliquer les filtres"
+      },
+      "category": {
+        "AUTH_USER": "Authentification et compte",
+        "TUTOR_APPLICATION": "Candidature de tuteur",
+        "BOOKING_SESSION": "Réservation et séance",
+        "FINANCIAL": "Financier",
+        "MESSAGING_SAFETY": "Messagerie et sécurité",
+        "ADMIN": "Administration",
+        "OTHER": "Autre"
+      },
+      "actor": {
+        "system": "Système",
+        "unknown": "Utilisateur inconnu ou indisponible",
+        "unknownId": "Identifiant utilisateur : {id}",
+        "deactivated": "(désactivé)",
+        "roleLabel": "Rôle"
+      },
+      "entity": {
+        "label": "Entité",
+        "none": "—",
+        "idLabel": "Identifiant"
+      },
+      "metadata": {
+        "title": "Détails",
+        "empty": "Aucun détail supplémentaire enregistré pour cet événement.",
+        "redacted": "[masqué]"
       }
     },
     "pricing": {
