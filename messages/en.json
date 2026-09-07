@@ -962,7 +962,9 @@
         "description": "Keep track of the sessions you have planned.",
         "viewCta": "View bookings",
         "emptyTitle": "Ready when you are",
-        "emptyDescription": "Find a tutor when you are ready to plan your next session."
+        "emptyDescription": "Find a tutor when you are ready to plan your next session.",
+        "nextSessionLabel": "Next session",
+        "messageTutorCta": "Message tutor"
       },
       "saved": {
         "title": "Tutors you saved",
@@ -1020,7 +1022,11 @@
       "schedule": {
         "title": "Family tutoring schedule",
         "description": "Open Bookings to review the tutoring activity currently available to your account.",
-        "cta": "View bookings"
+        "cta": "View bookings",
+        "emptyTitle": "Nothing scheduled yet",
+        "emptyDescription": "Find a tutor for one of your learners when you're ready to plan a session.",
+        "nextSessionLabel": "Next session",
+        "messageTutorCta": "Message tutor"
       }
     },
     "tutor": {

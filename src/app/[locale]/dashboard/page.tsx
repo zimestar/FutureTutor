@@ -5,6 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
+import { UpcomingSessionCard } from "@/components/dashboard/UpcomingSessionCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Alert, EmptyState } from "@/components/ui/Feedback";
@@ -15,7 +16,10 @@ import {
   resolveStudentAccountActivationState,
   type GuardianVisibleStudentLoginStatus,
 } from "@/services/familyManagement";
+import { listBookableStudentsForActor } from "@/services/learnerSelection";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
+import { formatBookingTime } from "@/lib/utils";
+import { resolveUpcomingBookings } from "@/lib/dashboardUpcomingSessions";
 
 const LOGIN_STATUS_BADGE_VARIANT: Record<GuardianVisibleStudentLoginStatus, "mint" | "outline"> = {
   ACTIVE: "mint",
@@ -55,7 +59,21 @@ export default async function StudentDashboardPage({ params }: { params: Promise
       );
     }
 
-    const t = await getTranslations({ locale, namespace: "dashboard.student" });
+    const [t, tSubjects, tMode, tSessionExperience, tBookings, studentProfile] = await Promise.all([
+      getTranslations({ locale, namespace: "dashboard.student" }),
+      getTranslations({ locale, namespace: "subjects.items" }),
+      getTranslations({ locale, namespace: "quickMatch.mode" }),
+      getTranslations({ locale, namespace: "sessionExperience" }),
+      getTranslations({ locale, namespace: "dashboard.student.bookings" }),
+      db.studentProfile.findUnique({ where: { userId: user.id }, select: { id: true } }),
+    ]);
+
+    // STUDENT-PARENT-DASHBOARD-UPCOMING1 — server-scoped by construction:
+    // studentProfile above is resolved from the AUTHENTICATED user's own
+    // userId, never a client-supplied studentProfileId, so this can only
+    // ever discover the viewer's own bookings.
+    const upcomingBookings = studentProfile ? await resolveUpcomingBookings([studentProfile.id]) : [];
+
     return (
       <DashboardShell navItems={navItems} userName={user.name ?? ""}>
         <PageHeader title={t("welcome", { name: firstName })} description={t("description")} />
@@ -80,7 +98,29 @@ export default async function StudentDashboardPage({ params }: { params: Promise
               <div><h2 id="student-schedule-heading" className="text-xl font-bold text-text-primary">{t("schedule.title")}</h2><p className="mt-1 text-sm text-text-secondary">{t("schedule.description")}</p></div>
               <Button href="/dashboard/bookings" variant="ghost" size="sm" className="shrink-0">{t("schedule.viewCta")}<ArrowRight className="size-4" aria-hidden="true" /></Button>
             </div>
-            <EmptyState icon={CalendarDays} title={t("schedule.emptyTitle")} description={t("schedule.emptyDescription")} action={<Button href="/dashboard/find-tutors" variant="outline">{t("findTutorCta")}</Button>} />
+            {upcomingBookings.length > 0 ? (
+              <div className="flex flex-col gap-4" data-testid="upcoming-sessions-list">
+                {upcomingBookings.map((booking, index) => (
+                  <UpcomingSessionCard
+                    key={booking.id}
+                    bookingId={booking.id}
+                    subjectLabel={tSubjects(booking.subjectSlug)}
+                    withTutorText={tBookings("withTutor", { name: booking.tutorFirstName })}
+                    forLearnerText={null}
+                    whenLabel={formatBookingTime(booking.startAt, booking.timezone, locale)}
+                    modeLabel={tMode(booking.mode)}
+                    isNext={index === 0}
+                    nextSessionLabel={t("schedule.nextSessionLabel")}
+                    viewSessionHref={booking.hasSession ? `/session/${booking.id}` : null}
+                    viewSessionLabel={tSessionExperience("viewSession")}
+                    messageTutorHref="/messages"
+                    messageTutorLabel={t("schedule.messageTutorCta")}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState icon={CalendarDays} title={t("schedule.emptyTitle")} description={t("schedule.emptyDescription")} action={<Button href="/dashboard/find-tutors" variant="outline">{t("findTutorCta")}</Button>} />
+            )}
           </section>
 
           <aside aria-labelledby="student-saved-heading">
@@ -96,13 +136,27 @@ export default async function StudentDashboardPage({ params }: { params: Promise
     );
   }
 
-  const [t, tLevels, tLoginStatus, children] = await Promise.all([
+  const [t, tLevels, tLoginStatus, tSubjects, tMode, tSessionExperience, tBookings, children, bookableChildren] = await Promise.all([
     getTranslations({ locale, namespace: "dashboard.parent" }),
     getTranslations({ locale, namespace: "gradeLevels" }),
     getTranslations({ locale, namespace: "family.guardianVisibleLoginStatus" }),
+    getTranslations({ locale, namespace: "subjects.items" }),
+    getTranslations({ locale, namespace: "quickMatch.mode" }),
+    getTranslations({ locale, namespace: "sessionExperience" }),
+    getTranslations({ locale, namespace: "dashboard.student.bookings" }),
     listChildrenForGuardian(db, user.id),
+    // STUDENT-PARENT-DASHBOARD-UPCOMING1 — the SAME server-authoritative
+    // helper /dashboard/bookings already uses to decide which children's
+    // bookings a parent may see: every candidate is independently
+    // re-verified (canInitiatePaidBooking), so a REVOKED
+    // ParentStudentRelationship is excluded at the source, before any
+    // Booking query even runs — never a client-supplied studentProfileId.
+    listBookableStudentsForActor(db, user.id),
   ]);
   const profilesNeedingAttention = children.filter(({ studentProfile }) => profileFieldsFilled(studentProfile) < 3);
+
+  const childNameById = new Map(bookableChildren.map((child) => [child.id, child.firstName]));
+  const upcomingBookings = await resolveUpcomingBookings(bookableChildren.map((child) => child.id));
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
@@ -150,12 +204,38 @@ export default async function StudentDashboardPage({ params }: { params: Promise
         </section>
 
         <aside aria-labelledby="parent-schedule-heading">
-          <Surface className="h-full">
-            <span className="flex size-10 items-center justify-center rounded-full bg-blue/10 text-blue"><BookOpenCheck className="size-5" aria-hidden="true" /></span>
-            <h2 id="parent-schedule-heading" className="mt-4 text-lg font-bold text-text-primary">{t("schedule.title")}</h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{t("schedule.description")}</p>
-            <Button href="/dashboard/bookings" variant="outline" size="sm" className="mt-5">{t("schedule.cta")}</Button>
-          </Surface>
+          {upcomingBookings.length > 0 ? (
+            <div className="flex flex-col gap-4" data-testid="upcoming-sessions-list">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="parent-schedule-heading" className="text-lg font-bold text-text-primary">{t("schedule.title")}</h2>
+                <Button href="/dashboard/bookings" variant="ghost" size="sm">{t("schedule.cta")}</Button>
+              </div>
+              {upcomingBookings.map((booking, index) => (
+                <UpcomingSessionCard
+                  key={booking.id}
+                  bookingId={booking.id}
+                  subjectLabel={tSubjects(booking.subjectSlug)}
+                  withTutorText={tBookings("withTutor", { name: booking.tutorFirstName })}
+                  forLearnerText={tBookings("forLearner", { name: childNameById.get(booking.studentProfileId) ?? "" })}
+                  whenLabel={formatBookingTime(booking.startAt, booking.timezone, locale)}
+                  modeLabel={tMode(booking.mode)}
+                  isNext={index === 0}
+                  nextSessionLabel={t("schedule.nextSessionLabel")}
+                  viewSessionHref={booking.hasSession ? `/session/${booking.id}` : null}
+                  viewSessionLabel={tSessionExperience("viewSession")}
+                  messageTutorHref="/messages"
+                  messageTutorLabel={t("schedule.messageTutorCta")}
+                />
+              ))}
+            </div>
+          ) : (
+            <Surface className="h-full">
+              <span className="flex size-10 items-center justify-center rounded-full bg-blue/10 text-blue"><BookOpenCheck className="size-5" aria-hidden="true" /></span>
+              <h2 id="parent-schedule-heading" className="mt-4 text-lg font-bold text-text-primary">{t("schedule.title")}</h2>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">{t("schedule.emptyDescription")}</p>
+              <Button href="/dashboard/find-tutors" variant="outline" size="sm" className="mt-5">{t("actions.findTutor")}</Button>
+            </Surface>
+          )}
         </aside>
       </div>
     </DashboardShell>

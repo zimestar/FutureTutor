@@ -962,7 +962,9 @@
         "description": "Gardez un œil sur les séances que vous avez planifiées.",
         "viewCta": "Voir les réservations",
         "emptyTitle": "À vous de choisir le bon moment",
-        "emptyDescription": "Trouvez un tuteur lorsque vous serez prêt à planifier votre prochaine séance."
+        "emptyDescription": "Trouvez un tuteur lorsque vous serez prêt à planifier votre prochaine séance.",
+        "nextSessionLabel": "Prochaine séance",
+        "messageTutorCta": "Contacter le tuteur"
       },
       "saved": {
         "title": "Vos tuteurs favoris",
@@ -1020,7 +1022,11 @@
       "schedule": {
         "title": "Horaire de tutorat familial",
         "description": "Ouvrez Réservations pour consulter les activités de tutorat actuellement accessibles dans votre compte.",
-        "cta": "Voir les réservations"
+        "cta": "Voir les réservations",
+        "emptyTitle": "Rien de prévu pour le moment",
+        "emptyDescription": "Trouvez un tuteur pour l'un de vos élèves lorsque vous serez prêt à planifier une séance.",
+        "nextSessionLabel": "Prochaine séance",
+        "messageTutorCta": "Contacter le tuteur"
       }
     },
     "tutor": {
