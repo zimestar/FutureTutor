@@ -1,20 +1,25 @@
 import { describe, it, expect } from "vitest";
 import { resolveBookingEmailBaseUrl } from "./resolveBookingEmailBaseUrl";
+import { site } from "@/content/site";
 
 // PROD-BOOKING-NOTIFICATIONS1-BASEURLFIX1 — this is the sole source of the
 // base URL used to build booking-confirmation email CTA links. It must
 // never depend on a request (no next/headers import anywhere in this
 // module) and must fail closed (null) rather than guess on any invalid
 // input, in either the default or explicit-override path.
+//
+// ANALYTICS-SEO1 — asserted against the real site.url constant rather than
+// a duplicated literal string, so this test can never silently drift from
+// whatever the actual canonical production hostname is.
 
 describe("resolveBookingEmailBaseUrl", () => {
   it("defaults to the canonical production site.url when no explicit override is given", () => {
-    expect(resolveBookingEmailBaseUrl()).toBe("https://www.futuretutor.ca");
+    expect(resolveBookingEmailBaseUrl()).toBe(site.url);
   });
 
   it("defaults to site.url when explicitly passed null/undefined", () => {
-    expect(resolveBookingEmailBaseUrl(null)).toBe("https://www.futuretutor.ca");
-    expect(resolveBookingEmailBaseUrl(undefined)).toBe("https://www.futuretutor.ca");
+    expect(resolveBookingEmailBaseUrl(null)).toBe(site.url);
+    expect(resolveBookingEmailBaseUrl(undefined)).toBe(site.url);
   });
 
   it("accepts a valid explicit HTTPS baseUrl override, normalized to its origin", () => {

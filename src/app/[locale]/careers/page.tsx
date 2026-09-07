@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { ComingSoon } from "@/components/marketing/ComingSoon";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
 export async function generateMetadata({
   params,
@@ -10,7 +11,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.careers" });
-  return { title: t("title"), description: t("description") };
+  return publicPageMetadata({ locale, path: "/careers", title: t("title"), description: t("description") });
 }
 
 export default async function CareersPage({

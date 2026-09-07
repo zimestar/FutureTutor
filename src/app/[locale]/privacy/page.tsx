@@ -4,6 +4,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { LegalDocument } from "@/components/marketing/LegalDocument";
 import { privacyContentEn } from "@/content/legal/privacyContent.en";
 import { privacyContentFr } from "@/content/legal/privacyContent.fr";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
 export async function generateMetadata({
   params,
@@ -12,7 +13,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.privacy" });
-  return { title: t("title"), description: t("description") };
+  return publicPageMetadata({ locale, path: "/privacy", title: t("title"), description: t("description") });
 }
 
 export default async function PrivacyPage({

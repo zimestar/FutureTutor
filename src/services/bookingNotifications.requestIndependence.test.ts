@@ -44,6 +44,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { dispatchBookingConfirmationEmails } from "./bookingNotifications";
+import { site } from "@/content/site";
 import enMessages from "../../messages/en.json";
 import frMessages from "../../messages/fr.json";
 
@@ -110,14 +111,14 @@ describe("dispatchBookingConfirmationEmails — real content builders, no reques
     expect(payerCall.text).not.toMatch(/\b12:00 AM\b/);
   });
 
-  it("item 10/11 — CTA uses https://www.futuretutor.ca (default site.url) and never a localhost origin", async () => {
+  it("item 10/11 — CTA uses the real, DNS-resolving production site.url and never a localhost origin", async () => {
     mocks.findMany.mockResolvedValue([{ id: "row-tutor", recipientRole: "TUTOR", recipientUserId: "tutor-user-1" }]);
     mockFullBookingContext();
 
     await dispatchBookingConfirmationEmails("booking-1", { sendEmail: mocks.sendEmail });
 
     const tutorCall = mocks.sendEmail.mock.calls[0][0];
-    expect(tutorCall.html).toContain("https://www.futuretutor.ca/en/tutor/bookings");
+    expect(tutorCall.html).toContain(`${site.url}/en/tutor/bookings`);
     expect(tutorCall.html).not.toContain("localhost");
   });
 

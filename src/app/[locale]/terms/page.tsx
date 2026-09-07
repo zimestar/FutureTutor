@@ -4,6 +4,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { LegalDocument } from "@/components/marketing/LegalDocument";
 import { termsContentEn } from "@/content/legal/termsContent.en";
 import { termsContentFr } from "@/content/legal/termsContent.fr";
+import { publicPageMetadata } from "@/lib/publicMetadata";
 
 export async function generateMetadata({
   params,
@@ -12,7 +13,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata.terms" });
-  return { title: t("title"), description: t("description") };
+  return publicPageMetadata({ locale, path: "/terms", title: t("title"), description: t("description") });
 }
 
 export default async function TermsPage({
