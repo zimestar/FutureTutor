@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   notificationCreate: vi.fn(),
+  notificationCreateMany: vi.fn(),
   createMany: vi.fn(),
   findMany: vi.fn(),
   updateMany: vi.fn(),
@@ -60,7 +61,7 @@ import {
 
 function fakeTx() {
   return {
-    notification: { create: mocks.notificationCreate },
+    notification: { create: mocks.notificationCreate, createMany: mocks.notificationCreateMany },
     sessionNotification: { createMany: mocks.createMany },
   } as never;
 }
@@ -79,8 +80,21 @@ describe("emitSessionNotificationEvent", () => {
       inAppBody: "body",
     });
 
-    expect(mocks.notificationCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({ userId: "user-1", channel: "IN_APP", title: "Upcoming session tomorrow" }),
+    // SESSION-NOTIFICATION-INAPP-DEDUP-FIX1: the in-app write now goes
+    // through notification.createMany (dedupeKey-aware), never the plain
+    // .create — see the next test for the full dedup-specific assertions.
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+    expect(mocks.notificationCreateMany).toHaveBeenCalledTimes(1);
+    expect(mocks.notificationCreateMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          userId: "user-1",
+          channel: "IN_APP",
+          title: "Upcoming session tomorrow",
+          dedupeKey: "session:booking-1:SESSION_REMINDER_24H:TUTOR",
+        }),
+      ],
+      skipDuplicates: true,
     });
     expect(mocks.createMany).toHaveBeenCalledTimes(1);
     const call = mocks.createMany.mock.calls[0][0];
@@ -97,7 +111,7 @@ describe("emitSessionNotificationEvent", () => {
     ]);
   });
 
-  it("item 26 — idempotency is enforced via skipDuplicates on the dedupeKey", async () => {
+  it("item 26 — idempotency is enforced via skipDuplicates on the dedupeKey, for BOTH the in-app row and the email-outbox row", async () => {
     await emitSessionNotificationEvent(fakeTx(), {
       bookingId: "booking-1",
       recipientUserId: "user-1",
@@ -111,6 +125,35 @@ describe("emitSessionNotificationEvent", () => {
     const call = mocks.createMany.mock.calls[0][0];
     expect(call.skipDuplicates).toBe(true);
     expect(call.data[0].contextSnapshot).toEqual({ cancelledByRelation: "OTHER_PARTY" });
+
+    const notificationCall = mocks.notificationCreateMany.mock.calls[0][0];
+    expect(notificationCall.skipDuplicates).toBe(true);
+    expect(notificationCall.data[0].dedupeKey).toBe("session:booking-1:SESSION_CANCELLED:PAYER");
+  });
+
+  it("SESSION-NOTIFICATION-INAPP-DEDUP-FIX1 — 24H and 2H are distinct dedupeKeys for the same booking+role, never colliding", async () => {
+    await emitSessionNotificationEvent(fakeTx(), {
+      bookingId: "booking-1",
+      recipientUserId: "user-1",
+      recipientRole: "TUTOR",
+      event: "SESSION_REMINDER_24H",
+      dedupeKey: "session:booking-1:SESSION_REMINDER_24H:TUTOR",
+      inAppTitle: "t",
+      inAppBody: "b",
+    });
+    await emitSessionNotificationEvent(fakeTx(), {
+      bookingId: "booking-1",
+      recipientUserId: "user-1",
+      recipientRole: "TUTOR",
+      event: "SESSION_REMINDER_2H",
+      dedupeKey: "session:booking-1:SESSION_REMINDER_2H:TUTOR",
+      inAppTitle: "t",
+      inAppBody: "b",
+    });
+
+    const keys = mocks.notificationCreateMany.mock.calls.map((call) => call[0].data[0].dedupeKey);
+    expect(keys).toEqual(["session:booking-1:SESSION_REMINDER_24H:TUTOR", "session:booking-1:SESSION_REMINDER_2H:TUTOR"]);
+    expect(new Set(keys).size).toBe(2); // distinct — each event gets its own key, neither can suppress the other
   });
 
   it("item 18 — recipientUserId is whatever the caller resolved server-side, never re-derived here", async () => {
@@ -123,7 +166,9 @@ describe("emitSessionNotificationEvent", () => {
       inAppTitle: "t",
       inAppBody: "b",
     });
-    expect(mocks.notificationCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: "authoritative-user-id" }) });
+    expect(mocks.notificationCreateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: [expect.objectContaining({ userId: "authoritative-user-id" })] })
+    );
   });
 });
 

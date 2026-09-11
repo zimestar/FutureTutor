@@ -97,6 +97,13 @@ export async function emitSessionNotificationEvent(tx: Prisma.TransactionClient,
     // matching the exact metadata shape payments.ts's own booking-related
     // notifyUser calls already use.
     metadata: { bookingId: params.bookingId },
+    // SESSION-NOTIFICATION-INAPP-DEDUP-FIX1 — reuses the SAME dedupeKey
+    // already computed for the SessionNotification outbox row below, so
+    // the in-app write gets the identical durable, DB-level idempotency
+    // guarantee (Notification.dedupeKey's own real unique constraint) —
+    // a repeated cron tick inside a reminder's eligibility window can no
+    // longer create a second in-app row for the same booking/event/role.
+    dedupeKey: params.dedupeKey,
   });
 
   await tx.sessionNotification.createMany({

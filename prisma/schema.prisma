@@ -2126,6 +2126,15 @@ model Notification {
   channel   NotificationChannel @default(IN_APP)
   readAt    DateTime?
   metadata  Json?
+  // SESSION-NOTIFICATION-INAPP-DEDUP-FIX1 — optional, content-derived
+  // idempotency key (same format/value as SessionNotification.dedupeKey:
+  // `session:<bookingId>:<event>:<role>`) for callers that need a durable,
+  // DB-level guarantee that a repeated logical emission never creates a
+  // second in-app row. Nullable and unused by every other notifyUser
+  // caller (financial, messaging, Quick Match, etc.) — Postgres allows
+  // unlimited NULLs under a unique constraint, so this is a pure opt-in,
+  // zero-impact addition for the rest of the notification surface.
+  dedupeKey String?             @unique
   createdAt DateTime            @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
