@@ -5,6 +5,7 @@ import type { SessionStatus, TutorEarningStatus } from "@/generated/prisma/enums
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { writeAuditLog } from "@/lib/audit";
 import { getSessionFinancialFacts, type NoShowOutcome, type SessionFinancialFacts } from "@/services/sessionLifecycle";
+import { assessPaymentSafetyForTutorTransfer, isPaymentTransferSafe } from "@/services/paymentSafety";
 
 /**
  * Phase 5B — Session Outcome -> Tutor Earning Convergence Engine.
@@ -516,6 +517,17 @@ export async function sweepTutorEarningConvergence(limit = 200): Promise<SweepTu
  * below. This is what makes the separation from Stripe-capable transfer
  * processing a structural (import-graph) fact, not merely an operational
  * convention.
+ *
+ * FINANCIAL-TRANSFER-SAFETY-GATES1: a THIRD, independent gate now sits
+ * alongside the eligibleAt/time check and the Session-truth check —
+ * assessPaymentSafetyForTutorTransfer (src/services/paymentSafety.ts, a
+ * separate Stripe-free module so this function's own zero-Stripe-import
+ * guarantee is untouched). A refunded, disputed, or ambiguously-settled
+ * Payment must never let its earning reach ELIGIBLE, regardless of how
+ * long ago the Session completed. Deliberately does NOT touch eligibleAt
+ * when blocked — eligibleAt is historical lifecycle truth (task §3C's own
+ * anchor), not a re-triable readiness flag; the earning simply stays
+ * PENDING_ELIGIBLE and is re-evaluated fresh on every future sweep.
  */
 export async function markEligibleEarnings(limit = 200): Promise<number> {
   const now = new Date();
@@ -529,6 +541,18 @@ export async function markEligibleEarnings(limit = 200): Promise<number> {
   for (const candidate of candidates) {
     const facts = await getSessionFinancialFacts(db, candidate.bookingId);
     if (!facts || !isSessionEligibleForPayment(facts)) continue; // Session truth does not (or no longer) authorizes payment — never promote from eligibleAt/time alone
+
+    const paymentSafety = await assessPaymentSafetyForTutorTransfer(db, candidate.bookingId);
+    if (!isPaymentTransferSafe(paymentSafety)) {
+      await writeAuditLog({
+        actorUserId: null,
+        action: "tutor_earning.eligibility_blocked_payment_unsafe",
+        entityType: "TutorEarning",
+        entityId: candidate.id,
+        metadata: { bookingId: candidate.bookingId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.status === "SAFE" ? undefined : paymentSafety.reason },
+      });
+      continue; // Payment truth does not currently authorize moving money for this earning — never promote from Session truth alone either
+    }
 
     const result = await db.tutorEarning.updateMany({
       where: { id: candidate.id, status: "PENDING_ELIGIBLE", eligibleAt: { lte: now } },

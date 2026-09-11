@@ -14,6 +14,7 @@ import {
   convergeCancelledBookingPayment,
   isRefundObligationSatisfied,
 } from "@/services/payments";
+import { assessPaymentSafetyForTutorTransfer, isPaymentTransferSafe } from "@/services/paymentSafety";
 
 const STUCK_PAYMENT_THRESHOLD_MS = 30 * 60 * 1000; // [YOUR IDEA — INITIAL DEFAULT], §7/§19 of the Phase G plan
 
@@ -141,6 +142,29 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   // primitive in this codebase already accepts as unavoidable.
   const freshEarning = await db.tutorEarning.findUnique({ where: { id: earningId }, select: { status: true } });
   if (freshEarning?.status !== "ELIGIBLE") return; // lost the race to a concurrent cancellation — bail before calling Stripe
+
+  // FINANCIAL-TRANSFER-SAFETY-GATES1 (Phase 4) — defense in depth: a SECOND,
+  // independent re-read of the authoritative Payment safety predicate,
+  // immediately before any money-movement-equivalent action (the real
+  // Stripe call below, or the dev-bypass finalize). markEligibleEarnings'
+  // own gate (tutorEarningConvergence.ts) already checked this before
+  // promoting PENDING_ELIGIBLE -> ELIGIBLE, but that promotion and this
+  // transfer attempt can be separated by an arbitrary amount of real time
+  // (this function is invoked from a later, independent cron sweep) — a
+  // refund or dispute that arrives in that gap must still be caught here,
+  // not only at the earlier gate. Fails closed: never marks TRANSFERRED,
+  // never calls Stripe, when safety cannot be affirmatively established.
+  const paymentSafety = await assessPaymentSafetyForTutorTransfer(db, earning.bookingId);
+  if (!isPaymentTransferSafe(paymentSafety)) {
+    await writeAuditLog({
+      actorUserId: null,
+      action: "tutor_transfer.deferred_payment_unsafe",
+      entityType: "TutorTransfer",
+      entityId: transfer.id,
+      metadata: { bookingId: earning.bookingId, tutorEarningId: earningId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.status === "SAFE" ? undefined : paymentSafety.reason },
+    });
+    return; // deferred, never marked TRANSFERRED, never called Stripe — retried next sweep once/if safety is re-established
+  }
 
   if (!paymentsUseStripe()) {
     // Dev/test bypass — no Stripe call, mirrors preparePaymentForQuote's

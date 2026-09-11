@@ -18,6 +18,7 @@ function sourceWithoutComments(path: string): string {
 
 const routePath = join(__dirname, "..", "app", "api", "cron", "session-financial-convergence-tick", "route.ts");
 const convergencePath = join(__dirname, "tutorEarningConvergence.ts");
+const paymentSafetyPath = join(__dirname, "paymentSafety.ts");
 
 const STRIPE_REFERENCE = /stripe\.transfers|getstripeclient|from ["']@\/lib\/stripe["']|from ["']stripe["']/i;
 const TRANSFER_BOUNDARY_REFERENCE = /createTransferForEarning|processEligibleTransfers|reconcileStuckPayments/;
@@ -79,5 +80,61 @@ describe("tutorTransfers.ts — narrowed responsibility", () => {
 
   it("remains the sole module invoking stripe.transfers.create", () => {
     expect(transfers).toMatch(/stripe\.transfers\.create/);
+  });
+
+  it("FINANCIAL-TRANSFER-SAFETY-GATES1: createTransferForEarning re-checks payment safety before the Stripe call", () => {
+    const fnMatch = transfers.match(/export async function createTransferForEarning[\s\S]*?\r?\n}\r?\n/);
+    expect(fnMatch).not.toBeNull();
+    const fnBody = fnMatch![0];
+    expect(fnBody).toMatch(/assessPaymentSafetyForTutorTransfer/);
+    // The safety check must appear BEFORE the Stripe call in source order —
+    // a textual ordering check, not just presence, since presence alone
+    // wouldn't catch the check being wired in after the fact.
+    const safetyCheckIndex = fnBody.indexOf("assessPaymentSafetyForTutorTransfer");
+    const stripeCallIndex = fnBody.indexOf("stripe.transfers.create");
+    expect(safetyCheckIndex).toBeGreaterThan(-1);
+    expect(stripeCallIndex).toBeGreaterThan(-1);
+    expect(safetyCheckIndex).toBeLessThan(stripeCallIndex);
+  });
+});
+
+describe("paymentSafety.ts — Stripe reachability", () => {
+  const safety = sourceWithoutComments(paymentSafetyPath);
+
+  it("does not import or reference Stripe in any form", () => {
+    expect(safety.toLowerCase()).not.toMatch(STRIPE_REFERENCE);
+  });
+
+  it("does not reference createTransferForEarning, processEligibleTransfers, or reconcileStuckPayments", () => {
+    expect(safety).not.toMatch(TRANSFER_BOUNDARY_REFERENCE);
+  });
+
+  it("does not import from payments.ts (which pulls in @/lib/stripe at module scope)", () => {
+    expect(safety).not.toMatch(/from ["']@\/services\/payments["']/);
+  });
+
+  it("defines assessPaymentSafetyForTutorTransfer and isPaymentTransferSafe", () => {
+    expect(safety).toMatch(/export async function assessPaymentSafetyForTutorTransfer/);
+    expect(safety).toMatch(/export function isPaymentTransferSafe/);
+  });
+});
+
+describe("FINANCIAL-TRANSFER-SAFETY-GATES1: convergence route transitively imports only Stripe-free modules", () => {
+  it("tutorEarningConvergence.ts imports paymentSafety.ts, which is itself Stripe-free (verified above) — no transitive Stripe path exists", () => {
+    const service = sourceWithoutComments(convergencePath);
+    expect(service).toMatch(/from ["']@\/services\/paymentSafety["']/);
+  });
+
+  it("markEligibleEarnings calls assessPaymentSafetyForTutorTransfer before promoting to ELIGIBLE", () => {
+    const service = sourceWithoutComments(convergencePath);
+    const fnMatch = service.match(/export async function markEligibleEarnings[\s\S]*?\r?\n}\r?\n/);
+    expect(fnMatch).not.toBeNull();
+    const fnBody = fnMatch![0];
+    expect(fnBody).toMatch(/assessPaymentSafetyForTutorTransfer/);
+    const safetyCheckIndex = fnBody.indexOf("assessPaymentSafetyForTutorTransfer");
+    const promoteIndex = fnBody.indexOf('data: { status: "ELIGIBLE" }');
+    expect(safetyCheckIndex).toBeGreaterThan(-1);
+    expect(promoteIndex).toBeGreaterThan(-1);
+    expect(safetyCheckIndex).toBeLessThan(promoteIndex);
   });
 });

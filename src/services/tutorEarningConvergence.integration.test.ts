@@ -31,6 +31,7 @@ let TUTOR_EARNING_FINANCIAL_DELAY_MS: typeof import("./tutorEarningConvergence")
 let markEligibleEarnings: typeof import("./tutorEarningConvergence").markEligibleEarnings;
 let processFinancialConvergenceAndEligibility: typeof import("./tutorEarningConvergence").processFinancialConvergenceAndEligibility;
 let processEligibleTransfers: typeof import("./tutorTransfers").processEligibleTransfers;
+let createTransferForEarning: typeof import("./tutorTransfers").createTransferForEarning;
 let getStripeClient: typeof import("@/lib/stripe").getStripeClient;
 let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 
@@ -65,7 +66,7 @@ beforeAll(async () => {
     await import("./sessionLifecycle"));
   ({ convergeTutorEarningFromSession, sweepTutorEarningConvergence, markEligibleEarnings, processFinancialConvergenceAndEligibility, TUTOR_EARNING_FINANCIAL_DELAY_MS } =
     await import("./tutorEarningConvergence"));
-  ({ processEligibleTransfers } = await import("./tutorTransfers"));
+  ({ processEligibleTransfers, createTransferForEarning } = await import("./tutorTransfers"));
   ({ withSerializableRetry } = await import("@/lib/serializableRetry"));
   ({ getStripeClient } = await import("@/lib/stripe"));
 
@@ -911,4 +912,231 @@ describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — Phase 5 behavior test K: z
     expect((await getEarning(interrupted.booking.id)).status).toBe("HELD");
     expect((await getEarning(scheduled.booking.id)).status).toBe("PENDING_ELIGIBLE");
   }, 20000); // six real fixtures + two full sweep passes legitimately exceeds the 5000ms default
+});
+
+// ===========================================================================
+// FINANCIAL-TRANSFER-SAFETY-GATES1 — real-DB integration coverage for the
+// two new payment-safety gates. The pure decision-table coverage (every
+// PaymentStatus/disputeStatus/refund combination) already lives in
+// paymentSafety.test.ts with zero I/O; these tests instead prove the real
+// wiring — that markEligibleEarnings and createTransferForEarning actually
+// call the predicate against real Payment/Refund rows, in the real
+// database, and that createTransferForEarning never reaches Stripe when
+// blocked.
+// ===========================================================================
+
+async function makeConnectActive(tutorProfileId: string) {
+  await db.tutorProfile.update({
+    where: { id: tutorProfileId },
+    data: { stripeConnectStatus: "ACTIVE", stripeConnectAccountId: `acct_fake_${randomUUID()}` },
+  });
+}
+
+async function makeChargeResolvable(paymentId: string) {
+  await db.payment.update({ where: { id: paymentId }, data: { stripeChargeId: `ch_fake_${randomUUID()}` } });
+}
+
+/** Brings a booking's earning all the way to ELIGIBLE via the real pipeline
+ * (completion -> convergence -> eligibility promotion), while the Payment
+ * is still fully safe — so a test can then mutate Payment/Refund state
+ * AFTER the fact to exercise the transfer-time gate specifically. */
+async function bringEarningToEligible(tutor: { user: { id: string } }, student: { user: { id: string } }, booking: { id: string; startAt: Date; endAt: Date }) {
+  await bringToInProgress(tutor, student, booking, () => booking.startAt);
+  await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+  const result = await processFinancialConvergenceAndEligibility();
+  expect(result.markedEligible).toBeGreaterThanOrEqual(1);
+}
+
+describe("FINANCIAL-TRANSFER-SAFETY-GATES1 — eligibility gate (Phase 3, real DB)", () => {
+  it("a REFUNDED payment blocks PENDING_ELIGIBLE -> ELIGIBLE promotion, even though eligibleAt is still correctly established", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(tutor, student, booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+
+    const result = await processFinancialConvergenceAndEligibility();
+    expect(result.convergedEarnings).toBeGreaterThanOrEqual(1); // convergence itself is unaffected — eligibleAt still gets set
+    expect(result.markedEligible).toBe(0); // but promotion is blocked
+
+    const final = await getEarning(booking.id);
+    expect(final.status).toBe("PENDING_ELIGIBLE"); // never promoted
+    expect(final.eligibleAt).not.toBeNull(); // eligibleAt is historical lifecycle truth, untouched by the block
+
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: final.id, action: "tutor_earning.eligibility_blocked_payment_unsafe" },
+    });
+    expect(auditRow).not.toBeNull();
+    expect((auditRow?.metadata as Record<string, unknown>)?.reason).toBe("PAYMENT_REFUNDED");
+  });
+
+  it("an OPEN dispute blocks PENDING_ELIGIBLE -> ELIGIBLE promotion", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(tutor, student, booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "OPEN" } });
+
+    const result = await processFinancialConvergenceAndEligibility();
+    expect(result.markedEligible).toBe(0);
+
+    const final = await getEarning(booking.id);
+    expect(final.status).toBe("PENDING_ELIGIBLE");
+  });
+
+  it("a safe CAPTURED payment (no refund, no dispute) still promotes normally — no regression", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(tutor, student, booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+
+    const result = await processFinancialConvergenceAndEligibility();
+    expect(result.markedEligible).toBeGreaterThanOrEqual(1);
+    expect((await getEarning(booking.id)).status).toBe("ELIGIBLE");
+  });
+});
+
+describe("FINANCIAL-TRANSFER-SAFETY-GATES1 — transfer-time gate (Phase 4/8, real DB, zero-Stripe-call proof)", () => {
+  it("Phase 6 scenario D: a PARTIAL refund occurring AFTER an earning is already ELIGIBLE blocks createTransferForEarning — zero Stripe calls", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+
+    // The refund happens AFTER eligibility was established — exactly the
+    // race this defense-in-depth gate exists for.
+    await db.payment.update({ where: { id: payment.id }, data: { status: "PARTIALLY_REFUNDED", refundedAmountCents: 500 } });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
+    } as never);
+
+    const earningBefore = await getEarning(booking.id);
+    await createTransferForEarning(earningBefore.id);
+
+    expect(getStripeClient).not.toHaveBeenCalled();
+    const earningAfter = await getEarning(booking.id);
+    expect(earningAfter.status).toBe("ELIGIBLE"); // never silently advanced to TRANSFERRED
+    const transfer = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earningBefore.id } });
+    expect(transfer?.status).not.toBe("COMPLETED"); // no completed transfer exists
+
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorTransfer", action: "tutor_transfer.deferred_payment_unsafe" },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(auditRow).not.toBeNull();
+    expect((auditRow?.metadata as Record<string, unknown>)?.reason).toBe("PAYMENT_PARTIALLY_REFUNDED");
+  });
+
+  it("Phase 6 scenario E: a FULL refund occurring AFTER an earning is already ELIGIBLE blocks createTransferForEarning — zero Stripe calls", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
+    } as never);
+
+    const earningBefore = await getEarning(booking.id);
+    await createTransferForEarning(earningBefore.id);
+
+    expect(getStripeClient).not.toHaveBeenCalled();
+    expect((await getEarning(booking.id)).status).toBe("ELIGIBLE");
+  });
+
+  it("Phase 7: a dispute opening AFTER an earning is already ELIGIBLE blocks createTransferForEarning — zero Stripe calls", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "OPEN" } });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
+    } as never);
+
+    const earningBefore = await getEarning(booking.id);
+    await createTransferForEarning(earningBefore.id);
+
+    expect(getStripeClient).not.toHaveBeenCalled();
+    expect((await getEarning(booking.id)).status).toBe("ELIGIBLE");
+  });
+
+  it("a WON dispute does NOT block createTransferForEarning — reaches the real Stripe call (no regression)", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "WON" } });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
+    } as never);
+
+    const earningBefore = await getEarning(booking.id);
+    await createTransferForEarning(earningBefore.id);
+
+    expect(getStripeClient).toHaveBeenCalled();
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+  });
+});
+
+describe("FINANCIAL-TRANSFER-SAFETY-GATES1 — Phase 8: no regression to existing terminal-state invariants", () => {
+  it("a HELD earning is unaffected by the new gates — stays HELD regardless of Payment safety", async () => {
+    const { student, booking, payment } = await setupConfirmedCapturedBooking();
+    await recordSessionCheckIn(booking.id, student.user.id, "STUDENT", { actorRole: "STUDENT" });
+    const deadline = computeNoShowGraceDeadline(booking.startAt);
+    await resolveSessionNoShowConvergence(booking.id, { clock: () => deadline });
+    await convergeTutorEarningFromSession(booking.id);
+    expect((await getEarning(booking.id)).status).toBe("HELD");
+
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+    await processFinancialConvergenceAndEligibility();
+    expect((await getEarning(booking.id)).status).toBe("HELD"); // unchanged
+  });
+
+  it("a CANCELLED earning is unaffected by the new gates — the H.8 firewall still owns it exclusively", async () => {
+    const { booking, payment } = await setupConfirmedCapturedBooking();
+    await db.tutorEarning.update({ where: { bookingId: booking.id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
+
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+    await processFinancialConvergenceAndEligibility();
+    expect((await getEarning(booking.id)).status).toBe("CANCELLED"); // unchanged, never touched by the payment-safety gate either
+  });
+
+  it("a TRANSFERRED earning is unaffected by the new gates — never clawed back even if a refund appears afterward", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
+    } as never);
+    const earning = await getEarning(booking.id);
+    await createTransferForEarning(earning.id);
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+
+    // A refund appears AFTER the transfer already completed — the existing
+    // TRANSFERRED-immutable-but-flagged firewall (task §7, pre-existing,
+    // unchanged by this mission) owns this, not the new payment-safety
+    // gates (which only ever run before promotion/before a transfer
+    // attempt, never after one has already completed).
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+    const convergence = await convergeTutorEarningFromSession(booking.id);
+    expect(convergence.outcome).toBe("TRANSFERRED_CONSISTENT"); // isSessionEligibleForPayment is about Session truth, not Payment truth — still consistent here
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED"); // never clawed back
+  });
 });
