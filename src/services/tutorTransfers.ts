@@ -15,6 +15,7 @@ import {
   isRefundObligationSatisfied,
 } from "@/services/payments";
 import { assessPaymentSafetyForTutorTransfer, isPaymentTransferSafe } from "@/services/paymentSafety";
+import { classifyTutorTransferRecovery, flagTutorTransferForManualReview } from "@/services/tutorTransferReconciliation";
 
 const STUCK_PAYMENT_THRESHOLD_MS = 30 * 60 * 1000; // [YOUR IDEA — INITIAL DEFAULT], §7/§19 of the Phase G plan
 
@@ -33,9 +34,20 @@ async function finalizeTransfer(transferId: string, stripeTransferId: string): P
     const transfer = await tx.tutorTransfer.findUniqueOrThrow({ where: { id: transferId } });
     if (transfer.status === "COMPLETED") return; // already converged
 
+    // TUTOR-TRANSFER-RECONCILIATION1 — genuine pre-existing bug fixed here:
+    // this guard previously matched only status: "PENDING", so a transfer
+    // that had already been marked FAILED by a prior attempt (Stripe error,
+    // or a Stripe success immediately followed by THIS SAME function
+    // throwing before it could commit) could never converge to COMPLETED
+    // even when a subsequent retry's Stripe call genuinely succeeded — the
+    // updateMany's where clause simply matched zero rows, silently. The
+    // outer `if (transfer.status === "COMPLETED") return;` above already
+    // guards against double-completion (the only idempotency concern this
+    // guard needs to protect), so PENDING and FAILED are both legitimate
+    // prior states for a transfer that is, right now, converging.
     await tx.tutorTransfer.updateMany({
-      where: { id: transferId, status: "PENDING" },
-      data: { status: "COMPLETED", stripeTransferId, completedAt: new Date() },
+      where: { id: transferId, status: { in: ["PENDING", "FAILED"] } },
+      data: { status: "COMPLETED", stripeTransferId, completedAt: new Date(), failedAt: null, failureReason: null },
     });
     await tx.tutorEarning.updateMany({
       where: { id: transfer.tutorEarningId, status: "ELIGIBLE" },
@@ -134,6 +146,22 @@ export async function createTransferForEarning(earningId: string): Promise<void>
   }
   if (transfer.status === "COMPLETED") return;
 
+  // TUTOR-TRANSFER-RECONCILIATION1 — bounded automatic retry. This transfer
+  // is PENDING or FAILED, which means we are about to reuse the SAME
+  // deterministic Stripe idempotency key (`transfer:${earningId}`, below)
+  // to retry it — safe only as long as Stripe itself still honors that key
+  // (see classifyTutorTransferRecovery's own doc comment for the full
+  // reasoning, including why this single mechanism safely covers BOTH a
+  // genuine Stripe-side creation failure AND a Stripe success followed by a
+  // finalizeTransfer DB failure). Past the safe window, automatic retry
+  // stops — never blindly re-POST to Stripe on a stale, possibly-expired
+  // key — and this is surfaced once for manual review instead.
+  const recovery = classifyTutorTransferRecovery(transfer);
+  if (recovery.kind === "MANUAL_REVIEW_REQUIRED") {
+    await flagTutorTransferForManualReview(transfer.id, recovery.ageMs);
+    return; // never retried automatically again — a human must establish ground truth against Stripe's own records
+  }
+
   // Phase H.8 (§R fix #1) — narrow the cancellation-race window: one
   // additional fresh status check immediately before the Stripe call, not
   // just at function entry. Shrinks the exposure window from "the entire
@@ -161,7 +189,7 @@ export async function createTransferForEarning(earningId: string): Promise<void>
       action: "tutor_transfer.deferred_payment_unsafe",
       entityType: "TutorTransfer",
       entityId: transfer.id,
-      metadata: { bookingId: earning.bookingId, tutorEarningId: earningId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.status === "SAFE" ? undefined : paymentSafety.reason },
+      metadata: { bookingId: earning.bookingId, tutorEarningId: earningId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.reason },
     });
     return; // deferred, never marked TRANSFERRED, never called Stripe — retried next sweep once/if safety is re-established
   }

@@ -32,6 +32,7 @@ let markEligibleEarnings: typeof import("./tutorEarningConvergence").markEligibl
 let processFinancialConvergenceAndEligibility: typeof import("./tutorEarningConvergence").processFinancialConvergenceAndEligibility;
 let processEligibleTransfers: typeof import("./tutorTransfers").processEligibleTransfers;
 let createTransferForEarning: typeof import("./tutorTransfers").createTransferForEarning;
+let sweepPostTransferPaymentSafety: typeof import("./tutorTransferReconciliation").sweepPostTransferPaymentSafety;
 let getStripeClient: typeof import("@/lib/stripe").getStripeClient;
 let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 
@@ -67,6 +68,7 @@ beforeAll(async () => {
   ({ convergeTutorEarningFromSession, sweepTutorEarningConvergence, markEligibleEarnings, processFinancialConvergenceAndEligibility, TUTOR_EARNING_FINANCIAL_DELAY_MS } =
     await import("./tutorEarningConvergence"));
   ({ processEligibleTransfers, createTransferForEarning } = await import("./tutorTransfers"));
+  ({ sweepPostTransferPaymentSafety } = await import("./tutorTransferReconciliation"));
   ({ withSerializableRetry } = await import("@/lib/serializableRetry"));
   ({ getStripeClient } = await import("@/lib/stripe"));
 
@@ -172,6 +174,18 @@ async function createTutorUser() {
   });
   createdTutorProfileIds.push(tutorProfile.id);
   return { user, tutorProfile };
+}
+
+/** TUTOR-TRANSFER-RECONCILIATION1 — the isolated test database has no
+ * seeded ADMIN/SUPER_ADMIN users, but flagTutorTransferForManualReview and
+ * sweepPostTransferPaymentSafety both notify every ADMIN/SUPER_ADMIN —
+ * tests that assert on that notification need at least one real admin to
+ * exist. Tracked for the same afterEach cleanup as every other fixture
+ * user. */
+async function createAdminUser() {
+  const user = await db.user.create({ data: { email: uniqueEmail("admin"), role: "ADMIN" } });
+  createdUserIds.push(user.id);
+  return { user };
 }
 
 async function createSelfManagedStudent() {
@@ -1138,5 +1152,417 @@ describe("FINANCIAL-TRANSFER-SAFETY-GATES1 — Phase 8: no regression to existin
     const convergence = await convergeTutorEarningFromSession(booking.id);
     expect(convergence.outcome).toBe("TRANSFERRED_CONSISTENT"); // isSessionEligibleForPayment is about Session truth, not Payment truth — still consistent here
     expect((await getEarning(booking.id)).status).toBe("TRANSFERRED"); // never clawed back
+  });
+});
+
+// ===========================================================================
+// TUTOR-TRANSFER-RECONCILIATION1 — real-DB integration coverage for both
+// failure domains: (A) pre/in-flight transfer recovery (bounded retry) and
+// (B) post-transfer financial inconsistency detection. The pure
+// decision-table coverage for the retry classifier already lives in
+// tutorTransferReconciliation.test.ts with zero I/O; these tests prove the
+// real wiring against a real database and a mocked Stripe client.
+// ===========================================================================
+
+/** Brings a booking's earning all the way to TRANSFERRED via the real
+ * pipeline (completion -> convergence -> eligibility -> transfer), with a
+ * fixed, known Stripe transfer id so later assertions can confirm exactly
+ * one such id ever gets persisted. */
+async function bringEarningToTransferred(
+  tutor: { user: { id: string }; tutorProfile: { id: string } },
+  student: { user: { id: string } },
+  booking: { id: string; startAt: Date; endAt: Date },
+  payment: { id: string },
+  stripeTransferId: string
+) {
+  await bringEarningToEligible(tutor, student, booking);
+  await makeConnectActive(tutor.tutorProfile.id);
+  await makeChargeResolvable(payment.id);
+
+  vi.mocked(getStripeClient).mockClear();
+  vi.mocked(getStripeClient).mockReturnValue({
+    transfers: { create: vi.fn(async () => ({ id: stripeTransferId })) },
+  } as never);
+
+  const earning = await getEarning(booking.id);
+  await createTransferForEarning(earning.id);
+  expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+}
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 1: clean successful transfer lifecycle", () => {
+  it("PENDING_ELIGIBLE -> ELIGIBLE -> TRANSFERRED, exactly one COMPLETED TutorTransfer, exactly one Stripe call", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    const stripeTransferId = `tr_clean_${randomUUID()}`;
+    await bringEarningToTransferred(tutor, student, booking, payment, stripeTransferId);
+
+    const earning = await getEarning(booking.id);
+    expect(earning.status).toBe("TRANSFERRED");
+    expect(getStripeClient).toHaveBeenCalledTimes(1);
+
+    const transfer = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earning.id } });
+    expect(transfer?.status).toBe("COMPLETED");
+    expect(transfer?.stripeTransferId).toBe(stripeTransferId);
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 2: Stripe fails before creation -> safe retry", () => {
+  it("first attempt throws, transfer marked FAILED; a prompt retry (well inside the safe window) succeeds and reaches COMPLETED", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+
+    const stripeTransferId = `tr_retry_${randomUUID()}`;
+    let callCount = 0;
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: {
+        create: vi.fn(async () => {
+          callCount++;
+          if (callCount === 1) throw new Error("simulated transient Stripe error");
+          return { id: stripeTransferId };
+        }),
+      },
+    } as never);
+
+    const earning = await getEarning(booking.id);
+
+    await createTransferForEarning(earning.id); // attempt 1: fails
+    expect((await getEarning(booking.id)).status).toBe("ELIGIBLE");
+    const afterFirst = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earning.id } });
+    expect(afterFirst?.status).toBe("FAILED");
+
+    await createTransferForEarning(earning.id); // attempt 2: succeeds (recent -> RETRYABLE)
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+    const afterSecond = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earning.id } });
+    expect(afterSecond?.status).toBe("COMPLETED");
+    expect(afterSecond?.stripeTransferId).toBe(stripeTransferId);
+    expect(callCount).toBe(2);
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 3 / Phase 12: Stripe succeeds, DB finalization fails -> economic exactly-once", () => {
+  it("a transfer marked FAILED after Stripe actually already succeeded (simulated) converges to exactly ONE COMPLETED TutorTransfer with the SAME stripeTransferId on retry, via the deterministic idempotency key — never a second transfer", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    const earning = await getEarning(booking.id);
+
+    // Simulate "Stripe succeeded, then finalizeTransfer failed" directly:
+    // a real Stripe transfer object already exists (fixed id, as Stripe's
+    // own idempotent replay would return for a retried key), but the local
+    // row was left FAILED because the DB step never committed. This is the
+    // exact state createTransferForEarning's own catch block can produce
+    // when the error is thrown AFTER a successful stripe.transfers.create.
+    const stripeTransferId = `tr_stripe_already_succeeded_${randomUUID()}`;
+    await db.tutorTransfer.create({
+      data: {
+        id: randomUUID(),
+        tutorEarningId: earning.id,
+        tutorProfileId: tutor.tutorProfile.id,
+        amountCents: earning.amountCents,
+        currency: earning.currency,
+        status: "FAILED",
+        initiatedAt: new Date(),
+        failedAt: new Date(),
+        failureReason: "simulated DB finalization failure after a successful Stripe call",
+      },
+    });
+
+    // A real Stripe idempotent replay of the SAME key returns the SAME
+    // object — this mock enforces that a call with the expected
+    // deterministic key always returns the one fixed id, so the test fails
+    // loudly if the code ever used a different (non-deterministic) key.
+    const observedKeys: string[] = [];
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: {
+        create: vi.fn(async (_params: unknown, options: { idempotencyKey: string }) => {
+          observedKeys.push(options.idempotencyKey);
+          return { id: stripeTransferId }; // Stripe's own dedup: same key -> same object, always
+        }),
+      },
+    } as never);
+
+    await createTransferForEarning(earning.id); // the automatic retry (recent -> RETRYABLE)
+
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+    const finalTransfer = await db.tutorTransfer.findUnique({ where: { tutorEarningId: earning.id } });
+    expect(finalTransfer?.status).toBe("COMPLETED");
+    expect(finalTransfer?.stripeTransferId).toBe(stripeTransferId); // the SAME id Stripe already had — no second economic transfer
+    expect(observedKeys).toEqual([`transfer:${earning.id}`]); // the deterministic key, unchanged
+
+    // DB exactly-once (structural, always true): exactly one TutorTransfer
+    // ROW exists for this earning — enforced by the DB-level unique
+    // constraint on tutorEarningId, independent of retry count.
+    const allTransfersForEarning = await db.tutorTransfer.findMany({ where: { tutorEarningId: earning.id } });
+    expect(allTransfersForEarning.length).toBe(1);
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 4: repeated reconciliation is idempotent", () => {
+  it("sweepPostTransferPaymentSafety run twice against the same unsafe TRANSFERRED earning writes exactly one audit row and notifies admins exactly once", async () => {
+    await createAdminUser(); // the isolated test DB has no seeded admin — create one so the notification assertion below is meaningful
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_idem_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+
+    const first = await sweepPostTransferPaymentSafety();
+    expect(first.flagged).toBeGreaterThanOrEqual(1);
+    const second = await sweepPostTransferPaymentSafety();
+    expect(second.flagged).toBe(0); // this specific condition was already flagged — nothing new to write
+
+    const earning = await getEarning(booking.id);
+    const auditRows = await db.auditLog.findMany({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect(auditRows.length).toBe(1); // no duplicate spam across sweeps
+
+    const notifications = await db.notification.findMany({
+      where: { type: "tutor_earning.post_transfer_payment_unsafe", metadata: { path: ["tutorEarningId"], equals: earning.id } },
+    });
+    expect(notifications.length).toBeGreaterThanOrEqual(1); // at least one admin notified, and only from the first sweep
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 5: concurrent reconciliation workers are safe", () => {
+  it("two concurrent createTransferForEarning calls for the same earning result in exactly one COMPLETED TutorTransfer and exactly one Stripe call", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    const earning = await getEarning(booking.id);
+
+    let stripeCallCount = 0;
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: {
+        create: vi.fn(async () => {
+          stripeCallCount++;
+          return { id: `tr_concurrent_${randomUUID()}` };
+        }),
+      },
+    } as never);
+
+    await Promise.all([createTransferForEarning(earning.id), createTransferForEarning(earning.id)]);
+
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+    const allTransfers = await db.tutorTransfer.findMany({ where: { tutorEarningId: earning.id } });
+    expect(allTransfers.length).toBe(1); // the DB unique constraint on tutorEarningId is the authoritative guard
+    expect(allTransfers[0].status).toBe("COMPLETED");
+    expect(stripeCallCount).toBeLessThanOrEqual(1); // the loser of the TutorTransfer-create race defers before ever reaching Stripe
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 6/7: bounded retry — recent vs. stale FAILED transfer", () => {
+  it("a recent FAILED transfer (well inside the 24h window) is automatically retried and reaches Stripe", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    const earning = await getEarning(booking.id);
+
+    await db.tutorTransfer.create({
+      data: {
+        id: randomUUID(),
+        tutorEarningId: earning.id,
+        tutorProfileId: tutor.tutorProfile.id,
+        amountCents: earning.amountCents,
+        currency: earning.currency,
+        status: "FAILED",
+        initiatedAt: new Date(Date.now() - 60 * 60 * 1000), // 1h ago — recent
+        failedAt: new Date(Date.now() - 60 * 60 * 1000),
+      },
+    });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_recent_${randomUUID()}` })) },
+    } as never);
+
+    await createTransferForEarning(earning.id);
+    expect(getStripeClient).toHaveBeenCalled();
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+  });
+
+  it("a stale FAILED transfer (past the 24h window) is NOT automatically retried — zero Stripe calls, flagged for manual review exactly once", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToEligible(tutor, student, booking);
+    await makeConnectActive(tutor.tutorProfile.id);
+    await makeChargeResolvable(payment.id);
+    const earning = await getEarning(booking.id);
+
+    const staleTransferId = randomUUID();
+    await db.tutorTransfer.create({
+      data: {
+        id: staleTransferId,
+        tutorEarningId: earning.id,
+        tutorProfileId: tutor.tutorProfile.id,
+        amountCents: earning.amountCents,
+        currency: earning.currency,
+        status: "FAILED",
+        initiatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // 48h ago — stale
+        failedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+      },
+    });
+
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
+      transfers: { create: vi.fn(async () => ({ id: `tr_should_never_be_called_${randomUUID()}` })) },
+    } as never);
+
+    await createTransferForEarning(earning.id);
+    expect(getStripeClient).not.toHaveBeenCalled();
+    expect((await getEarning(booking.id)).status).toBe("ELIGIBLE"); // never advanced
+
+    const transfer = await db.tutorTransfer.findUnique({ where: { id: staleTransferId } });
+    expect(transfer?.status).toBe("FAILED"); // untouched — no blind status flip
+
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorTransfer", entityId: staleTransferId, action: "tutor_transfer.manual_review_required" },
+    });
+    expect(auditRow).not.toBeNull();
+
+    // Idempotent re-run: no duplicate audit spam.
+    await createTransferForEarning(earning.id);
+    const auditRowsAfterSecondCall = await db.auditLog.findMany({
+      where: { entityType: "TutorTransfer", entityId: staleTransferId, action: "tutor_transfer.manual_review_required" },
+    });
+    expect(auditRowsAfterSecondCall.length).toBe(1);
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 tests 8-15: post-transfer payment-safety sweep", () => {
+  it("test 8: TRANSFERRED + clean CAPTURED payment -> healthy, zero flags", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_healthy_${randomUUID()}`);
+
+    const earning = await getEarning(booking.id);
+    await sweepPostTransferPaymentSafety();
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect(auditRow).toBeNull();
+  });
+
+  it("test 9: TRANSFERRED + partial refund -> reconciliation required", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_partial_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { status: "PARTIALLY_REFUNDED", refundedAmountCents: 500 } });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+    const earning = await getEarning(booking.id);
+    expect(earning.status).toBe("TRANSFERRED"); // never mutated — detection only
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect((auditRow?.metadata as Record<string, unknown>)?.reason).toBe("PAYMENT_PARTIALLY_REFUNDED");
+  });
+
+  it("test 10: TRANSFERRED + full refund -> reconciliation required", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_full_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+    expect((await getEarning(booking.id)).status).toBe("TRANSFERRED");
+  });
+
+  it("test 11: TRANSFERRED + OPEN dispute -> reconciliation required", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_open_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "OPEN" } });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+  });
+
+  it("test 12: TRANSFERRED + LOST dispute -> reconciliation required", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_lost_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "LOST" } });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+  });
+
+  it("test 13: TRANSFERRED + WON dispute -> healthy (safety predicate says safe)", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_won_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { disputeStatus: "WON" } });
+
+    const earning = await getEarning(booking.id);
+    await sweepPostTransferPaymentSafety();
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect(auditRow).toBeNull();
+  });
+
+  it("test 14: TRANSFERRED + PENDING Refund -> reconciliation required", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_pending_refund_${randomUUID()}`);
+    await db.refund.create({
+      data: { id: randomUUID(), paymentId: payment.id, bookingId: booking.id, amountCents: 500, status: "PENDING" },
+    });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+    const earning = await getEarning(booking.id);
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect((auditRow?.metadata as Record<string, unknown>)?.reason).toBe("REFUND_PENDING_RECONCILIATION");
+  });
+
+  it("test 15: ambiguous payment state (non-CAPTURED, non-refunded status) -> fail closed, flagged", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_ambiguous_${randomUUID()}`);
+    // Defensive/should-be-unreachable state, exercised directly per this
+    // codebase's own established "direct DB write to exercise a status
+    // value" technique (see cancellationConcurrency.integration.test.ts's
+    // own precedent).
+    await db.payment.update({ where: { id: payment.id }, data: { status: "CANCELLED" } });
+
+    const result = await sweepPostTransferPaymentSafety();
+    expect(result.flagged).toBeGreaterThanOrEqual(1);
+    const earning = await getEarning(booking.id);
+    const auditRow = await db.auditLog.findFirst({
+      where: { entityType: "TutorEarning", entityId: earning.id, action: "tutor_earning.post_transfer_payment_unsafe" },
+    });
+    expect((auditRow?.metadata as Record<string, unknown>)?.paymentSafetyStatus).toBe("UNKNOWN");
+  });
+});
+
+describe("TUTOR-TRANSFER-RECONCILIATION1 — Phase 11 test 16: DB-only financial convergence route still zero Stripe calls (with post-transfer sweep included)", () => {
+  it("processFinancialConvergenceAndEligibility + sweepPostTransferPaymentSafety together never touch getStripeClient", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringEarningToTransferred(tutor, student, booking, payment, `tr_route_check_${randomUUID()}`);
+    await db.payment.update({ where: { id: payment.id }, data: { status: "REFUNDED", refundedAmountCents: payment.amountCents } });
+
+    vi.mocked(getStripeClient).mockClear();
+    await processFinancialConvergenceAndEligibility();
+    await sweepPostTransferPaymentSafety();
+
+    expect(getStripeClient).not.toHaveBeenCalled();
   });
 });

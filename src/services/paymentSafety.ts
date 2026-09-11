@@ -123,6 +123,9 @@ export async function assessPaymentSafetyForTutorTransfer(
   });
 }
 
-export function isPaymentTransferSafe(assessment: PaymentTransferSafety): boolean {
+// A real type predicate (not just `: boolean`) so callers get automatic
+// narrowing on the non-SAFE branch too — e.g. `if (isPaymentTransferSafe(x))
+// return; x.reason` type-checks without a redundant manual narrowing check.
+export function isPaymentTransferSafe(assessment: PaymentTransferSafety): assessment is Extract<PaymentTransferSafety, { status: "SAFE" }> {
   return assessment.status === "SAFE";
 }

@@ -549,7 +549,7 @@ export async function markEligibleEarnings(limit = 200): Promise<number> {
         action: "tutor_earning.eligibility_blocked_payment_unsafe",
         entityType: "TutorEarning",
         entityId: candidate.id,
-        metadata: { bookingId: candidate.bookingId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.status === "SAFE" ? undefined : paymentSafety.reason },
+        metadata: { bookingId: candidate.bookingId, paymentSafetyStatus: paymentSafety.status, reason: paymentSafety.reason },
       });
       continue; // Payment truth does not currently authorize moving money for this earning — never promote from Session truth alone either
     }

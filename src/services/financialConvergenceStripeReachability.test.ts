@@ -19,6 +19,7 @@ function sourceWithoutComments(path: string): string {
 const routePath = join(__dirname, "..", "app", "api", "cron", "session-financial-convergence-tick", "route.ts");
 const convergencePath = join(__dirname, "tutorEarningConvergence.ts");
 const paymentSafetyPath = join(__dirname, "paymentSafety.ts");
+const reconciliationPath = join(__dirname, "tutorTransferReconciliation.ts");
 
 const STRIPE_REFERENCE = /stripe\.transfers|getstripeclient|from ["']@\/lib\/stripe["']|from ["']stripe["']/i;
 const TRANSFER_BOUNDARY_REFERENCE = /createTransferForEarning|processEligibleTransfers|reconcileStuckPayments/;
@@ -37,6 +38,11 @@ describe("/api/cron/session-financial-convergence-tick route — Stripe reachabi
   it("invokes only processFinancialConvergenceAndEligibility from @/services/tutorEarningConvergence", () => {
     expect(route).toMatch(/processFinancialConvergenceAndEligibility/);
     expect(route).toMatch(/from "@\/services\/tutorEarningConvergence"/);
+  });
+
+  it("TUTOR-TRANSFER-RECONCILIATION1: also invokes sweepPostTransferPaymentSafety from @/services/tutorTransferReconciliation", () => {
+    expect(route).toMatch(/sweepPostTransferPaymentSafety/);
+    expect(route).toMatch(/from "@\/services\/tutorTransferReconciliation"/);
   });
 
   it("uses its own dedicated cron secret, distinct from PAYMENTS_CRON_SECRET", () => {
@@ -95,6 +101,58 @@ describe("tutorTransfers.ts — narrowed responsibility", () => {
     expect(safetyCheckIndex).toBeGreaterThan(-1);
     expect(stripeCallIndex).toBeGreaterThan(-1);
     expect(safetyCheckIndex).toBeLessThan(stripeCallIndex);
+  });
+
+  it("TUTOR-TRANSFER-RECONCILIATION1: createTransferForEarning classifies retry recovery BEFORE the Stripe call, and bails on MANUAL_REVIEW_REQUIRED without ever reaching it", () => {
+    const fnMatch = transfers.match(/export async function createTransferForEarning[\s\S]*?\r?\n}\r?\n/);
+    expect(fnMatch).not.toBeNull();
+    const fnBody = fnMatch![0];
+    expect(fnBody).toMatch(/classifyTutorTransferRecovery/);
+    expect(fnBody).toMatch(/flagTutorTransferForManualReview/);
+    const classifyIndex = fnBody.indexOf("classifyTutorTransferRecovery");
+    const stripeCallIndex = fnBody.indexOf("stripe.transfers.create");
+    expect(classifyIndex).toBeGreaterThan(-1);
+    expect(stripeCallIndex).toBeGreaterThan(-1);
+    expect(classifyIndex).toBeLessThan(stripeCallIndex);
+  });
+});
+
+describe("tutorTransferReconciliation.ts — Stripe reachability", () => {
+  const reconciliation = sourceWithoutComments(reconciliationPath);
+
+  it("does not import or reference Stripe in any form", () => {
+    expect(reconciliation.toLowerCase()).not.toMatch(STRIPE_REFERENCE);
+  });
+
+  it("does not reference createTransferForEarning, processEligibleTransfers, or reconcileStuckPayments", () => {
+    expect(reconciliation).not.toMatch(TRANSFER_BOUNDARY_REFERENCE);
+  });
+
+  it("does not import from payments.ts or tutorTransfers.ts (both pull in @/lib/stripe at module scope)", () => {
+    expect(reconciliation).not.toMatch(/from ["']@\/services\/payments["']/);
+    expect(reconciliation).not.toMatch(/from ["']@\/services\/tutorTransfers["']/);
+  });
+
+  it("defines classifyTutorTransferRecovery, flagTutorTransferForManualReview, and sweepPostTransferPaymentSafety", () => {
+    expect(reconciliation).toMatch(/export function classifyTutorTransferRecovery/);
+    expect(reconciliation).toMatch(/export async function flagTutorTransferForManualReview/);
+    expect(reconciliation).toMatch(/export async function sweepPostTransferPaymentSafety/);
+  });
+
+  it("sweepPostTransferPaymentSafety never writes to TutorEarning, TutorTransfer, or Payment — detection only, never mutation", () => {
+    const fnMatch = reconciliation.match(/export async function sweepPostTransferPaymentSafety[\s\S]*?\r?\n}\r?\n/);
+    expect(fnMatch).not.toBeNull();
+    const fnBody = fnMatch![0];
+    expect(fnBody).not.toMatch(/tutorEarning\.(update|updateMany|delete)/);
+    expect(fnBody).not.toMatch(/tutorTransfer\.(update|updateMany|delete|create)/);
+    expect(fnBody).not.toMatch(/payment\.(update|updateMany|delete)/);
+  });
+});
+
+describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 / TUTOR-TRANSFER-RECONCILIATION1: convergence route transitively imports only Stripe-free modules (extended)", () => {
+  it("session-financial-convergence-tick route imports tutorTransferReconciliation.ts, which is itself Stripe-free (verified above)", () => {
+    const route = sourceWithoutComments(routePath);
+    expect(route).toMatch(/from ["']@\/services\/tutorTransferReconciliation["']/);
   });
 });
 
