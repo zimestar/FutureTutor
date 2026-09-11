@@ -814,7 +814,7 @@ describe("Session Lifecycle Phase 3 — no-show convergence at T+15", () => {
       expect(earning.status).toBe("PENDING_ELIGIBLE");
       expect(earning.eligibleAt).toBeNull();
 
-      const { markEligibleEarnings } = await import("./tutorTransfers");
+      const { markEligibleEarnings } = await import("./tutorEarningConvergence");
       await markEligibleEarnings();
 
       const reread = await db.tutorEarning.findUniqueOrThrow({ where: { id: earning.id } });

@@ -48,7 +48,7 @@ let refundIdForBooking: typeof import("./payments").refundIdForBooking;
 let resolveRefundOutcomeAndConverge: typeof import("./payments").resolveRefundOutcomeAndConverge;
 let recoverFailedRefund: typeof import("./payments").recoverFailedRefund;
 let createTransferForEarning: typeof import("./tutorTransfers").createTransferForEarning;
-let markEligibleEarnings: typeof import("./tutorTransfers").markEligibleEarnings;
+let markEligibleEarnings: typeof import("./tutorEarningConvergence").markEligibleEarnings;
 let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 // Phase H.8.3 — module-scope handle to the ambient @/lib/db singleton
 // (the exact PrismaClient instance cancellationPolicy.ts's cancelBookingWithRefund
@@ -168,7 +168,8 @@ beforeAll(async () => {
   ({ convergeToCaptured, getOrCreateRefund, refundIdForBooking, resolveRefundOutcomeAndConverge, recoverFailedRefund } = await import(
     "./payments"
   ));
-  ({ createTransferForEarning, markEligibleEarnings } = await import("./tutorTransfers"));
+  ({ createTransferForEarning } = await import("./tutorTransfers"));
+  ({ markEligibleEarnings } = await import("./tutorEarningConvergence"));
   ({ recordSessionCheckIn } = await import("./sessionLifecycle"));
 
   // Pre-sandbox verification, item 3 — same ambient-singleton database

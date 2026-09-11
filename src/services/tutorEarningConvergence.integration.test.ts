@@ -28,8 +28,10 @@ let computeNoShowGraceDeadline: typeof import("./sessionLifecycle").computeNoSho
 let convergeTutorEarningFromSession: typeof import("./tutorEarningConvergence").convergeTutorEarningFromSession;
 let sweepTutorEarningConvergence: typeof import("./tutorEarningConvergence").sweepTutorEarningConvergence;
 let TUTOR_EARNING_FINANCIAL_DELAY_MS: typeof import("./tutorEarningConvergence").TUTOR_EARNING_FINANCIAL_DELAY_MS;
-let markEligibleEarnings: typeof import("./tutorTransfers").markEligibleEarnings;
+let markEligibleEarnings: typeof import("./tutorEarningConvergence").markEligibleEarnings;
+let processFinancialConvergenceAndEligibility: typeof import("./tutorEarningConvergence").processFinancialConvergenceAndEligibility;
 let processEligibleTransfers: typeof import("./tutorTransfers").processEligibleTransfers;
+let getStripeClient: typeof import("@/lib/stripe").getStripeClient;
 let withSerializableRetry: typeof import("@/lib/serializableRetry").withSerializableRetry;
 
 let db: PrismaClient;
@@ -61,11 +63,11 @@ beforeAll(async () => {
   ({ cancelBookingWithRefund } = await import("./cancellationPolicy"));
   ({ recordSessionCheckIn, resolveSessionNoShowConvergence, resolveSessionCompletionConvergence, requestSessionInterruption, computeNoShowGraceDeadline } =
     await import("./sessionLifecycle"));
-  ({ convergeTutorEarningFromSession, sweepTutorEarningConvergence, TUTOR_EARNING_FINANCIAL_DELAY_MS } = await import(
-    "./tutorEarningConvergence"
-  ));
-  ({ markEligibleEarnings, processEligibleTransfers } = await import("./tutorTransfers"));
+  ({ convergeTutorEarningFromSession, sweepTutorEarningConvergence, markEligibleEarnings, processFinancialConvergenceAndEligibility, TUTOR_EARNING_FINANCIAL_DELAY_MS } =
+    await import("./tutorEarningConvergence"));
+  ({ processEligibleTransfers } = await import("./tutorTransfers"));
   ({ withSerializableRetry } = await import("@/lib/serializableRetry"));
+  ({ getStripeClient } = await import("@/lib/stripe"));
 
   const { db: ambientDb } = await import("@/lib/db");
   const [{ current_database: ambientDatabaseName }] = await ambientDb.$queryRaw<
@@ -711,7 +713,7 @@ describe("Phase 5B — architectural boundary (task §1)", () => {
   });
 });
 
-describe("Phase 5B — sweepTutorEarningConvergence / processEligibleTransfers wiring", () => {
+describe("Phase 5B — sweepTutorEarningConvergence converges without any explicit call", () => {
   it("sweepTutorEarningConvergence converges a COMPLETED booking's earning without any explicit call", async () => {
     const { tutor, student, booking } = await setupConfirmedCapturedBooking();
     await bringToInProgress(tutor, student, booking);
@@ -724,19 +726,189 @@ describe("Phase 5B — sweepTutorEarningConvergence / processEligibleTransfers w
     expect(final.eligibleAt).not.toBeNull();
     expect(final.status).toBe("PENDING_ELIGIBLE");
   });
+});
 
-  it("processEligibleTransfers runs financial convergence before the (hardened) eligibility promotion, with no Stripe calls for a dev-bypass-free assertion of internal state only", async () => {
+describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — processFinancialConvergenceAndEligibility vs. processEligibleTransfers separation", () => {
+  it("processFinancialConvergenceAndEligibility runs convergence then eligibility promotion, DB-only, with ZERO Stripe calls", async () => {
     const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
     const { tutor, student, booking } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
     await bringToInProgress(tutor, student, booking, () => pastStartAt);
     await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
 
-    vi.mocked((await import("@/lib/stripe")).getStripeClient).mockReturnValue({
+    // Fixture setup itself (payment capture / email dispatch side effects)
+    // legitimately touches getStripeClient — clear call history so the
+    // assertion below is scoped to ONLY the orchestrator call under test.
+    vi.mocked(getStripeClient).mockClear();
+
+    const result = await processFinancialConvergenceAndEligibility();
+    expect(result.convergedEarnings).toBeGreaterThanOrEqual(1);
+    expect(result.markedEligible).toBeGreaterThanOrEqual(1);
+    expect(getStripeClient).not.toHaveBeenCalled(); // runtime proof, not just static — the DB-only orchestrator never reaches Stripe
+
+    const final = await getEarning(booking.id);
+    expect(final.status).toBe("ELIGIBLE");
+  });
+
+  it("processEligibleTransfers no longer converges or promotes anything itself — it only transfers earnings that are ALREADY ELIGIBLE", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking, payment } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(tutor, student, booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+    // createTransferForEarning defers (never reaches Stripe) unless the
+    // tutor's Connect account is ACTIVE with an account id, AND
+    // Payment.stripeChargeId is resolvable — neither is true for this
+    // fixture by default (createTutorUser leaves stripeConnectStatus at its
+    // schema default, and the fake stripePaymentIntentId can't be resolved
+    // against the mocked Stripe client). Set both directly here to reach
+    // the actual transfer call this test exists to prove.
+    await db.tutorProfile.update({
+      where: { id: tutor.tutorProfile.id },
+      data: { stripeConnectStatus: "ACTIVE", stripeConnectAccountId: `acct_fake_${randomUUID()}` },
+    });
+    await db.payment.update({ where: { id: payment.id }, data: { stripeChargeId: `ch_fake_${randomUUID()}` } });
+
+    // The financial delay has already elapsed (bookingStartAt is 30h in the
+    // past), so if processEligibleTransfers still silently converged +
+    // promoted on its own, this earning would be ELIGIBLE by the time we
+    // check below. It must not be — convergence/eligibility now require an
+    // explicit, separate call to processFinancialConvergenceAndEligibility.
+    const beforeAnyTransferSweep = await getEarning(booking.id);
+    expect(beforeAnyTransferSweep.status).toBe("PENDING_ELIGIBLE");
+    expect(beforeAnyTransferSweep.eligibleAt).toBeNull();
+
+    // Fixture setup itself (payment capture / email dispatch side effects)
+    // legitimately touches getStripeClient — clear call history so the
+    // assertions below are scoped to the transfer/convergence calls under
+    // test, not ambient setup activity.
+    vi.mocked(getStripeClient).mockClear();
+    vi.mocked(getStripeClient).mockReturnValue({
       transfers: { create: vi.fn(async () => ({ id: `tr_fake_${randomUUID()}` })) },
     } as never);
 
-    const result = await processEligibleTransfers();
-    expect(result.convergedEarnings).toBeGreaterThanOrEqual(1);
-    expect(result.markedEligible).toBeGreaterThanOrEqual(1);
+    const transferResultBeforeConvergence = await processEligibleTransfers();
+    expect(transferResultBeforeConvergence.transfersAttempted).toBe(0);
+    expect(getStripeClient).not.toHaveBeenCalled(); // nothing was ELIGIBLE yet, so createTransferForEarning never even reached the Stripe call
+
+    const stillUnconverged = await getEarning(booking.id);
+    expect(stillUnconverged.status).toBe("PENDING_ELIGIBLE");
+    expect(stillUnconverged.eligibleAt).toBeNull();
+
+    // Now run the separated DB-only orchestrator explicitly, THEN the
+    // transfer sweep — this is the real two-cron shape this mission wires.
+    await processFinancialConvergenceAndEligibility();
+    const eligible = await getEarning(booking.id);
+    expect(eligible.status).toBe("ELIGIBLE");
+
+    const transferResultAfterConvergence = await processEligibleTransfers();
+    expect(transferResultAfterConvergence.transfersAttempted).toBeGreaterThanOrEqual(1);
+    expect(getStripeClient).toHaveBeenCalled(); // only NOW, from the transfer step, never from convergence/eligibility
   });
+});
+
+describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — Phase 5 behavior test G: repeated eligibility sweep is idempotent", () => {
+  it("a second markEligibleEarnings() call after promotion is a pure no-op — same ELIGIBLE status, same (unchanged) row", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const { tutor, student, booking } = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(tutor, student, booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(booking.id, { clock: () => booking.endAt });
+    await sweepTutorEarningConvergence();
+
+    const firstPromoted = await markEligibleEarnings();
+    expect(firstPromoted).toBeGreaterThanOrEqual(1);
+    const afterFirst = await getEarning(booking.id);
+    expect(afterFirst.status).toBe("ELIGIBLE");
+
+    const secondPromoted = await markEligibleEarnings();
+    const afterSecond = await getEarning(booking.id);
+    // The guarded updateMany's own `where: { status: "PENDING_ELIGIBLE", ... }`
+    // no longer matches an already-ELIGIBLE row, so the second sweep cannot
+    // touch it again — this specific earning contributes 0 to the second
+    // call's count (other unrelated PENDING_ELIGIBLE rows elsewhere in the
+    // test DB may still legitimately contribute, so this asserts the ROW,
+    // not the global count).
+    expect(afterSecond).toEqual(afterFirst);
+    void secondPromoted;
+  });
+});
+
+describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — Phase 5 behavior test J: HELD is terminal under current deployed behavior", () => {
+  it("a HELD earning (via TUTOR_NO_SHOW) is never reverted or promoted by any further convergence or eligibility sweep", async () => {
+    const { student, booking } = await setupConfirmedCapturedBooking();
+    await recordSessionCheckIn(booking.id, student.user.id, "STUDENT", { actorRole: "STUDENT" });
+    const deadline = computeNoShowGraceDeadline(booking.startAt);
+    await resolveSessionNoShowConvergence(booking.id, { clock: () => deadline });
+    await convergeTutorEarningFromSession(booking.id);
+
+    const held = await getEarning(booking.id);
+    expect(held.status).toBe("HELD");
+    expect(held.eligibleAt).toBeNull();
+
+    // Re-run the full DB-only pipeline several times — no writer anywhere
+    // in this codebase transitions a HELD earning to any other status
+    // (convergeTutorEarningFromSession's own HELD firewall: "every Session
+    // state that produces HELD is terminal ... observed and returned
+    // as-is"). This is current deployed behavior, not something this
+    // mission changes.
+    await processFinancialConvergenceAndEligibility();
+    await processFinancialConvergenceAndEligibility();
+    const stillHeld = await getEarning(booking.id);
+    expect(stillHeld).toEqual(held);
+  });
+});
+
+describe("FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — Phase 5 behavior test K: zero Stripe calls across the full convergence decision matrix", () => {
+  it("runs every convergence outcome (COMPLETED, STUDENT_NO_SHOW, TUTOR_NO_SHOW, NO_SHOW_UNRESOLVED, INTERRUPTED, SCHEDULED-not-due) through the DB-only orchestrator and asserts getStripeClient was never invoked", async () => {
+    const pastStartAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
+
+    const completed = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    await bringToInProgress(completed.tutor, completed.student, completed.booking, () => pastStartAt);
+    await resolveSessionCompletionConvergence(completed.booking.id, { clock: () => completed.booking.endAt });
+
+    const studentNoShow = await setupConfirmedCapturedBooking({ startAt: pastStartAt });
+    // A real past startAt means the grace deadline has ALSO already passed
+    // in real wall-clock time — recordSessionCheckIn's own embedded lazy
+    // no-show convergence would reject the check-in outright unless it is
+    // given the same past clock this fixture is deliberately using (matches
+    // bringToInProgress's own pattern above for the `completed` fixture).
+    await recordSessionCheckIn(studentNoShow.booking.id, studentNoShow.tutor.user.id, "TUTOR", {
+      actorRole: "TUTOR",
+      clock: () => pastStartAt,
+    });
+    await resolveSessionNoShowConvergence(studentNoShow.booking.id, { clock: () => computeNoShowGraceDeadline(studentNoShow.booking.startAt) });
+
+    const tutorNoShow = await setupConfirmedCapturedBooking();
+    await recordSessionCheckIn(tutorNoShow.booking.id, tutorNoShow.student.user.id, "STUDENT", { actorRole: "STUDENT" });
+    await resolveSessionNoShowConvergence(tutorNoShow.booking.id, { clock: () => computeNoShowGraceDeadline(tutorNoShow.booking.startAt) });
+
+    const unresolved = await setupConfirmedCapturedBooking();
+    await resolveSessionNoShowConvergence(unresolved.booking.id, { clock: () => computeNoShowGraceDeadline(unresolved.booking.startAt) });
+
+    const interrupted = await setupConfirmedCapturedBooking();
+    await bringToInProgress(interrupted.tutor, interrupted.student, interrupted.booking);
+    await requestSessionInterruption(interrupted.booking.id, interrupted.tutor.user.id, { actorRole: "TUTOR", reason: "connection lost" });
+
+    const scheduled = await setupConfirmedCapturedBooking();
+
+    // Every fixture's own setup (payment capture / email dispatch side
+    // effects) legitimately touches getStripeClient — clear call history so
+    // the assertion below is scoped to ONLY the two orchestrator calls.
+    vi.mocked(getStripeClient).mockClear();
+
+    // Run the DB-only orchestrator repeatedly — covers first convergence,
+    // eligibility promotion, and idempotent re-runs, across every outcome
+    // above, all in one sweep pass each time.
+    await processFinancialConvergenceAndEligibility();
+    await processFinancialConvergenceAndEligibility();
+
+    expect(getStripeClient).not.toHaveBeenCalled();
+
+    // Sanity: confirm the matrix actually exercised every branch (not a
+    // vacuous pass because setup silently no-op'd somewhere).
+    expect((await getEarning(completed.booking.id)).status).toBe("ELIGIBLE"); // 30h past start + 24h delay has elapsed
+    expect((await getEarning(studentNoShow.booking.id)).status).toBe("ELIGIBLE");
+    expect((await getEarning(tutorNoShow.booking.id)).status).toBe("HELD");
+    expect((await getEarning(unresolved.booking.id)).status).toBe("HELD");
+    expect((await getEarning(interrupted.booking.id)).status).toBe("HELD");
+    expect((await getEarning(scheduled.booking.id)).status).toBe("PENDING_ELIGIBLE");
+  }, 20000); // six real fixtures + two full sweep passes legitimately exceeds the 5000ms default
 });

@@ -478,3 +478,101 @@ export async function sweepTutorEarningConvergence(limit = 200): Promise<SweepTu
   }
   return { evaluated: candidates.length, converged, reconciliationRequired };
 }
+
+/**
+ * Phase 5B HARDENING (task §9): TutorEarning.eligibleAt is no longer, on its
+ * own, sufficient authorization to promote PENDING_ELIGIBLE -> ELIGIBLE.
+ * "SCHEDULED/IN_PROGRESS + past clock deadline" must never become ELIGIBLE
+ * merely because time passed — pre-Phase-5B, this function trusted
+ * `eligibleAt: { lte: now }` alone, which is exactly the wall-clock-only
+ * defect the Phase 5B task closes. This is defense-in-depth beyond the
+ * convergence engine's own write-once eligibleAt guard (see this file's
+ * convergeTutorEarningFromSession doc comment): it also protects LEGACY
+ * rows — any TutorEarning created before Phase 5B already carries a
+ * populated, wall-clock-derived eligibleAt that the convergence engine
+ * deliberately never rewrites (task §10, "do not blindly rewrite legacy
+ * rows") — by requiring a SECOND, independent, authoritative check against
+ * the current Session outcome (isSessionEligibleForPayment, the SAME
+ * predicate the convergence engine itself uses for its TRANSFERRED/ELIGIBLE
+ * conflict check above — one shared definition, not two independently-
+ * maintained copies of "which outcomes justify payment").
+ *
+ * Each candidate is read-then-conditionally-promoted individually (rather
+ * than one blanket updateMany) precisely so this Session-truth check can be
+ * interposed per row before any write is attempted. No Serializable
+ * transaction/retry wrapping is needed here: once a Session_ reaches a
+ * terminal outcome (COMPLETED, or NO_SHOW with its granular case), no writer
+ * anywhere in this codebase ever transitions it again (Session Lifecycle
+ * Phases 3/4's own "terminal-finality" invariant) — so the fact read here
+ * and the guarded single-row updateMany moments later can never observe a
+ * genuine race on that fact. The updateMany's own `where` clause remains the
+ * sole concurrency guard for the ACTUAL status write, exactly as before.
+ *
+ * FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1: relocated here from
+ * tutorTransfers.ts (unchanged in every other respect) so that this
+ * function — DB-only, zero Stripe reachability, verified by this file's
+ * own zero Stripe imports — lives in the same Stripe-free module as
+ * sweepTutorEarningConvergence and processFinancialConvergenceAndEligibility
+ * below. This is what makes the separation from Stripe-capable transfer
+ * processing a structural (import-graph) fact, not merely an operational
+ * convention.
+ */
+export async function markEligibleEarnings(limit = 200): Promise<number> {
+  const now = new Date();
+  const candidates = await db.tutorEarning.findMany({
+    where: { status: "PENDING_ELIGIBLE", eligibleAt: { lte: now } },
+    select: { id: true, bookingId: true },
+    take: limit,
+  });
+
+  let promoted = 0;
+  for (const candidate of candidates) {
+    const facts = await getSessionFinancialFacts(db, candidate.bookingId);
+    if (!facts || !isSessionEligibleForPayment(facts)) continue; // Session truth does not (or no longer) authorizes payment — never promote from eligibleAt/time alone
+
+    const result = await db.tutorEarning.updateMany({
+      where: { id: candidate.id, status: "PENDING_ELIGIBLE", eligibleAt: { lte: now } },
+      data: { status: "ELIGIBLE" },
+    });
+    promoted += result.count;
+  }
+  return promoted;
+}
+
+export interface FinancialConvergenceAndEligibilityResult {
+  convergedEarnings: number;
+  reconciliationRequired: number;
+  markedEligible: number;
+}
+
+/**
+ * FINANCIAL-CONVERGENCE-ROUTE-SEPARATION1 — the dedicated DB-only
+ * orchestration boundary for TutorEarning convergence + eligibility
+ * promotion, split out from tutorTransfers.ts's processEligibleTransfers
+ * (which now owns ONLY the separate, Stripe-capable transfer step).
+ *
+ * This function calls ONLY sweepTutorEarningConvergence and
+ * markEligibleEarnings — both defined in THIS file, which has zero Stripe
+ * imports anywhere (enforced by this repo's static Stripe-reachability
+ * test, financialConvergenceStripeReachability.test.ts). That makes
+ * this function, and every route that calls it, STRUCTURALLY incapable of
+ * reaching Stripe — not merely conventionally unlikely to: there is no
+ * import path from here to @/lib/stripe, stripe.transfers.create,
+ * createTransferForEarning, processEligibleTransfers, or
+ * reconcileStuckPayments to accidentally introduce.
+ *
+ * Intended caller: /api/cron/session-financial-convergence-tick — a new,
+ * independently-schedulable cron route with no other responsibility.
+ * Deliberately does NOT call processEligibleTransfers, createTransferForEarning,
+ * or reconcileStuckPayments — those remain reachable only through the
+ * separate, still-unscheduled /api/cron/payments-tick.
+ */
+export async function processFinancialConvergenceAndEligibility(): Promise<FinancialConvergenceAndEligibilityResult> {
+  const convergence = await sweepTutorEarningConvergence();
+  const markedEligible = await markEligibleEarnings();
+  return {
+    convergedEarnings: convergence.converged,
+    reconciliationRequired: convergence.reconciliationRequired,
+    markedEligible,
+  };
+}
