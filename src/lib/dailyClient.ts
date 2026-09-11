@@ -220,3 +220,21 @@ export async function dailyApiListWebhooks(): Promise<DailyWebhookConfig[]> {
 export async function dailyApiCreateWebhook(url: string, eventTypes: string[]): Promise<DailyWebhookConfig> {
   return dailyApiRequest<DailyWebhookConfig>("/webhooks", { url, eventTypes });
 }
+
+/**
+ * DAILY-WEBHOOK-URL-FIX1 — POST /webhooks/:uuid. Updates an EXISTING
+ * webhook's `url` only. `eventTypes` is a REQUIRED parameter, not optional
+ * with a default — Daily's own documentation does not specify whether an
+ * omitted field on this endpoint is preserved or cleared, so every caller
+ * must explicitly state the exact eventTypes it wants to remain in effect
+ * rather than relying on unconfirmed omission semantics. `hmac` is
+ * deliberately NOT an accepted parameter here at all: this function can
+ * never rotate a webhook's signing secret, by construction, not merely by
+ * caller discipline — a caller that wants to change the secret needs a
+ * different, more explicit function that does not exist in this codebase.
+ * The caller is responsible for independently verifying (never printing)
+ * that the response's own hmac is unchanged from before the call.
+ */
+export async function dailyApiUpdateWebhook(uuid: string, url: string, eventTypes: string[]): Promise<DailyWebhookConfig> {
+  return dailyApiRequest<DailyWebhookConfig>(`/webhooks/${encodeURIComponent(uuid)}`, { url, eventTypes });
+}

@@ -3,6 +3,7 @@ import {
   dailyApiGetDomainConfig,
   dailyApiListWebhooks,
   dailyApiCreateWebhook,
+  dailyApiUpdateWebhook,
   dailyApiEjectParticipants,
   dailyApiDeleteRoom,
   dailyApiGetRoomStrict,
@@ -82,6 +83,53 @@ describe("dailyApiCreateWebhook", () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     expect(body).toEqual({ url: "https://staging.futuretutor.ca/api/webhooks/daily", eventTypes: ["participant.joined"] });
+  });
+});
+
+describe("dailyApiUpdateWebhook", () => {
+  it("POSTs to /webhooks/:uuid with ONLY url and eventTypes — never hmac, never any other field", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        uuid: "f1457e3c-9193-4b1e-b9b0-7574f4fbe585",
+        url: "https://futuretutor.ca/api/webhooks/daily",
+        eventTypes: ["participant.joined"],
+        hmac: "unchanged-secret-value",
+        state: "ACTIVE",
+      })
+    );
+
+    const result = await dailyApiUpdateWebhook("f1457e3c-9193-4b1e-b9b0-7574f4fbe585", "https://futuretutor.ca/api/webhooks/daily", [
+      "participant.joined",
+    ]);
+
+    expect(result.url).toBe("https://futuretutor.ca/api/webhooks/daily");
+    expect(result.uuid).toBe("f1457e3c-9193-4b1e-b9b0-7574f4fbe585");
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.daily.co/v1/webhooks/f1457e3c-9193-4b1e-b9b0-7574f4fbe585");
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string);
+    // The request body must contain EXACTLY these two keys — no hmac, no
+    // basicAuth, no retryType, nothing this function was never asked to
+    // change. This is what structurally rules out an accidental HMAC
+    // rotation or event-subscription change from this call site, not just
+    // caller discipline.
+    expect(Object.keys(body).sort()).toEqual(["eventTypes", "url"]);
+    expect(body).toEqual({ url: "https://futuretutor.ca/api/webhooks/daily", eventTypes: ["participant.joined"] });
+  });
+
+  it("URL-encodes the uuid path segment", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ uuid: "a b", url: "https://x.test", eventTypes: [], hmac: "h", state: "ACTIVE" }));
+    await dailyApiUpdateWebhook("a b", "https://x.test", []);
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.daily.co/v1/webhooks/a%20b");
+  });
+
+  it("throws DailyApiError on a non-ok response, does not silently succeed", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: "not found" }, false, 404));
+    await expect(dailyApiUpdateWebhook("missing-uuid", "https://futuretutor.ca/api/webhooks/daily", ["participant.joined"])).rejects.toThrow(
+      DailyApiError
+    );
   });
 });
 
