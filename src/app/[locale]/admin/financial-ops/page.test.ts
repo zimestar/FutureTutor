@@ -13,6 +13,12 @@ describe("/admin/financial-ops page.tsx", () => {
     expect(source).not.toMatch(/role === "PARENT"|role === "STUDENT"|role === "TUTOR"/);
   });
 
+  it("ADMIN-AUTH-HARDENING1 — a real, DB-fresh permission check gates this page, not just the stale-role pre-filter above", () => {
+    expect(source).toContain('import { hasAdminPermission } from "@/lib/adminPermission";');
+    expect(source).toContain('hasAdminPermission(user, "ADMIN_PAYMENTS_READ")');
+    expect(source).toMatch(/redirect\(\{ href: homePathForRole\(user\.role\), locale \}\)/);
+  });
+
   it("never accepts a client-supplied tutorProfileId as authority — every row is read from the DB query result, not from searchParams", () => {
     expect(source).not.toMatch(/tutorProfileId:\s*searchParams/);
     expect(source).not.toMatch(/where:\s*\{\s*tutorProfileId:\s*(q|reason|earningStatus|transferStatus)/);

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { adminNavItems } from "@/lib/adminNav";
 import { suspendParentAction, reactivateParentAction } from "@/lib/actions/adminAccountSuspension";
+import { requireActiveAdmin } from "@/services/adminPermissions";
 
 export default async function AdminParentDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
@@ -20,6 +21,11 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
     redirect({ href: "/login", locale });
     return;
   }
+  // ADMIN-AUTH-HARDENING1 — real DB-fresh re-check, same policy as before
+  // (any current ADMIN/SUPER_ADMIN) — the mutations below already went
+  // through the correctly-hardened requireAdminPermission via
+  // adminAccountSuspension.ts; this fixes the page's own read-access gate.
+  try { await requireActiveAdmin(session); } catch { redirect({ href: "/login", locale }); return; }
   const t = await getTranslations({ locale, namespace: "admin.operations.parentDetail" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
 

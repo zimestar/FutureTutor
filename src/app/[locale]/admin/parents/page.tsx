@@ -6,11 +6,17 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { adminNavItems } from "@/lib/adminNav";
+import { requireActiveAdmin } from "@/services/adminPermissions";
 
 export default async function AdminParentsPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ q?: string }> }) {
   const { locale } = await params; const { q = "" } = await searchParams; setRequestLocale(locale);
   const session = await auth(); const user = session?.user;
   if (!user || !["ADMIN", "SUPER_ADMIN"].includes(user.role)) { redirect({ href: "/login", locale }); return; }
+  // ADMIN-AUTH-HARDENING1 — real DB-fresh re-check (this page previously
+  // trusted the stale JWT role above with nothing further). Preserves the
+  // existing "any current ADMIN/SUPER_ADMIN" policy exactly — no new
+  // permission requirement introduced.
+  try { await requireActiveAdmin(session); } catch { redirect({ href: "/login", locale }); return; }
   const t = await getTranslations({ locale, namespace: "admin.operations.parents" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
   const parents = await db.parentProfile.findMany({

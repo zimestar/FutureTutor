@@ -5,7 +5,20 @@ describe("Admin permission enforcement boundaries",()=>{
   it("keeps invitation activation public while Admin surfaces remain protected",()=>{const proxy=readFileSync("src/proxy.ts","utf8");expect(proxy).toContain('startsWithSegment(pathname, "/admin/setup")');expect(proxy.indexOf('startsWithSegment(pathname, "/admin/setup")')).toBeLessThan(proxy.indexOf('startsWithSegment(pathname, "/admin")) return "admin"'))});
   it("server-guards every Admin read domain",()=>{for(const [folder,permission] of Object.entries({tutors:"ADMIN_TUTORS_READ",students:"ADMIN_STUDENTS_READ",bookings:"ADMIN_BOOKINGS_READ",sessions:"ADMIN_SESSIONS_READ",users:"ADMIN_USERS_READ","quick-match":"ADMIN_QUICKMATCH_READ",family:"ADMIN_GUARDIANS_READ",pricing:"ADMIN_PRICING_READ",payments:"ADMIN_PAYMENTS_READ",admins:"ADMIN_ADMINS_VIEW"}))expect(readFileSync(`src/app/[locale]/admin/${folder}/layout.tsx`,"utf8")).toContain(permission)});
   it("guards sensitive mutation entry points by permission",()=>{expect(readFileSync("src/lib/actions/pricingAdmin.ts","utf8")).toContain("ADMIN_PRICING_MANAGE");expect(readFileSync("src/lib/actions/quickMatchAdmin.ts","utf8")).toContain("ADMIN_QUICKMATCH_MANAGE");const tutor=["adminTutorReview","tutorDocuments","tutorEducation","tutorExam","tutorInterview","tutorTraining"].map(f=>readFileSync(`src/lib/actions/${f}.ts`,"utf8")).join("\n");expect(tutor).toContain("requireAdminPermission");});
-  it("does not grant ordinary Admins a financial mutation permission",()=>{const schema=readFileSync("prisma/schema.prisma","utf8");expect(schema).not.toMatch(/ADMIN_(PAYMENTS|REFUNDS|TRANSFERS)_(WRITE|MANAGE)/);expect(readFileSync("src/lib/actions/paymentsAdmin.ts","utf8")).toContain('role !== "SUPER_ADMIN"')});
+  it("does not grant ordinary Admins a financial mutation permission",()=>{const schema=readFileSync("prisma/schema.prisma","utf8");expect(schema).not.toMatch(/ADMIN_(PAYMENTS|REFUNDS|TRANSFERS)_(WRITE|MANAGE)/);
+    // ADMIN-AUTH-HARDENING1: this used to assert the literal stale-JWT check
+    // `role !== "SUPER_ADMIN"` directly in the action file — that check is
+    // exactly what this mission replaced with a DB-fresh equivalent. The
+    // policy this test actually cares about (SUPER_ADMIN-only, never
+    // permission-assignable to a plain Admin) is unchanged and now MORE
+    // strictly enforced: requireSuperAdmin re-reads the current role from
+    // the database on every call rather than trusting a JWT that could be
+    // stale for the life of the session.
+    const source = readFileSync("src/lib/actions/paymentsAdmin.ts","utf8");
+    expect(source).toContain('import { requireSuperAdmin } from "@/services/adminPermissions"');
+    expect(source).toContain("requireSuperAdmin(session)");
+    expect(source).not.toMatch(/role\s*!==\s*"SUPER_ADMIN"/); // the stale-JWT check is gone, not just supplemented
+  });
 });
 
 describe("Admin invitation URL origin", () => {

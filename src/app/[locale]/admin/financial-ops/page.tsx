@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
 import { AdminEarningRow } from "@/components/dashboard/AdminEarningRow";
 import { adminNavItems } from "@/lib/adminNav";
+import { homePathForRole } from "@/lib/authorization";
+import { hasAdminPermission } from "@/lib/adminPermission";
 import { reconstructNoShowOutcome } from "@/services/sessionLifecycle";
 import { classifyTutorEarningForAdmin, type AdminEarningReasonKey } from "@/lib/adminFinancialOpsPresentation";
 import type { TutorEarningSessionFacts } from "@/lib/tutorEarningPresentation";
@@ -57,6 +59,17 @@ export default async function AdminFinancialOpsPage({
   const user = session?.user;
   if (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
     redirect({ href: "/login", locale });
+    return;
+  }
+  // ADMIN-AUTH-HARDENING1 — real, DB-fresh permission check (this page had
+  // none at all before: any stale-JWT ADMIN/SUPER_ADMIN, including a
+  // since-deactivated or demoted one, could reach it). Reuses
+  // ADMIN_PAYMENTS_READ rather than a new permission — see adminNav.ts's own
+  // ADMIN-FINANCIAL-OPS1A comment: this page is a read-only extension of the
+  // same financial-visibility concern /admin/payments already gates on.
+  const permitted = await hasAdminPermission(user, "ADMIN_PAYMENTS_READ");
+  if (!permitted) {
+    redirect({ href: homePathForRole(user.role), locale });
     return;
   }
 
