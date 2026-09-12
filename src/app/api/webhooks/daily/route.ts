@@ -9,6 +9,7 @@ import {
 import {
   processDailyWebhookEvent,
   isSupportedDailyWebhookEventShape,
+  isDailyWebhookValidationProbe,
   MalformedDailyWebhookPayloadError,
   UnsupportedDailyWebhookEventError,
 } from "@/services/dailyWebhooks";
@@ -99,6 +100,15 @@ export async function POST(request: Request) {
     event = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid webhook request" }, { status: 400 });
+  }
+
+  // DAILY-WEBHOOK-VALIDATION-PROBE-FIX1 — Daily's documented endpoint-
+  // validation payload for webhook create/update, checked only AFTER the
+  // signature above has already been verified: authenticity is never
+  // relaxed for this case. A match is a protocol-level connectivity check,
+  // never a business event — it never reaches processDailyWebhookEvent.
+  if (isDailyWebhookValidationProbe(event)) {
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   try {

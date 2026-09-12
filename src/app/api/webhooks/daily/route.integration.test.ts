@@ -443,4 +443,105 @@ describe("POST /api/webhooks/daily — authentication-first classification (VIDE
       expect(sessionAfter.status).toBe("SCHEDULED"); // one-sided join — not IN_PROGRESS yet
     });
   });
+
+  describe("E. Daily webhook endpoint-validation probe (DAILY-WEBHOOK-VALIDATION-PROBE-FIX1)", () => {
+    const PROBE_BODY = JSON.stringify({ test: "test" });
+
+    it("19. exact documented {\"test\":\"test\"} probe, validly signed: HTTP 200", async () => {
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, PROBE_BODY);
+      const response = await POST(buildRequest({ body: PROBE_BODY, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true });
+    });
+
+    it("20. the same probe produces zero business side effects — no attendance row, no audit log, for a real fixture session/room", async () => {
+      const { session } = await setupConfirmedBookingWithRoom();
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, PROBE_BODY);
+
+      await POST(buildRequest({ body: PROBE_BODY, signatureHeader, timestampHeader }));
+
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+      const auditRows = await db.auditLog.findMany({ where: { entityId: session.id, action: "video_session.daily_webhook_participant_joined" } });
+      expect(auditRows).toHaveLength(0);
+    });
+
+    it("21. the probe requires the SAME valid signature as any real event — an unsigned or invalidly-signed probe is still rejected (400), never a special-cased 200", async () => {
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const response = await POST(buildRequest({ body: PROBE_BODY, signatureHeader: "attacker-controlled-signature", timestampHeader }));
+      expect(response.status).toBe(400);
+    });
+
+    it("22. a validly-signed genuine unsupported event ({\"type\":\"meeting.ended\"}) is NOT reclassified as the probe — still 400, unchanged from pre-fix behavior", async () => {
+      const body = JSON.stringify({ type: "meeting.ended", payload: { room: REAL_ROOM_NAME } });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(400);
+    });
+
+    it("23. a validly-signed empty object {} is NOT accepted as the probe — still 400 (missing type field), unchanged from pre-fix behavior", async () => {
+      const body = "{}";
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(400);
+    });
+
+    it("24. a validly-signed near-miss {\"test\":\"wrong\"} is NOT accepted as the probe — still 400", async () => {
+      const body = JSON.stringify({ test: "wrong" });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+      expect(response.status).toBe(400);
+    });
+
+    it("25. a payload combining \"test\":\"test\" with a real participant.joined shape is NOT ambiguously treated as a probe — it is processed as an ordinary signed event instead, exactly as if the extra field were absent", async () => {
+      const { session, studentUser } = await setupConfirmedBookingWithRoom();
+      const body = JSON.stringify({
+        test: "test",
+        type: "participant.joined",
+        payload: { room: REAL_ROOM_NAME, user_id: studentUser.id, session_id: randomUUID() },
+      });
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, body);
+
+      const response = await POST(buildRequest({ body, signatureHeader, timestampHeader }));
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ received: true, handled: true });
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(1); // processed as a normal event, not a probe short-circuit
+    });
+
+    it("26. repeated validation probes are harmless — each returns 200, zero side effects accumulate", async () => {
+      const { session } = await setupConfirmedBookingWithRoom();
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, PROBE_BODY);
+
+      for (let i = 0; i < 3; i++) {
+        const response = await POST(buildRequest({ body: PROBE_BODY, signatureHeader, timestampHeader }));
+        expect(response.status).toBe(200);
+      }
+
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+    });
+
+    it("27. concurrent validation probes are harmless — all return 200, zero side effects", async () => {
+      const { session } = await setupConfirmedBookingWithRoom();
+      const timestampHeader = String(Math.floor(Date.now() / 1000));
+      const signatureHeader = sign(timestampHeader, PROBE_BODY);
+
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, () => POST(buildRequest({ body: PROBE_BODY, signatureHeader, timestampHeader })))
+      );
+      for (const response of responses) expect(response.status).toBe(200);
+
+      const events = await db.sessionAttendanceEvent.findMany({ where: { sessionId: session.id } });
+      expect(events).toHaveLength(0);
+    });
+  });
 });

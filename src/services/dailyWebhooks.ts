@@ -83,6 +83,35 @@ export function isSupportedDailyWebhookEventShape(rawEvent: unknown): boolean {
 }
 
 /**
+ * DAILY-WEBHOOK-VALIDATION-PROBE-FIX1 — Daily's documented webhook
+ * create/update endpoint-validation payload is exactly `{"test":"test"}`, a
+ * protocol-level connectivity check, not a participant event: it carries no
+ * "type" field at all, so it previously fell into
+ * parseParticipantJoinedEvent's very first structural check ("Missing or
+ * non-string type field") and was rejected as HTTP 400
+ * (MalformedDailyWebhookPayloadError) — which is what made Daily's own
+ * webhook-update call fail its synchronous validation POST against the
+ * corrected production URL.
+ *
+ * This predicate is deliberately EXACT, not a broad "unrecognized event"
+ * rule: it matches only an object with precisely one key, "test", whose
+ * value is precisely the string "test". Anything else — {}, {"test":
+ * "wrong"}, a genuine unsupported event type, or a payload that combines
+ * "test" with other fields (e.g. an attempted "test":"test","type":
+ * "participant.joined" ambiguity) — returns false and falls through to the
+ * existing, unchanged parseParticipantJoinedEvent/allowlist behavior. It is
+ * checked by the route ONLY after signature verification has already
+ * succeeded (see route.ts) — authenticity is never weakened for this case,
+ * and matching this predicate short-circuits to a 200 with zero calls into
+ * processDailyWebhookEvent, i.e. zero business logic, zero persistence.
+ */
+export function isDailyWebhookValidationProbe(rawEvent: unknown): boolean {
+  if (typeof rawEvent !== "object" || rawEvent === null) return false;
+  const keys = Object.keys(rawEvent as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === "test" && (rawEvent as Record<string, unknown>).test === "test";
+}
+
+/**
  * Server-authoritative correlation (VIDEO-1B §10) — a valid, signed
  * participant.joined event is proof Daily saw SOMEONE join a room it
  * manages; it is NOT, on its own, proof of who that is or that they are

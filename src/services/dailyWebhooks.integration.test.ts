@@ -24,6 +24,7 @@ let ensureVideoRoomForSession: typeof import("./videoSession").ensureVideoRoomFo
 let processDailyWebhookEvent: typeof import("./dailyWebhooks").processDailyWebhookEvent;
 let MalformedDailyWebhookPayloadError: typeof import("./dailyWebhooks").MalformedDailyWebhookPayloadError;
 let UnsupportedDailyWebhookEventError: typeof import("./dailyWebhooks").UnsupportedDailyWebhookEventError;
+let isDailyWebhookValidationProbe: typeof import("./dailyWebhooks").isDailyWebhookValidationProbe;
 
 let db: PrismaClient;
 let subjectId: string;
@@ -54,9 +55,8 @@ beforeAll(async () => {
   ({ reserveBookingPendingPayment } = await import("./bookingCreation"));
   ({ convergeToCaptured } = await import("./payments"));
   ({ ensureVideoRoomForSession } = await import("./videoSession"));
-  ({ processDailyWebhookEvent, MalformedDailyWebhookPayloadError, UnsupportedDailyWebhookEventError } = await import(
-    "./dailyWebhooks"
-  ));
+  ({ processDailyWebhookEvent, MalformedDailyWebhookPayloadError, UnsupportedDailyWebhookEventError, isDailyWebhookValidationProbe } =
+    await import("./dailyWebhooks"));
 
   const { db: ambientDb } = await import("@/lib/db");
   const [{ current_database: ambientDatabaseName }] = await ambientDb.$queryRaw<
@@ -435,5 +435,42 @@ describe("processDailyWebhookEvent — financial firewall (VIDEO-1B §17)", () =
     expect(bookingAfter.payment?.status).toBe("CAPTURED"); // unchanged
     const earning = await db.tutorEarning.findUnique({ where: { bookingId: booking.id } });
     expect(earning?.status).toBe("PENDING_ELIGIBLE"); // unchanged — eligibility is time+status driven, not video-driven
+  });
+});
+
+describe("isDailyWebhookValidationProbe — pure predicate (DAILY-WEBHOOK-VALIDATION-PROBE-FIX1)", () => {
+  it("matches exactly the documented {\"test\":\"test\"} shape", () => {
+    expect(isDailyWebhookValidationProbe({ test: "test" })).toBe(true);
+  });
+
+  it("rejects an empty object", () => {
+    expect(isDailyWebhookValidationProbe({})).toBe(false);
+  });
+
+  it("rejects a near-miss value", () => {
+    expect(isDailyWebhookValidationProbe({ test: "wrong" })).toBe(false);
+  });
+
+  it("rejects a payload that combines \"test\":\"test\" with other fields — never an ambiguous bypass", () => {
+    expect(isDailyWebhookValidationProbe({ test: "test", type: "participant.joined" })).toBe(false);
+  });
+
+  it("rejects a genuine unsupported event shape", () => {
+    expect(isDailyWebhookValidationProbe({ type: "meeting.ended", payload: { room: "ft-x" } })).toBe(false);
+  });
+
+  it("rejects a genuine participant.joined event shape", () => {
+    expect(isDailyWebhookValidationProbe({ type: "participant.joined", payload: { room: "ft-x", user_id: "user-1" } })).toBe(false);
+  });
+
+  it("rejects non-object bodies (null, array, string, number)", () => {
+    expect(isDailyWebhookValidationProbe(null)).toBe(false);
+    expect(isDailyWebhookValidationProbe(["test"])).toBe(false);
+    expect(isDailyWebhookValidationProbe("test")).toBe(false);
+    expect(isDailyWebhookValidationProbe(42)).toBe(false);
+  });
+
+  it("rejects {\"test\":\"test\"} with an extra unrelated key", () => {
+    expect(isDailyWebhookValidationProbe({ test: "test", extra: "field" })).toBe(false);
   });
 });
