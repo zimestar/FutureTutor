@@ -22,3 +22,16 @@ describe("site.url", () => {
     expect(site.url.endsWith("/")).toBe(false);
   });
 });
+
+// SEO-1 — the single shared Open Graph/Twitter share image reference.
+describe("site.ogImage", () => {
+  it("is a root-relative path (never a hardcoded absolute URL with its own, possibly-wrong host)", () => {
+    expect(site.ogImage.url.startsWith("/")).toBe(true);
+    expect(site.ogImage.url).not.toContain("http");
+  });
+
+  it("declares real, positive width/height so platforms can size the preview correctly", () => {
+    expect(site.ogImage.width).toBeGreaterThan(0);
+    expect(site.ogImage.height).toBeGreaterThan(0);
+  });
+});

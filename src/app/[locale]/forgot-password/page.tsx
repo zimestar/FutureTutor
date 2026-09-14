@@ -6,7 +6,7 @@ import { publicPageMetadata } from "@/lib/publicMetadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params; const t = await getTranslations({ locale, namespace: "metadata.forgotPassword" });
-  return publicPageMetadata({ locale, path: "/forgot-password", title: t("title"), description: t("description") });
+  return publicPageMetadata({ locale, path: "/forgot-password", title: t("title"), description: t("description"), index: false });
 }
 export default async function ForgotPasswordPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params; setRequestLocale(locale);

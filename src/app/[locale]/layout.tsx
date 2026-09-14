@@ -74,9 +74,9 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: "/brand/logo-horizontal-light.png",
-          width: 471,
-          height: 103,
+          url: site.ogImage.url,
+          width: site.ogImage.width,
+          height: site.ogImage.height,
           alt: site.name,
         },
       ],
@@ -86,7 +86,7 @@ export async function generateMetadata({
       site: site.twitterHandle,
       title,
       description,
-      images: ["/brand/logo-horizontal-light.png"],
+      images: [site.ogImage.url],
     },
     robots: {
       index: true,

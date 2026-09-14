@@ -16,4 +16,11 @@ export const site = {
   url: "https://futuretutor.ca",
   country: "Canada",
   twitterHandle: "@futuretutor",
+  // SEO-1 — the one Open Graph/Twitter share image every public page uses.
+  // A horizontal wordmark rather than a 1200x630 "large image" card asset —
+  // real dimensions declared below so platforms render it correctly sized
+  // rather than guessing; still strictly better than the zero-image state
+  // this fixes (see publicMetadata.ts). A dedicated 1200x630 share image is
+  // a SEO-2 design task, not something to fabricate in this mission.
+  ogImage: { url: "/brand/logo-horizontal-light.png", width: 471, height: 103 },
 } as const;

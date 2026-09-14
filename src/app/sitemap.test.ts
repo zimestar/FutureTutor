@@ -9,6 +9,10 @@ import { subjects } from "@/content/subjects";
 // pointing at a non-existent "www.futuretutor.ca" host) and for the
 // sitemap's own basic validity (only real public paths, correct locale
 // alternates, no duplicates, no private/authenticated URL ever included).
+//
+// SEO-1 — extended for two changes: (1) every path now emits one <url>
+// entry PER LOCALE, not just the default locale with the other reachable
+// only via hreflang; (2) the legal/careers paths are now included.
 
 const PRIVATE_PATH_FRAGMENTS = ["/dashboard", "/admin", "/messages", "/session", "/api/", "/tutor/", "/notifications", "/login", "/signup", "/reset-password", "/forgot-password", "/verify-email", "/family"];
 
@@ -23,11 +27,21 @@ describe("sitemap()", () => {
     }
   });
 
-  it("includes only known, real public static paths and real subject slugs — never invented pages", () => {
+  it("includes only known, real public static/legal paths and real subject slugs — never invented pages — with one entry per locale", () => {
     const knownStaticPaths = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/about", "/contact"];
+    const knownLegalPaths = ["/privacy", "/terms", "/cookies", "/tutor-agreement", "/careers"];
     const knownSubjectPaths = subjects.map((s) => `/subjects/${s.slug}`);
-    const expectedCount = knownStaticPaths.length + knownSubjectPaths.length;
-    expect(entries).toHaveLength(expectedCount);
+    const expectedPathCount = knownStaticPaths.length + knownSubjectPaths.length + knownLegalPaths.length;
+    expect(entries).toHaveLength(expectedPathCount * routing.locales.length);
+  });
+
+  it("SEO-1 — every path appears as its own <loc> for EACH locale (not only the default locale)", () => {
+    const homepageEntries = entries.filter((e) => routing.locales.some((locale) => e.url === `${site.url}/${locale}`));
+    expect(homepageEntries).toHaveLength(routing.locales.length);
+    for (const locale of routing.locales) {
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/find-tutors`)).toBe(true);
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/privacy`)).toBe(true);
+    }
   });
 
   it("never includes a private/authenticated/admin/auth-flow URL", () => {
@@ -38,7 +52,7 @@ describe("sitemap()", () => {
     }
   });
 
-  it("every entry has both EN and FR locale alternates (hreflang), on the correct hostname", () => {
+  it("every entry has both EN and FR locale alternates (hreflang), on the correct hostname, including a self-referencing alternate", () => {
     for (const entry of entries) {
       const languages = entry.alternates?.languages as Record<string, string> | undefined;
       expect(languages).toBeDefined();
@@ -46,6 +60,8 @@ describe("sitemap()", () => {
         expect(languages![locale]).toBeDefined();
         expect(languages![locale]!.startsWith(`${site.url}/${locale}`)).toBe(true);
       }
+      // The entry's own URL must be among its own alternates (self-reference).
+      expect(Object.values(languages!)).toContain(entry.url);
     }
   });
 
@@ -54,10 +70,18 @@ describe("sitemap()", () => {
     expect(new Set(urls).size).toBe(urls.length);
   });
 
-  it("the homepage is the only priority-1, weekly-changefreq entry", () => {
+  it("the homepage (default locale) is the only priority-1, weekly-changefreq entry", () => {
     const homepage = entries.find((e) => e.url === `${site.url}/${routing.defaultLocale}`);
     expect(homepage).toBeDefined();
     expect(homepage!.priority).toBe(1);
     expect(homepage!.changeFrequency).toBe("weekly");
+    const priorityOneEntries = entries.filter((e) => e.priority === 1);
+    expect(priorityOneEntries).toHaveLength(routing.locales.length); // one per locale, never more
+  });
+
+  it("SEO-1 — legal pages carry a low priority and yearly changefreq, distinct from marketing pages", () => {
+    const privacyEn = entries.find((e) => e.url === `${site.url}/en/privacy`);
+    expect(privacyEn?.priority).toBe(0.3);
+    expect(privacyEn?.changeFrequency).toBe("yearly");
   });
 });
