@@ -149,8 +149,16 @@ explicit port on the destination. Full unit suite (174 files / 2147 tests),
 
 **Deployed to production *before* the DNS record exists**, by design — so
 the moment the CNAME below resolves and Railway issues a certificate, `www`
-can never serve a live duplicate 200 page even momentarily. Exact commit
-and deployment id recorded below once pushed.
+can never serve a live duplicate 200 page even momentarily.
+
+- Commit: `ba55d53`
+- Deployment: `fa98d97b-8356-4291-a3f2-05d3641a92e9` (SUCCESS)
+- Post-deploy verification (2026-09-14): `/api/health` 200, `/api/health/ready`
+  200, `/en/find-tutors` 200, `/fr/resources` 200, apex canonical still
+  `https://futuretutor.ca/en` on `/en`, apex `/` still its normal (unrelated,
+  pre-existing) 307 locale-detection redirect — the new www rule does not
+  fire for the apex. `www.futuretutor.ca` reconfirmed NXDOMAIN — DNS was not
+  touched, as instructed.
 
 ## Status as of this document
 
