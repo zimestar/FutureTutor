@@ -8,6 +8,7 @@
     "subjects": "Subjects",
     "howItWorks": "How It Works",
     "forTutors": "For Tutors",
+    "resources": "Resources",
     "about": "About",
     "login": "Log In",
     "becomeATutor": "Become a Tutor",
@@ -102,7 +103,99 @@
       "metaDescription": "Find {subject} tutors on FutureTutor, online or in person.",
       "description": "Browse tutors who teach {subject}, online or in person.",
       "searchAll": "Search All Tutors",
-      "empty": "No approved public {subject} tutors match yet. Try the full directory or another subject."
+      "empty": "No approved public {subject} tutors match yet. Try the full directory or another subject.",
+      "breadcrumbHome": "Home",
+      "breadcrumbSubjects": "Subjects",
+      "relatedHeading": "Keep exploring",
+      "relatedLocal": "{subject} tutors in {city}"
+    }
+  },
+  "tutoringMarkets": {
+    "breadcrumbHome": "Home",
+    "items": {
+      "edmonton": {
+        "breadcrumbLabel": "Edmonton",
+        "metaTitle": "Tutoring in Edmonton, AB | FutureTutor",
+        "metaDescription": "Connect with tutors serving Edmonton, Alberta — online or in person. Browse subjects and book a session on FutureTutor.",
+        "hero": {
+          "eyebrow": "Edmonton, Alberta",
+          "title": "Tutoring in Edmonton",
+          "description": "FutureTutor connects Edmonton students and families with tutors for online and in-person sessions, across core school subjects.",
+          "primary": "Find a tutor",
+          "secondary": "Become an Edmonton tutor"
+        },
+        "intro": {
+          "eyebrow": "How it works here",
+          "title": "Book a session with an Edmonton-area tutor",
+          "description": "Every tutor on FutureTutor goes through the same application review before their profile becomes public. Sessions can happen online from anywhere in the Edmonton area, or in person where a tutor offers it."
+        },
+        "subjectsHeading": "Popular subjects in Edmonton",
+        "tutorsHeading": "Tutors in Edmonton",
+        "tutorsEmpty": "FutureTutor is actively growing its Edmonton tutor roster. Browse the full directory to see every approved tutor, including those offering online sessions to Edmonton students.",
+        "becomeTutor": {
+          "title": "Tutor in Edmonton? Join FutureTutor.",
+          "description": "Set your own subjects, availability, and rate. FutureTutor handles booking, messaging, and payment.",
+          "cta": "Apply to become a tutor"
+        }
+      }
+    }
+  },
+  "resourceHub": {
+    "metaTitle": "Tutoring Resources & Guides | FutureTutor",
+    "metaDescription": "Practical, honest guides for parents and students choosing and getting the most out of tutoring.",
+    "breadcrumbHome": "Home",
+    "breadcrumbLabel": "Resources",
+    "hero": {
+      "eyebrow": "Resources",
+      "title": "Guides for parents and students",
+      "description": "Practical guides to help you choose a tutor and get the most out of tutoring — no fluff, no invented statistics.",
+      "primary": "Find a tutor",
+      "secondary": "Become a tutor"
+    },
+    "list": {
+      "eyebrow": "Latest guide",
+      "title": "Start here"
+    },
+    "categories": {
+      "choosingATutor": "Choosing a tutor",
+      "parentGuides": "Parent guides",
+      "tutoringBasics": "Tutoring basics"
+    },
+    "readMore": "Read the guide",
+    "empty": "New guides are on the way.",
+    "updatedLabel": "Updated {date}"
+  },
+  "resourceArticles": {
+    "items": {
+      "how-to-choose-a-tutor": {
+        "metaTitle": "How to Choose the Right Tutor | FutureTutor",
+        "metaDescription": "A practical guide to choosing a tutor for your child — what to check, what to ask, and how to know it's working.",
+        "title": "How to Choose the Right Tutor for Your Child",
+        "intro": "Choosing a tutor is easier when you know what actually matters. This guide walks through the practical checks worth making before you book a first session, and the early signs that a tutor is — or isn't — the right fit.",
+        "sections": {
+          "0": {
+            "heading": "Start with the subject and level, not the resume",
+            "body": "A strong tutor for one subject or grade level isn't automatically the right fit for another. Look for a tutor whose listed subjects and academic level match your child's actual coursework — a university-level chemistry tutor and a middle-school chemistry tutor need different skills, even if the subject label is the same."
+          },
+          "1": {
+            "heading": "Decide online, in person, or both — before you search",
+            "body": "Online tutoring widens your options to tutors outside your city, which matters most for less common subjects. In-person tutoring is naturally limited to tutors near you. Filtering by mode first, rather than after, saves time and avoids disappointment later."
+          },
+          "2": {
+            "heading": "Read the profile for specifics, not adjectives",
+            "body": "A useful tutor profile mentions concrete things — which levels they teach, which languages they work in, how long they've been tutoring. Be cautious of profiles that are all enthusiasm and no detail; specifics are what let you judge fit before the first session."
+          },
+          "3": {
+            "heading": "Judge fit after the first session, not before",
+            "body": "The clearest signal is always the first real session: does your child understand the explanations, do they feel comfortable asking questions, and does the pace match their level? A tutor who looks great on paper can still be a poor match in practice — and the reverse is also true."
+          }
+        },
+        "cta": {
+          "title": "Ready to find a tutor?",
+          "description": "Browse approved tutor profiles by subject, level, and mode.",
+          "primary": "Find a tutor"
+        }
+      }
     }
   },
   "howItWorks": {
@@ -284,6 +377,8 @@
       "findTutor": "Find a Tutor",
       "subjects": "Subjects",
       "howItWorks": "How It Works",
+      "resources": "Resources",
+      "tutoringEdmonton": "Tutoring in Edmonton",
       "becomeATutor": "Become a Tutor",
       "tutorResources": "Tutor Resources",
       "about": "About",

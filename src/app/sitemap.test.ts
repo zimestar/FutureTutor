@@ -3,6 +3,8 @@ import sitemap from "./sitemap";
 import { site } from "@/content/site";
 import { routing } from "@/i18n/routing";
 import { subjects } from "@/content/subjects";
+import { localMarkets } from "@/content/localMarkets";
+import { listPublishedResourceArticles } from "@/content/resources";
 
 // ANALYTICS-SEO1 — regression coverage for the production-breaking
 // hostname defect this mission found and fixed (every sitemap URL was
@@ -28,11 +30,22 @@ describe("sitemap()", () => {
   });
 
   it("includes only known, real public static/legal paths and real subject slugs — never invented pages — with one entry per locale", () => {
-    const knownStaticPaths = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/about", "/contact"];
+    const knownStaticPaths = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact"];
     const knownLegalPaths = ["/privacy", "/terms", "/cookies", "/tutor-agreement", "/careers"];
     const knownSubjectPaths = subjects.map((s) => `/subjects/${s.slug}`);
-    const expectedPathCount = knownStaticPaths.length + knownSubjectPaths.length + knownLegalPaths.length;
+    const knownLocalMarketPaths = localMarkets.map((m) => `/tutoring/${m.slug}`);
+    const knownResourceArticlePaths = listPublishedResourceArticles().map((a) => `/resources/${a.slug}`);
+    const expectedPathCount =
+      knownStaticPaths.length + knownSubjectPaths.length + knownLocalMarketPaths.length + knownResourceArticlePaths.length + knownLegalPaths.length;
     expect(entries).toHaveLength(expectedPathCount * routing.locales.length);
+  });
+
+  it("SEO-3 — includes the Edmonton local-market page and the published resource article, gated by their static registries", () => {
+    for (const locale of routing.locales) {
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/tutoring/edmonton`)).toBe(true);
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/resources`)).toBe(true);
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/resources/how-to-choose-a-tutor`)).toBe(true);
+    }
   });
 
   it("SEO-1 — every path appears as its own <loc> for EACH locale (not only the default locale)", () => {

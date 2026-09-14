@@ -8,6 +8,7 @@
     "subjects": "Matières",
     "howItWorks": "Comment ça marche",
     "forTutors": "Pour les tuteurs",
+    "resources": "Ressources",
     "about": "À propos",
     "login": "Connexion",
     "becomeATutor": "Devenir tuteur",
@@ -102,7 +103,99 @@
       "metaDescription": "Trouvez des tuteurs de {subject} sur FutureTutor, en ligne ou en personne.",
       "description": "Parcourez les tuteurs qui enseignent {subject}, en ligne ou en personne.",
       "searchAll": "Rechercher tous les tuteurs",
-      "empty": "Aucun profil public approuvé ne correspond encore à {subject}. Essayez le répertoire complet ou une autre matière."
+      "empty": "Aucun profil public approuvé ne correspond encore à {subject}. Essayez le répertoire complet ou une autre matière.",
+      "breadcrumbHome": "Accueil",
+      "breadcrumbSubjects": "Matières",
+      "relatedHeading": "Poursuivre votre recherche",
+      "relatedLocal": "Tuteurs de {subject} à {city}"
+    }
+  },
+  "tutoringMarkets": {
+    "breadcrumbHome": "Accueil",
+    "items": {
+      "edmonton": {
+        "breadcrumbLabel": "Edmonton",
+        "metaTitle": "Tutorat à Edmonton, AB | FutureTutor",
+        "metaDescription": "Trouvez un tuteur pour Edmonton, en Alberta — en ligne ou en personne. Parcourez les matières et réservez une séance sur FutureTutor.",
+        "hero": {
+          "eyebrow": "Edmonton, Alberta",
+          "title": "Tutorat à Edmonton",
+          "description": "FutureTutor met en relation les élèves et familles d'Edmonton avec des tuteurs pour des séances en ligne ou en personne, dans les matières scolaires courantes.",
+          "primary": "Trouver un tuteur",
+          "secondary": "Devenir tuteur à Edmonton"
+        },
+        "intro": {
+          "eyebrow": "Comment ça fonctionne ici",
+          "title": "Réservez une séance avec un tuteur de la région d'Edmonton",
+          "description": "Chaque tuteur sur FutureTutor passe par la même révision de candidature avant que son profil devienne public. Les séances peuvent se dérouler en ligne depuis n'importe où dans la région d'Edmonton, ou en personne lorsqu'un tuteur l'offre."
+        },
+        "subjectsHeading": "Matières populaires à Edmonton",
+        "tutorsHeading": "Tuteurs à Edmonton",
+        "tutorsEmpty": "FutureTutor développe activement son bassin de tuteurs à Edmonton. Parcourez le répertoire complet pour voir tous les tuteurs approuvés, y compris ceux offrant des séances en ligne aux élèves d'Edmonton.",
+        "becomeTutor": {
+          "title": "Vous êtes tuteur à Edmonton? Joignez FutureTutor.",
+          "description": "Définissez vos propres matières, disponibilités et tarif. FutureTutor s'occupe de la réservation, de la messagerie et du paiement.",
+          "cta": "Poser sa candidature comme tuteur"
+        }
+      }
+    }
+  },
+  "resourceHub": {
+    "metaTitle": "Ressources et guides sur le tutorat | FutureTutor",
+    "metaDescription": "Des guides pratiques et honnêtes pour les parents et les élèves qui choisissent un tuteur et veulent en tirer le meilleur parti.",
+    "breadcrumbHome": "Accueil",
+    "breadcrumbLabel": "Ressources",
+    "hero": {
+      "eyebrow": "Ressources",
+      "title": "Guides pour parents et élèves",
+      "description": "Des guides pratiques pour vous aider à choisir un tuteur et à tirer le meilleur parti du tutorat — sans détours ni statistiques inventées.",
+      "primary": "Trouver un tuteur",
+      "secondary": "Devenir tuteur"
+    },
+    "list": {
+      "eyebrow": "Dernier guide",
+      "title": "Commencez ici"
+    },
+    "categories": {
+      "choosingATutor": "Choisir un tuteur",
+      "parentGuides": "Guides pour parents",
+      "tutoringBasics": "Bases du tutorat"
+    },
+    "readMore": "Lire le guide",
+    "empty": "De nouveaux guides arrivent bientôt.",
+    "updatedLabel": "Mis à jour le {date}"
+  },
+  "resourceArticles": {
+    "items": {
+      "how-to-choose-a-tutor": {
+        "metaTitle": "Comment choisir le bon tuteur | FutureTutor",
+        "metaDescription": "Un guide pratique pour choisir un tuteur pour votre enfant — quoi vérifier, quoi demander, et comment savoir si ça fonctionne.",
+        "title": "Comment choisir le bon tuteur pour votre enfant",
+        "intro": "Choisir un tuteur est plus simple quand on sait ce qui compte vraiment. Ce guide passe en revue les vérifications pratiques à faire avant de réserver une première séance, ainsi que les premiers signes qu'un tuteur convient — ou non.",
+        "sections": {
+          "0": {
+            "heading": "Commencez par la matière et le niveau, pas le curriculum vitae",
+            "body": "Un tuteur solide dans une matière ou un niveau n'est pas automatiquement le bon choix pour un autre. Cherchez un tuteur dont les matières et le niveau scolaire indiqués correspondent réellement au parcours de votre enfant — un tuteur de chimie universitaire et un tuteur de chimie au secondaire n'ont pas les mêmes compétences, même si l'étiquette « matière » est la même."
+          },
+          "1": {
+            "heading": "Choisissez en ligne, en personne ou les deux — avant de chercher",
+            "body": "Le tutorat en ligne élargit vos options à des tuteurs hors de votre ville, ce qui compte surtout pour les matières moins courantes. Le tutorat en personne se limite naturellement aux tuteurs près de chez vous. Filtrer par mode dès le départ, plutôt qu'après coup, fait gagner du temps et évite les déceptions."
+          },
+          "2": {
+            "heading": "Lisez le profil pour des détails concrets, pas des qualificatifs",
+            "body": "Un profil de tuteur utile mentionne des éléments concrets : les niveaux enseignés, les langues de travail, depuis combien de temps la personne tutore. Méfiez-vous des profils qui ne contiennent que de l'enthousiasme sans détails — ce sont les précisions qui vous permettent de juger la compatibilité avant la première séance."
+          },
+          "3": {
+            "heading": "Jugez la compatibilité après la première séance, pas avant",
+            "body": "Le signal le plus clair reste toujours la première vraie séance : votre enfant comprend-il les explications, se sent-il à l'aise de poser des questions, et le rythme correspond-il à son niveau? Un tuteur qui semble excellent sur papier peut encore mal convenir en pratique — et l'inverse est vrai aussi."
+          }
+        },
+        "cta": {
+          "title": "Prêt à trouver un tuteur?",
+          "description": "Parcourez les profils de tuteurs approuvés par matière, niveau et mode.",
+          "primary": "Trouver un tuteur"
+        }
+      }
     }
   },
   "howItWorks": {
@@ -284,6 +377,8 @@
       "findTutor": "Trouver un tuteur",
       "subjects": "Matières",
       "howItWorks": "Comment ça marche",
+      "resources": "Ressources",
+      "tutoringEdmonton": "Tutorat à Edmonton",
       "becomeATutor": "Devenir tuteur",
       "tutorResources": "Ressources pour tuteurs",
       "about": "À propos",

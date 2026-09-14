@@ -3,15 +3,22 @@ export const mainNav = [
   { key: "findTutor", href: "/find-tutors" },
   { key: "subjects", href: "/subjects" },
   { key: "howItWorks", href: "/how-it-works" },
+  { key: "resources", href: "/resources" },
   { key: "about", href: "/about" },
   { key: "forTutors", href: "/become-a-tutor" },
 ] as const;
 
+// Edmonton (and any future city added to src/content/localMarkets.ts) is
+// deliberately kept out of mainNav — it's a supporting local page, not a
+// primary navigation destination. It's reachable from the students footer
+// column, subject-page contextual links, and search.
 export const footerNav = {
   students: [
     { key: "findTutor", href: "/find-tutors" },
     { key: "subjects", href: "/subjects" },
     { key: "howItWorks", href: "/how-it-works" },
+    { key: "resources", href: "/resources" },
+    { key: "tutoringEdmonton", href: "/tutoring/edmonton" },
   ],
   tutors: [
     { key: "becomeATutor", href: "/become-a-tutor" },

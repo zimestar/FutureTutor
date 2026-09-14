@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/content/site";
 import { subjects } from "@/content/subjects";
+import { localMarkets } from "@/content/localMarkets";
+import { listPublishedResourceArticles } from "@/content/resources";
 import { routing } from "@/i18n/routing";
 
 // SEO-1 — legal/utility pages that are real, public, indexable,
@@ -10,8 +12,15 @@ import { routing } from "@/i18n/routing";
 // distinct from the marketing paths below.
 const LEGAL_PATHS = ["/privacy", "/terms", "/cookies", "/tutor-agreement", "/careers"];
 
-const STATIC_PATHS = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/about", "/contact"];
+const STATIC_PATHS = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact"];
 const SUBJECT_PATHS = subjects.map((s) => `/subjects/${s.slug}`);
+// SEO-3 — local-market pages are gated by src/content/localMarkets.ts (the
+// expansion guardrail), never generated from live TutorProfile.city values.
+const LOCAL_MARKET_PATHS = localMarkets.map((m) => `/tutoring/${m.slug}`);
+// SEO-3 — only published (non-draft) resource articles are listed; a draft
+// article's route resolves for review but stays out of the sitemap and
+// carries `robots: {index:false}` (see resources/[slug]/page.tsx).
+const RESOURCE_ARTICLE_PATHS = listPublishedResourceArticles().map((a) => `/resources/${a.slug}`);
 
 function priorityFor(path: string): number {
   if (path === "") return 1;
@@ -37,7 +46,7 @@ function changeFrequencyFor(path: string): NonNullable<MetadataRoute.Sitemap[num
  * cross-referenced.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const allPaths = [...STATIC_PATHS, ...SUBJECT_PATHS, ...LEGAL_PATHS];
+  const allPaths = [...STATIC_PATHS, ...SUBJECT_PATHS, ...LOCAL_MARKET_PATHS, ...RESOURCE_ARTICLE_PATHS, ...LEGAL_PATHS];
 
   const languageAlternatesFor = (path: string) =>
     Object.fromEntries(routing.locales.map((locale) => [locale, `${site.url}/${locale}${path}`]));
