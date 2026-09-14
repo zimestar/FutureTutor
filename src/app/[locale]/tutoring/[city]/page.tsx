@@ -7,6 +7,8 @@ import { SectionIntro } from "@/components/marketing/SectionIntro";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Navigation";
+import { Link } from "@/i18n/navigation";
+import { ArrowRight } from "lucide-react";
 import { TutorCard } from "@/components/marketing/TutorCard";
 import { getLocalMarket } from "@/content/localMarkets";
 import { subjects } from "@/content/subjects";
@@ -71,6 +73,10 @@ export default async function LocalMarketPage({ params }: { params: Promise<Para
       />
       <Section className="bg-white">
         <SectionIntro eyebrow={tItem("intro.eyebrow")} title={tItem("intro.title")} description={tItem("intro.description")} align="left" />
+        <Link href="/how-it-works" className="mt-4 inline-flex items-center gap-2 font-bold text-blue hover:text-blue-hover">
+          {tItem("howItWorksLink")}
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
       </Section>
       <Section className="bg-off-white">
         <SectionIntro title={tItem("subjectsHeading")} align="left" />

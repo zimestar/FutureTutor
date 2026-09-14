@@ -5,9 +5,11 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Navigation";
+import { SectionIntro } from "@/components/marketing/SectionIntro";
 import { Link } from "@/i18n/navigation";
 import { TutorCard } from "@/components/marketing/TutorCard";
 import { subjects } from "@/content/subjects";
+import { CheckCircle2, Laptop, Home } from "lucide-react";
 import { getResourceArticle } from "@/content/resources";
 import { localMarkets } from "@/content/localMarkets";
 import { auth } from "@/lib/auth";
@@ -46,7 +48,10 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
   const t = await getTranslations({ locale, namespace: "subjects" });
   const tSubjects = await getTranslations({ locale, namespace: "subjects.items" });
   const tResourceArticle = await getTranslations({ locale, namespace: "resourceArticles.items" });
+  const tLevels = await getTranslations({ locale, namespace: "gradeLevels" });
+  const tSearch = await getTranslations({ locale, namespace: "search" });
   const label = t(`items.${slug}`);
+  const levelKeys = ["elementary", "middleSchool", "highSchool", "cegepCollege", "university", "adultLearner"] as const;
 
   const session = await auth();
   const [tutorProfiles, favoritedIds] = await Promise.all([
@@ -87,6 +92,36 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
           <p className="mt-4 text-lg text-slate">{t("page.description", { subject: label })}</p>
           <div className="mt-6 flex justify-center">
             <Button href={`/find-tutors?subject=${encodeURIComponent(label)}`}>{t("page.searchAll")}</Button>
+          </div>
+        </div>
+      </Section>
+
+      <Section className="bg-white">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <SectionIntro title={t("page.levelsHeading")} description={t("page.levelsDescription", { subject: label })} align="left" />
+            <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {levelKeys.map((key) => (
+                <li key={key} className="flex items-center gap-2 rounded-lg border border-border bg-off-white px-3 py-2 text-sm font-semibold text-navy">
+                  <CheckCircle2 className="size-4 shrink-0 text-blue" aria-hidden="true" />
+                  {tLevels(key)}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm leading-6 text-text-muted">{t("page.levelsNote", { subject: label })}</p>
+          </div>
+          <div>
+            <SectionIntro title={t("page.modeHeading")} description={t("page.modeDescription", { subject: label })} align="left" />
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                <Laptop className="size-6 shrink-0 text-blue" aria-hidden="true" />
+                <span className="text-sm font-semibold text-navy">{tSearch("online")}</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                <Home className="size-6 shrink-0 text-blue" aria-hidden="true" />
+                <span className="text-sm font-semibold text-navy">{tSearch("inPerson")}</span>
+              </div>
+            </div>
           </div>
         </div>
       </Section>

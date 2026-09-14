@@ -107,7 +107,12 @@
       "breadcrumbHome": "Home",
       "breadcrumbSubjects": "Subjects",
       "relatedHeading": "Keep exploring",
-      "relatedLocal": "{subject} tutors in {city}"
+      "relatedLocal": "{subject} tutors in {city}",
+      "levelsHeading": "Academic levels we support",
+      "levelsDescription": "{subject} tutoring on FutureTutor spans every stage — from elementary through adult learners, including CEGEP and college, levels many tutoring services skip.",
+      "levelsNote": "Not every {subject} tutor covers every level — each approved profile lists the specific levels they teach, so you can match on the right one before you book.",
+      "modeHeading": "Online or in person",
+      "modeDescription": "Each {subject} tutor sets whether they offer online sessions, in-person sessions, or both. You'll see their mode on their profile before you book."
     }
   },
   "tutoringMarkets": {
@@ -132,6 +137,7 @@
         "subjectsHeading": "Popular subjects in Edmonton",
         "tutorsHeading": "Tutors in Edmonton",
         "tutorsEmpty": "FutureTutor is actively growing its Edmonton tutor roster. Browse the full directory to see every approved tutor, including those offering online sessions to Edmonton students.",
+        "howItWorksLink": "See how booking works",
         "becomeTutor": {
           "title": "Tutor in Edmonton? Join FutureTutor.",
           "description": "Set your own subjects, availability, and rate. FutureTutor handles booking, messaging, and payment.",
@@ -440,7 +446,14 @@
     "resultCount": "{count, plural, one {# result} other {# results}}",
     "newMarketplaceBadge": "New marketplace",
     "emptyFiltered": "No tutors match those filters yet. Try broadening your search.",
-    "emptyNoTutorsYet": "We're just getting started — no tutors have joined yet. Check back soon, or apply to become one of our first tutors."
+    "emptyNoTutorsYet": "We're just getting started — no tutors have joined yet. Check back soon, or apply to become one of our first tutors.",
+    "intro": {
+      "heading": "How tutor discovery works",
+      "description": "Every profile you see here belongs to a tutor who completed FutureTutor's application review — training, an assessment and required documents — before their profile went public. Browse by subject, level and mode, then compare experience and availability before you book.",
+      "linkSubjects": "Browse by subject",
+      "linkEdmonton": "Tutoring in Edmonton",
+      "linkHowItWorks": "See the full booking process"
+    }
   },
   "tutorProfilePage": {
     "yearsExperience": "{count}+ years of experience",
@@ -3172,6 +3185,11 @@
         "statement": "Understanding can restore confidence. Confidence can reopen a future.",
         "description": "FutureTutor exists to make the right transmission accessible at the moment it can help someone move forward.",
         "imageAlt": "A learner recognizing a breakthrough while working with a tutor"
+      },
+      "explore": {
+        "heading": "Keep exploring",
+        "edmonton": "Tutoring in Edmonton",
+        "resources": "Guides for parents and students"
       }
     },
     "about": {
@@ -3195,13 +3213,15 @@
       "hero": { "eyebrow": "Knowledge worth sharing", "title": "What you know could become someone else’s breakthrough.", "description": "Build a clear public profile, share your availability and meet learners who need the way you explain.", "primary": "Become a Tutor", "secondary": "Explore Tutor Resources", "imageAlt": "A tutor and learner engaged in a focused online explanation" },
       "value": { "eyebrow": "Teach with purpose", "title": "A professional experience built around human transmission", "description": "FutureTutor helps organize discovery, booking and sessions so you can focus on helping someone understand.", "items": { "0": { "title": "Make your expertise visible", "description": "Present your subjects, levels, experience and approach through a profile learners can understand." }, "1": { "title": "Set real availability", "description": "Choose when you can tutor and the learning modes you actually offer." }, "2": { "title": "Build trust step by step", "description": "Complete the training, assessment and review journey required before your profile is approved." } } },
       "process": { "eyebrow": "Getting started", "title": "A clear path from application to tutoring", "description": "Each step makes expectations and readiness visible.", "step": "Step {number}", "items": { "0": { "title": "Create your Tutor account", "description": "Choose Tutor during signup and complete your core profile." }, "1": { "title": "Complete the approval journey", "description": "Add the required profile information, training, assessment and documents for review." }, "2": { "title": "Set availability", "description": "Publish the times and modes you can genuinely support." }, "3": { "title": "Meet learners", "description": "Manage requests, bookings and sessions from your Tutor experience." } } },
+      "local": { "eyebrow": "Where FutureTutor tutors teach today", "title": "Edmonton is FutureTutor's active tutoring community", "description": "FutureTutor is actively building its tutor community in Edmonton, Alberta. Whether you're based there or you'd tutor online from anywhere in Canada, your application follows the same approval journey.", "cta": "See tutoring in Edmonton" },
       "cta": { "title": "Your knowledge can help someone see a way forward.", "description": "Create a Tutor account when you are ready to begin the approval journey.", "primary": "Create a Tutor account", "secondary": "Read Tutor Resources" }
     },
     "how": {
-      "metaTitle": "How FutureTutor Works",
+      "metaTitle": "How It Works",
       "metaDescription": "See the real FutureTutor journey from identifying a need to finding, booking and meeting a tutor.",
       "hero": { "eyebrow": "Simple by design", "title": "From “I need help” to a person who can help.", "description": "Search directly or describe your need through Quick Match, review the details and keep every next step clear.", "primary": "Find a Tutor", "secondary": "Create an account" },
-      "journey": { "eyebrow": "The complete journey", "title": "Understand what happens before you begin", "description": "FutureTutor keeps discovery, pricing, booking and the session experience connected without hiding important decisions.", "items": { "0": { "title": "Name the need", "description": "Choose a subject, level and mode. If you prefer, Quick Match lets you submit a structured tutoring request." }, "1": { "title": "Explore approved tutors", "description": "Search public profiles by subject, level and online or in-person mode." }, "2": { "title": "Choose with context", "description": "Review experience, subjects, location or mode, availability and profile details." }, "3": { "title": "Review and confirm", "description": "FutureTutor calculates the session price and shows it before confirmation. Payment is handled through the existing secure flow." }, "4": { "title": "Meet for the session", "description": "Use the session experience for the scheduled tutoring format and follow the role-specific arrival controls." }, "5": { "title": "Continue from a clear record", "description": "Return to bookings and completed session information when planning what comes next." } } }
+      "journey": { "eyebrow": "The complete journey", "title": "Understand what happens before you begin", "description": "FutureTutor keeps discovery, pricing, booking and the session experience connected without hiding important decisions.", "items": { "0": { "title": "Name the need", "description": "Choose a subject, level and mode. If you prefer, Quick Match lets you submit a structured tutoring request." }, "1": { "title": "Explore approved tutors", "description": "Search public profiles by subject, level and online or in-person mode." }, "2": { "title": "Choose with context", "description": "Review experience, subjects, location or mode, availability and profile details." }, "3": { "title": "Review and confirm", "description": "FutureTutor calculates the session price and shows it before confirmation. Payment is handled through the existing secure flow." }, "4": { "title": "Meet for the session", "description": "Use the session experience for the scheduled tutoring format and follow the role-specific arrival controls." }, "5": { "title": "Continue from a clear record", "description": "Return to bookings and completed session information when planning what comes next." } } },
+      "explore": { "heading": "Keep exploring", "edmonton": "Tutoring in Edmonton", "resources": "Guides for parents and students" }
     },
     "resources": {
       "metaTitle": "Tutor Resources",

@@ -107,7 +107,12 @@
       "breadcrumbHome": "Accueil",
       "breadcrumbSubjects": "Matières",
       "relatedHeading": "Poursuivre votre recherche",
-      "relatedLocal": "Tuteurs de {subject} à {city}"
+      "relatedLocal": "Tuteurs de {subject} à {city}",
+      "levelsHeading": "Les niveaux scolaires que nous couvrons",
+      "levelsDescription": "Le tutorat de {subject} sur FutureTutor couvre toutes les étapes — du primaire à la formation aux adultes, en passant par le cégep et le collégial, des niveaux que plusieurs services de tutorat n'offrent pas.",
+      "levelsNote": "Un tuteur de {subject} ne couvre pas nécessairement tous les niveaux — chaque profil approuvé indique précisément les niveaux enseignés, pour que vous trouviez le bon avant de réserver.",
+      "modeHeading": "En ligne ou en personne",
+      "modeDescription": "Chaque tuteur de {subject} précise s'il offre des séances en ligne, en personne, ou les deux. Vous verrez son mode directement sur son profil avant de réserver."
     }
   },
   "tutoringMarkets": {
@@ -132,6 +137,7 @@
         "subjectsHeading": "Matières populaires à Edmonton",
         "tutorsHeading": "Tuteurs à Edmonton",
         "tutorsEmpty": "FutureTutor développe activement son bassin de tuteurs à Edmonton. Parcourez le répertoire complet pour voir tous les tuteurs approuvés, y compris ceux offrant des séances en ligne aux élèves d'Edmonton.",
+        "howItWorksLink": "Voir comment fonctionne la réservation",
         "becomeTutor": {
           "title": "Vous êtes tuteur à Edmonton? Joignez FutureTutor.",
           "description": "Définissez vos propres matières, disponibilités et tarif. FutureTutor s'occupe de la réservation, de la messagerie et du paiement.",
@@ -440,7 +446,14 @@
     "resultCount": "{count, plural, one {# résultat} other {# résultats}}",
     "newMarketplaceBadge": "Nouvelle plateforme",
     "emptyFiltered": "Aucun tuteur ne correspond à ces critères. Essayez d'élargir votre recherche.",
-    "emptyNoTutorsYet": "On démarre tout juste — aucun tuteur ne s'est encore joint. Revenez bientôt, ou faites une demande pour devenir l'un de nos premiers tuteurs."
+    "emptyNoTutorsYet": "On démarre tout juste — aucun tuteur ne s'est encore joint. Revenez bientôt, ou faites une demande pour devenir l'un de nos premiers tuteurs.",
+    "intro": {
+      "heading": "Comment fonctionne la recherche de tuteurs",
+      "description": "Chaque profil affiché ici appartient à un tuteur qui a complété le processus d'approbation de FutureTutor — formation, évaluation et documents requis — avant que son profil devienne public. Parcourez par matière, niveau et mode, puis comparez l'expérience et les disponibilités avant de réserver.",
+      "linkSubjects": "Parcourir par matière",
+      "linkEdmonton": "Tutorat à Edmonton",
+      "linkHowItWorks": "Voir tout le processus de réservation"
+    }
   },
   "tutorProfilePage": {
     "yearsExperience": "{count}+ ans d'expérience",
@@ -3172,6 +3185,11 @@
         "statement": "Comprendre peut restaurer la confiance. La confiance peut rouvrir l’avenir.",
         "description": "FutureTutor existe pour rendre la bonne transmission accessible au moment où elle peut aider une personne à avancer.",
         "imageAlt": "Une apprenante vivant un déclic de compréhension avec son tuteur"
+      },
+      "explore": {
+        "heading": "Poursuivre votre recherche",
+        "edmonton": "Tutorat à Edmonton",
+        "resources": "Guides pour parents et élèves"
       }
     },
     "about": {
@@ -3195,13 +3213,15 @@
       "hero": { "eyebrow": "Un savoir qui mérite de circuler", "title": "Ce que vous savez pourrait devenir le déclic dont une autre personne a besoin.", "description": "Créez un profil public clair, indiquez vos disponibilités et rencontrez des apprenants qui ont besoin de votre façon d’expliquer.", "primary": "Devenir tuteur", "secondary": "Explorer les ressources", "imageAlt": "Un tuteur et une apprenante engagés dans une explication en ligne" },
       "value": { "eyebrow": "Enseigner avec intention", "title": "Une expérience professionnelle centrée sur la transmission humaine", "description": "FutureTutor organise la découverte, la réservation et les séances pour vous permettre de vous concentrer sur la compréhension.", "items": { "0": { "title": "Rendez votre expertise visible", "description": "Présentez vos matières, niveaux, expérience et approche dans un profil facile à comprendre." }, "1": { "title": "Définissez de vraies disponibilités", "description": "Choisissez quand vous pouvez enseigner et les modes que vous offrez réellement." }, "2": { "title": "Bâtissez la confiance étape par étape", "description": "Complétez la formation, l’évaluation et le parcours d’examen requis avant l’approbation du profil." } } },
       "process": { "eyebrow": "Pour commencer", "title": "Un parcours clair de la candidature au tutorat", "description": "Chaque étape rend les attentes et l’état de préparation visibles.", "step": "Étape {number}", "items": { "0": { "title": "Créez votre compte Tuteur", "description": "Choisissez le rôle Tuteur à l’inscription et complétez votre profil de base." }, "1": { "title": "Complétez le parcours d’approbation", "description": "Ajoutez le profil, la formation, l’évaluation et les documents demandés pour examen." }, "2": { "title": "Définissez vos disponibilités", "description": "Publiez les heures et les modes d’accompagnement que vous pouvez réellement offrir." }, "3": { "title": "Rencontrez des apprenants", "description": "Gérez les demandes, réservations et séances dans votre espace Tuteur." } } },
+      "local": { "eyebrow": "Où enseignent les tuteurs FutureTutor aujourd'hui", "title": "Edmonton, la communauté active de FutureTutor", "description": "FutureTutor bâtit activement sa communauté de tuteurs à Edmonton, en Alberta. Que vous y soyez basé ou que vous enseigniez en ligne depuis n'importe où au Canada, votre candidature suit le même parcours d'approbation.", "cta": "Voir le tutorat à Edmonton" },
       "cta": { "title": "Votre savoir peut aider une personne à voir comment avancer.", "description": "Créez un compte Tuteur lorsque vous êtes prêt à commencer le parcours d’approbation.", "primary": "Créer un compte Tuteur", "secondary": "Lire les ressources" }
     },
     "how": {
-      "metaTitle": "Comment fonctionne FutureTutor",
+      "metaTitle": "Comment ça marche",
       "metaDescription": "Découvrez le parcours réel FutureTutor : préciser un besoin, trouver un tuteur, réserver et participer à une séance.",
       "hero": { "eyebrow": "Simple par choix", "title": "De « j’ai besoin d’aide » à une personne capable de vous aider.", "description": "Cherchez directement ou décrivez votre besoin avec le Jumelage rapide, puis consultez les détails avec une prochaine étape toujours claire.", "primary": "Trouver un tuteur", "secondary": "Créer un compte" },
-      "journey": { "eyebrow": "Le parcours complet", "title": "Comprenez ce qui se passe avant de commencer", "description": "FutureTutor relie la découverte, le prix, la réservation et la séance sans masquer les décisions importantes.", "items": { "0": { "title": "Nommez le besoin", "description": "Choisissez une matière, un niveau et un mode. Le Jumelage rapide permet aussi de soumettre une demande structurée." }, "1": { "title": "Explorez les tuteurs approuvés", "description": "Recherchez les profils publics par matière, niveau et mode en ligne ou en personne." }, "2": { "title": "Choisissez avec le bon contexte", "description": "Consultez l’expérience, les matières, le lieu ou le mode, les disponibilités et les détails du profil." }, "3": { "title": "Vérifiez et confirmez", "description": "FutureTutor calcule le prix et l’affiche avant la confirmation. Le paiement passe par le parcours sécurisé existant." }, "4": { "title": "Participez à la séance", "description": "Utilisez l’expérience de séance prévue pour le format choisi et les commandes d’arrivée propres à votre rôle." }, "5": { "title": "Poursuivez à partir d’un dossier clair", "description": "Retrouvez vos réservations et les informations des séances terminées pour préparer la prochaine étape." } } }
+      "journey": { "eyebrow": "Le parcours complet", "title": "Comprenez ce qui se passe avant de commencer", "description": "FutureTutor relie la découverte, le prix, la réservation et la séance sans masquer les décisions importantes.", "items": { "0": { "title": "Nommez le besoin", "description": "Choisissez une matière, un niveau et un mode. Le Jumelage rapide permet aussi de soumettre une demande structurée." }, "1": { "title": "Explorez les tuteurs approuvés", "description": "Recherchez les profils publics par matière, niveau et mode en ligne ou en personne." }, "2": { "title": "Choisissez avec le bon contexte", "description": "Consultez l’expérience, les matières, le lieu ou le mode, les disponibilités et les détails du profil." }, "3": { "title": "Vérifiez et confirmez", "description": "FutureTutor calcule le prix et l’affiche avant la confirmation. Le paiement passe par le parcours sécurisé existant." }, "4": { "title": "Participez à la séance", "description": "Utilisez l’expérience de séance prévue pour le format choisi et les commandes d’arrivée propres à votre rôle." }, "5": { "title": "Poursuivez à partir d’un dossier clair", "description": "Retrouvez vos réservations et les informations des séances terminées pour préparer la prochaine étape." } } },
+      "explore": { "heading": "Poursuivre votre recherche", "edmonton": "Tutorat à Edmonton", "resources": "Guides pour parents et élèves" }
     },
     "resources": {
       "metaTitle": "Ressources pour tuteurs",
