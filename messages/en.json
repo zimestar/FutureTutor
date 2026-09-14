@@ -159,8 +159,8 @@
       "secondary": "Become a tutor"
     },
     "list": {
-      "eyebrow": "Latest guide",
-      "title": "Start here"
+      "eyebrow": "Guides",
+      "title": "Start with what matters most to you"
     },
     "categories": {
       "choosingATutor": "Choosing a tutor",
@@ -169,7 +169,8 @@
     },
     "readMore": "Read the guide",
     "empty": "New guides are on the way.",
-    "updatedLabel": "Updated {date}"
+    "updatedLabel": "Updated {date}",
+    "relatedHeading": "Related guides"
   },
   "resourceArticles": {
     "items": {
@@ -199,6 +200,151 @@
         "cta": {
           "title": "Ready to find a tutor?",
           "description": "Browse approved tutor profiles by subject, level, and mode.",
+          "primary": "Find a tutor"
+        }
+      },
+      "homework-help": {
+        "metaTitle": "Homework Help: When to Get Support",
+        "metaDescription": "Struggling with homework? Learn when extra help actually makes a difference, what good homework support looks like, and how to find it.",
+        "title": "Homework Help: When (and How) to Get Support",
+        "intro": "Not every homework struggle needs a tutor — but some do. Here's how to tell the difference, and what genuinely useful homework help looks like when you need it.",
+        "sections": {
+          "0": {
+            "heading": "When homework help is enough — and when it isn't",
+            "body": "Occasional confusion on a single assignment is normal and often resolves with a class-notes review or a classmate's explanation. Recurring homework struggles — the same type of question causing trouble week after week — usually point to a gap in understanding that homework help alone won't close. That's when structured, one-on-one support tends to help more than another explanation of tonight's assignment."
+          },
+          "1": {
+            "heading": "What effective homework help actually does",
+            "body": "Useful homework help doesn't just produce the answer — it explains the reasoning so the next similar problem is easier, not just this one. Look for support that walks through the \"why,\" not just the \"what\": a good session leaves a student able to attempt the next problem with less help, not more dependent on being handed answers."
+          },
+          "2": {
+            "heading": "Getting help online vs. in the moment",
+            "body": "Homework help can come from a teacher, a classmate, a study group, or a tutor — and increasingly it happens online, at the time the question actually comes up rather than during a scheduled weekly session. On FutureTutor, each tutor sets whether they offer online sessions, in-person sessions, or both, so support can be booked around when the need actually shows up."
+          },
+          "3": {
+            "heading": "Turning one-off help into lasting progress",
+            "body": "If the same subject keeps generating homework questions, that's a signal worth acting on rather than repeating. A tutor who works with a student more than once can track where the actual gap is, rather than re-explaining the same concept from scratch every time — which is usually where real, lasting progress starts."
+          }
+        },
+        "cta": {
+          "title": "Ready to get homework help that actually helps?",
+          "description": "Search FutureTutor for a tutor by subject, level, and mode.",
+          "primary": "Find a tutor"
+        }
+      },
+      "cost-of-tutoring": {
+        "metaTitle": "What Does Tutoring Cost?",
+        "metaDescription": "Understand the real factors that affect the price of tutoring — subject, level, format and more — before you book.",
+        "title": "What Tutoring Costs — and What Actually Affects the Price",
+        "intro": "Tutoring isn't priced with a single flat rate — the real cost depends on a handful of concrete factors. Here's what actually moves the price, so you know what you're comparing when you book.",
+        "sections": {
+          "0": {
+            "heading": "Why tutoring doesn't have one fixed price",
+            "body": "Tutoring pricing varies because the service itself varies — a subject, an academic level, and a session format aren't interchangeable. On FutureTutor, the price for a specific session is calculated and shown to you before you confirm the booking, rather than negotiated directly with the tutor, so you always see the real number for that exact session before committing."
+          },
+          "1": {
+            "heading": "What genuinely affects the price",
+            "body": "Subject and academic level are the biggest factors — specialized or advanced-level tutoring typically costs more than general elementary support. Session format matters too: online and in-person sessions can be priced differently, and session length changes the total cost directly. None of this is arbitrary — it reflects real differences in what's being provided."
+          },
+          "2": {
+            "heading": "What doesn't determine a fair price",
+            "body": "A tutor's price isn't a signal of how \"good\" they are in some abstract sense — a higher price doesn't guarantee a better fit for your child, and a lower price doesn't mean less capable teaching. The more useful comparison is fit: subjects taught, levels covered, and mode offered, matched to what you actually need."
+          },
+          "3": {
+            "heading": "Comparing tutors on more than price",
+            "body": "Before booking, it's worth reading a tutor's profile in full — their subjects, levels, experience, and availability — rather than sorting by price alone. The right tutor for a specific need is usually a better outcome than the cheapest available option, and FutureTutor shows you the full price before you confirm either way."
+          }
+        },
+        "cta": {
+          "title": "See real pricing for the tutor you need",
+          "description": "Search by subject and level to see tutors and session pricing before you book.",
+          "primary": "Find a tutor"
+        }
+      },
+      "online-vs-in-person-tutoring": {
+        "metaTitle": "Online vs In-Person Tutoring",
+        "metaDescription": "Compare online and in-person tutoring honestly — convenience, focus, availability and more — to decide what fits your family.",
+        "title": "Online vs. In-Person Tutoring: How to Choose",
+        "intro": "Neither online nor in-person tutoring is universally better — the right choice depends on the subject, the student, and what's actually available. Here's an honest comparison to help you decide.",
+        "sections": {
+          "0": {
+            "heading": "Convenience and scheduling",
+            "body": "Online sessions remove travel time entirely and make it easier to fit tutoring around a busy week — a real advantage when schedules are tight. In-person sessions require more coordination but can suit families who prefer a fixed routine or a change of environment for focused work."
+          },
+          "1": {
+            "heading": "Focus and interaction",
+            "body": "Some students concentrate better face-to-face, especially younger learners; others focus just as well, or better, on a screen, particularly if they're already comfortable with online tools. There's no universal answer here — it genuinely depends on the individual student, not the format itself."
+          },
+          "2": {
+            "heading": "What's actually available",
+            "body": "Online tutoring has no meaningful geographic limit — a tutor anywhere can teach a student anywhere, which widens the pool of available tutors considerably, especially for less common subjects. In-person tutoring is naturally local: it depends on a tutor actually being near you, so availability varies by city and isn't guaranteed everywhere FutureTutor operates."
+          },
+          "3": {
+            "heading": "You don't have to choose only one",
+            "body": "Some tutors offer both online and in-person sessions, so the choice doesn't have to be permanent — a family might start online and move to in-person later, or mix formats depending on the week. On FutureTutor, each tutor's profile states clearly which modes they offer, so you can filter and compare before booking either way."
+          }
+        },
+        "cta": {
+          "title": "Find a tutor in the format that works for you",
+          "description": "Filter by online, in-person, or both when you search.",
+          "primary": "Find a tutor"
+        }
+      },
+      "how-tutors-are-vetted": {
+        "metaTitle": "How Tutors Are Vetted",
+        "metaDescription": "See the real steps a tutor completes — application, training, assessment and review — before their profile goes live on FutureTutor.",
+        "title": "How Tutors Are Vetted",
+        "intro": "Before any tutor profile becomes public on FutureTutor, it goes through a structured review process. Here's exactly what that involves — and what to look for yourself once you're comparing tutors.",
+        "sections": {
+          "0": {
+            "heading": "The real approval process, step by step",
+            "body": "Every tutor completes their profile, required documents, training, and an assessment — and an administrator reviews all of it before the profile is approved and made public. This isn't a single checkbox: it's a multi-step process a tutor moves through before students or parents can find and book them."
+          },
+          "1": {
+            "heading": "What this process does — and doesn't — confirm",
+            "body": "This review confirms that a tutor completed their profile, training, and required document review, and that an administrator approved the result. FutureTutor does not claim background checks or guarantees beyond this process — it's worth being precise about what \"vetted\" actually means here, rather than assuming it covers more than it does."
+          },
+          "2": {
+            "heading": "What parents can check for themselves",
+            "body": "Beyond the approval process, a tutor's public profile is itself useful evidence: their stated subjects and levels, their experience description, their availability, and how clearly they explain their own approach. A profile with specific, concrete details is generally more informative than one that's all enthusiasm and no substance."
+          },
+          "3": {
+            "heading": "Approval doesn't replace your own judgment",
+            "body": "A completed approval process is a real signal, not a substitute for deciding whether a specific tutor is the right fit for your child. The first session is often the clearest indicator — does the explanation style work, is the pace right, does your child feel comfortable asking questions."
+          }
+        },
+        "cta": {
+          "title": "Want the full picture of how FutureTutor works?",
+          "description": "See the complete process — discovery, booking, sessions and more.",
+          "primary": "See How It Works"
+        }
+      },
+      "when-to-get-a-tutor": {
+        "metaTitle": "When Should My Child Get a Tutor?",
+        "metaDescription": "Signs it's time to get extra academic support — and signs it can probably wait — from a parent's point of view.",
+        "title": "When Should My Child Get a Tutor?",
+        "intro": "There's no single test for \"does my child need a tutor\" — but there are real, recognizable signs worth paying attention to, in either direction.",
+        "sections": {
+          "0": {
+            "heading": "Signs worth acting on",
+            "body": "A grade drop that doesn't recover after a week or two of normal effort, the same type of question causing trouble across multiple assignments, or a child who's started avoiding a subject entirely are all real signals — not because any one of them alone is alarming, but because they tend to compound if left alone."
+          },
+          "1": {
+            "heading": "Signs it can probably wait",
+            "body": "A single rough test, a one-off confusing assignment, or a temporarily busy week are normal parts of learning and don't usually need outside intervention — they're often resolved with a conversation with the teacher or a bit of extra review at home. Reaching for a tutor after every isolated setback can create pressure that isn't actually necessary."
+          },
+          "2": {
+            "heading": "What a tutor changes that homework help alone doesn't",
+            "body": "A tutor who works with a student more than once builds an understanding of where the actual gap is, rather than re-explaining the same concept from scratch each time. That continuity is the real difference between a one-off homework question and structured, ongoing support — it's not about intensity, it's about consistency."
+          },
+          "3": {
+            "heading": "Starting is lower-stakes than it feels",
+            "body": "Trying a tutor for a specific subject doesn't commit a family to anything ongoing — it's possible to book a single session to see if it helps before deciding whether to continue. Reviewing a tutor's profile — their subjects, levels, and experience — before booking is a reasonable way to gauge fit without overcommitting."
+          }
+        },
+        "cta": {
+          "title": "See if a tutor is the right next step",
+          "description": "Browse tutors by subject and level, and book when you're ready.",
           "primary": "Find a tutor"
         }
       }

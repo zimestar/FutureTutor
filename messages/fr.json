@@ -159,8 +159,8 @@
       "secondary": "Devenir tuteur"
     },
     "list": {
-      "eyebrow": "Dernier guide",
-      "title": "Commencez ici"
+      "eyebrow": "Guides",
+      "title": "Commencez par ce qui compte le plus pour vous"
     },
     "categories": {
       "choosingATutor": "Choisir un tuteur",
@@ -169,7 +169,8 @@
     },
     "readMore": "Lire le guide",
     "empty": "De nouveaux guides arrivent bientôt.",
-    "updatedLabel": "Mis à jour le {date}"
+    "updatedLabel": "Mis à jour le {date}",
+    "relatedHeading": "Guides connexes"
   },
   "resourceArticles": {
     "items": {
@@ -199,6 +200,151 @@
         "cta": {
           "title": "Prêt à trouver un tuteur?",
           "description": "Parcourez les profils de tuteurs approuvés par matière, niveau et mode.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "homework-help": {
+        "metaTitle": "Aide aux devoirs : quand obtenir du soutien",
+        "metaDescription": "Votre enfant a de la difficulté avec ses devoirs? Découvrez quand un soutien supplémentaire fait vraiment la différence, et comment le trouver.",
+        "title": "Aide aux devoirs : quand (et comment) obtenir du soutien",
+        "intro": "Toutes les difficultés avec les devoirs ne nécessitent pas un tuteur — mais certaines, oui. Voici comment faire la différence, et à quoi ressemble une aide aux devoirs vraiment utile.",
+        "sections": {
+          "0": {
+            "heading": "Quand l'aide aux devoirs suffit — et quand elle ne suffit pas",
+            "body": "Une confusion occasionnelle sur un seul devoir est normale et se résout souvent en révisant les notes de cours ou avec l'explication d'un camarade. Des difficultés récurrentes — le même type de question qui pose problème semaine après semaine — indiquent généralement une lacune que l'aide aux devoirs seule ne comble pas. C'est à ce moment qu'un accompagnement structuré, en tête-à-tête, aide généralement plus qu'une explication de plus sur le devoir du soir."
+          },
+          "1": {
+            "heading": "Ce qu'une aide aux devoirs efficace fait vraiment",
+            "body": "Une aide aux devoirs utile ne se contente pas de donner la réponse — elle explique le raisonnement pour que le prochain problème semblable soit plus facile, pas seulement celui-ci. Cherchez un accompagnement qui explique le « pourquoi », pas seulement le « quoi » : une bonne séance laisse l'élève capable d'aborder le prochain problème avec moins d'aide, pas plus dépendant qu'avant."
+          },
+          "2": {
+            "heading": "Obtenir de l'aide en ligne ou au moment même",
+            "body": "L'aide aux devoirs peut venir d'un enseignant, d'un camarade, d'un groupe d'étude ou d'un tuteur — et de plus en plus, elle se passe en ligne, au moment où la question se pose réellement plutôt que pendant une séance hebdomadaire fixe. Sur FutureTutor, chaque tuteur précise s'il offre des séances en ligne, en personne, ou les deux, pour que le soutien puisse être réservé au moment où le besoin se présente vraiment."
+          },
+          "3": {
+            "heading": "Transformer une aide ponctuelle en progrès durable",
+            "body": "Si la même matière génère constamment des questions de devoirs, c'est un signal à prendre au sérieux plutôt qu'à répéter. Un tuteur qui travaille plus d'une fois avec un élève peut cibler la véritable lacune, au lieu de réexpliquer le même concept à zéro chaque fois — c'est habituellement là que commence un progrès réel et durable."
+          }
+        },
+        "cta": {
+          "title": "Prêt à obtenir une aide aux devoirs qui aide vraiment?",
+          "description": "Cherchez un tuteur sur FutureTutor par matière, niveau et mode.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "cost-of-tutoring": {
+        "metaTitle": "Combien coûte le tutorat?",
+        "metaDescription": "Comprenez les vrais facteurs qui influencent le prix du tutorat — matière, niveau, format et plus — avant de réserver.",
+        "title": "Combien coûte le tutorat — et qu'est-ce qui influence vraiment le prix",
+        "intro": "Le tutorat n'a pas un prix fixe unique — le coût réel dépend de quelques facteurs concrets. Voici ce qui influence vraiment le prix, pour que vous sachiez ce que vous comparez au moment de réserver.",
+        "sections": {
+          "0": {
+            "heading": "Pourquoi le tutorat n'a pas un prix fixe",
+            "body": "Le prix du tutorat varie parce que le service lui-même varie — une matière, un niveau scolaire et un format de séance ne sont pas interchangeables. Sur FutureTutor, le prix d'une séance précise est calculé et affiché avant que vous confirmiez la réservation, plutôt que négocié directement avec le tuteur — vous voyez donc toujours le vrai montant pour cette séance avant de vous engager."
+          },
+          "1": {
+            "heading": "Ce qui influence réellement le prix",
+            "body": "La matière et le niveau scolaire sont les facteurs les plus importants — un tutorat spécialisé ou de niveau avancé coûte habituellement plus cher qu'un soutien général au primaire. Le format de la séance compte aussi : les séances en ligne et en personne peuvent être tarifées différemment, et la durée de la séance change directement le coût total. Rien de tout cela n'est arbitraire — cela reflète de vraies différences dans ce qui est offert."
+          },
+          "2": {
+            "heading": "Ce qui ne détermine pas un prix juste",
+            "body": "Le prix d'un tuteur n'indique pas à quel point il est « bon » dans l'absolu — un prix plus élevé ne garantit pas un meilleur accompagnement pour votre enfant, et un prix plus bas ne signifie pas un enseignement moins compétent. La comparaison la plus utile reste l'adéquation : les matières enseignées, les niveaux couverts et le mode offert, en fonction de ce dont vous avez vraiment besoin."
+          },
+          "3": {
+            "heading": "Comparer les tuteurs au-delà du prix",
+            "body": "Avant de réserver, il vaut la peine de lire le profil complet d'un tuteur — ses matières, ses niveaux, son expérience et ses disponibilités — plutôt que de trier uniquement par prix. Le bon tuteur pour un besoin précis donne généralement un meilleur résultat que l'option la moins chère, et FutureTutor vous montre le prix complet avant que vous confirmiez, peu importe votre choix."
+          }
+        },
+        "cta": {
+          "title": "Voyez le vrai prix pour le tuteur dont vous avez besoin",
+          "description": "Cherchez par matière et niveau pour voir les tuteurs et le prix des séances avant de réserver.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "online-vs-in-person-tutoring": {
+        "metaTitle": "Tutorat en ligne ou en personne",
+        "metaDescription": "Comparez honnêtement le tutorat en ligne et en personne — commodité, concentration, disponibilité et plus — pour trouver ce qui convient à votre famille.",
+        "title": "Tutorat en ligne ou en personne : comment choisir",
+        "intro": "Ni le tutorat en ligne ni le tutorat en personne n'est universellement meilleur — le bon choix dépend de la matière, de l'élève et de ce qui est réellement disponible. Voici une comparaison honnête pour vous aider à décider.",
+        "sections": {
+          "0": {
+            "heading": "Commodité et horaire",
+            "body": "Les séances en ligne éliminent complètement le temps de déplacement et facilitent l'intégration du tutorat dans une semaine chargée — un vrai avantage quand l'horaire est serré. Les séances en personne demandent plus de coordination, mais peuvent convenir aux familles qui préfèrent une routine fixe ou un changement d'environnement pour un travail concentré."
+          },
+          "1": {
+            "heading": "Concentration et interaction",
+            "body": "Certains élèves se concentrent mieux en face à face, surtout les plus jeunes; d'autres se concentrent tout aussi bien, sinon mieux, devant un écran, en particulier s'ils sont déjà à l'aise avec les outils numériques. Il n'y a pas de réponse universelle ici — cela dépend vraiment de l'élève, pas du format lui-même."
+          },
+          "2": {
+            "heading": "Ce qui est réellement disponible",
+            "body": "Le tutorat en ligne n'a pratiquement aucune limite géographique — un tuteur, où qu'il soit, peut enseigner à un élève n'importe où, ce qui élargit considérablement le bassin de tuteurs disponibles, surtout pour les matières moins courantes. Le tutorat en personne est naturellement local : il dépend qu'un tuteur soit réellement près de chez vous, ce qui veut dire que la disponibilité varie selon la ville et n'est pas garantie partout où FutureTutor est présent."
+          },
+          "3": {
+            "heading": "Vous n'êtes pas obligé de choisir un seul mode",
+            "body": "Certains tuteurs offrent des séances en ligne et en personne, donc le choix n'a pas à être permanent — une famille peut commencer en ligne puis passer en personne plus tard, ou combiner les deux selon la semaine. Sur FutureTutor, le profil de chaque tuteur indique clairement les modes offerts, pour que vous puissiez filtrer et comparer avant de réserver."
+          }
+        },
+        "cta": {
+          "title": "Trouvez un tuteur dans le format qui vous convient",
+          "description": "Filtrez par en ligne, en personne, ou les deux lors de votre recherche.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "how-tutors-are-vetted": {
+        "metaTitle": "Comment les tuteurs sont évalués",
+        "metaDescription": "Découvrez les vraies étapes qu'un tuteur complète — candidature, formation, évaluation et révision — avant que son profil devienne public sur FutureTutor.",
+        "title": "Comment les tuteurs sont évalués",
+        "intro": "Avant qu'un profil de tuteur devienne public sur FutureTutor, il passe par un processus de révision structuré. Voici exactement ce que cela implique — et ce qu'il vaut la peine de vérifier vous-même en comparant les tuteurs.",
+        "sections": {
+          "0": {
+            "heading": "Le vrai processus d'approbation, étape par étape",
+            "body": "Chaque tuteur complète son profil, les documents requis, une formation et une évaluation — et un administrateur examine le tout avant que le profil soit approuvé et rendu public. Ce n'est pas une simple case à cocher : c'est un processus à plusieurs étapes qu'un tuteur traverse avant que les élèves ou les parents puissent le trouver et réserver."
+          },
+          "1": {
+            "heading": "Ce que ce processus confirme — et ne confirme pas",
+            "body": "Cette révision confirme qu'un tuteur a complété son profil, sa formation et l'examen des documents requis, et qu'un administrateur a approuvé le résultat. FutureTutor ne prétend pas effectuer de vérification d'antécédents ni offrir de garanties au-delà de ce processus — il vaut la peine d'être précis sur ce que « évalué » signifie vraiment ici, plutôt que de présumer que cela couvre davantage."
+          },
+          "2": {
+            "heading": "Ce que les parents peuvent vérifier eux-mêmes",
+            "body": "Au-delà du processus d'approbation, le profil public d'un tuteur est lui-même une preuve utile : les matières et niveaux indiqués, la description de son expérience, ses disponibilités, et la clarté avec laquelle il explique sa propre approche. Un profil avec des détails précis et concrets est généralement plus informatif qu'un profil rempli seulement d'enthousiasme."
+          },
+          "3": {
+            "heading": "L'approbation ne remplace pas votre propre jugement",
+            "body": "Un processus d'approbation complété est un vrai signal, pas un substitut à votre propre décision quant à savoir si un tuteur précis convient à votre enfant. La première séance est souvent l'indicateur le plus clair : le style d'explication fonctionne-t-il, le rythme est-il bon, votre enfant se sent-il à l'aise de poser des questions?"
+          }
+        },
+        "cta": {
+          "title": "Vous voulez voir tout le portrait de FutureTutor?",
+          "description": "Découvrez le processus complet — découverte, réservation, séances et plus.",
+          "primary": "Voir comment ça marche"
+        }
+      },
+      "when-to-get-a-tutor": {
+        "metaTitle": "Quand mon enfant devrait-il avoir un tuteur?",
+        "metaDescription": "Les signes qu'il est temps d'obtenir du soutien scolaire supplémentaire — et les signes que ça peut probablement attendre.",
+        "title": "Quand mon enfant devrait-il avoir un tuteur?",
+        "intro": "Il n'existe pas de test unique pour savoir si votre enfant a besoin d'un tuteur — mais il y a de vrais signes reconnaissables, dans un sens comme dans l'autre.",
+        "sections": {
+          "0": {
+            "heading": "Des signes qui méritent une action",
+            "body": "Une baisse de notes qui ne se rétablit pas après une semaine ou deux d'effort normal, le même type de question qui pose problème dans plusieurs devoirs, ou un enfant qui commence à éviter complètement une matière sont tous de vrais signaux — non pas parce que chacun est alarmant en soi, mais parce qu'ils ont tendance à s'accumuler si on n'agit pas."
+          },
+          "1": {
+            "heading": "Des signes qui peuvent probablement attendre",
+            "body": "Un seul examen difficile, un devoir déroutant isolé, ou une semaine temporairement chargée font partie normale de l'apprentissage et ne nécessitent habituellement pas d'intervention extérieure — ils se résolvent souvent avec une conversation avec l'enseignant ou un peu de révision supplémentaire à la maison. Recourir à un tuteur après chaque revers isolé peut créer une pression qui n'est pas réellement nécessaire."
+          },
+          "2": {
+            "heading": "Ce qu'un tuteur change que l'aide aux devoirs seule ne change pas",
+            "body": "Un tuteur qui travaille plus d'une fois avec un élève développe une compréhension de la véritable lacune, plutôt que de réexpliquer le même concept à zéro chaque fois. Cette continuité est la vraie différence entre une question de devoir ponctuelle et un accompagnement structuré et continu — ce n'est pas une question d'intensité, mais de constance."
+          },
+          "3": {
+            "heading": "Commencer est moins engageant que ça en a l'air",
+            "body": "Essayer un tuteur pour une matière précise n'engage pas la famille à quoi que ce soit à long terme — il est possible de réserver une seule séance pour voir si ça aide avant de décider de continuer. Consulter le profil d'un tuteur — ses matières, ses niveaux, son expérience — avant de réserver est une façon raisonnable d'évaluer l'adéquation sans s'engager trop vite."
+          }
+        },
+        "cta": {
+          "title": "Voyez si un tuteur est la bonne prochaine étape",
+          "description": "Parcourez les tuteurs par matière et niveau, et réservez quand vous êtes prêt.",
           "primary": "Trouver un tuteur"
         }
       }

@@ -5,7 +5,9 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Navigation";
-import { getResourceArticle } from "@/content/resources";
+import { Link } from "@/i18n/navigation";
+import { ArrowRight } from "lucide-react";
+import { getResourceArticle, listPublishedResourceArticles } from "@/content/resources";
 import { publicPageMetadata } from "@/lib/publicMetadata";
 
 type Params = { locale: string; slug: string };
@@ -35,8 +37,11 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
   setRequestLocale(locale);
   const tHub = await getTranslations({ locale, namespace: "resourceHub" });
   const t = await getTranslations({ locale, namespace: `resourceArticles.items.${slug}` });
+  const tArticles = await getTranslations({ locale, namespace: "resourceArticles.items" });
 
   const formattedUpdatedAt = new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(article.updatedAt));
+  const publishedSlugs = new Set(listPublishedResourceArticles().map((a) => a.slug));
+  const relatedArticles = (article.relatedSlugs ?? []).filter((relatedSlug) => publishedSlugs.has(relatedSlug));
 
   return (
     <MarketingShell>
@@ -67,12 +72,27 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
           ))}
         </div>
       </Section>
+      {relatedArticles.length > 0 && (
+        <Section className="bg-white pt-0">
+          <div className="mx-auto flex max-w-3xl flex-col gap-3 border-t border-border pt-8">
+            <p className="text-sm font-bold uppercase tracking-[0.14em] text-blue">{tHub("relatedHeading")}</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              {relatedArticles.map((relatedSlug) => (
+                <Link key={relatedSlug} href={`/resources/${relatedSlug}`} className="inline-flex items-center gap-1.5 font-semibold text-navy hover:text-blue">
+                  {tArticles(`${relatedSlug}.title`)}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </Section>
+      )}
       <Section className="bg-navy text-white">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-balance text-3xl font-extrabold md:text-4xl">{t("cta.title")}</h2>
           <p className="mt-4 text-lg leading-8 text-white/76">{t("cta.description")}</p>
           <div className="mt-8">
-            <Button href="/find-tutors" size="lg">
+            <Button href={article.primaryLinkHref} size="lg">
               {t("cta.primary")}
             </Button>
           </div>
