@@ -17,6 +17,8 @@ import { db } from "@/lib/db";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import { TrackPageView } from "@/components/marketing/TrackPageView";
+import type { Locale } from "@/lib/analytics";
 
 type Params = { locale: string; city: string };
 
@@ -61,6 +63,7 @@ export default async function LocalMarketPage({ params }: { params: Promise<Para
 
   return (
     <MarketingShell>
+      <TrackPageView event="local_landing_viewed" properties={{ locale: locale as Locale, city_slug: slug }} />
       <Section className="bg-off-white pb-0">
         <Breadcrumbs items={[{ label: t("breadcrumbHome"), href: "/" }, { label: tItem("breadcrumbLabel") }]} />
       </Section>

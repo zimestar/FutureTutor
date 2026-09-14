@@ -203,13 +203,32 @@ describe("Cookie Policy technical inventory regression guards — FG-LEGAL1C", (
     expect(existsSync("src/app/sw.ts")).toBe(false);
   });
 
-  it("COOKIE-22: analytics.ts remains a first-party, non-transmitting stub (no real provider wired)", () => {
-    const analytics = readFileSync("src/lib/analytics.ts", "utf8");
-    expect(analytics).not.toMatch(/fetch\(|XMLHttpRequest|navigator\.sendBeacon/);
-    // Providers are only named in the file's own doc comment as illustrative
-    // future options ("Swap the implementation for a real provider... when
-    // one is chosen") — this asserts none is actually imported or invoked.
-    expect(analytics).not.toMatch(/^\s*import .*(posthog|mixpanel|amplitude|segment|gtag)/im);
-    expect(analytics).not.toMatch(/(posthog|mixpanel|amplitude)\.(capture|track|init)/i);
+  it("COOKIE-22 / DATA-1: only vendors.ts may ever transmit analytics data, and only behind shouldLoadGtm()'s gate", () => {
+    // src/lib/analytics.ts (a single flat stub) was superseded by
+    // src/lib/analytics/ (DATA-1) — the underlying legal property this
+    // test protects is unchanged: the Cookie Policy's current
+    // representation that third-party behavioural analytics is "not
+    // currently represented as used" must stay true until a human
+    // configures a real vendor ID (see
+    // docs/analytics/DATA-1-ANALYTICS-FOUNDATION.md). vendors.ts is now
+    // the sole, deliberately narrow boundary where transmission code is
+    // allowed to exist at all — and even there, only reachable through
+    // shouldLoadGtm(), which is unconditionally false today (no
+    // NEXT_PUBLIC_GTM_ID is configured anywhere).
+    const nonVendorFiles = ["types.ts", "piiDenylist.ts", "slugGuards.ts", "routePolicy.ts", "consent.ts", "environment.ts", "track.ts", "index.ts"];
+    for (const file of nonVendorFiles) {
+      const source = readFileSync(`src/lib/analytics/${file}`, "utf8");
+      expect(source, `${file} must not itself transmit anything`).not.toMatch(/fetch\(|XMLHttpRequest|navigator\.sendBeacon|googletagmanager\.com/);
+      expect(source, `${file} must not import a vendor SDK`).not.toMatch(/^\s*import .*(posthog|mixpanel|amplitude|segment)/im);
+    }
+
+    const vendors = readFileSync("src/lib/analytics/vendors.ts", "utf8");
+    // The one real network reference (a GTM script src) must exist only
+    // inside loadGtmIfEligible, immediately gated by shouldLoadGtm().
+    expect(vendors).toContain("googletagmanager.com");
+    expect(vendors).toMatch(/function loadGtmIfEligible\(\): void \{\s*\n\s*if \(!shouldLoadGtm\(\)\) return;/);
+    // No hardcoded GTM container id anywhere — it must always come from
+    // the environment variable, never a literal value.
+    expect(vendors).not.toMatch(/GTM-[A-Z0-9]{4,}/);
   });
 });

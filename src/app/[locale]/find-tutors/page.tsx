@@ -6,6 +6,8 @@ import { Section } from "@/components/ui/Section";
 import { SectionIntro } from "@/components/marketing/SectionIntro";
 import { Link } from "@/i18n/navigation";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import { TrackPageView } from "@/components/marketing/TrackPageView";
+import type { Locale } from "@/lib/analytics";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -23,6 +25,7 @@ export default async function FindTutorsPage({ params, searchParams }: {
   const t = await getTranslations({ locale, namespace: "findTutorsPage.intro" });
   return (
     <MarketingShell>
+      <TrackPageView event="page_view" properties={{ locale: locale as Locale, page_type: "find_tutors" }} />
       <TutorDirectory locale={locale} searchParams={resolvedSearchParams} />
       <Section className="bg-white pt-0">
         <div className="mx-auto max-w-3xl border-t border-border pt-10">

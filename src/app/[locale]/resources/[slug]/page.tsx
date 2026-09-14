@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { Section } from "@/components/ui/Section";
-import { Button } from "@/components/ui/Button";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 import { Breadcrumbs } from "@/components/ui/Navigation";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "lucide-react";
 import { getResourceArticle, listPublishedResourceArticles } from "@/content/resources";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import { TrackPageView } from "@/components/marketing/TrackPageView";
+import type { Locale } from "@/lib/analytics";
 
 type Params = { locale: string; slug: string };
 
@@ -45,6 +47,7 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
 
   return (
     <MarketingShell>
+      <TrackPageView event="resource_article_viewed" properties={{ locale: locale as Locale, resource_slug: slug }} />
       <Section className="bg-off-white pb-0">
         <Breadcrumbs
           items={[
@@ -92,9 +95,9 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
           <h2 className="text-balance text-3xl font-extrabold md:text-4xl">{t("cta.title")}</h2>
           <p className="mt-4 text-lg leading-8 text-white/76">{t("cta.description")}</p>
           <div className="mt-8">
-            <Button href={article.primaryLinkHref} size="lg">
+            <TrackedCtaButton href={article.primaryLinkHref} event="resource_primary_cta_clicked" properties={{ resource_slug: slug }} size="lg">
               {t("cta.primary")}
-            </Button>
+            </TrackedCtaButton>
           </div>
         </div>
       </Section>

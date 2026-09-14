@@ -1156,6 +1156,13 @@
       "close": "Close installation instructions"
     }
   },
+  "consentBanner": {
+    "heading": "We use cookies",
+    "description": "Essential cookies keep FutureTutor secure and working. With your permission, we'd also like to use analytics to understand how the site is used.",
+    "learnMore": "Learn more",
+    "accept": "Accept analytics",
+    "reject": "Reject non-essential"
+  },
   "dashboard": {
     "logOut": "Log Out",
     "openNavigation": "Open dashboard navigation",

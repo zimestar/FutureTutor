@@ -80,7 +80,10 @@ export function TutorSearch({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    trackEvent("search_started", { subject, level, mode });
+    // subject is free-text user input and is deliberately never sent to
+    // analytics (DATA-1 PII/free-text policy) — level and mode are closed,
+    // safe enum-shaped values.
+    trackEvent("search_started", { level, mode });
 
     const params = new URLSearchParams();
     if (subject) params.set("subject", subject);

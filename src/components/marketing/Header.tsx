@@ -77,14 +77,19 @@ export function Header() {
               >
                 {t("login")}
               </Link>
-              <Button href="/become-a-tutor" variant="outline" size="sm">
+              <Button
+                href="/become-a-tutor"
+                variant="outline"
+                size="sm"
+                onClick={() => trackEvent("become_tutor_cta_clicked", { cta_location: "header" })}
+              >
                 {t("becomeATutor")}
               </Button>
               <Button
                 href="/find-tutors"
                 variant="primary"
                 size="sm"
-                onClick={() => trackEvent("find_tutor_clicked", { source: "header" })}
+                onClick={() => trackEvent("find_tutor_cta_clicked", { cta_location: "header" })}
               >
                 {t("findTutor")}
               </Button>
@@ -149,7 +154,14 @@ export function Header() {
               </>
             ) : (
               <>
-                <Button href="/become-a-tutor" variant="outline" onClick={() => setOpen(false)}>
+                <Button
+                  href="/become-a-tutor"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    trackEvent("become_tutor_cta_clicked", { cta_location: "header_mobile" });
+                  }}
+                >
                   {t("becomeATutor")}
                 </Button>
                 <Button
@@ -157,7 +169,7 @@ export function Header() {
                   variant="primary"
                   onClick={() => {
                     setOpen(false);
-                    trackEvent("find_tutor_clicked", { source: "header-mobile" });
+                    trackEvent("find_tutor_cta_clicked", { cta_location: "header_mobile" });
                   }}
                 >
                   {t("findTutor")}

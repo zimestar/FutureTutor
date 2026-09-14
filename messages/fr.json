@@ -1156,6 +1156,13 @@
       "close": "Fermer les instructions d’installation"
     }
   },
+  "consentBanner": {
+    "heading": "Nous utilisons des témoins",
+    "description": "Les témoins essentiels assurent la sécurité et le bon fonctionnement de FutureTutor. Avec votre permission, nous aimerions aussi utiliser des données analytiques pour mieux comprendre l'utilisation du site.",
+    "learnMore": "En savoir plus",
+    "accept": "Accepter les données analytiques",
+    "reject": "Refuser les éléments non essentiels"
+  },
   "dashboard": {
     "logOut": "Déconnexion",
     "openNavigation": "Ouvrir la navigation du tableau de bord",
