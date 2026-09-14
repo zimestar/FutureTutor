@@ -115,7 +115,7 @@
     "items": {
       "edmonton": {
         "breadcrumbLabel": "Edmonton",
-        "metaTitle": "Tutoring in Edmonton, AB | FutureTutor",
+        "metaTitle": "Tutoring in Edmonton, AB",
         "metaDescription": "Connect with tutors serving Edmonton, Alberta — online or in person. Browse subjects and book a session on FutureTutor.",
         "hero": {
           "eyebrow": "Edmonton, Alberta",
@@ -141,7 +141,7 @@
     }
   },
   "resourceHub": {
-    "metaTitle": "Tutoring Resources & Guides | FutureTutor",
+    "metaTitle": "Tutoring Resources & Guides",
     "metaDescription": "Practical, honest guides for parents and students choosing and getting the most out of tutoring.",
     "breadcrumbHome": "Home",
     "breadcrumbLabel": "Resources",
@@ -168,7 +168,7 @@
   "resourceArticles": {
     "items": {
       "how-to-choose-a-tutor": {
-        "metaTitle": "How to Choose the Right Tutor | FutureTutor",
+        "metaTitle": "How to Choose the Right Tutor",
         "metaDescription": "A practical guide to choosing a tutor for your child — what to check, what to ask, and how to know it's working.",
         "title": "How to Choose the Right Tutor for Your Child",
         "intro": "Choosing a tutor is easier when you know what actually matters. This guide walks through the practical checks worth making before you book a first session, and the early signs that a tutor is — or isn't — the right fit.",

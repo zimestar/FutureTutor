@@ -115,7 +115,7 @@
     "items": {
       "edmonton": {
         "breadcrumbLabel": "Edmonton",
-        "metaTitle": "Tutorat à Edmonton, AB | FutureTutor",
+        "metaTitle": "Tutorat à Edmonton, AB",
         "metaDescription": "Trouvez un tuteur pour Edmonton, en Alberta — en ligne ou en personne. Parcourez les matières et réservez une séance sur FutureTutor.",
         "hero": {
           "eyebrow": "Edmonton, Alberta",
@@ -141,7 +141,7 @@
     }
   },
   "resourceHub": {
-    "metaTitle": "Ressources et guides sur le tutorat | FutureTutor",
+    "metaTitle": "Ressources et guides sur le tutorat",
     "metaDescription": "Des guides pratiques et honnêtes pour les parents et les élèves qui choisissent un tuteur et veulent en tirer le meilleur parti.",
     "breadcrumbHome": "Accueil",
     "breadcrumbLabel": "Ressources",
@@ -168,7 +168,7 @@
   "resourceArticles": {
     "items": {
       "how-to-choose-a-tutor": {
-        "metaTitle": "Comment choisir le bon tuteur | FutureTutor",
+        "metaTitle": "Comment choisir le bon tuteur",
         "metaDescription": "Un guide pratique pour choisir un tuteur pour votre enfant — quoi vérifier, quoi demander, et comment savoir si ça fonctionne.",
         "title": "Comment choisir le bon tuteur pour votre enfant",
         "intro": "Choisir un tuteur est plus simple quand on sait ce qui compte vraiment. Ce guide passe en revue les vérifications pratiques à faire avant de réserver une première séance, ainsi que les premiers signes qu'un tuteur convient — ou non.",
