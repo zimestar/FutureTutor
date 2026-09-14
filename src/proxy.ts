@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { routing } from "@/i18n/routing";
 import { canAccessSection, homePathForRole } from "@/lib/authorization";
+import { canonicalWwwRedirectUrl } from "@/lib/canonicalHost";
 
 const intlMiddleware = createMiddleware(routing);
 const locales: readonly string[] = routing.locales;
@@ -28,6 +29,11 @@ function protectedSection(pathname: string): "dashboard" | "tutor" | "admin" | n
 // old `middleware.ts`/Edge convention), so it's safe to pull in the full,
 // Prisma-backed auth config here — no edge/node split needed.
 export const proxy = auth((req) => {
+  const wwwRedirect = canonicalWwwRedirectUrl(req.nextUrl);
+  if (wwwRedirect) {
+    return NextResponse.redirect(wwwRedirect, 308);
+  }
+
   const { pathname } = req.nextUrl;
   const segments = pathname.split("/").filter(Boolean);
   const maybeLocale = segments[0];

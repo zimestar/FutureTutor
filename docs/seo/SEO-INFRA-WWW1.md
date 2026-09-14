@@ -81,33 +81,53 @@ path and query preserved) must be enforced at the **application layer**, in
 `src/proxy.ts` (the Next.js 16 request-proxy, already runs on every
 non-API/static request via its existing matcher).
 
-## Proposed application-level change (NOT YET IMPLEMENTED — pending authorization)
+## Application-level change (implemented, deployed pre-DNS)
 
-`src/proxy.ts` currently starts its handler with locale/section
-authorization logic. The proposed change adds a single, narrow check at the
-very top, before any of that:
+Authorized and implemented in the follow-up mission. The pure redirect
+check lives in its own zero-dependency module,
+`src/lib/canonicalHost.ts` (kept dependency-free — no `next-intl`/
+`next-auth` imports — specifically so it can be unit-tested directly
+without pulling in `proxy.ts`'s heavier imports, which fail to resolve
+under Vitest's module resolution in this environment):
+
+```ts
+// src/lib/canonicalHost.ts
+const WWW_HOST = "www.futuretutor.ca";
+const APEX_ORIGIN = "https://futuretutor.ca";
+
+export function canonicalWwwRedirectUrl(url: URL): URL | null {
+  if (url.hostname !== WWW_HOST) return null;
+  return new URL(`${url.pathname}${url.search}`, APEX_ORIGIN);
+}
+```
+
+`src/proxy.ts` calls it as the very first statement inside the request
+handler, before any locale detection, section-authorization, or
+`intlMiddleware` logic:
 
 ```ts
 export const proxy = auth((req) => {
-  if (req.nextUrl.hostname === "www.futuretutor.ca") {
-    const target = new URL(
-      `${req.nextUrl.pathname}${req.nextUrl.search}`,
-      "https://futuretutor.ca"
-    );
-    return NextResponse.redirect(target, 308);
+  const wwwRedirect = canonicalWwwRedirectUrl(req.nextUrl);
+  if (wwwRedirect) {
+    return NextResponse.redirect(wwwRedirect, 308);
   }
 
   const { pathname } = req.nextUrl;
   // ...unchanged from here
 ```
 
+- **Exact hostname match only** (`===`, never `endsWith`/substring) — proven
+  by test to never catch the apex, a Railway-generated domain, `localhost`,
+  `staging.futuretutor.ca`, or a spoofed host like
+  `www.futuretutor.ca.attacker.com`.
 - **308 Permanent Redirect** (not 301/302/307): preserves the request
-  method, is unambiguously permanent, and `NextResponse.redirect()`
-  defaults to 307 unless a status is passed explicitly, so this must be
-  passed explicitly.
-- Preserves the full path and query string (`pathname` + `search`), for
-  every route the existing matcher already covers (`/`, `/en`, `/fr`, and
-  every nested path) — one redirect hop for an `https://www...` request.
+  method; `NextResponse.redirect()` defaults to 307 unless a status is
+  passed explicitly, so 308 is passed explicitly.
+- Preserves the full path and query string for every route the existing
+  matcher already covers (`/`, `/en`, `/fr`, every nested path, all query
+  parameters) — proven by test, including multi-parameter query strings.
+- The redirect destination is proven (by test) to never itself match
+  `www.futuretutor.ca` — no redirect loop is possible by construction.
 - `/api/*` is excluded, same as today's matcher (`config.matcher:
   ["/((?!api|trpc|_next|_vercel|.*\\..*).*)"]`) — no code path expects `www`
   API traffic (webhooks are already configured against the apex).
@@ -120,32 +140,45 @@ export const proxy = auth((req) => {
   `sitemap.ts`, or `publicMetadata.ts` — canonical/hreflang/OG continue to
   reference the apex exclusively, unaffected by this change.
 
-This mission's own instructions require stopping for explicit authorization
-before adding this code ("Do not introduce middleware casually") — it has
-not been written yet.
+13 focused tests in `src/lib/canonicalHost.test.ts` cover: www root, EN
+path, FR path, nested path, single and multi-parameter query strings,
+apex/localhost/Railway-domain/staging/spoofed-host non-redirection,
+redirect-loop impossibility, protocol normalization to `https:`, and no
+explicit port on the destination. Full unit suite (174 files / 2147 tests),
+`tsc --noEmit`, `eslint`, and `next build` all pass with this change.
+
+**Deployed to production *before* the DNS record exists**, by design — so
+the moment the CNAME below resolves and Railway issues a certificate, `www`
+can never serve a live duplicate 200 page even momentarily. Exact commit
+and deployment id recorded below once pushed.
 
 ## Status as of this document
 
 - Railway `www.futuretutor.ca` domain: attached, **unverified**
   (`verified: false`), certificate `VALIDATING_OWNERSHIP` — blocked purely
   on the missing DNS record.
-- DNS record: **not yet created** — manual action required (table above).
-- Application redirect: **not yet implemented** — pending explicit
-  authorization (see above).
+- DNS record: **still not created** — this is now the only remaining step.
+- Application redirect: **implemented and deployed** (see above) — cannot
+  be certified live yet since `www` still does not resolve; will be
+  verified live once DNS is created.
 - Apex canonical/hreflang/sitemap/robots: unchanged, still correct, still
   `GO`.
 
-## Next steps (once actioned)
+## Next step (only remaining step)
 
-1. A human creates the CNAME record above at Namecheap.
-2. Once DNS propagates, Railway issues a Let's Encrypt certificate for
-   `www.futuretutor.ca` (typically within an hour of DNS resolving).
-3. On explicit authorization, this session (or a follow-up mission)
-   implements and deploys the `proxy.ts` change above.
-4. Live verification: `www` root/EN/FR/nested paths/query strings all
-   301/308 to the exact matching apex URL in one hop; apex
-   canonical/hreflang/sitemap/robots re-confirmed unchanged.
+A human creates this record at Namecheap:
+
+| TYPE | HOST | VALUE | TTL |
+|---|---|---|---|
+| CNAME | `www` | `q2vwb12u.up.railway.app` | Automatic |
+
+Once DNS propagates, Railway issues a Let's Encrypt certificate for
+`www.futuretutor.ca` (typically within an hour), and the redirect deployed
+above becomes live immediately — no further application deployment is
+needed. Live verification (root/EN/FR/nested paths, query strings, single
+redirect hop, apex canonical/hreflang/sitemap/robots re-confirmed
+unchanged) should be run once that happens.
 
 ---
-*Generated by mission SEO-INFRA-WWW1. Update this document when the DNS
-record and/or the application redirect are actually put in place.*
+*Generated by mission SEO-INFRA-WWW1. Update this document once the DNS
+record is created and the live www→apex redirect is verified.*
