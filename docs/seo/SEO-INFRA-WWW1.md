@@ -81,25 +81,91 @@ path and query preserved) must be enforced at the **application layer**, in
 `src/proxy.ts` (the Next.js 16 request-proxy, already runs on every
 non-API/static request via its existing matcher).
 
-## Application-level change (implemented, deployed pre-DNS)
+## Application-level change — first attempt (ba55d53) found broken live
 
-Authorized and implemented in the follow-up mission. The pure redirect
-check lives in its own zero-dependency module,
-`src/lib/canonicalHost.ts` (kept dependency-free — no `next-intl`/
-`next-auth` imports — specifically so it can be unit-tested directly
-without pulling in `proxy.ts`'s heavier imports, which fail to resolve
-under Vitest's module resolution in this environment):
+Implemented and deployed ahead of DNS by design, so `www` could never serve
+a live duplicate page once DNS resolved. The first implementation checked
+`req.nextUrl.hostname === "www.futuretutor.ca"`, backed by 13 tests against
+a plain `URL` object — all passing.
+
+**Once DNS was created and live certification was run against the real
+production host, this check never fired.** Every tested `www` path
+returned a live 200 (or, at the root, the app's own unrelated 307
+locale-detection redirect) instead of a 308 to the apex — the exact
+duplicate-content exposure this whole mission exists to prevent, now live
+rather than hypothetical, for the (short) window between DNS going live and
+this fix.
+
+### Root cause (confirmed via a temporary, now-removed diagnostic)
+
+A temporary log line — gated to requests carrying `?seo_host_probe=1`,
+logging only `nextUrlHostname`/`host`/`x-forwarded-host`/`forwarded`/
+`x-forwarded-proto`, no cookies/auth/body/user data — was deployed
+(commit `620abd8`) and hit once against each of `www.futuretutor.ca` and
+`futuretutor.ca`. Captured evidence:
+
+```json
+// https://www.futuretutor.ca/en/find-tutors?seo_host_probe=1
+{"nextUrlHostname":"localhost","host":"www.futuretutor.ca","xForwardedHost":"www.futuretutor.ca","forwarded":null,"xForwardedProto":"https"}
+
+// https://futuretutor.ca/en/find-tutors?seo_host_probe=1
+{"nextUrlHostname":"localhost","host":"futuretutor.ca","xForwardedHost":"futuretutor.ca","forwarded":null,"xForwardedProto":"https"}
+```
+
+**`req.nextUrl.hostname` is always the literal string `"localhost"`** in
+this deployment — Railway's edge forwards requests to the container without
+an absolute URL Next.js resolves against the public hostname, so
+`nextUrl.hostname` falls back to Next.js's own internal default rather than
+reflecting the request at all. This is true for *every* request, apex
+included — the original check's exact-match against
+`"www.futuretutor.ca"` could structurally never succeed.
+
+The `host` header, by contrast, reliably carried the real public hostname
+for both requests, cross-confirmed by an agreeing `x-forwarded-host`. The
+`Forwarded` header (RFC 7239) is not set by Railway's edge at all
+(`null`). Railway routes custom domains by TLS SNI before forwarding, so
+`host` here reflects which registered custom domain the edge matched — not
+an arbitrary client-supplied value that could route a request to this
+service under an unregistered hostname.
+
+**Trusted host source used going forward: the `host` request header**, via
+`req.headers.get("host")`.
+
+### Permanent fix (deployed)
+
+`src/lib/canonicalHost.ts` rewritten around the confirmed-reliable source:
 
 ```ts
 // src/lib/canonicalHost.ts
 const WWW_HOST = "www.futuretutor.ca";
 const APEX_ORIGIN = "https://futuretutor.ca";
 
-export function canonicalWwwRedirectUrl(url: URL): URL | null {
-  if (url.hostname !== WWW_HOST) return null;
-  return new URL(`${url.pathname}${url.search}`, APEX_ORIGIN);
+export function normalizeHostHeader(rawHost: string | null): string | null {
+  if (!rawHost) return null;
+  const first = rawHost.split(",")[0]?.trim();
+  if (!first) return null;
+  try {
+    const hostname = new URL(`https://${first}`).hostname;
+    return hostname || null;
+  } catch {
+    return null;
+  }
+}
+
+export function canonicalWwwRedirectForHost(rawHost: string | null, pathname: string, search: string): URL | null {
+  if (normalizeHostHeader(rawHost) !== WWW_HOST) return null;
+  return new URL(`${pathname}${search}`, APEX_ORIGIN);
 }
 ```
+
+`normalizeHostHeader` handles every Phase-3 safety requirement by delegating
+to the WHATWG `URL` parser rather than hand-rolled string logic: ASCII
+lowercasing and port-stripping are the parser's own normalization, a
+comma-separated proxy chain is reduced to its first entry, and a malformed
+value returns `null` (never throws — wrapped in `try/catch`). The
+comparison remains an exact `===` against the literal `www.futuretutor.ca`
+— never `endsWith`/`includes`/regex — so this can never become an open
+redirect or catch a sibling/spoofed hostname.
 
 `src/proxy.ts` calls it as the very first statement inside the request
 handler, before any locale detection, section-authorization, or
@@ -107,7 +173,7 @@ handler, before any locale detection, section-authorization, or
 
 ```ts
 export const proxy = auth((req) => {
-  const wwwRedirect = canonicalWwwRedirectUrl(req.nextUrl);
+  const wwwRedirect = canonicalWwwRedirectForHost(req.headers.get("host"), req.nextUrl.pathname, req.nextUrl.search);
   if (wwwRedirect) {
     return NextResponse.redirect(wwwRedirect, 308);
   }
@@ -116,77 +182,45 @@ export const proxy = auth((req) => {
   // ...unchanged from here
 ```
 
-- **Exact hostname match only** (`===`, never `endsWith`/substring) — proven
-  by test to never catch the apex, a Railway-generated domain, `localhost`,
-  `staging.futuretutor.ca`, or a spoofed host like
-  `www.futuretutor.ca.attacker.com`.
-- **308 Permanent Redirect** (not 301/302/307): preserves the request
-  method; `NextResponse.redirect()` defaults to 307 unless a status is
-  passed explicitly, so 308 is passed explicitly.
-- Preserves the full path and query string for every route the existing
-  matcher already covers (`/`, `/en`, `/fr`, every nested path, all query
-  parameters) — proven by test, including multi-parameter query strings.
-- The redirect destination is proven (by test) to never itself match
-  `www.futuretutor.ca` — no redirect loop is possible by construction.
-- `/api/*` is excluded, same as today's matcher (`config.matcher:
-  ["/((?!api|trpc|_next|_vercel|.*\\..*).*)"]`) — no code path expects `www`
-  API traffic (webhooks are already configured against the apex).
-- An `http://www...` entry gets Railway's own platform-level HTTP→HTTPS
-  redirect first (the same behavior already certified for the apex in
-  SEO-1), then this one apex redirect — a 2-hop chain only for the
-  non-HTTPS entry point, 1 hop for the (overwhelmingly common) HTTPS entry
-  point.
-- No change to any other request path, no change to `robots.ts`,
-  `sitemap.ts`, or `publicMetadata.ts` — canonical/hreflang/OG continue to
-  reference the apex exclusively, unaffected by this change.
+- **308 Permanent Redirect**, explicit (not 301/302/307 — `NextResponse.
+  redirect()` defaults to 307 unless a status is passed).
+- Path and query string preserved via `req.nextUrl.pathname`/`.search` —
+  `req.nextUrl`'s *path* parsing is unaffected by the hostname bug; only its
+  `.hostname` field is unusable here.
+- `/api/*` excluded, same as today's matcher — no code path expects `www`
+  API traffic.
+- No change to `robots.ts`, `sitemap.ts`, or `publicMetadata.ts` —
+  canonical/hreflang/OG continue to reference the apex exclusively.
 
-13 focused tests in `src/lib/canonicalHost.test.ts` cover: www root, EN
-path, FR path, nested path, single and multi-parameter query strings,
-apex/localhost/Railway-domain/staging/spoofed-host non-redirection,
-redirect-loop impossibility, protocol normalization to `https:`, and no
-explicit port on the destination. Full unit suite (174 files / 2147 tests),
-`tsc --noEmit`, `eslint`, and `next build` all pass with this change.
+21 focused tests in `src/lib/canonicalHost.test.ts` cover: `normalizeHostHeader`
+(missing/empty/port-bearing/mixed-case/comma-chain/malformed input) and
+`canonicalWwwRedirectForHost` (www root, EN/FR/nested path preservation,
+query preservation, port and case tolerance, apex/staging/spoofed-host/
+localhost/Railway-domain/missing-or-malformed-host non-redirection,
+redirect-loop impossibility, protocol normalization, no explicit port on
+the destination). Full unit suite (174 files / 2155 tests), `tsc --noEmit`,
+`eslint`, and `next build` all pass. The temporary diagnostic (commit
+`620abd8`) was fully removed before this fix's final commit — confirmed by
+grep for `seo_host_probe` across the changed files (zero matches).
 
-**Deployed to production *before* the DNS record exists**, by design — so
-the moment the CNAME below resolves and Railway issues a certificate, `www`
-can never serve a live duplicate 200 page even momentarily.
-
-- Commit: `ba55d53`
-- Deployment: `fa98d97b-8356-4291-a3f2-05d3641a92e9` (SUCCESS)
-- Post-deploy verification (2026-09-14): `/api/health` 200, `/api/health/ready`
-  200, `/en/find-tutors` 200, `/fr/resources` 200, apex canonical still
-  `https://futuretutor.ca/en` on `/en`, apex `/` still its normal (unrelated,
-  pre-existing) 307 locale-detection redirect — the new www rule does not
-  fire for the apex. `www.futuretutor.ca` reconfirmed NXDOMAIN — DNS was not
-  touched, as instructed.
+- Diagnostic commit: `620abd8` (temporary, since reverted by content)
+- Fix commit: *(recorded after push — see below)*
+- Fix deployment: *(recorded after push — see below)*
 
 ## Status as of this document
 
-- Railway `www.futuretutor.ca` domain: attached, **unverified**
-  (`verified: false`), certificate `VALIDATING_OWNERSHIP` — blocked purely
-  on the missing DNS record.
-- DNS record: **still not created** — this is now the only remaining step.
-- Application redirect: **implemented and deployed** (see above) — cannot
-  be certified live yet since `www` still does not resolve; will be
-  verified live once DNS is created.
-- Apex canonical/hreflang/sitemap/robots: unchanged, still correct, still
+- Railway `www.futuretutor.ca` domain: **verified** (`verified: true`),
+  certificate `VALID`, DNS record `PROPAGATED`.
+- DNS record: **created** — `www` CNAME → `q2vwb12u.up.railway.app`,
+  confirmed live via two independent public resolvers.
+- Application redirect: **fixed and deployed** (see above) — first
+  implementation (`ba55d53`) was live-certified broken (see root-cause
+  section); the `host`-header-based fix has been deployed and is pending
+  final live re-certification.
+- Apex canonical/hreflang/sitemap/robots: unaffected throughout, still
   `GO`.
 
-## Next step (only remaining step)
-
-A human creates this record at Namecheap:
-
-| TYPE | HOST | VALUE | TTL |
-|---|---|---|---|
-| CNAME | `www` | `q2vwb12u.up.railway.app` | Automatic |
-
-Once DNS propagates, Railway issues a Let's Encrypt certificate for
-`www.futuretutor.ca` (typically within an hour), and the redirect deployed
-above becomes live immediately — no further application deployment is
-needed. Live verification (root/EN/FR/nested paths, query strings, single
-redirect hop, apex canonical/hreflang/sitemap/robots re-confirmed
-unchanged) should be run once that happens.
-
 ---
-*Generated by mission SEO-INFRA-WWW1. Update this document once the DNS
-record is created and the live www→apex redirect is verified.*
+*Generated by mission SEO-INFRA-WWW1, updated by SEO-INFRA-WWW1-FIX1. Update
+this document again only if the live www→apex redirect regresses or the
+architecture changes.*
