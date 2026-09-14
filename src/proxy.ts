@@ -29,6 +29,23 @@ function protectedSection(pathname: string): "dashboard" | "tutor" | "admin" | n
 // old `middleware.ts`/Edge convention), so it's safe to pull in the full,
 // Prisma-backed auth config here — no edge/node split needed.
 export const proxy = auth((req) => {
+  // TEMPORARY — SEO-INFRA-WWW1-FIX1 diagnostic, removed before this
+  // mission's final commit. Logs only the 5 hostname/protocol fields named
+  // in the mission spec, only for requests explicitly opted in via
+  // ?seo_host_probe=1, never cookies/auth/body/user data.
+  if (req.nextUrl.searchParams.get("seo_host_probe") === "1") {
+    console.log(
+      "[SEO-INFRA-WWW1-FIX1 host-probe]",
+      JSON.stringify({
+        nextUrlHostname: req.nextUrl.hostname,
+        host: req.headers.get("host"),
+        xForwardedHost: req.headers.get("x-forwarded-host"),
+        forwarded: req.headers.get("forwarded"),
+        xForwardedProto: req.headers.get("x-forwarded-proto"),
+      })
+    );
+  }
+
   const wwwRedirect = canonicalWwwRedirectUrl(req.nextUrl);
   if (wwwRedirect) {
     return NextResponse.redirect(wwwRedirect, 308);
