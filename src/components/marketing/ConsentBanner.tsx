@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { COOKIE_POLICY_VERSION } from "@/content/legal/cookieContent.en";
 import { acceptAnalyticsConsent, getConsentState, isAnalyticsEligiblePath, rejectAnalyticsConsent } from "@/lib/analytics";
-import { loadGtmIfEligible } from "@/lib/analytics/vendors";
+import { loadGtmIfConsentAlreadyGranted, loadGtmIfEligible } from "@/lib/analytics/vendors";
 
 /**
  * DATA-1 — the ANALYTICS-category consent banner, mounted once in the
@@ -46,6 +46,18 @@ export function ConsentBanner() {
     () => getConsentState().analytics === "undecided",
     () => false
   );
+
+  // DATA-1-GTM-LIVE-DETECTION-FIX1 — loadGtmIfEligible() was previously
+  // only ever invoked from handleAccept()'s click below, so a visitor whose
+  // consent was already GRANTED on a prior visit never got GTM loaded on a
+  // fresh page load (diagnosed root cause: DATA-1-GTM-LIVE-DETECTION-DIAG1).
+  // loadGtmIfConsentAlreadyGranted() (vendors.ts) re-derives the route
+  // eligibility guarantee itself — it is NOT redundant with
+  // loadGtmIfEligible()'s own checks, which cover hostname + GTM ID +
+  // consent but deliberately never route eligibility (DIAG1 proved this).
+  useEffect(() => {
+    loadGtmIfConsentAlreadyGranted(pathname);
+  }, [pathname]);
 
   if (dismissed || !isUndecided || !isAnalyticsEligiblePath(pathname)) return null;
 

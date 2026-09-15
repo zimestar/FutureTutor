@@ -1,5 +1,6 @@
 import { hasAnalyticsConsent } from "./consent";
 import { isProductionAnalyticsEnvironment } from "./environment";
+import { isAnalyticsEligiblePath } from "./routePolicy";
 
 /**
  * DATA-1 — the one and only place a vendor script may be injected.
@@ -50,6 +51,23 @@ export function loadGtmIfEligible(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(gtmId!)}`;
   document.head.appendChild(script);
+}
+
+/**
+ * DATA-1 consent-activation follow-up fix — the loader's mount/pathname-change entry
+ * point. `loadGtmIfEligible()` itself enforces hostname + GTM ID + consent,
+ * but deliberately never route eligibility (see that function's own call
+ * sites for why — DIAG1 found and proved this). This wrapper is what makes
+ * it safe to call on every mount/pathname change: it re-derives the route
+ * guarantee explicitly rather than relying on a caller's own render guard,
+ * so a visitor whose consent was already GRANTED on a prior visit gets GTM
+ * loaded on this fresh page load too, without the loader ever executing on
+ * an analytics-ineligible route.
+ */
+export function loadGtmIfConsentAlreadyGranted(pathname: string): void {
+  if (!isAnalyticsEligiblePath(pathname)) return;
+  if (!hasAnalyticsConsent()) return;
+  loadGtmIfEligible();
 }
 
 /**

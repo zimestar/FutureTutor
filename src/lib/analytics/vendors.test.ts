@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { shouldLoadGtm, loadGtmIfEligible, pushToDataLayer, unloadGtm } from "./vendors";
+import { shouldLoadGtm, loadGtmIfEligible, loadGtmIfConsentAlreadyGranted, pushToDataLayer, unloadGtm } from "./vendors";
 
 // DATA-1 — the vendor loader must stay inert until all three conditions
 // hold: production hostname, a real NEXT_PUBLIC_GTM_ID, and explicit
@@ -23,6 +23,20 @@ function installFakeBrowser({ hostname, consent, storage }: { hostname: string; 
   };
   // @ts-expect-error — minimal test-only window/document stub.
   globalThis.window = { location: { hostname }, localStorage: fakeLocalStorage, dataLayer: undefined };
+}
+
+function installFakeDocument(): Map<string, { id: string }> {
+  const elementsById = new Map<string, { id: string }>();
+  globalThis.document = {
+    getElementById: (id: string) => elementsById.get(id) ?? null,
+    createElement: () => ({ id: "" }),
+    head: {
+      appendChild: (el: { id: string }) => {
+        elementsById.set(el.id, el);
+      },
+    },
+  } as unknown as Document;
+  return elementsById;
 }
 
 afterEach(() => {
@@ -112,6 +126,119 @@ describe("loadGtmIfEligible", () => {
     expect(created).toHaveLength(1);
   });
 });
+
+describe("loadGtmIfConsentAlreadyGranted — DATA-1-GTM-LIVE-DETECTION-FIX1", () => {
+  // This is the exact function ConsentBanner's mount/pathname-change effect
+  // calls (src/components/marketing/ConsentBanner.tsx) — no React render
+  // harness exists in this codebase (vitest runs in a plain Node
+  // environment, no jsdom/RTL), so the effect's own decision logic is
+  // tested directly here, the same way the rest of this module already is.
+  // The component itself is reduced to a one-line `useEffect(() => {
+  // loadGtmIfConsentAlreadyGranted(pathname); }, [pathname])`.
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_GTM_ID = "GTM-TEST0000";
+  });
+
+  it("[1] does NOT load on an eligible public route when consent is undecided", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "undecided" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    expect(elementsById.size).toBe(0);
+  });
+
+  it("[2] does NOT load on an eligible public route when consent was denied", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "denied" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    expect(elementsById.size).toBe(0);
+  });
+
+  it("[3] loads on an eligible public route when consent is already granted — the fixed case (visitor returns on a fresh page load)", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    expect(elementsById.size).toBe(1);
+  });
+
+  it("[4] a pathname change across two eligible routes re-invokes the loader safely without creating a duplicate script", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    loadGtmIfConsentAlreadyGranted("/en/how-it-works");
+    expect(elementsById.size).toBe(1);
+  });
+
+  it("[5] does NOT load on a private route even with consent already granted", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/dashboard");
+    expect(elementsById.size).toBe(0);
+  });
+
+  it("[6] does NOT load on an auth-utility route even with consent already granted", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/login");
+    expect(elementsById.size).toBe(0);
+  });
+
+  it("[7] does NOT load on an admin route even with consent already granted", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/admin");
+    expect(elementsById.size).toBe(0);
+  });
+
+  it("[11] loads on an eligible EN public route", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    expect(elementsById.size).toBe(1);
+  });
+
+  it("[12] loads on an eligible FR public route", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+    loadGtmIfConsentAlreadyGranted("/fr/find-tutors");
+    expect(elementsById.size).toBe(1);
+  });
+
+  it("[10] after revoke + unloadGtm(), a subsequent mount/pathname re-check does not reload GTM (consent is back to undecided)", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    const elementsById = installFakeDocument();
+
+    // Simulate the effect firing once with consent already granted (the
+    // fixed case), then the visitor revoking via CookiePreferencesControl:
+    // revokeAnalyticsConsent() resets storage to undecided and the control
+    // separately calls unloadGtm() before reloading.
+    loadGtmIfConsentAlreadyGranted("/en/find-tutors");
+    expect(elementsById.size).toBe(1);
+
+    globalThis.window.localStorage.removeItem("futuretutor_consent_v1");
+    const scriptId = [...elementsById.keys()][0];
+    (elementsById.get(scriptId) as unknown as { remove: () => void }).remove = () => elementsById.delete(scriptId);
+    unloadGtm();
+    expect(elementsById.size).toBe(0);
+
+    // A subsequent pathname change (e.g. the reload CookiePreferencesControl
+    // triggers, or simply navigating again) must not silently reload GTM
+    // now that consent is undecided again.
+    loadGtmIfConsentAlreadyGranted("/en/how-it-works");
+    expect(elementsById.size).toBe(0);
+  });
+});
+
+// [8] "clicking Accept on an eligible public route still loads GTM
+// immediately" is unchanged by this fix and already proven by
+// loadGtmIfEligible's own "injects exactly one script element" test above
+// (ConsentBanner's handleAccept calls loadGtmIfEligible() directly, exactly
+// as before this fix).
+//
+// [9] "clicking Reject never loads GTM" needed no new test: handleReject
+// never called any loader function before or after this fix — it only
+// records the decision — and shouldLoadGtm()'s own "is false when consent
+// was explicitly denied" test above already covers the underlying gate.
 
 describe("unloadGtm", () => {
   it("does nothing (no throw) server-side (no window/document)", () => {
