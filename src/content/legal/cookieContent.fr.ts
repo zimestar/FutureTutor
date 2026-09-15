@@ -316,7 +316,23 @@ export const cookieContentFr: LegalDocumentContent = {
         { type: "p", text: "Cela n'implique pas nécessairement des témoins d'analytique tiers." },
         {
           type: "p",
-          text: "À la date d'entrée en vigueur de la présente Politique, FutureTutor ne représente pas utiliser des technologies d'analytique comportementale tierces, sauf si elles sont réellement mises en œuvre et divulguées.",
+          text: "FutureTutor utilise Google Analytics 4 (« GA4 »), déployé par l'intermédiaire de Google Tag Manager (« GTM »), afin de comprendre l'utilisation globale de son site public — les pages visitées, les tendances générales d'engagement et des renseignements agrégés similaires.",
+        },
+        {
+          type: "p",
+          text: "Cette technologie d'analytique n'est utilisée que sur les pages publiques de marketing et de contenu de FutureTutor. Elle n'est pas utilisée sur les pages nécessitant une connexion, notamment les tableaux de bord, la messagerie, les séances de tutorat, les notifications, ainsi que les pages liées au compte, à la facturation ou aux paiements.",
+        },
+        {
+          type: "p",
+          text: "L'utilisation de GA4/GTM par FutureTutor dépend du consentement du visiteur. Lorsqu'un consentement est requis, FutureTutor le demande au moyen du mécanisme de consentement décrit à la Partie IX de la présente Politique avant que cette technologie ne soit activée pour ce visiteur, qui peut la refuser ou modifier son choix ultérieurement.",
+        },
+        {
+          type: "p",
+          text: "La mise en œuvre de Google Analytics 4 par FutureTutor est configurée pour ne pas recueillir les noms, adresses courriel, numéros de téléphone, adresses physiques, contenu de messages ou renseignements de paiement au moyen de cette technologie.",
+        },
+        {
+          type: "p",
+          text: "FutureTutor n'utilise pas actuellement PostHog, Microsoft Clarity, ni aucune autre technologie d'analytique par relecture de session ou par carte thermique.",
         },
       ],
     },
@@ -324,10 +340,13 @@ export const cookieContentFr: LegalDocumentContent = {
       number: 14,
       heading: "Services d'analytique futurs",
       blocks: [
-        { type: "p", text: "FutureTutor peut introduire des services d'analytique respectueux de la vie privée à l'avenir." },
         {
           type: "p",
-          text: "Avant d'introduire des technologies d'analytique qui élargissent de manière importante le suivi ou le traitement de renseignements personnels, FutureTutor évaluera :",
+          text: "FutureTutor peut introduire des services d'analytique additionnels respectueux de la vie privée à l'avenir, au-delà de la configuration Google Analytics 4 / Google Tag Manager décrite à la Partie V ci-dessus.",
+        },
+        {
+          type: "p",
+          text: "Avant d'introduire une technologie d'analytique qui élargit de manière importante le suivi ou le traitement de renseignements personnels, FutureTutor évaluera :",
         },
         {
           type: "ul",
@@ -342,7 +361,7 @@ export const cookieContentFr: LegalDocumentContent = {
         },
         {
           type: "p",
-          text: "Lorsqu'un consentement est requis, FutureTutor demandera le consentement approprié avant d'activer la technologie concernée.",
+          text: "Lorsqu'un consentement est requis, FutureTutor demandera le consentement approprié avant d'activer la technologie additionnelle.",
         },
       ],
     },
@@ -573,7 +592,15 @@ export const cookieContentFr: LegalDocumentContent = {
         { type: "p", text: "La nécessité d'un bandeau de consentement dépend des technologies réellement utilisées et du droit applicable." },
         {
           type: "p",
-          text: "Si FutureTutor introduit des technologies optionnelles d'analytique, de publicité, de reciblage, de profilage ou d'autres technologies de suivi non essentielles nécessitant un consentement, un mécanisme de consentement approprié devrait être mis en œuvre avant l'activation de ces technologies.",
+          text: "FutureTutor utilise un bandeau de consentement sur ses pages publiques de marketing et de contenu parce qu'elle utilise Google Analytics 4, déployé par l'intermédiaire de Google Tag Manager, comme décrit à la Partie V de la présente Politique. Ce bandeau permet au visiteur d'accepter ou de refuser cette utilisation analytique avant qu'elle ne soit activée pour lui.",
+        },
+        {
+          type: "p",
+          text: "Un visiteur n'ayant pas encore fait de choix verra ce bandeau sur les pages publiques admissibles. Il peut refuser, et peut modifier son choix en tout temps à partir du contrôle des préférences en matière de témoins sur cette page.",
+        },
+        {
+          type: "p",
+          text: "Si FutureTutor introduit d'autres technologies optionnelles d'analytique, de publicité, de reciblage, de profilage ou d'autres technologies de suivi non essentielles nécessitant un consentement, un mécanisme de consentement approprié sera mis en œuvre avant l'activation de ces technologies additionnelles.",
         },
       ],
     },
@@ -883,7 +910,8 @@ export const cookieContentFr: LegalDocumentContent = {
             ["Témoins de reciblage", "Non utilisés actuellement"],
             ["Pixels publicitaires", "Non utilisés actuellement"],
             ["Publicité comportementale visant les enfants", "Non utilisée actuellement"],
-            ["Analytique comportementale tierce habituelle", "Non représentée comme étant utilisée actuellement"],
+            ["Google Analytics 4 / Google Tag Manager (analytique agrégée d'utilisation du site)", "Utilisés uniquement sur les pages publiques admissibles, et seulement lorsque le visiteur y a consenti — voir la Partie V"],
+            ["Analytique par relecture de session ou par carte thermique (p. ex. PostHog, Microsoft Clarity)", "Non utilisée actuellement"],
             ["Mise en cache de données privées par service worker", "Non utilisée actuellement"],
           ],
         },

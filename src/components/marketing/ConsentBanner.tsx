@@ -2,30 +2,28 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { COOKIE_POLICY_VERSION } from "@/content/legal/cookieContent.en";
-import { acceptAnalyticsConsent, getConsentState, rejectAnalyticsConsent } from "@/lib/analytics";
+import { acceptAnalyticsConsent, getConsentState, isAnalyticsEligiblePath, rejectAnalyticsConsent } from "@/lib/analytics";
 import { loadGtmIfEligible } from "@/lib/analytics/vendors";
 
 /**
- * DATA-1 — the ANALYTICS-category consent banner. Built and tested but
- * deliberately NOT mounted in the root layout yet (see
- * docs/analytics/DATA-1-ANALYTICS-FOUNDATION.md's human-checkpoint
- * section): FutureTutor's own Cookie Policy currently states analytics is
- * "not currently represented as used," and the Policy's own §14/§28
- * commit to providing a consent mechanism "before... activated" — showing
- * this banner before any real analytics vendor is configured would ask
- * users to decide about a technology that doesn't exist yet. Mount this
- * component in the root layout only once a real GTM container exists and
- * the Cookie Policy has been updated to match (HUMAN LEGAL REVIEW
- * REQUIRED, flagged in the doc above).
+ * DATA-1 — the ANALYTICS-category consent banner, mounted once in the
+ * root locale layout so it covers every real page (including the
+ * homepage and /tutors/[slug], neither of which uses the shared
+ * MarketingShell wrapper) — but it self-excludes on any
+ * analytics-ineligible route via the exact same certified
+ * isAnalyticsEligiblePath() used by trackEvent() itself, so it can never
+ * appear on a private/admin/auth-utility surface regardless of where it's
+ * mounted. This mirrors trackEvent()'s own defense-in-depth pattern
+ * (check the real route, not just "where was this rendered").
  *
  * Uses the same COOKIE_POLICY_VERSION the live Cookie Policy page already
  * exports (cookieContent.en.ts) as the consent record's policyVersion, so
  * a future policy-text change can invalidate stale decisions by comparing
- * versions — not implemented as auto-invalidation here (no live banner to
- * re-prompt yet), but the state shape already supports it.
+ * versions — not implemented as auto-invalidation here, but the state
+ * shape already supports it.
  */
 // No cross-tab live sync is needed for this simple banner — subscribe is a
 // no-op so useSyncExternalStore only ever re-reads on this component's own
@@ -41,6 +39,7 @@ function subscribeNoop() {
 
 export function ConsentBanner() {
   const t = useTranslations("consentBanner");
+  const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
   const isUndecided = useSyncExternalStore(
     subscribeNoop,
@@ -48,7 +47,7 @@ export function ConsentBanner() {
     () => false
   );
 
-  if (dismissed || !isUndecided) return null;
+  if (dismissed || !isUndecided || !isAnalyticsEligiblePath(pathname)) return null;
 
   function handleAccept() {
     acceptAnalyticsConsent(COOKIE_POLICY_VERSION);

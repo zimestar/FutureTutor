@@ -106,11 +106,35 @@ describe("Cookie Policy content — FG-LEGAL1C", () => {
     expect(table).toBeDefined();
     if (table?.type === "table") {
       expect(table.headers).toEqual(["Technology / Purpose", "Current Position"]);
-      expect(table.rows.length).toBe(13);
+      expect(table.rows.length).toBe(14);
       for (const row of table.rows) {
         expect(row.length).toBe(table.headers.length);
       }
+      const gaRow = table.rows.find((row) => row[0].includes("Google Analytics 4"));
+      expect(gaRow).toBeDefined();
+      expect(gaRow?.[1]).toContain("only where the visitor has consented");
     }
+  });
+
+  it("DATA-1: truthfully names Google Analytics 4 and Google Tag Manager as now in use, consent-dependent, and public-pages-only", () => {
+    for (const text of [enText, frText]) {
+      expect(text).toContain("Google Analytics 4");
+      expect(text).toContain("Google Tag Manager");
+    }
+    expect(enText).toContain("depends on a visitor's consent");
+    expect(enText).toContain("only on FutureTutor's public marketing and content pages");
+    expect(enText).toMatch(/decline|refuse/);
+  });
+
+  it("DATA-1: truthfully states no PostHog and no Microsoft Clarity are in use", () => {
+    expect(enText).toContain("does not currently use PostHog, Microsoft Clarity");
+    expect(frText).toContain("n'utilise pas actuellement PostHog, Microsoft Clarity");
+  });
+
+  it("DATA-1: does not invent an unverified retention period or IP-anonymization claim for GA4", () => {
+    const section13 = cookieContentEn.sections.find((s) => s.number === 13)!;
+    const section13Text = flatten(section13.blocks);
+    expect(section13Text).not.toMatch(/anonymiz|retention period of|deleted after \d/i);
   });
 
   it("Québec section is present and does not invent a named privacy officer", () => {

@@ -1,6 +1,7 @@
 import type { AnalyticsEventName, AnalyticsEventPropertiesMap } from "./types";
 import { findDeniedProperties } from "./piiDenylist";
 import { isAnalyticsEligiblePath } from "./routePolicy";
+import { hasAnalyticsConsent } from "./consent";
 import { pushToDataLayer } from "./vendors";
 
 /**
@@ -15,11 +16,15 @@ import { pushToDataLayer } from "./vendors";
  * denylist check below is defense-in-depth for anything that reaches this
  * function despite that (an `as any` cast, a future refactor).
  *
- * Currently a safe no-op in every environment: pushToDataLayer() only
- * does anything once GTM has actually loaded (vendors.ts), which itself
- * requires a real NEXT_PUBLIC_GTM_ID that does not exist yet. Logs to
- * console.debug outside production so the taxonomy is visible during
- * development without shipping anything anywhere.
+ * Consent-activation re-audit finding: this function must re-check
+ * consent on every single call, not just at GTM-load time — otherwise a
+ * visitor who granted consent (GTM loaded), generated a live dataLayer,
+ * and later revoked would keep having application events pushed into
+ * that still-present dataLayer object for the rest of the page's
+ * lifetime. Checking here is what makes "revoke -> future analytics
+ * collection stops" true at the application level. It cannot retroactively
+ * undo anything GTM/GA4 already did before the revoke (see
+ * vendors.ts's unloadGtm() for the documented, honest limits of that).
  */
 export function trackEvent<E extends AnalyticsEventName>(event: E, properties: AnalyticsEventPropertiesMap[E]): void {
   const denied = findDeniedProperties(properties as Record<string, unknown> | undefined);
@@ -33,6 +38,13 @@ export function trackEvent<E extends AnalyticsEventName>(event: E, properties: A
   if (typeof window !== "undefined" && !isAnalyticsEligiblePath(window.location.pathname)) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[analytics] dropped event fired from an analytics-excluded route", event, window.location.pathname);
+    }
+    return;
+  }
+
+  if (!hasAnalyticsConsent()) {
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[analytics] dropped event — no analytics consent granted", event);
     }
     return;
   }

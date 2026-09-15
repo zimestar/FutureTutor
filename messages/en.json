@@ -1161,7 +1161,12 @@
     "description": "Essential cookies keep FutureTutor secure and working. With your permission, we'd also like to use analytics to understand how the site is used.",
     "learnMore": "Learn more",
     "accept": "Accept analytics",
-    "reject": "Reject non-essential"
+    "reject": "Reject non-essential",
+    "preferencesHeading": "Your cookie preferences",
+    "statusGranted": "You've allowed analytics cookies. You can withdraw this at any time.",
+    "statusDenied": "You've declined analytics cookies. Only essential cookies are in use.",
+    "statusUndecided": "You haven't made a choice about analytics cookies yet.",
+    "manageCta": "Manage cookie preferences"
   },
   "dashboard": {
     "logOut": "Log Out",

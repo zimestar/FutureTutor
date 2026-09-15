@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { site } from "@/content/site";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { ConsentBanner } from "@/components/marketing/ConsentBanner";
 import "../globals.css";
 
 const manrope = Manrope({
@@ -114,6 +115,7 @@ export default async function LocaleLayout({
       <body className="min-h-full flex flex-col bg-off-white text-navy font-sans">
         <NextIntlClientProvider>
           <SessionProvider>{children}</SessionProvider>
+          <ConsentBanner />
         </NextIntlClientProvider>
       </body>
     </html>

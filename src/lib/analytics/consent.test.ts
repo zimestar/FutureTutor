@@ -68,6 +68,23 @@ describe("analytics consent state machine", () => {
     expect(state.decidedAt).toBeNull();
   });
 
+  it("revoke returns to undecided after an explicit denial too, not just after acceptance", () => {
+    rejectAnalyticsConsent("2026-08-30");
+    revokeAnalyticsConsent();
+    expect(getConsentState().analytics).toBe("undecided");
+  });
+
+  it("supports the full denied → revoke → granted round trip (visitor changes their mind via cookie preferences)", () => {
+    rejectAnalyticsConsent("2026-08-30");
+    expect(hasAnalyticsConsent()).toBe(false);
+
+    revokeAnalyticsConsent();
+    expect(getConsentState().analytics).toBe("undecided");
+
+    acceptAnalyticsConsent("2026-08-30");
+    expect(hasAnalyticsConsent()).toBe(true);
+  });
+
   it("a decision persists across separate reads (simulating separate page loads)", () => {
     acceptAnalyticsConsent("2026-08-30");
     expect(getConsentState().analytics).toBe("granted");

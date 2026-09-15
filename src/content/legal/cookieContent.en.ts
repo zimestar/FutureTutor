@@ -318,7 +318,23 @@ export const cookieContentEn: LegalDocumentContent = {
         { type: "p", text: "This does not necessarily involve third-party analytics cookies." },
         {
           type: "p",
-          text: "At the Effective Date of this Policy, FutureTutor does not represent that it uses third-party behavioural analytics technologies unless they are actually implemented and disclosed.",
+          text: "FutureTutor uses Google Analytics 4 (\"GA4\"), delivered through Google Tag Manager (\"GTM\"), to understand aggregate use of its public website — which pages are visited, general engagement patterns, and similar aggregate information.",
+        },
+        {
+          type: "p",
+          text: "This analytics technology is used only on FutureTutor's public marketing and content pages. It is not used on pages that require signing in, including dashboards, messaging, tutoring sessions, notifications, and account, billing, or payment-related pages.",
+        },
+        {
+          type: "p",
+          text: "FutureTutor's use of GA4/GTM depends on a visitor's consent. Where consent is required, FutureTutor requests it through the consent mechanism described in Part IX of this Policy before this technology is activated for that visitor, and a visitor may decline or later change that choice.",
+        },
+        {
+          type: "p",
+          text: "FutureTutor's implementation of Google Analytics 4 is configured not to collect names, email addresses, phone numbers, physical addresses, message content, or payment information through this technology.",
+        },
+        {
+          type: "p",
+          text: "FutureTutor does not currently use PostHog, Microsoft Clarity, or any other session-replay or heatmap analytics technology.",
         },
       ],
     },
@@ -326,10 +342,13 @@ export const cookieContentEn: LegalDocumentContent = {
       number: 14,
       heading: "Future Analytics Services",
       blocks: [
-        { type: "p", text: "FutureTutor may introduce privacy-appropriate analytics services in the future." },
         {
           type: "p",
-          text: "Before introducing analytics technologies that materially expand tracking or processing of personal information, FutureTutor will assess:",
+          text: "FutureTutor may introduce additional privacy-appropriate analytics services in the future, beyond the Google Analytics 4 / Google Tag Manager configuration described in Part V above.",
+        },
+        {
+          type: "p",
+          text: "Before introducing an analytics technology that materially expands tracking or processing of personal information, FutureTutor will assess:",
         },
         {
           type: "ul",
@@ -344,7 +363,7 @@ export const cookieContentEn: LegalDocumentContent = {
         },
         {
           type: "p",
-          text: "Where consent is required, FutureTutor will seek the appropriate consent before activating the relevant technology.",
+          text: "Where consent is required, FutureTutor will seek the appropriate consent before activating the additional technology.",
         },
       ],
     },
@@ -568,7 +587,15 @@ export const cookieContentEn: LegalDocumentContent = {
         { type: "p", text: "Whether a consent banner is necessary depends on the actual technologies in use and applicable law." },
         {
           type: "p",
-          text: "If FutureTutor introduces optional analytics, advertising, remarketing, profiling, or other non-essential tracking technologies requiring consent, an appropriate consent mechanism should be implemented before those technologies are activated.",
+          text: "FutureTutor uses a consent banner on its public marketing and content pages because it uses Google Analytics 4, delivered through Google Tag Manager, as described in Part V of this Policy. The banner lets a visitor accept or decline this analytics use before it is activated for them.",
+        },
+        {
+          type: "p",
+          text: "A visitor who has not yet made a choice will see this banner on eligible public pages. A visitor may decline, and may later change their choice at any time from the cookie preferences control on this page.",
+        },
+        {
+          type: "p",
+          text: "If FutureTutor introduces additional optional analytics, advertising, remarketing, profiling, or other non-essential tracking technologies requiring consent, an appropriate consent mechanism will be implemented before those additional technologies are activated.",
         },
       ],
     },
@@ -878,7 +905,8 @@ export const cookieContentEn: LegalDocumentContent = {
             ["Remarketing cookies", "Not currently used"],
             ["Advertising pixels", "Not currently used"],
             ["Children's behavioural advertising", "Not currently used"],
-            ["Routine third-party behavioural analytics", "Not currently represented as used"],
+            ["Google Analytics 4 / Google Tag Manager (aggregate site-usage analytics)", "Used on eligible public pages only, only where the visitor has consented — see Part V"],
+            ["Session-replay or heatmap analytics (e.g. PostHog, Microsoft Clarity)", "Not currently used"],
             ["Service-worker private-data caching", "Not currently used"],
           ],
         },

@@ -19,4 +19,4 @@ export {
 } from "./consent";
 export type { ConsentState, ConsentCategory, ConsentDecision } from "./consent";
 export { isProductionAnalyticsEnvironment } from "./environment";
-export { shouldLoadGtm, loadGtmIfEligible } from "./vendors";
+export { shouldLoadGtm, loadGtmIfEligible, unloadGtm } from "./vendors";

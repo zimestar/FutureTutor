@@ -20,14 +20,18 @@ The owner has completed the external Google-side setup:
   Railway environment (a public identifier, not a secret) and deployed —
   confirmed by a successful redeploy.
 
-**GTM still cannot activate anything**: `shouldLoadGtm()` requires the env
-var (now set) *and* explicit ANALYTICS consent (`ConsentBanner` is still
-not mounted, so consent can never be granted yet) *and* a published GA4
-tag inside the GTM container (none exists yet). All three remaining gates
-mean the foundation is still fully inert in production today. See **DATA-1
-— GTM ACTIVATION HUMAN CHECKPOINT** at the end of this document for the
-exact remaining owner-side steps before `ConsentBanner` is mounted and the
-Cookie Policy is updated.
+**GTM activation checkpoint — completed by the owner.** The GTM container
+now has a published version ("DATA-1 - FutureTutor GA4 Foundation")
+containing: a Google Tag `GA4 - FutureTutor Production` (Measurement ID
+`G-3BQQXRZHY2`, trigger "Initialization - All Pages"); a GA4 Event tag
+`GA4 - FutureTutor Events` (Event Name `{{Event}}`) firing on a Custom
+Event trigger `CE - FutureTutor Events` matching exactly the 11
+`AnalyticsEventName` values; 9 Data Layer Variables (one per allowlisted
+property) mapped 1:1 to 9 GA4 Event Parameters. See **DATA-1 — CONSENT
+ACTIVATION** below for what changed in this codebase once that was
+confirmed: `ConsentBanner` is now mounted, revocation is implemented, and
+the Cookie Policy has been updated to truthfully describe this
+configuration.
 
 **A real defect was found and fixed during this re-audit**: the generic
 pageview event was originally named `page_view` — colliding with GA4's
@@ -333,17 +337,15 @@ revocable (`revoke` returns to `"undecided"`, ready for a "manage
 preferences" control). Fails closed to `"undecided"` if storage is
 unavailable or throws (private browsing) — never assumes consent.
 
-`ConsentBanner.tsx` — built, fully tested, **not mounted in the live root
-layout**. EN/FR copy (natural, not a literal translation — "Accepter les
-données analytiques" / "Refuser les éléments non essentiels"), two
-equally-weighted buttons (no dark pattern — Accept and Reject are the same
-size/prominence), a "Learn more" link to the live `/cookies` page. Not
-mounted because the live Cookie Policy's own text (§14/§28) commits to
-providing this mechanism *before* activating the relevant technology —
-showing a banner asking users to decide about analytics that doesn't
-exist yet would be premature and confusing. **Mounting this component is
-the very last step**, after a real GTM container exists and the Cookie
-Policy text is updated to match (see the human-checkpoint section).
+`ConsentBanner.tsx` — built, fully tested, **now mounted** in the root
+locale layout (`src/app/[locale]/layout.tsx`). EN/FR copy (natural, not a
+literal translation — "Accepter les données analytiques" / "Refuser les
+éléments non essentiels"), two equally-weighted buttons (no dark pattern —
+Accept and Reject are the same size/prominence), a "Learn more" link to
+the live `/cookies` page. It self-excludes on any analytics-ineligible
+route via the same certified `isAnalyticsEligiblePath()` `trackEvent()`
+uses, so mounting it once at the root is safe regardless of which shell a
+given page uses (see **DATA-1 — CONSENT ACTIVATION** below).
 
 ## Phase 15 — cookie/storage inventory
 
@@ -360,21 +362,9 @@ active to verify against).
 
 ## Phase 16 — privacy policy / cookie disclosure
 
-**No change made to `cookieContent.en.ts`/`.fr.ts` in this mission.** The
-Cookie Policy's current text ("not currently represented as used") stays
-literally true, because nothing built in DATA-1 can activate without the
-human checkpoint below being completed first. Once a real GTM container
-exists and activation is authorized:
-
-**HUMAN LEGAL REVIEW REQUIRED** before that happens — specifically,
-§13/§14/§28/§45 of `cookieContent.en.ts` (and the parallel FR sections)
-need factual updates: §45's summary table row *"Routine third-party
-behavioural analytics: Not currently represented as used"* must change to
-reflect the real, active configuration (GTM/GA4, consent-gated,
-public-marketing-pages-only), and §28 ("Cookie Banner") should reference
-the now-live `ConsentBanner` mechanism. This document records the
-technical facts precisely so that update, when authorized, is accurate —
-it does not draft the legal text itself.
+**Updated in the Consent Activation phase** — see **DATA-1 — CONSENT
+ACTIVATION** below for the exact sections changed and the
+OWNER-LEGAL-REVIEW-REQUIRED flag on that text.
 
 ## Phase 17 — private surface exclusion (reconfirmed)
 
@@ -458,24 +448,18 @@ altering any check.
 
 ## Phase 26 — deployment gate
 
-**This mission's committed code is deployed to production** (the
-foundation itself — types, denylist, route policy, consent module,
-environment gate, vendor loader, the two updated call sites, and
-`TrackPageView` wired into four real pages). It is provably inert: no
-`NEXT_PUBLIC_GTM_ID` is configured anywhere, so `shouldLoadGtm()` is
-unconditionally `false` and no vendor script is ever injected, no
-dataLayer push ever leaves the browser to a real destination. This is
-"prepare the architecture as far as safely possible," not "active
-production analytics" — the ConsentBanner is deliberately not mounted,
-and no vendor will activate until the human checkpoint below is
-completed and a follow-up mission explicitly authorizes activation.
+**This mission's foundation code was deployed to production in two
+stages.** The inert foundation (types, denylist, route policy, consent
+module, environment gate, vendor loader, `TrackPageView`) shipped first,
+provably inert while `NEXT_PUBLIC_GTM_ID` was unset. Once the owner set
+that variable and published the GTM/GA4 configuration (see "Activation
+status" above), the Consent Activation phase shipped `ConsentBanner`
+mounted in the root layout, consent revocation, and the matching Cookie
+Policy update — see **DATA-1 — CONSENT ACTIVATION** below for that
+deployment's own certification record.
 
 ## Deferred / follow-up work
 
-- **GTM-side GA4 tag configuration** — see **DATA-1 — GTM ACTIVATION HUMAN
-  CHECKPOINT** immediately below. The one remaining blocker.
-- Mounting `ConsentBanner` in the root layout — blocked on the above, and
-  on the Cookie Policy text update (Phase 16).
 - A CSP covering the GTM/GA4 origins (Phase 19) — deferred as a separate
   security initiative.
 - PostHog / Microsoft Clarity — deferred (Phases 12-13), revisit only with
@@ -485,90 +469,100 @@ completed and a follow-up mission explicitly authorizes activation.
 
 ---
 
-## DATA-1 — GTM ACTIVATION HUMAN CHECKPOINT
+## DATA-1 — CONSENT ACTIVATION
 
-The GTM container (`GTM-KCNP43TK`) exists but has no published GA4
-configuration — a draft Google Tag was started during initial setup and
-discarded. This cannot be created from code: it requires clicking through
-the Google Tag Manager UI. Below is the precise, minimal configuration
-this foundation's architecture requires — nothing more.
+The GTM activation human checkpoint (formerly documented in full below
+this line) was completed by the owner — GTM container `GTM-KCNP43TK` has
+a published version ("DATA-1 - FutureTutor GA4 Foundation") matching the
+configuration this document specified. This phase mounted the consent
+mechanism and updated the Cookie Policy to match.
 
-### What the application already guarantees (do not duplicate in GTM)
+### What changed
 
-- GTM's own script is **never loaded at all** unless the visitor is on
-  the real production hostname, `NEXT_PUBLIC_GTM_ID` is configured (now
-  true), **and** the visitor has explicitly granted ANALYTICS consent via
-  `ConsentBanner`. There is no "load GTM, then check consent inside GTM"
-  step — the container is simply absent from the page until consent is
-  granted. **Do not configure a GTM Consent Mode / Consent Initialization
-  trigger** — it would be redundant with (and could only ever be more
-  permissive than) the app-level gate that already fully owns this.
-- GTM is **never present at all** on any private/admin/auth-utility route
-  (`routePolicy.ts`, tested against 20 real EN/FR paths). **Do not add
-  page-path trigger conditions to exclude `/dashboard`, `/admin`,
-  `/messages`, etc.** — those pages never even load the container, so
-  such a trigger would never fire and adds nothing.
-- Every event already excludes PII and free text by construction
-  (`AnalyticsEventPropertiesMap` + the runtime denylist). GTM does not
-  need its own PII-scrubbing variables or triggers.
+- **`ConsentBanner` is now mounted** in `src/app/[locale]/layout.tsx`,
+  inside `NextIntlClientProvider`, once, covering every real page
+  (including the homepage and `/tutors/[slug]`, neither of which uses the
+  shared `MarketingShell`). It self-excludes on any analytics-ineligible
+  route via `isAnalyticsEligiblePath()` — the same function `trackEvent()`
+  itself uses — so one mount point is sufficient and cannot regress if a
+  future page adopts a different shell.
+- **Consent management/revocation**: `CookiePreferencesControl.tsx`, a
+  small client component on the `/cookies` page showing the visitor's
+  current analytics decision (granted/denied/undecided) and a "Manage
+  cookie preferences" button. Clicking it calls `revokeAnalyticsConsent()`
+  (resets to `"undecided"`), `unloadGtm()` (removes the injected GTM
+  script element and empties `window.dataLayer`'s contents — see that
+  function's own doc comment in `vendors.ts` for the honest, limited scope
+  of what "unload" can mean once a vendor script has already executed),
+  then reloads the page so `ConsentBanner` reappears from a clean state.
+- **A real gap was found and fixed in `trackEvent()`**: it checked the PII
+  denylist and route eligibility but never re-checked consent on each
+  call. This meant a visitor who granted consent, then revoked it later in
+  the same page session (no reload), would keep having application events
+  pushed into the still-present `dataLayer` until the next navigation.
+  Fixed: `trackEvent()` now calls `hasAnalyticsConsent()` on every
+  invocation and drops the event if consent is not `"granted"` — this is
+  what makes "revoke → future analytics collection stops" true at the
+  application level. It cannot retroactively undo anything GTM/GA4 already
+  did before the revoke.
+- **Cookie Policy updated** (`cookieContent.en.ts` / `.fr.ts`, both
+  locales, same sections in each): §13 ("Current Analytics Position") and
+  §14 ("Future Analytics Services") now truthfully state that Google
+  Analytics 4, delivered through Google Tag Manager, is in use — only on
+  public marketing/content pages, only with the visitor's consent, and
+  that no PII (name/email/phone/address/message content/payment info) is
+  collected through it; §28 ("Cookie Banner") now describes the live
+  banner mechanism instead of a hypothetical future one; §45's summary
+  table row changed from *"Routine third-party behavioural analytics: Not
+  currently represented as used"* to a row naming GA4/GTM as in use
+  (consent-gated, public-pages-only) and a new row confirming PostHog and
+  Microsoft Clarity remain not in use. No retention period, IP-
+  anonymization claim, or other unverified legal conclusion was invented —
+  consistent with this Policy's own existing discipline (§34). **The
+  Effective Date / `COOKIE_POLICY_VERSION` (`2026-08-30`) was
+  deliberately NOT bumped** — declaring a new effective date is a legal/
+  business decision, not a technical one; this is flagged in the final
+  report for the owner's decision alongside the legal-review flag itself.
+- **OWNER LEGAL REVIEW REQUIRED** on the above Cookie Policy text changes,
+  per this Policy's own standing "subject to final external Canadian
+  legal review" status — this session drafted only verifiable technical
+  facts, no legal conclusions.
+- **Tests added**: consent-gating coverage in `track.test.ts` (undecided/
+  denied/granted/revoked-mid-session/storage-throws — 5 new cases),
+  `unloadGtm()` coverage in `vendors.test.ts` (4 new cases), a
+  denied→revoke→granted round trip in `consent.test.ts` (2 new cases), a
+  new `consentBannerMessages.test.ts` locking the `consentBanner` i18n
+  namespace's key parity and real (non-placeholder, non-duplicate) EN/FR
+  text, and new Cookie Policy content assertions in `cookieContent.test.ts`
+  (GA4/GTM named truthfully, consent-dependence stated, no PostHog/Clarity
+  claim, no invented retention/anonymization language). Full non-DB-
+  integration suite: all passing, zero regressions (pre-existing DB-
+  integration tests that require a live Postgres connection are unrelated
+  and were not run/affected).
 
-### Step-by-step: publish the GA4 configuration
+### Known, honest limitation: browser-level live certification
 
-1. Open Google Tag Manager → container **futuretutor.ca**
-   (`GTM-KCNP43TK`) → **Workspace: Default Workspace**.
-2. **Tags → New**:
-   - Name: `GA4 Configuration - FutureTutor`
-   - Tag Configuration → **Google Tag** (or "Google Analytics: GA4
-     Configuration," depending on the current GTM UI) → Tag ID / Measurement
-     ID: `G-3BQQXRZHY2`
-   - Leave "Send a page view event when this configuration loads" **ON**
-     (default) — this is GA4's own automatic pageview, intentionally kept
-     distinct from this app's own `futuretutor_page_view` custom event
-     (renamed specifically to avoid colliding with this automatic one —
-     see "Activation status" above).
-   - Triggering: **Initialization - All Pages** (GTM's built-in trigger
-     that fires once per container load). Do not scope this to specific
-     paths — see "do not duplicate" above.
-3. **Tags → New** (for the FutureTutor semantic events):
-   - Name: `GA4 Event - FutureTutor Custom Events`
-   - Tag Configuration → **Google Analytics: GA4 Event**
-   - Configuration Tag: select the `GA4 Configuration - FutureTutor` tag
-     from step 2
-   - Event Name: `{{Event}}` (GTM's built-in Event variable — this
-     forwards whatever event name this app's `trackEvent()` actually sent,
-     e.g. `find_tutor_cta_clicked`, without hardcoding each one)
-   - Event Parameters: add one row per property this app may send —
-     `locale`, `page_type`, `cta_location`, `resource_slug`,
-     `subject_slug`, `city_slug`, `user_intent`, `level`, `mode` — each
-     mapped to a GTM Data Layer Variable of the same name (create these
-     under **Variables → New → Data Layer Variable** if they don't already
-     exist, one per property name above, "Data Layer Variable Name"
-     exactly matching).
-   - Triggering: **New Trigger** → Custom Event → Event name (use "matches
-     RegEx"): `^(futuretutor_page_view|find_tutor_cta_clicked|become_tutor_cta_clicked|how_it_works_cta_clicked|resource_article_viewed|resource_primary_cta_clicked|subject_page_viewed|local_landing_viewed|signup_started|login_started|search_started)$`
-     — this exact list is `AnalyticsEventName` in
-     `src/lib/analytics/types.ts`; if that list changes, this regex must
-     be updated to match.
-4. **Submit** → give the version a name (e.g. "GA4 initial configuration")
-   → **Publish**.
-5. Confirm in GTM's own **Preview** mode (connect to
-   `https://futuretutor.ca`) that the container loads and the
-   Configuration tag fires — note that Preview mode itself will only see
-   the container if you've separately granted ANALYTICS consent in that
-   browser session, since the app-level gate applies there too.
+This session has no browser-automation tool available (no Playwright/
+Puppeteer/equivalent — only static HTTP fetch tools). That means the
+following checks could **not** be performed by literally clicking through
+a live browser session against production, and are certified only at the
+logic/unit level (which is what the tests above verify) plus static
+production-HTML inspection (curl), not by observing real rendered
+behavior or real outbound network requests to Google's servers:
 
-### After publishing
+- Visually confirming the banner renders/is absent at the right moments.
+- Simulating a real Accept/Reject/Manage click and observing the resulting
+  DOM and `localStorage` state in a real browser.
+- Capturing and inspecting the actual network request GA4 sends after
+  consent, to visually confirm its payload contains no PII.
 
-Reply to this session (or open a follow-up DATA-1 mission) confirming the
-GTM version is published, and this session will: mount `ConsentBanner` in
-the root layout, update the Cookie Policy's §45 summary table and §13/§14
-sections to reflect the real, active, consent-gated configuration
-(flagged for the owner's final legal review before that text change ships,
-per Phase 16), and run the full production live-certification checklist
-(consent default/accept/reject/revoke, PII absence in real network
-payloads, no duplicate GTM/GA4, all route exclusions) end-to-end against
-the real, live vendor.
+Everything that does not require simulating a real click or reading a
+real browser's network tab was certified directly: production HTTP
+responses (curl), the full automated test suite (which exercises the
+exact same consent/route/PII logic paths a live click would trigger), and
+static analysis of every code path that can reach `window.dataLayer`.
 
 ---
-*Generated by mission DATA-1. Update this document when the GTM
-activation checkpoint above is completed — don't duplicate it.*
+*Generated by mission DATA-1. This document now reflects the fully
+consent-activated, certified-inert-by-default state as of the Consent
+Activation phase.*

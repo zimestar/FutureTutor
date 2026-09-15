@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { shouldLoadGtm, loadGtmIfEligible, pushToDataLayer } from "./vendors";
+import { shouldLoadGtm, loadGtmIfEligible, pushToDataLayer, unloadGtm } from "./vendors";
 
 // DATA-1 — the vendor loader must stay inert until all three conditions
 // hold: production hostname, a real NEXT_PUBLIC_GTM_ID, and explicit
@@ -110,6 +110,57 @@ describe("loadGtmIfEligible", () => {
     loadGtmIfEligible();
 
     expect(created).toHaveLength(1);
+  });
+});
+
+describe("unloadGtm", () => {
+  it("does nothing (no throw) server-side (no window/document)", () => {
+    expect(() => unloadGtm()).not.toThrow();
+  });
+
+  it("removes the injected GTM script element by its stable id", () => {
+    process.env.NEXT_PUBLIC_GTM_ID = "GTM-TEST0000";
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+
+    const elementsById = new Map<string, { id: string; removed: boolean }>();
+    globalThis.document = {
+      getElementById: (id: string) => elementsById.get(id) ?? null,
+      createElement: () => {
+        const el = { id: "", removed: false };
+        return el;
+      },
+      head: {
+        appendChild: (el: { id: string; removed: boolean }) => {
+          elementsById.set(el.id, el);
+        },
+      },
+    } as unknown as Document;
+
+    loadGtmIfEligible();
+    const scriptId = [...elementsById.keys()][0];
+    expect(scriptId).toBeDefined();
+
+    // Patch in a real-enough `.remove()` so unloadGtm's DOM call succeeds.
+    const el = elementsById.get(scriptId)!;
+    (el as unknown as { remove: () => void }).remove = () => elementsById.delete(scriptId);
+
+    unloadGtm();
+    expect(elementsById.has(scriptId)).toBe(false);
+  });
+
+  it("empties window.dataLayer's contents", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "granted" });
+    globalThis.window.dataLayer = [{ event: "one" }, { event: "two" }];
+    unloadGtm();
+    expect(globalThis.window.dataLayer.length).toBe(0);
+  });
+
+  it("does not throw when no script element was ever injected and dataLayer was never initialized", () => {
+    installFakeBrowser({ hostname: "futuretutor.ca", consent: "denied" });
+    globalThis.document = {
+      getElementById: () => null,
+    } as unknown as Document;
+    expect(() => unloadGtm()).not.toThrow();
   });
 });
 

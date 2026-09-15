@@ -62,3 +62,33 @@ export function pushToDataLayer(payload: Record<string, unknown>): void {
   if (typeof window === "undefined" || !window.dataLayer) return;
   window.dataLayer.push(payload);
 }
+
+/**
+ * Best-effort cleanup called on consent revocation. Honest about its real
+ * limits: once GTM's script has executed in this document, its own
+ * internal listeners/closures/global state cannot be reliably torn down
+ * from outside — there is no supported "unload GTM" API, in this codebase
+ * or anywhere else. This function does two things that ARE fully within
+ * this page's control:
+ *
+ * 1. Removes the injected <script> element, so it cannot be mistaken for
+ *    still being "the source of truth" and cannot re-execute.
+ * 2. Empties (not deletes) window.dataLayer, so no stale queued payload
+ *    is still sitting there — array identity is preserved in case GTM's
+ *    own runtime holds a reference to it, only its contents are cleared.
+ *
+ * track.ts's own consent check is what actually guarantees no *further*
+ * application event is emitted after revocation — this function is a
+ * courtesy cleanup on top of that guarantee, not a substitute for it. It
+ * cannot and does not claim to stop GTM's already-running in-memory code,
+ * clear cookies Google's own scripts already set, or retroactively affect
+ * any request already sent before revocation.
+ */
+export function unloadGtm(): void {
+  if (typeof document !== "undefined") {
+    document.getElementById(GTM_SCRIPT_ELEMENT_ID)?.remove();
+  }
+  if (typeof window !== "undefined" && window.dataLayer) {
+    window.dataLayer.length = 0;
+  }
+}
