@@ -1,9 +1,43 @@
 # FutureTutor — Analytics Foundation (DATA-1)
 
-A production-safe, privacy-minimizing analytics foundation. **No external
-analytics vendor is active in production as of this document** — every
-piece of code below is built, tested, and fully inert until a human
-completes the external setup in the checkpoint section.
+A production-safe, privacy-minimizing analytics foundation.
+
+## Activation status (as of this update)
+
+The owner has completed the external Google-side setup:
+
+- **GA4 property**: `FutureTutor`, web stream `FutureTutor Production`,
+  domain `https://futuretutor.ca`, Measurement ID `G-3BQQXRZHY2`. Enhanced
+  Measurement: Page views ON, Outbound clicks ON; Scrolls/Site search/Form
+  interactions/Video engagement/File downloads all OFF.
+- **GTM container**: account `FutureTutor`, container `futuretutor.ca`,
+  container ID `GTM-KCNP43TK`. No GA4 tag has been published inside it
+  yet — a draft Google Tag was started during setup and discarded.
+- **Search Console**: domain property `futuretutor.ca` already existed and
+  is already verified (no new DNS action was needed). Sitemap
+  `https://futuretutor.ca/sitemap.xml` already submitted.
+- **`NEXT_PUBLIC_GTM_ID=GTM-KCNP43TK`** has been set on the production
+  Railway environment (a public identifier, not a secret) and deployed —
+  confirmed by a successful redeploy.
+
+**GTM still cannot activate anything**: `shouldLoadGtm()` requires the env
+var (now set) *and* explicit ANALYTICS consent (`ConsentBanner` is still
+not mounted, so consent can never be granted yet) *and* a published GA4
+tag inside the GTM container (none exists yet). All three remaining gates
+mean the foundation is still fully inert in production today. See **DATA-1
+— GTM ACTIVATION HUMAN CHECKPOINT** at the end of this document for the
+exact remaining owner-side steps before `ConsentBanner` is mounted and the
+Cookie Policy is updated.
+
+**A real defect was found and fixed during this re-audit**: the generic
+pageview event was originally named `page_view` — colliding with GA4's
+own reserved, automatically-collected event of the same name (Enhanced
+Measurement's "Page views," already ON). Firing a custom event under that
+exact name would have double-counted every pageview once GA4 was wired
+up. Renamed to `futuretutor_page_view` (Phase 4's table and `types.ts`
+updated; a new permanent regression test, `types.test.ts`, asserts no
+FutureTutor event name ever collides with GA4's reserved event-name list
+again).
 
 ## Phase 0 — audit findings
 
@@ -102,15 +136,17 @@ mission's code. `NEXT_PUBLIC_GTM_ID` is referenced only via
 empty, commented-out example (`# NEXT_PUBLIC_GTM_ID="GTM-XXXXXXX"`,
 matching Google's own generic placeholder format — not a real container).
 
-## Phase 2 — human checkpoint (see the final report for the exact ask)
+## Phase 2 — human checkpoint
 
-No Google Tag Manager container, GA4 property, or Search Console
-verification exists yet for this domain, as far as this session can
-determine (no credentials or prior configuration were found in the
-repository or environment). **This mission stops at the code/architecture
-boundary** — see the final PREFLIGHT CHECKPOINT report for the precise,
-minimal external setup required before anything in this foundation can
-actually activate.
+**Status at first checkpoint**: no GTM container, GA4 property, or Search
+Console verification existed yet, as far as that session could determine.
+
+**Status now**: the owner has completed the GA4 property, GTM container,
+and confirmed Search Console was already verified (see "Activation
+status" above). `NEXT_PUBLIC_GTM_ID` is set in production. **One step
+remains and requires owner action inside the GTM UI** — publishing a GA4
+Configuration tag in the GTM container — see **DATA-1 — GTM ACTIVATION
+HUMAN CHECKPOINT** at the end of this document.
 
 ## Phase 3 — architecture
 
@@ -143,7 +179,7 @@ documentation and its compile-time property allowlist:
 
 | Event | Business purpose | Trigger | Allowed properties | Destination |
 |---|---|---|---|---|
-| `page_view` | Measure acquisition/landing-page performance | `<TrackPageView>` mounts on a public page | `locale`, `page_type` | GA4 (via GTM) |
+| `futuretutor_page_view` | Measure acquisition/landing-page performance | `<TrackPageView>` mounts on a public page | `locale`, `page_type` | GA4 (via GTM) |
 | `find_tutor_cta_clicked` | Measure the primary parent/student conversion path | The "Find a Tutor" CTA is activated | `locale?`, `cta_location` | GA4 |
 | `become_tutor_cta_clicked` | Measure tutor-recruitment intent | The "Become a Tutor" CTA is activated | `locale?`, `cta_location` | GA4 |
 | `how_it_works_cta_clicked` | Measure process-transparency engagement | A "How It Works" link is activated | `locale?`, `cta_location` | GA4 |
@@ -222,17 +258,15 @@ once across repeated calls).
 
 ## Phase 11 — Google Search Console
 
-**Recommended property type: Domain property for `futuretutor.ca`** (not
-a URL-prefix property) — covers `https://futuretutor.ca`,
-`https://www.futuretutor.ca` (redirects to the apex per SEO-INFRA-WWW1,
-but the domain property still correctly attributes any stray crawl), and
-any future subdomain, under one property. **Requires DNS verification**
-(a TXT record at Namecheap) — this is the same DNS-ownership pattern
-SEO-INFRA-WWW1 already worked with, and the same constraint applies: this
-session has no Namecheap account access, so the exact record must be
-created by a human. See the final report for what's needed. Sitemap to
-submit once verified: `https://futuretutor.ca/sitemap.xml` (never a
-staging URL).
+**Resolved — already existed, no action was needed.** A domain property
+for `futuretutor.ca` was already verified before this mission (the owner
+confirmed this at the human checkpoint) — no new DNS record was created or
+requested. Sitemap `https://futuretutor.ca/sitemap.xml` was already
+submitted; live-reconfirmed reachable and current (Phase 25/27 below).
+The property's discovered-page count reflects a snapshot from before
+SEO-3/SEO-4A/SEO-4B expanded the sitemap — Search Console's own indexing
+reports update on Google's crawl schedule, not on demand; this was not
+forced and should not be treated as an error.
 
 ## Phase 12 — PostHog evaluation
 
@@ -438,18 +472,103 @@ completed and a follow-up mission explicitly authorizes activation.
 
 ## Deferred / follow-up work
 
-- Human external setup (GTM container, GA4 property, Search Console
-  domain-property DNS verification) — see the final report.
+- **GTM-side GA4 tag configuration** — see **DATA-1 — GTM ACTIVATION HUMAN
+  CHECKPOINT** immediately below. The one remaining blocker.
 - Mounting `ConsentBanner` in the root layout — blocked on the above, and
   on the Cookie Policy text update (Phase 16).
-- A CSP covering the eventual GTM/GA4 origins (Phase 19) — deferred as a
-  separate security initiative.
+- A CSP covering the GTM/GA4 origins (Phase 19) — deferred as a separate
+  security initiative.
 - PostHog / Microsoft Clarity — deferred (Phases 12-13), revisit only with
   an explicit scoped follow-up mission and a real identified need.
 - DATA-2 (funnel dashboards) / DATA-3 (SEO dashboard) — explicitly out of
   this mission's scope.
 
 ---
-*Generated by mission DATA-1. Update this document when the human
-checkpoint is completed and activation actually happens — don't duplicate
-it.*
+
+## DATA-1 — GTM ACTIVATION HUMAN CHECKPOINT
+
+The GTM container (`GTM-KCNP43TK`) exists but has no published GA4
+configuration — a draft Google Tag was started during initial setup and
+discarded. This cannot be created from code: it requires clicking through
+the Google Tag Manager UI. Below is the precise, minimal configuration
+this foundation's architecture requires — nothing more.
+
+### What the application already guarantees (do not duplicate in GTM)
+
+- GTM's own script is **never loaded at all** unless the visitor is on
+  the real production hostname, `NEXT_PUBLIC_GTM_ID` is configured (now
+  true), **and** the visitor has explicitly granted ANALYTICS consent via
+  `ConsentBanner`. There is no "load GTM, then check consent inside GTM"
+  step — the container is simply absent from the page until consent is
+  granted. **Do not configure a GTM Consent Mode / Consent Initialization
+  trigger** — it would be redundant with (and could only ever be more
+  permissive than) the app-level gate that already fully owns this.
+- GTM is **never present at all** on any private/admin/auth-utility route
+  (`routePolicy.ts`, tested against 20 real EN/FR paths). **Do not add
+  page-path trigger conditions to exclude `/dashboard`, `/admin`,
+  `/messages`, etc.** — those pages never even load the container, so
+  such a trigger would never fire and adds nothing.
+- Every event already excludes PII and free text by construction
+  (`AnalyticsEventPropertiesMap` + the runtime denylist). GTM does not
+  need its own PII-scrubbing variables or triggers.
+
+### Step-by-step: publish the GA4 configuration
+
+1. Open Google Tag Manager → container **futuretutor.ca**
+   (`GTM-KCNP43TK`) → **Workspace: Default Workspace**.
+2. **Tags → New**:
+   - Name: `GA4 Configuration - FutureTutor`
+   - Tag Configuration → **Google Tag** (or "Google Analytics: GA4
+     Configuration," depending on the current GTM UI) → Tag ID / Measurement
+     ID: `G-3BQQXRZHY2`
+   - Leave "Send a page view event when this configuration loads" **ON**
+     (default) — this is GA4's own automatic pageview, intentionally kept
+     distinct from this app's own `futuretutor_page_view` custom event
+     (renamed specifically to avoid colliding with this automatic one —
+     see "Activation status" above).
+   - Triggering: **Initialization - All Pages** (GTM's built-in trigger
+     that fires once per container load). Do not scope this to specific
+     paths — see "do not duplicate" above.
+3. **Tags → New** (for the FutureTutor semantic events):
+   - Name: `GA4 Event - FutureTutor Custom Events`
+   - Tag Configuration → **Google Analytics: GA4 Event**
+   - Configuration Tag: select the `GA4 Configuration - FutureTutor` tag
+     from step 2
+   - Event Name: `{{Event}}` (GTM's built-in Event variable — this
+     forwards whatever event name this app's `trackEvent()` actually sent,
+     e.g. `find_tutor_cta_clicked`, without hardcoding each one)
+   - Event Parameters: add one row per property this app may send —
+     `locale`, `page_type`, `cta_location`, `resource_slug`,
+     `subject_slug`, `city_slug`, `user_intent`, `level`, `mode` — each
+     mapped to a GTM Data Layer Variable of the same name (create these
+     under **Variables → New → Data Layer Variable** if they don't already
+     exist, one per property name above, "Data Layer Variable Name"
+     exactly matching).
+   - Triggering: **New Trigger** → Custom Event → Event name (use "matches
+     RegEx"): `^(futuretutor_page_view|find_tutor_cta_clicked|become_tutor_cta_clicked|how_it_works_cta_clicked|resource_article_viewed|resource_primary_cta_clicked|subject_page_viewed|local_landing_viewed|signup_started|login_started|search_started)$`
+     — this exact list is `AnalyticsEventName` in
+     `src/lib/analytics/types.ts`; if that list changes, this regex must
+     be updated to match.
+4. **Submit** → give the version a name (e.g. "GA4 initial configuration")
+   → **Publish**.
+5. Confirm in GTM's own **Preview** mode (connect to
+   `https://futuretutor.ca`) that the container loads and the
+   Configuration tag fires — note that Preview mode itself will only see
+   the container if you've separately granted ANALYTICS consent in that
+   browser session, since the app-level gate applies there too.
+
+### After publishing
+
+Reply to this session (or open a follow-up DATA-1 mission) confirming the
+GTM version is published, and this session will: mount `ConsentBanner` in
+the root layout, update the Cookie Policy's §45 summary table and §13/§14
+sections to reflect the real, active, consent-gated configuration
+(flagged for the owner's final legal review before that text change ships,
+per Phase 16), and run the full production live-certification checklist
+(consent default/accept/reject/revoke, PII absence in real network
+payloads, no duplicate GTM/GA4, all route exclusions) end-to-end against
+the real, live vendor.
+
+---
+*Generated by mission DATA-1. Update this document when the GTM
+activation checkpoint above is completed — don't duplicate it.*

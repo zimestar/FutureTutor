@@ -32,7 +32,7 @@ describe("TutorSearch.tsx PII fix", () => {
 
 describe("TrackPageView wiring on the four Tier-1 page types", () => {
   it.each([
-    { file: ["app", "[locale]", "find-tutors", "page.tsx"], event: "page_view" },
+    { file: ["app", "[locale]", "find-tutors", "page.tsx"], event: "futuretutor_page_view" },
     { file: ["app", "[locale]", "tutoring", "[city]", "page.tsx"], event: "local_landing_viewed" },
     { file: ["app", "[locale]", "resources", "[slug]", "page.tsx"], event: "resource_article_viewed" },
     { file: ["app", "[locale]", "subjects", "[subject]", "page.tsx"], event: "subject_page_viewed" },

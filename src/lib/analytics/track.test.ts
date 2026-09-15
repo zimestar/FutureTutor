@@ -40,7 +40,7 @@ describe("trackEvent", () => {
   });
 
   it("works server-side (no window) without throwing — used from server components", () => {
-    expect(() => trackEvent("page_view", { locale: "en", page_type: "homepage" })).not.toThrow();
+    expect(() => trackEvent("futuretutor_page_view", { locale: "en", page_type: "homepage" })).not.toThrow();
   });
 
   it("each call is forwarded independently — no accidental deduplication of distinct legitimate events", () => {

@@ -35,8 +35,14 @@ export type UserIntent = "find_tutor" | "become_tutor" | "learn_more";
  * never `string` (free text) and never a database ID.
  */
 export interface AnalyticsEventPropertiesMap {
-  /** A public marketing page rendered. Fired by <TrackPageView>, never by a private route. */
-  page_view: { locale: Locale; page_type: PageType };
+  /**
+   * A public marketing page rendered. Fired by <TrackPageView>, never by a
+   * private route. Deliberately NOT named "page_view" — that exact name is
+   * GA4's own reserved, automatically-collected event (Enhanced
+   * Measurement's "Page views" toggle); reusing it here would double-count
+   * every page this event also fires on once GA4 is wired up.
+   */
+  futuretutor_page_view: { locale: Locale; page_type: PageType };
   /** The primary "Find a Tutor" CTA was activated. */
   find_tutor_cta_clicked: { locale?: Locale; cta_location: CtaLocation };
   /** The primary "Become a Tutor" CTA was activated. */

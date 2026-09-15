@@ -25,7 +25,7 @@ export default async function FindTutorsPage({ params, searchParams }: {
   const t = await getTranslations({ locale, namespace: "findTutorsPage.intro" });
   return (
     <MarketingShell>
-      <TrackPageView event="page_view" properties={{ locale: locale as Locale, page_type: "find_tutors" }} />
+      <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "find_tutors" }} />
       <TutorDirectory locale={locale} searchParams={resolvedSearchParams} />
       <Section className="bg-white pt-0">
         <div className="mx-auto max-w-3xl border-t border-border pt-10">
