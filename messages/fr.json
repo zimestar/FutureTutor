@@ -1666,6 +1666,47 @@
       "errorDescription": "Aucune modification n’a été apportée. Essayez de charger les données actuelles de nouveau.",
       "retry": "Réessayer"
     },
+    "lifecycle": {
+      "title": "Parcours d’intégration",
+      "stage": "Étape",
+      "status": "Statut",
+      "nextAction": "Prochaine action",
+      "noNextAction": "Aucune pour le moment",
+      "lastMeaningfulProgress": "Dernière progression significative",
+      "inactiveForDays": "Inactif depuis {days, plural, one {# jour} other {# jours}}",
+      "inactiveForLessThanADay": "Inactif depuis moins d’un jour",
+      "reminderEligible": "Serait admissible à un rappel",
+      "reminderNotEligible": "Non admissible à un rappel",
+      "suppressionReason": "Pourquoi non admissible",
+      "unavailable": "Aucun parcours d’intégration enregistré pour ce compte.",
+      "statuses": {
+        "USER_ACTION_REQUIRED": "Action requise de l’utilisateur",
+        "WAITING_ON_FUTURETUTOR": "En attente de FutureTutor",
+        "WAITING_ON_ADMIN": "En attente d’un administrateur",
+        "WAITING_ON_GUARDIAN": "En attente du tuteur légal",
+        "COMPLETED": "Terminé",
+        "REJECTED": "Refusé",
+        "SUSPENDED": "Suspendu",
+        "INELIGIBLE": "Non admissible",
+        "UNKNOWN": "Inconnu"
+      },
+      "suppressionReasons": {
+        "APPLICATION_APPROVED": "Candidature déjà approuvée",
+        "APPLICATION_REJECTED": "Candidature refusée",
+        "APPLICATION_SUSPENDED": "Candidature suspendue",
+        "ACCOUNT_SUSPENDED": "Compte suspendu",
+        "ADMIN_ACCOUNT": "Compte administrateur",
+        "WAITING_ON_FUTURETUTOR": "En attente de FutureTutor",
+        "WAITING_ON_ADMIN": "En attente d’un administrateur",
+        "WAITING_ON_GUARDIAN": "En attente du tuteur légal",
+        "ONBOARDING_COMPLETED": "Intégration déjà terminée",
+        "INACTIVITY_BELOW_THRESHOLD": "Pas encore inactif assez longtemps",
+        "INELIGIBLE_ROLE_OR_STATE": "Non admissible pour ce rôle ou cet état",
+        "CLAIM_EXPIRED": "Invitation expirée",
+        "UNKNOWN_STATE": "État indéterminable",
+        "MISSING_STATE_EVIDENCE": "Preuves insuffisantes pour déterminer l’état"
+      }
+    },
     "statuses": {
       "PENDING": "En attente",
       "REQUIRES_ACTION": "Action requise",

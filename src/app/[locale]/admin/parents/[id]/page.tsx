@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/Button";
 import { adminNavItems } from "@/lib/adminNav";
 import { suspendParentAction, reactivateParentAction } from "@/lib/actions/adminAccountSuspension";
 import { requireActiveAdmin } from "@/services/adminPermissions";
+import { getParentLifecycle } from "@/lib/lifecycle";
+import { LifecycleSummaryCard } from "@/components/admin/LifecycleSummaryCard";
 
 export default async function AdminParentDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
@@ -28,6 +30,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
   try { await requireActiveAdmin(session); } catch { redirect({ href: "/login", locale }); return; }
   const t = await getTranslations({ locale, namespace: "admin.operations.parentDetail" });
   const tNav = await getTranslations({ locale, namespace: "dashboard.nav" });
+  const tLifecycle = await getTranslations({ locale, namespace: "admin.lifecycle" });
 
   const parent = await db.parentProfile.findUnique({
     where: { id },
@@ -39,6 +42,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
   if (!parent) notFound();
 
   const isSuspended = Boolean(parent.user?.deactivatedAt);
+  const lifecycle = await getParentLifecycle(db, parent.id);
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
@@ -64,6 +68,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
         )}
         <p className="mt-3 text-xs text-text-secondary">{t("suspendHint")}</p>
       </Surface>
+      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} />
       <Surface className="mt-5">
         <h2 className="font-extrabold">{t("children")}</h2>
         {parent.studentRelationships.length ? (

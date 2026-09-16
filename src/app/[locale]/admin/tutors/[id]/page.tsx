@@ -30,6 +30,8 @@ import { requireTrainingAction } from "@/lib/actions/tutorTraining";
 import { requireExamAction } from "@/lib/actions/tutorExam";
 import { adminNavItems } from "@/lib/adminNav";
 import { Avatar } from "@/components/ui/Avatar";
+import { getTutorLifecycle } from "@/lib/lifecycle";
+import { LifecycleSummaryCard } from "@/components/admin/LifecycleSummaryCard";
 
 export default async function AdminTutorDetailPage({
   params,
@@ -51,6 +53,7 @@ export default async function AdminTutorDetailPage({
   const tStatus = await getTranslations({ locale, namespace: "dashboard.tutor.applicationStatus" });
   const tDocType = await getTranslations({ locale, namespace: "tutorDocuments.types" });
   const tDocStatus = await getTranslations({ locale, namespace: "tutorDocuments.status" });
+  const tLifecycle = await getTranslations({ locale, namespace: "admin.lifecycle" });
 
   const tutor = await db.tutorProfile.findUnique({
     where: { id },
@@ -79,6 +82,7 @@ export default async function AdminTutorDetailPage({
   const approvedDocuments = tutor.documents.filter((d) => d.status === "APPROVED");
   const latestInterview = tutor.interviews[0];
   const score = tutor.scores[0];
+  const lifecycle = await getTutorLifecycle(db, tutor.id);
 
   return (
     <DashboardShell
@@ -117,6 +121,8 @@ export default async function AdminTutorDetailPage({
           ELITE: t("payoutTiers.ELITE"),
         }}
       />
+
+      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} />
 
       {/* --- Stage actions --- */}
       <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-5">

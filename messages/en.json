@@ -1666,6 +1666,47 @@
       "errorDescription": "No changes were made. Try loading the current data again.",
       "retry": "Try again"
     },
+    "lifecycle": {
+      "title": "Onboarding lifecycle",
+      "stage": "Stage",
+      "status": "Status",
+      "nextAction": "Next action",
+      "noNextAction": "None right now",
+      "lastMeaningfulProgress": "Last meaningful progress",
+      "inactiveForDays": "Inactive for {days, plural, one {# day} other {# days}}",
+      "inactiveForLessThanADay": "Inactive for less than a day",
+      "reminderEligible": "Would be reminder-eligible",
+      "reminderNotEligible": "Not reminder-eligible",
+      "suppressionReason": "Why not eligible",
+      "unavailable": "No onboarding lifecycle record for this account.",
+      "statuses": {
+        "USER_ACTION_REQUIRED": "User action required",
+        "WAITING_ON_FUTURETUTOR": "Waiting on FutureTutor",
+        "WAITING_ON_ADMIN": "Waiting on admin",
+        "WAITING_ON_GUARDIAN": "Waiting on guardian",
+        "COMPLETED": "Completed",
+        "REJECTED": "Rejected",
+        "SUSPENDED": "Suspended",
+        "INELIGIBLE": "Ineligible",
+        "UNKNOWN": "Unknown"
+      },
+      "suppressionReasons": {
+        "APPLICATION_APPROVED": "Application already approved",
+        "APPLICATION_REJECTED": "Application rejected",
+        "APPLICATION_SUSPENDED": "Application suspended",
+        "ACCOUNT_SUSPENDED": "Account suspended",
+        "ADMIN_ACCOUNT": "Admin account",
+        "WAITING_ON_FUTURETUTOR": "Waiting on FutureTutor",
+        "WAITING_ON_ADMIN": "Waiting on admin",
+        "WAITING_ON_GUARDIAN": "Waiting on guardian",
+        "ONBOARDING_COMPLETED": "Onboarding already completed",
+        "INACTIVITY_BELOW_THRESHOLD": "Not yet inactive long enough",
+        "INELIGIBLE_ROLE_OR_STATE": "Not eligible for this role or state",
+        "CLAIM_EXPIRED": "Invitation expired",
+        "UNKNOWN_STATE": "State could not be determined",
+        "MISSING_STATE_EVIDENCE": "Not enough evidence to determine state"
+      }
+    },
     "statuses": {
       "PENDING": "Pending",
       "REQUIRES_ACTION": "Action required",
