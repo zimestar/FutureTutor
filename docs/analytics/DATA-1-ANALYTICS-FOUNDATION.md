@@ -11,14 +11,17 @@ The owner has completed the external Google-side setup:
   Measurement: Page views ON, Outbound clicks ON; Scrolls/Site search/Form
   interactions/Video engagement/File downloads all OFF.
 - **GTM container**: account `FutureTutor`, container `futuretutor.ca`,
-  container ID `GTM-KCNP43TK`. No GA4 tag has been published inside it
-  yet — a draft Google Tag was started during setup and discarded.
+  container ID `GTM-KCNP4STK` (corrected — see **DATA-1 — GTM CONTAINER ID
+  CORRECTION** below; originally misreported/miscopied as `GTM-KCNP43TK`).
+  No GA4 tag has been published inside it yet — a draft Google Tag was
+  started during setup and discarded.
 - **Search Console**: domain property `futuretutor.ca` already existed and
   is already verified (no new DNS action was needed). Sitemap
   `https://futuretutor.ca/sitemap.xml` already submitted.
-- **`NEXT_PUBLIC_GTM_ID=GTM-KCNP43TK`** has been set on the production
-  Railway environment (a public identifier, not a secret) and deployed —
-  confirmed by a successful redeploy.
+- **`NEXT_PUBLIC_GTM_ID=GTM-KCNP4STK`** is set on the production Railway
+  environment (a public identifier, not a secret) — corrected from the
+  originally-set `GTM-KCNP43TK`; see the container-ID correction section
+  below.
 
 **GTM activation checkpoint — completed by the owner.** The GTM container
 now has a published version ("DATA-1 - FutureTutor GA4 Foundation")
@@ -472,7 +475,7 @@ deployment's own certification record.
 ## DATA-1 — CONSENT ACTIVATION
 
 The GTM activation human checkpoint (formerly documented in full below
-this line) was completed by the owner — GTM container `GTM-KCNP43TK` has
+this line) was completed by the owner — GTM container `GTM-KCNP4STK` has
 a published version ("DATA-1 - FutureTutor GA4 Foundation") matching the
 configuration this document specified. This phase mounted the consent
 mechanism and updated the Cookie Policy to match.
@@ -634,15 +637,75 @@ had been created yet, which was stale since the Consent Activation phase.
 
 ### Deployment
 
-Deployed to production. **Not yet certified** — the owner still needs to
-perform one manual Tag Assistant checkpoint (open a fresh GTM Preview
-session against `https://futuretutor.ca/en` with consent already granted,
-confirm the container and GA4 tag connect and fire, confirm a real event's
-parameters carry only the certified allowlisted fields). This document
-will be updated once that checkpoint is reported back.
+Deployed to production. The Tag Assistant checkpoint that followed this
+fix surfaced a second, independent issue — a wrong GTM container ID — see
+**DATA-1 — GTM CONTAINER ID CORRECTION** below for the full incident and
+its resolution.
+
+---
+
+## DATA-1 — GTM CONTAINER ID CORRECTION
+
+A follow-up owner Tag Assistant checkpoint against the live-detection fix
+above produced decisive browser/network evidence:
+
+- `localStorage["futuretutor_consent_v1"]` → `analytics: "granted"` (the
+  mount-time fix was working correctly).
+- `document.scripts` contained a real, correctly-formed GTM script tag:
+  `https://www.googletagmanager.com/gtm.js?id=GTM-KCNP43TK`.
+- The actual network request for that URL returned **HTTP 404** from
+  Google's own servers (`Content-Type: text/html; charset=UTF-8`,
+  `Server: Google Tag Manager`) — i.e. Google itself does not recognize
+  `GTM-KCNP43TK` as a real container.
+- Chrome then surfaced `net::ERR_BLOCKED_BY_ORB` for that request — a
+  direct, expected consequence of the invalid (HTML, not JS)
+  404 response being blocked by Opaque Response Blocking, not a defect in
+  this codebase's consent, routing, or loader logic.
+- `window.google_tag_manager` was `undefined` — GTM's own runtime never
+  initialized, because the script it requested never actually existed at
+  that ID.
+
+**Root cause**: the GTM container ID configured throughout this mission's
+prior phases, `GTM-KCNP43TK`, was itself wrong — a transcription error
+from the true container ID. The owner independently re-checked the Google
+Tag Manager UI and confirmed the real FutureTutor container ID is
+`GTM-KCNP4STK` (the character after "4" is the letter S, not the digit
+3). Every application-level check this mission previously certified
+(consent persistence, mount-time loading, route eligibility, no CSP
+blocking, script creation) was and remains correct — none of it could
+have caught this, since a wrong-but-well-formed container ID produces a
+syntactically valid script request that only fails once Google's own
+servers reject it.
+
+**Correction applied**: `NEXT_PUBLIC_GTM_ID` on the production Railway
+environment changed from `GTM-KCNP43TK` to `GTM-KCNP4STK`. This was never
+hardcoded anywhere in source, `.env.example`, or tests — the codebase only
+ever reads it via `process.env.NEXT_PUBLIC_GTM_ID` (enforced by an
+existing regression test in `cookieContent.test.ts` asserting no literal
+GTM ID pattern ever appears in `vendors.ts`) — so this correction required
+no source code change. Since `NEXT_PUBLIC_*` variables are inlined at
+Next.js build time, a fresh production build was required (and performed)
+for the corrected value to take effect — simply changing the Railway
+variable alone would not have retroactively updated the already-compiled
+bundle.
+
+No GTM tag/trigger/variable configuration, no GA4 property, no consent
+model, no event/property allowlist, and no route-eligibility logic changed
+as part of this correction — confirmed unchanged by the full existing
+analytics/consent test suite passing without modification.
+
+**Remaining human checkpoint**: the owner still needs to confirm, in a
+real browser with a freshly-started GTM Preview session (not a page
+refresh of an existing one — Tag Assistant's connection channel does not
+survive a plain reload, per this mission's own prior runtime diagnostic),
+that `gtm.js?id=GTM-KCNP4STK` now returns successfully, `window.
+google_tag_manager` is populated, Tag Assistant detects the container, the
+GA4 tag fires, and one certified event's parameters contain only
+allowlisted fields with no PII. DATA-1 is not declared closed until that
+is reported back.
 
 ---
 *Generated by mission DATA-1. This document now reflects the fully
 consent-activated, certified-inert-by-default state as of the Consent
-Activation phase, plus the GTM live-detection bug diagnosed and fixed
-immediately after it.*
+Activation phase, the GTM live-detection bug diagnosed and fixed
+immediately after it, and the GTM container ID correction that followed.*
