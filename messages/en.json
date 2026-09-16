@@ -1052,6 +1052,123 @@
       }
     }
   },
+  "lifecycleReminderEmail": {
+    "greeting": "Hi {name},",
+    "currentStageLabel": "Where you left off",
+    "whyLabel": "Why this matters",
+    "ctaLabel": "Continue",
+    "footer": "You're receiving this email because you started this step on FutureTutor and haven't finished it yet.",
+    "reminders": {
+      "TUTOR_DRAFT": {
+        "whyItMatters": "Completing your application is the first step toward being able to accept students and start earning as a FutureTutor tutor.",
+        "R1": {
+          "subject": "Finish setting up your FutureTutor tutor profile",
+          "heading": "Your tutor application is waiting for you",
+          "intro": "You started creating a FutureTutor tutor profile but haven't submitted your application yet. Adding your subjects, levels, and a short bio takes just a few minutes."
+        },
+        "R2": {
+          "subject": "Your FutureTutor tutor profile is still incomplete",
+          "heading": "A few details are still missing",
+          "intro": "Your tutor profile isn't submitted yet. Completing it is the first step to being considered for tutoring opportunities."
+        },
+        "R3": {
+          "subject": "One step away from applying to tutor with FutureTutor",
+          "heading": "Your profile is ready when you are",
+          "intro": "This is a reminder that your FutureTutor tutor profile is still incomplete. Your progress is saved and ready to finish whenever you're ready."
+        }
+      },
+      "TUTOR_TRAINING_REQUIRED": {
+        "whyItMatters": "Completing training ensures you're ready to support students effectively, and is required before final certification.",
+        "R1": {
+          "subject": "Your FutureTutor training modules are ready",
+          "heading": "Training is unlocked",
+          "intro": "You're approved to begin FutureTutor's required training modules. Completing them is the next step toward certification."
+        },
+        "R2": {
+          "subject": "Continue your FutureTutor tutor training",
+          "heading": "Pick up where you left off",
+          "intro": "Your required training modules are still waiting to be completed. You can finish them at your own pace."
+        },
+        "R3": {
+          "subject": "Your FutureTutor training is still open",
+          "heading": "Training modules still pending",
+          "intro": "This is a reminder that your FutureTutor certification training is not yet complete."
+        }
+      },
+      "TUTOR_EXAM_REQUIRED": {
+        "whyItMatters": "Passing the platform exam is the final requirement before your application moves to final review.",
+        "R1": {
+          "subject": "Time to take the FutureTutor platform exam",
+          "heading": "The platform exam is open",
+          "intro": "You've completed training — the next step is the FutureTutor platform exam."
+        },
+        "R2": {
+          "subject": "Your FutureTutor platform exam is still open",
+          "heading": "The exam is waiting for you",
+          "intro": "You haven't yet taken the FutureTutor platform exam. It's open whenever you're ready."
+        },
+        "R3": {
+          "subject": "Finish your FutureTutor application with the platform exam",
+          "heading": "One exam away from the next step",
+          "intro": "This is a reminder that the FutureTutor platform exam is still available to complete your application."
+        }
+      },
+      "PARENT_STUDENT_SETUP": {
+        "whyItMatters": "A learner profile lets FutureTutor show you tutors who match your child's academic level, subjects, and location.",
+        "R1": {
+          "subject": "Add a learner to get started with FutureTutor",
+          "heading": "Set up your first learner profile",
+          "intro": "You created a FutureTutor parent account. To find or request a tutor, add a learner profile for your child."
+        },
+        "R2": {
+          "subject": "Your FutureTutor account is ready for a learner profile",
+          "heading": "Add your child to get matched with a tutor",
+          "intro": "Your FutureTutor account is set up, but no learner profile has been added yet."
+        },
+        "R3": {
+          "subject": "Get started with FutureTutor tutoring",
+          "heading": "Add a learner whenever you're ready",
+          "intro": "This is a reminder that adding a learner profile is the next step to finding a tutor through FutureTutor."
+        }
+      },
+      "STUDENT_PROFILE_SELF": {
+        "whyItMatters": "A complete profile helps FutureTutor match you with tutors who fit your academic level, subjects, and location.",
+        "R1": {
+          "subject": "Finish setting up your FutureTutor student profile",
+          "heading": "A few details left",
+          "intro": "You created a FutureTutor account. Adding your academic level and location helps us match you with the right tutor."
+        },
+        "R2": {
+          "subject": "Your FutureTutor student profile is still incomplete",
+          "heading": "Almost ready to find a tutor",
+          "intro": "Your student profile is missing a few details needed to find a matching tutor."
+        },
+        "R3": {
+          "subject": "Complete your FutureTutor profile to get matched",
+          "heading": "Your profile is ready when you are",
+          "intro": "This is a reminder that finishing your student profile is the next step to requesting a tutor."
+        }
+      },
+      "STUDENT_PROFILE_GUARDIAN": {
+        "whyItMatters": "A complete profile helps FutureTutor match {childName} with tutors who fit their academic level, subjects, and location.",
+        "R1": {
+          "subject": "Finish setting up {childName}'s FutureTutor profile",
+          "heading": "A few details left for your learner's profile",
+          "intro": "You added {childName} to your FutureTutor account. Adding their academic level and location helps us match them with the right tutor."
+        },
+        "R2": {
+          "subject": "{childName}'s FutureTutor profile is still incomplete",
+          "heading": "Almost ready to find a tutor",
+          "intro": "{childName}'s student profile is missing a few details needed to find a matching tutor."
+        },
+        "R3": {
+          "subject": "Complete {childName}'s FutureTutor profile",
+          "heading": "Ready whenever you are",
+          "intro": "This is a reminder that finishing {childName}'s profile is the next step to requesting a tutor."
+        }
+      }
+    }
+  },
   "tutorApplicationEmail": {
     "greeting": "Hi {name},",
     "updatedByTeam": "Your application was updated by the FutureTutor team.",

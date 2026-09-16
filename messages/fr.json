@@ -1052,6 +1052,123 @@
       }
     }
   },
+  "lifecycleReminderEmail": {
+    "greeting": "Bonjour {name},",
+    "currentStageLabel": "Là où vous vous êtes arrêté",
+    "whyLabel": "Pourquoi c'est important",
+    "ctaLabel": "Continuer",
+    "footer": "Vous recevez cet e-mail parce que vous avez commencé cette étape sur FutureTutor et ne l'avez pas encore terminée.",
+    "reminders": {
+      "TUTOR_DRAFT": {
+        "whyItMatters": "Compléter votre candidature est la première étape pour pouvoir accepter des élèves et commencer à gagner un revenu en tant que tuteur FutureTutor.",
+        "R1": {
+          "subject": "Terminez la création de votre profil de tuteur FutureTutor",
+          "heading": "Votre candidature de tuteur vous attend",
+          "intro": "Vous avez commencé à créer un profil de tuteur FutureTutor, mais vous n'avez pas encore soumis votre candidature. Ajouter vos matières, vos niveaux et une courte biographie ne prend que quelques minutes."
+        },
+        "R2": {
+          "subject": "Votre profil de tuteur FutureTutor est toujours incomplet",
+          "heading": "Il manque encore quelques détails",
+          "intro": "Votre profil de tuteur n'est pas encore soumis. Le compléter est la première étape pour être considéré pour des opportunités de tutorat."
+        },
+        "R3": {
+          "subject": "Plus qu'une étape pour postuler comme tuteur chez FutureTutor",
+          "heading": "Votre profil est prêt quand vous l'êtes",
+          "intro": "Ceci est un rappel que votre profil de tuteur FutureTutor est toujours incomplet. Votre progression est enregistrée et prête à être terminée quand vous le souhaitez."
+        }
+      },
+      "TUTOR_TRAINING_REQUIRED": {
+        "whyItMatters": "Terminer la formation vous assure d'être prêt à bien accompagner les élèves, et elle est requise avant la certification finale.",
+        "R1": {
+          "subject": "Vos modules de formation FutureTutor sont prêts",
+          "heading": "La formation est débloquée",
+          "intro": "Vous êtes approuvé pour commencer les modules de formation requis de FutureTutor. Les compléter est la prochaine étape vers la certification."
+        },
+        "R2": {
+          "subject": "Poursuivez votre formation de tuteur FutureTutor",
+          "heading": "Reprenez là où vous vous êtes arrêté",
+          "intro": "Vos modules de formation requis sont toujours en attente. Vous pouvez les terminer à votre propre rythme."
+        },
+        "R3": {
+          "subject": "Votre formation FutureTutor est toujours ouverte",
+          "heading": "Modules de formation toujours en attente",
+          "intro": "Ceci est un rappel que votre formation de certification FutureTutor n'est pas encore terminée."
+        }
+      },
+      "TUTOR_EXAM_REQUIRED": {
+        "whyItMatters": "Réussir l'examen de la plateforme est la dernière exigence avant que votre candidature passe à l'examen final.",
+        "R1": {
+          "subject": "Il est temps de passer l'examen de la plateforme FutureTutor",
+          "heading": "L'examen de la plateforme est ouvert",
+          "intro": "Vous avez terminé la formation — la prochaine étape est l'examen de la plateforme FutureTutor."
+        },
+        "R2": {
+          "subject": "Votre examen de la plateforme FutureTutor est toujours ouvert",
+          "heading": "L'examen vous attend",
+          "intro": "Vous n'avez pas encore passé l'examen de la plateforme FutureTutor. Il est ouvert quand vous êtes prêt."
+        },
+        "R3": {
+          "subject": "Terminez votre candidature FutureTutor avec l'examen de la plateforme",
+          "heading": "Plus qu'un examen avant la prochaine étape",
+          "intro": "Ceci est un rappel que l'examen de la plateforme FutureTutor est toujours disponible pour compléter votre candidature."
+        }
+      },
+      "PARENT_STUDENT_SETUP": {
+        "whyItMatters": "Un profil d'apprenant permet à FutureTutor de vous proposer des tuteurs qui correspondent au niveau scolaire, aux matières et à la région de votre enfant.",
+        "R1": {
+          "subject": "Ajoutez un apprenant pour commencer avec FutureTutor",
+          "heading": "Créez le profil de votre premier apprenant",
+          "intro": "Vous avez créé un compte parent FutureTutor. Pour trouver ou demander un tuteur, ajoutez un profil d'apprenant pour votre enfant."
+        },
+        "R2": {
+          "subject": "Votre compte FutureTutor est prêt pour un profil d'apprenant",
+          "heading": "Ajoutez votre enfant pour être jumelé à un tuteur",
+          "intro": "Votre compte FutureTutor est configuré, mais aucun profil d'apprenant n'a encore été ajouté."
+        },
+        "R3": {
+          "subject": "Commencez le tutorat avec FutureTutor",
+          "heading": "Ajoutez un apprenant quand vous êtes prêt",
+          "intro": "Ceci est un rappel qu'ajouter un profil d'apprenant est la prochaine étape pour trouver un tuteur avec FutureTutor."
+        }
+      },
+      "STUDENT_PROFILE_SELF": {
+        "whyItMatters": "Un profil complet aide FutureTutor à vous jumeler avec des tuteurs qui correspondent à votre niveau scolaire, vos matières et votre région.",
+        "R1": {
+          "subject": "Terminez la création de votre profil élève FutureTutor",
+          "heading": "Quelques détails restants",
+          "intro": "Vous avez créé un compte FutureTutor. Ajouter votre niveau scolaire et votre région nous aide à vous jumeler avec le bon tuteur."
+        },
+        "R2": {
+          "subject": "Votre profil élève FutureTutor est toujours incomplet",
+          "heading": "Presque prêt à trouver un tuteur",
+          "intro": "Il manque quelques détails à votre profil élève pour trouver un tuteur correspondant."
+        },
+        "R3": {
+          "subject": "Complétez votre profil FutureTutor pour être jumelé",
+          "heading": "Votre profil est prêt quand vous l'êtes",
+          "intro": "Ceci est un rappel que terminer votre profil élève est la prochaine étape pour demander un tuteur."
+        }
+      },
+      "STUDENT_PROFILE_GUARDIAN": {
+        "whyItMatters": "Un profil complet aide FutureTutor à jumeler {childName} avec des tuteurs qui correspondent à son niveau scolaire, ses matières et sa région.",
+        "R1": {
+          "subject": "Terminez la création du profil FutureTutor de {childName}",
+          "heading": "Quelques détails restants pour le profil de votre apprenant",
+          "intro": "Vous avez ajouté {childName} à votre compte FutureTutor. Ajouter son niveau scolaire et sa région nous aide à le jumeler avec le bon tuteur."
+        },
+        "R2": {
+          "subject": "Le profil FutureTutor de {childName} est toujours incomplet",
+          "heading": "Presque prêt à trouver un tuteur",
+          "intro": "Il manque quelques détails au profil élève de {childName} pour trouver un tuteur correspondant."
+        },
+        "R3": {
+          "subject": "Complétez le profil FutureTutor de {childName}",
+          "heading": "Prêt quand vous l'êtes",
+          "intro": "Ceci est un rappel que terminer le profil de {childName} est la prochaine étape pour demander un tuteur."
+        }
+      }
+    }
+  },
   "tutorApplicationEmail": {
     "greeting": "Bonjour {name},",
     "updatedByTeam": "Votre dossier a été mis à jour par l'équipe FutureTutor.",
