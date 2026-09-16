@@ -127,6 +127,38 @@ describe("DATA-2 — login_started and signup_started, previously zero real call
   });
 });
 
+describe("SEO-4 — tutor-resources university-students section reuses the certified become_tutor_cta_clicked event, no new taxonomy", () => {
+  const source = readFileSync(join(root, "app", "[locale]", "tutor-resources", "page.tsx"), "utf8");
+
+  it("fires become_tutor_cta_clicked with cta_location: content", () => {
+    expect(source).toMatch(/event="become_tutor_cta_clicked"[\s\S]{0,80}cta_location:\s*"content"/);
+  });
+
+  it("targets the real /become-a-tutor page, not an invented URL", () => {
+    expect(source).toContain('href="/become-a-tutor"');
+  });
+
+  it("introduces no analytics event or property name outside the certified DATA-2 allowlist", () => {
+    const CERTIFIED_EVENTS = [
+      "futuretutor_page_view",
+      "find_tutor_cta_clicked",
+      "become_tutor_cta_clicked",
+      "how_it_works_cta_clicked",
+      "resource_article_viewed",
+      "resource_primary_cta_clicked",
+      "subject_page_viewed",
+      "local_landing_viewed",
+      "signup_started",
+      "login_started",
+      "search_started",
+    ];
+    const eventMatches = [...source.matchAll(/event="([a-z_]+)"/g)].map((m) => m[1]);
+    for (const event of eventMatches) {
+      expect(CERTIFIED_EVENTS, `unexpected event: ${event}`).toContain(event);
+    }
+  });
+});
+
 describe("financial reachability — zero across the entire analytics module", () => {
   // piiDenylist.ts is deliberately excluded: its entire purpose is naming
   // forbidden property-name strings like "stripeaccountid"/"paymentintent"

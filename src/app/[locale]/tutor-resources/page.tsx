@@ -4,6 +4,7 @@ import { ArrowRight, BadgeCheck, Banknote, BookOpenCheck, CalendarClock, FileTex
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { MarketingPageHero } from "@/components/marketing/MarketingPageHero";
 import { SectionIntro } from "@/components/marketing/SectionIntro";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 import { Section } from "@/components/ui/Section";
 import { Link } from "@/i18n/navigation";
 import { publicPageMetadata } from "@/lib/publicMetadata";
@@ -31,6 +32,14 @@ export default async function TutorResourcesPage({ params }: { params: Promise<{
   return (
     <MarketingShell>
       <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/become-a-tutor" }} secondary={{ label: t("hero.secondary"), href: "/signup" }} />
+      <Section className="bg-white">
+        <SectionIntro eyebrow={t("universityStudents.eyebrow")} title={t("universityStudents.title")} description={t("universityStudents.description")} />
+        <div className="mt-8 flex justify-center">
+          <TrackedCtaButton href="/become-a-tutor" event="become_tutor_cta_clicked" properties={{ cta_location: "content" }} size="lg">
+            {t("universityStudents.cta")}
+          </TrackedCtaButton>
+        </div>
+      </Section>
       <Section className="bg-off-white">
         <SectionIntro eyebrow={t("hub.eyebrow")} title={t("hub.title")} description={t("hub.description")} />
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
