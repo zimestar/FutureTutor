@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { CalendarRange, Star, Laptop2, Users2 } from "lucide-react";
 import { Section } from "@/components/ui/Section";
-import { Button } from "@/components/ui/Button";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 
 const perks = [
   { key: "schedule" as const, icon: CalendarRange },
@@ -23,9 +23,9 @@ export function TutorCTA() {
             </h2>
             <p className="mt-4 max-w-lg text-lg leading-relaxed text-white/70">{t("description")}</p>
             <div className="mt-7">
-              <Button href="/become-a-tutor" variant="primary" size="lg">
+              <TrackedCtaButton href="/become-a-tutor" event="become_tutor_cta_clicked" properties={{ cta_location: "content" }} variant="primary" size="lg">
                 {t("cta")}
-              </Button>
+              </TrackedCtaButton>
             </div>
           </div>
 

@@ -6,7 +6,10 @@ import { MarketingPageHero } from "@/components/marketing/MarketingPageHero";
 import { SectionIntro } from "@/components/marketing/SectionIntro";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
+import { TrackPageView } from "@/components/marketing/TrackPageView";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import type { Locale } from "@/lib/analytics";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -23,6 +26,7 @@ export default async function BecomeATutorPage({ params }: { params: Promise<{ l
   const t = await getTranslations({ locale, namespace: "publicExperience.forTutors" });
   return (
     <MarketingShell>
+      <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "become_tutor" }} />
       <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/signup" }} secondary={{ label: t("hero.secondary"), href: "/tutor-resources" }} image="/images/tutor-hero.png" imageAlt={t("hero.imageAlt")} imagePosition="center" />
       <Section className="bg-white">
         <SectionIntro eyebrow={t("value.eyebrow")} title={t("value.title")} description={t("value.description")} />
@@ -43,7 +47,7 @@ export default async function BecomeATutorPage({ params }: { params: Promise<{ l
           <Button href="/tutoring/edmonton" variant="outline">{t("local.cta")}</Button>
         </div>
       </Section>
-      <Section className="bg-navy text-white"><div className="mx-auto max-w-3xl text-center"><h2 className="text-balance text-3xl font-extrabold md:text-5xl">{t("cta.title")}</h2><p className="mt-5 text-lg leading-8 text-white/72">{t("cta.description")}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Button href="/signup" size="lg">{t("cta.primary")}</Button><Button href="/tutor-resources" variant="ghost-inverse" size="lg">{t("cta.secondary")}</Button></div></div></Section>
+      <Section className="bg-navy text-white"><div className="mx-auto max-w-3xl text-center"><h2 className="text-balance text-3xl font-extrabold md:text-5xl">{t("cta.title")}</h2><p className="mt-5 text-lg leading-8 text-white/72">{t("cta.description")}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><TrackedCtaButton href="/signup" event="signup_started" properties={{ user_intent: "become_tutor" }} size="lg">{t("cta.primary")}</TrackedCtaButton><Button href="/tutor-resources" variant="ghost-inverse" size="lg">{t("cta.secondary")}</Button></div></div></Section>
     </MarketingShell>
   );
 }

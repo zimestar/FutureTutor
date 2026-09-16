@@ -15,6 +15,8 @@ import { Link } from "@/i18n/navigation";
 import { site } from "@/content/site";
 import { faqItemIds } from "@/content/faq";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import { TrackPageView } from "@/components/marketing/TrackPageView";
+import type { Locale } from "@/lib/analytics";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -71,6 +73,7 @@ export default async function Home({
 
       <Header />
       <main id="main" className="flex-1">
+        <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "homepage" }} />
         <Hero />
         <HomeStory />
         <SubjectGrid />

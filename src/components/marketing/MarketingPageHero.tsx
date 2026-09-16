@@ -2,7 +2,20 @@ import Image from "next/image";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
+import { trackingForHref } from "@/components/marketing/heroCtaTracking";
 
+/**
+ * DATA-2 — MarketingPageHero is reused across 8 real public pages (about,
+ * become-a-tutor, contact, how-it-works, resources, subjects,
+ * tutor-resources, tutoring/[city]), so trackingForHref's mapping
+ * (heroCtaTracking.ts) is what makes every hero CTA on every one of those
+ * pages measurable without touching each page individually. Only hrefs
+ * matching a certified event's own intent are tracked; any other href
+ * (e.g. /tutor-resources, /dashboard/*) renders the plain, untracked
+ * Button exactly as before — this never expands the certified taxonomy,
+ * it only wires up existing events.
+ */
 export function MarketingPageHero({ eyebrow, title, description, primary, secondary, image, imageAlt = "", imagePosition = "center" }: {
   eyebrow: string;
   title: string;
@@ -13,6 +26,8 @@ export function MarketingPageHero({ eyebrow, title, description, primary, second
   imageAlt?: string;
   imagePosition?: string;
 }) {
+  const primaryTracking = trackingForHref(primary.href);
+  const secondaryTracking = secondary ? trackingForHref(secondary.href) : null;
   return (
     <section className="relative isolate overflow-hidden bg-navy py-16 text-white md:py-24 lg:py-28">
       <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(37,99,235,0.34),transparent_34%),radial-gradient(circle_at_92%_82%,rgba(16,185,129,0.2),transparent_30%)]" />
@@ -25,8 +40,20 @@ export function MarketingPageHero({ eyebrow, title, description, primary, second
           <h1 className="mt-5 text-balance text-4xl font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-5xl lg:text-6xl">{title}</h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-white/76 md:text-xl">{description}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href={primary.href} size="lg">{primary.label}<ArrowRight className="size-4" aria-hidden="true" /></Button>
-            {secondary && <Button href={secondary.href} variant="ghost-inverse" size="lg">{secondary.label}</Button>}
+            {primaryTracking ? (
+              <TrackedCtaButton href={primary.href} {...primaryTracking} size="lg">
+                {primary.label}<ArrowRight className="size-4" aria-hidden="true" />
+              </TrackedCtaButton>
+            ) : (
+              <Button href={primary.href} size="lg">{primary.label}<ArrowRight className="size-4" aria-hidden="true" /></Button>
+            )}
+            {secondary && (secondaryTracking ? (
+              <TrackedCtaButton href={secondary.href} {...secondaryTracking} variant="ghost-inverse" size="lg">
+                {secondary.label}
+              </TrackedCtaButton>
+            ) : (
+              <Button href={secondary.href} variant="ghost-inverse" size="lg">{secondary.label}</Button>
+            ))}
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-lg">

@@ -2,9 +2,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, MoveRight } from "lucide-react";
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
-import { Button } from "@/components/ui/Button";
 import { TutorSearch } from "@/components/marketing/TutorSearch";
-import { Link } from "@/i18n/navigation";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
+import { TrackedLink } from "@/components/marketing/TrackedLink";
 
 export function Hero() {
   const locale = useLocale();
@@ -30,10 +30,17 @@ export function Hero() {
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate md:text-xl">{t("description")}</p>
             <div className="mt-7 flex flex-wrap items-center gap-4">
-              <Button href="/find-tutors" size="lg">{t("primaryCta")}</Button>
-              <Link href="/how-it-works" className="inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-bold text-navy outline-none transition-colors hover:text-blue focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-4">
+              <TrackedCtaButton href="/find-tutors" event="find_tutor_cta_clicked" properties={{ cta_location: "hero" }} size="lg">
+                {t("primaryCta")}
+              </TrackedCtaButton>
+              <TrackedLink
+                href="/how-it-works"
+                event="how_it_works_cta_clicked"
+                properties={{ cta_location: "hero" }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-bold text-navy outline-none transition-colors hover:text-blue focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-4"
+              >
                 {t("secondaryCta")}<MoveRight className="size-4" aria-hidden="true" />
-              </Link>
+              </TrackedLink>
             </div>
           </div>
         </Container>

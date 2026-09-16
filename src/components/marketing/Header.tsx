@@ -74,6 +74,7 @@ export function Header() {
               <Link
                 href="/login"
                 className="text-sm font-semibold text-neutral-600 transition-colors hover:text-navy"
+                onClick={() => trackEvent("login_started", {})}
               >
                 {t("login")}
               </Link>
@@ -131,7 +132,10 @@ export function Header() {
               <li>
                 <Link
                   href="/login"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    trackEvent("login_started", {});
+                  }}
                   className="flex h-12 items-center text-base font-semibold text-navy"
                 >
                   {t("login")}

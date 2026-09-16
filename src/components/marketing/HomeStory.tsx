@@ -2,8 +2,8 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, CheckCircle2, Compass, Lightbulb, MessageCircleMore, Route, ShieldCheck, UsersRound } from "lucide-react";
 import Image from "next/image";
 import { Section } from "@/components/ui/Section";
-import { Button } from "@/components/ui/Button";
 import { SectionIntro } from "@/components/marketing/SectionIntro";
+import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 
 const pathIcons = [Compass, UsersRound, MessageCircleMore, Route];
 const trustIcons = [ShieldCheck, CheckCircle2, Lightbulb];
@@ -35,7 +35,7 @@ export function HomeStory() {
             </li>
           ))}
         </ol>
-        <div className="mt-8 flex justify-center"><Button href="/how-it-works" variant="outline">{t("path.cta")}<ArrowRight className="size-4" aria-hidden="true" /></Button></div>
+        <div className="mt-8 flex justify-center"><TrackedCtaButton href="/how-it-works" event="how_it_works_cta_clicked" properties={{ cta_location: "content" }} variant="outline">{t("path.cta")}<ArrowRight className="size-4" aria-hidden="true" /></TrackedCtaButton></div>
       </Section>
 
       <Section className="bg-navy text-white">

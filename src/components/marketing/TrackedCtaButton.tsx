@@ -19,6 +19,7 @@ export function TrackedCtaButton<E extends AnalyticsEventName>({
   properties,
   size,
   variant,
+  className,
   children,
 }: {
   href: string;
@@ -26,10 +27,11 @@ export function TrackedCtaButton<E extends AnalyticsEventName>({
   properties: AnalyticsEventPropertiesMap[E];
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "dark" | "outline" | "ghost" | "ghost-inverse" | "destructive";
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Button href={href} size={size} variant={variant} onClick={() => trackEvent(event, properties)}>
+    <Button href={href} size={size} variant={variant} className={className} onClick={() => trackEvent(event, properties)}>
       {children}
     </Button>
   );
