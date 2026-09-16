@@ -25,7 +25,16 @@ export function publicPageMetadata({
   return {
     title,
     description,
-    robots: index ? undefined : { index: false, follow: true },
+    // SEO-PRIVATE-NOINDEX1 re-audit finding: this previously emitted
+    // `follow: true` for every index:false caller, with no documented
+    // reason — every current caller is an auth-utility page (login,
+    // signup, forgot-password, reset-password, verify-email,
+    // check-email), for which this mission's own policy is
+    // `follow: false` unless a specific route documents otherwise. The
+    // one other caller of `index: false` (a draft resource article —
+    // currently zero live drafts exist) is strictly better served by the
+    // same conservative default, not worse.
+    robots: index ? undefined : { index: false, follow: false },
     alternates: {
       canonical: localizedPath,
       languages: Object.fromEntries(routing.locales.map((language) => [language, `/${language}${normalizedPath}`])),

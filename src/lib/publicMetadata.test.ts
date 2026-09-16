@@ -68,8 +68,8 @@ describe("publicPageMetadata", () => {
     expect(result.robots).toBeUndefined();
   });
 
-  it("SEO-1 — index:false produces noindex,follow — for transactional/utility pages with no unique search value", () => {
+  it("SEO-PRIVATE-NOINDEX1 — index:false produces noindex,nofollow — for transactional/utility pages with no unique search value and no documented reason to allow follow", () => {
     const result = publicPageMetadata({ locale: "en", path: "/login", title: "t", description: "d", index: false });
-    expect(result.robots).toEqual({ index: false, follow: true });
+    expect(result.robots).toEqual({ index: false, follow: false });
   });
 });

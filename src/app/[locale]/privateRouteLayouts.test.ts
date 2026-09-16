@@ -33,6 +33,18 @@ describe.each(cases)("$name private route-group layout", ({ Layout, metadata }) 
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 
+  // SEO-PRIVATE-NOINDEX1 re-audit — the root `[locale]/layout.tsx` sets
+  // `alternates: { canonical: "/${locale}", languages: {...} }` (the
+  // homepage's own canonical/hreflang) as the app-wide default. None of
+  // the real pages under these 7 route groups set their own `alternates`,
+  // so every one of them was inheriting the homepage's canonical/hreflang
+  // as its own effective metadata before this fix — a private/admin page
+  // must never advertise itself, or anything else, as a canonical public
+  // SEO destination.
+  it("clears alternates (canonical/hreflang) — no leaked public canonical destination", () => {
+    expect(metadata.alternates).toEqual({});
+  });
+
   it("is a pure passthrough — renders its children completely unchanged, no auth/redirect logic of its own", () => {
     const marker = { probe: "unchanged" };
     // @ts-expect-error — the real prop type is ReactNode; a plain object is

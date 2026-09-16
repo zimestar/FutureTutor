@@ -13,7 +13,19 @@ import type { Metadata } from "next";
  * layout exporting only `robots` here overrides just that key for every
  * page beneath it, public marketing pages included elsewhere in the tree
  * are entirely unaffected.
+ *
+ * SEO-PRIVATE-NOINDEX1 re-audit finding: the root `[locale]/layout.tsx`
+ * sets `alternates: { canonical: "/${locale}", languages: {...} }` (the
+ * homepage's own canonical/hreflang) as the app-wide default. Confirmed
+ * that none of the 49 real pages across these 7 route groups set their
+ * own `alternates` — so every one of them was inheriting the homepage's
+ * canonical/hreflang as its own effective metadata, exactly the
+ * "leakage" this mission's own Phase 5 warns against. `alternates: {}`
+ * here (an empty-but-present object) is what actually blocks that
+ * inheritance per Next's per-key merge rule — a private/admin page has no
+ * legitimate canonical or hreflang destination, so it gets none.
  */
 export const privateSurfaceMetadata: Metadata = {
   robots: { index: false, follow: false },
+  alternates: {},
 };
