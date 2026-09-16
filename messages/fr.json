@@ -112,7 +112,20 @@
       "levelsDescription": "Le tutorat de {subject} sur FutureTutor couvre toutes les étapes — du primaire à la formation aux adultes, en passant par le cégep et le collégial, des niveaux que plusieurs services de tutorat n'offrent pas.",
       "levelsNote": "Un tuteur de {subject} ne couvre pas nécessairement tous les niveaux — chaque profil approuvé indique précisément les niveaux enseignés, pour que vous trouviez le bon avant de réserver.",
       "modeHeading": "En ligne ou en personne",
-      "modeDescription": "Chaque tuteur de {subject} précise s'il offre des séances en ligne, en personne, ou les deux. Vous verrez son mode directement sur son profil avant de réserver."
+      "modeDescription": "Chaque tuteur de {subject} précise s'il offre des séances en ligne, en personne, ou les deux. Vous verrez son mode directement sur son profil avant de réserver.",
+      "topicsHeading": "Ce que le tutorat en {subject} peut aider à travailler",
+      "topics": {
+        "math": { "intro": "Le tutorat en mathématiques peut aider les élèves à renforcer leur confiance avec les notions de base et à avancer à leur rythme.", "items": { "0": "Sens du nombre et arithmétique", "1": "Algèbre et équations", "2": "Géométrie, mesure et résolution de problèmes" } },
+        "english": { "intro": "Le tutorat en anglais peut soutenir la lecture, l'écriture et la communication à toutes les étapes.", "items": { "0": "Compréhension de lecture", "1": "Écriture et grammaire", "2": "Structure de rédaction et communication" } },
+        "french": { "intro": "Le tutorat en français peut aider les élèves à gagner en confiance à l'écrit, à l'oral et en lecture.", "items": { "0": "Grammaire et vocabulaire", "1": "Pratique de lecture et d'écriture", "2": "Communication et compréhension orale" } },
+        "science": { "intro": "Le tutorat en science peut aider les élèves à consolider les concepts et le raisonnement derrière leur matière.", "items": { "0": "Concepts et terminologie scientifiques", "1": "Résolution de problèmes et raisonnement", "2": "Bases propres au cours suivi" } },
+        "chemistry": { "intro": "Le tutorat en chimie peut aider les élèves à avancer dans les concepts, les équations et les exercices à leur rythme.", "items": { "0": "Réactions chimiques et équations", "1": "Résolution de problèmes et calculs", "2": "Préparation aux examens et au cours" } },
+        "physics": { "intro": "Le tutorat en physique peut aider les élèves à relier les concepts de base aux mathématiques qui les appliquent.", "items": { "0": "Mécanique et concepts de base", "1": "Résolution de problèmes et mathématiques appliquées", "2": "Préparation aux examens et au cours" } },
+        "biology": { "intro": "Le tutorat en biologie peut aider les élèves à comprendre les concepts, systèmes et termes clés.", "items": { "0": "Concepts et terminologie biologiques", "1": "Systèmes et processus", "2": "Préparation aux examens et au cours" } },
+        "computer-science": { "intro": "Le tutorat en informatique peut aider les élèves à progresser dans les concepts de programmation et leurs travaux.", "items": { "0": "Bases de la programmation", "1": "Résolution de problèmes et logique", "2": "Soutien pour les cours et travaux" } },
+        "exam-prep": { "intro": "Le soutien à la préparation aux examens peut aider les élèves à organiser leur temps d'étude et à gagner en confiance avant un examen.", "items": { "0": "Stratégies d'étude et gestion du temps", "1": "Pratique et révision dans plusieurs matières", "2": "Confiance à l'approche de l'examen" } },
+        "elementary": { "intro": "Le soutien au primaire peut aider les jeunes élèves à bâtir des bases solides dans leurs matières principales.", "items": { "0": "Lecture et littératie de base", "1": "Bases en mathématiques", "2": "Développement de bonnes habitudes d'étude et de confiance" } }
+      }
     }
   },
   "tutoringMarkets": {
@@ -3398,7 +3411,9 @@
     "subjects": {
       "metaTitle": "Matières de tutorat",
       "metaDescription": "Explorez les matières offertes sur FutureTutor et passez directement à la découverte de tuteurs approuvés.",
-      "hero": { "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" }
+      "hero": { "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" },
+      "guidance": { "heading": "Vous ne savez pas par où commencer?", "description": "Si votre enfant prend du retard dans un cours précis, commencez par cette matière. Pour un soutien scolaire général sans matière précise en tête, le Soutien au primaire ou la Préparation aux examens peut mieux convenir. Vous pouvez de toute façon chercher dans le répertoire complet par matière, niveau et mode en tout temps." },
+      "explore": { "heading": "Poursuivre votre recherche", "howItWorks": "Voir comment fonctionne la réservation", "chooseATutor": "Comment choisir un tuteur", "whenToGetATutor": "Quand faire appel à un tuteur", "edmonton": "Tutorat à Edmonton" }
     }
   }
 }

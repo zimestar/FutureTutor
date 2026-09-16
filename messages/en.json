@@ -112,7 +112,20 @@
       "levelsDescription": "{subject} tutoring on FutureTutor spans every stage — from elementary through adult learners, including CEGEP and college, levels many tutoring services skip.",
       "levelsNote": "Not every {subject} tutor covers every level — each approved profile lists the specific levels they teach, so you can match on the right one before you book.",
       "modeHeading": "Online or in person",
-      "modeDescription": "Each {subject} tutor sets whether they offer online sessions, in-person sessions, or both. You'll see their mode on their profile before you book."
+      "modeDescription": "Each {subject} tutor sets whether they offer online sessions, in-person sessions, or both. You'll see their mode on their profile before you book.",
+      "topicsHeading": "What {subject} tutoring can help with",
+      "topics": {
+        "math": { "intro": "Math tutoring can help students build confidence with core skills and work through material at their own pace.", "items": { "0": "Number sense and arithmetic", "1": "Algebra and equations", "2": "Geometry, measurement and problem solving" } },
+        "english": { "intro": "English tutoring can support reading, writing and communication skills at any stage.", "items": { "0": "Reading comprehension", "1": "Writing and grammar", "2": "Essay structure and communication skills" } },
+        "french": { "intro": "French tutoring can help students build reading, writing and speaking confidence in the language.", "items": { "0": "Grammar and vocabulary", "1": "Reading and writing practice", "2": "Oral communication and comprehension" } },
+        "science": { "intro": "Science tutoring can help students build the concepts and reasoning skills behind their coursework.", "items": { "0": "Scientific concepts and terminology", "1": "Problem-solving and reasoning", "2": "Course-specific foundations" } },
+        "chemistry": { "intro": "Chemistry tutoring can help students work through concepts, equations and problem sets at their own pace.", "items": { "0": "Chemical reactions and equations", "1": "Problem-solving and calculations", "2": "Exam and course preparation" } },
+        "physics": { "intro": "Physics tutoring can help students connect core concepts with the math used to apply them.", "items": { "0": "Mechanics and core physics concepts", "1": "Problem-solving and applied math", "2": "Exam and course preparation" } },
+        "biology": { "intro": "Biology tutoring can help students understand key concepts, systems and terminology.", "items": { "0": "Biological concepts and terminology", "1": "Systems and processes", "2": "Exam and course preparation" } },
+        "computer-science": { "intro": "Computer science tutoring can help students work through programming concepts and coursework.", "items": { "0": "Programming fundamentals", "1": "Problem-solving and logic", "2": "Course and assignment support" } },
+        "exam-prep": { "intro": "Exam preparation support can help students organize their study time and build confidence heading into a test.", "items": { "0": "Study strategies and time management", "1": "Practice and review across subjects", "2": "Confidence heading into exam day" } },
+        "elementary": { "intro": "Elementary support can help younger learners build strong foundations across their core subjects.", "items": { "0": "Reading and early literacy", "1": "Foundational math skills", "2": "Building study habits and confidence" } }
+      }
     }
   },
   "tutoringMarkets": {
@@ -3398,7 +3411,9 @@
     "subjects": {
       "metaTitle": "Tutoring Subjects",
       "metaDescription": "Explore the subjects supported on FutureTutor and move directly into approved Tutor discovery.",
-      "hero": { "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" }
+      "hero": { "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" },
+      "guidance": { "heading": "Not sure where to start?", "description": "If your child is behind in one specific class, start with that subject. For general academic support without one subject in mind, Elementary Support or Exam Preparation may fit better. Either way, you can search the full directory by subject, level and mode at any time." },
+      "explore": { "heading": "Keep exploring", "howItWorks": "See how booking works", "chooseATutor": "How to choose a tutor", "whenToGetATutor": "When to get a tutor", "edmonton": "Tutoring in Edmonton" }
     }
   }
 }

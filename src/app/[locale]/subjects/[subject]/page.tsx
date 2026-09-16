@@ -99,6 +99,18 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
         </div>
       </Section>
 
+      <Section className="bg-white pb-0">
+        <SectionIntro title={t("page.topicsHeading", { subject: label })} description={t(`page.topics.${slug}.intro`)} align="left" />
+        <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <li key={index} className="flex items-start gap-2 rounded-lg border border-border bg-off-white px-4 py-3 text-sm leading-6 text-navy">
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
+              {t(`page.topics.${slug}.items.${index}`)}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
       <Section className="bg-white">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
