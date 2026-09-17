@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"; import { redirect } from "@/i18n/navigation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell"; import { PageHeader } from "@/components/ui/PageHeader"; import { Surface } from "@/components/ui/Surface"; import { Badge } from "@/components/ui/Badge"; import { Button } from "@/components/ui/Button"; import { adminNavItems } from "@/lib/adminNav";
 import { suspendStudentAction, reactivateStudentAction } from "@/lib/actions/adminAccountSuspension";
 import { getStudentProfileLifecycle } from "@/lib/lifecycle";
+import { loadAdminReminderRows } from "@/lib/lifecycle/reminders/adminObservability";
 import { LifecycleSummaryCard } from "@/components/admin/LifecycleSummaryCard";
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params; setRequestLocale(locale); const session = await auth(); const user = session?.user;
@@ -12,7 +13,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
   const student = await db.studentProfile.findUnique({ where: { id }, include: { user: { select: { name: true, email: true, deactivatedAt: true } }, academicLevel: true, learningGoals: { include: { subject: true } }, parentRelationships: { include: { parentProfile: { include: { user: { select: { name: true, email: true } } } } } }, bookings: { orderBy: { startAt: "desc" }, take: 10, include: { tutorProfile: { include: { user: { select: { name: true } } } }, subject: true, session: { select: { status: true } } } } } }); if (!student) notFound();
   const isSuspended = Boolean(student.user?.deactivatedAt);
   const lifecycle = await getStudentProfileLifecycle(db, student.id);
-  const reminders = await db.lifecycleReminder.findMany({ where: { subjectId: student.id, journey: "STUDENT_PROFILE_READINESS" }, orderBy: { createdAt: "desc" }, take: 10 });
+  const reminders = await loadAdminReminderRows(db, student.id, "STUDENT_PROFILE_READINESS");
   return <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}><PageHeader title={`${student.firstName} ${student.lastName}`} description={student.user?.email ?? t("noLogin")} status={<div className="flex gap-2"><Badge variant="neutral">{t(student.managementMode === "SELF_MANAGED" ? "selfManaged" : "guardianManaged")}</Badge>{student.user ? <Badge variant={isSuspended ? "outline" : "mint"}>{t(isSuspended ? "suspended" : "active")}</Badge> : null}</div>} />
     {student.user ? <Surface className="mt-5">
       {isSuspended ? <form action={reactivateStudentAction.bind(null, student.id)} className="flex gap-2"><input type="text" name="reason" required placeholder={t("reasonPlaceholder")} className="h-10 flex-1 rounded-md border border-neutral-300 px-3 text-sm" /><Button type="submit" size="sm">{t("confirmReactivate")}</Button></form>

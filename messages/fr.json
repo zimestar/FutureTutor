@@ -1811,6 +1811,13 @@
           "FAILED_FINAL": "Échec (définitif)",
           "OBSOLETE": "Obsolète",
           "SUPPRESSED": "Supprimé"
+        },
+        "events": {
+          "delivered": "Livré",
+          "opened": "Ouvert",
+          "clicked": "Cliqué",
+          "bounced": "Rejeté",
+          "complained": "Signalé comme indésirable"
         }
       },
       "statuses": {

@@ -12,6 +12,7 @@ import { adminNavItems } from "@/lib/adminNav";
 import { suspendParentAction, reactivateParentAction } from "@/lib/actions/adminAccountSuspension";
 import { requireActiveAdmin } from "@/services/adminPermissions";
 import { getParentLifecycle } from "@/lib/lifecycle";
+import { loadAdminReminderRows } from "@/lib/lifecycle/reminders/adminObservability";
 import { LifecycleSummaryCard } from "@/components/admin/LifecycleSummaryCard";
 
 export default async function AdminParentDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
@@ -43,7 +44,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
 
   const isSuspended = Boolean(parent.user?.deactivatedAt);
   const lifecycle = await getParentLifecycle(db, parent.id);
-  const reminders = await db.lifecycleReminder.findMany({ where: { subjectId: parent.id, journey: "PARENT_ACTIVATION" }, orderBy: { createdAt: "desc" }, take: 10 });
+  const reminders = await loadAdminReminderRows(db, parent.id, "PARENT_ACTIVATION");
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>

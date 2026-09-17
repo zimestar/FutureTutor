@@ -14,3 +14,12 @@ export {
   type ReminderFailureClassification,
   type DoNotAttemptReason,
 } from "./retryPolicy";
+export { validateClickLink } from "./clickLinkValidation";
+export {
+  mapResendEventType,
+  correlateProviderMessage,
+  buildEventMetadata,
+  processResendWebhookEvent,
+  type CorrelationResult,
+  type ProcessResendWebhookEventResult,
+} from "./emailEventCorrelation";

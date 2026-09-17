@@ -31,6 +31,7 @@ import { requireExamAction } from "@/lib/actions/tutorExam";
 import { adminNavItems } from "@/lib/adminNav";
 import { Avatar } from "@/components/ui/Avatar";
 import { getTutorLifecycle } from "@/lib/lifecycle";
+import { loadAdminReminderRows } from "@/lib/lifecycle/reminders/adminObservability";
 import { LifecycleSummaryCard } from "@/components/admin/LifecycleSummaryCard";
 
 export default async function AdminTutorDetailPage({
@@ -83,7 +84,7 @@ export default async function AdminTutorDetailPage({
   const latestInterview = tutor.interviews[0];
   const score = tutor.scores[0];
   const lifecycle = await getTutorLifecycle(db, tutor.id);
-  const reminders = await db.lifecycleReminder.findMany({ where: { subjectId: tutor.id, journey: "TUTOR_CERTIFICATION" }, orderBy: { createdAt: "desc" }, take: 10 });
+  const reminders = await loadAdminReminderRows(db, tutor.id, "TUTOR_CERTIFICATION");
 
   return (
     <DashboardShell

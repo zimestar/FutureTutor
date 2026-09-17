@@ -33,6 +33,19 @@ export interface LifecycleReminderRow {
   sentAt: Date | null;
   lastAttemptAt: Date | null;
   createdAt: Date;
+  /** LIFECYCLE-1C — optional provider-truth summary (first/last
+   * delivered/opened/clicked/bounced/complained), derived via
+   * summarizeEmailEvents() from the append-only LifecycleEmailEvent
+   * history. Omitted entirely for a caller that hasn't loaded events. */
+  emailEvents?: {
+    deliveredAt: Date | null;
+    firstOpenedAt: Date | null;
+    lastOpenedAt: Date | null;
+    firstClickedAt: Date | null;
+    lastClickedAt: Date | null;
+    bouncedAt: Date | null;
+    complainedAt: Date | null;
+  };
 }
 
 /**
@@ -113,17 +126,28 @@ export function LifecycleSummaryCard({
           <h3 className="text-sm font-extrabold">{t("lifecycle.reminders.title")}</h3>
           <ul className="mt-3 space-y-2">
             {reminders.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span>
-                  {t("lifecycle.reminders.reminderLabel", { number: r.reminderNumber })} ·{" "}
-                  {t(`lifecycle.reminders.relationship.${r.relationship}`)}
-                </span>
-                <span className="flex items-center gap-2">
-                  <Badge variant={REMINDER_STATUS_BADGE_VARIANT[r.status]}>{t(`lifecycle.reminders.statuses.${r.status}`)}</Badge>
-                  <span className="text-text-secondary">
-                    {r.sentAt ? dateFormatter.format(r.sentAt) : r.lastAttemptAt ? dateFormatter.format(r.lastAttemptAt) : "—"}
+              <li key={r.id} className="text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    {t("lifecycle.reminders.reminderLabel", { number: r.reminderNumber })} ·{" "}
+                    {t(`lifecycle.reminders.relationship.${r.relationship}`)}
                   </span>
-                </span>
+                  <span className="flex items-center gap-2">
+                    <Badge variant={REMINDER_STATUS_BADGE_VARIANT[r.status]}>{t(`lifecycle.reminders.statuses.${r.status}`)}</Badge>
+                    <span className="text-text-secondary">
+                      {r.sentAt ? dateFormatter.format(r.sentAt) : r.lastAttemptAt ? dateFormatter.format(r.lastAttemptAt) : "—"}
+                    </span>
+                  </span>
+                </div>
+                {r.emailEvents && (
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
+                    <span>{t("lifecycle.reminders.events.delivered")}: {r.emailEvents.deliveredAt ? dateFormatter.format(r.emailEvents.deliveredAt) : "—"}</span>
+                    <span>{t("lifecycle.reminders.events.opened")}: {r.emailEvents.lastOpenedAt ? dateFormatter.format(r.emailEvents.lastOpenedAt) : "—"}</span>
+                    <span>{t("lifecycle.reminders.events.clicked")}: {r.emailEvents.lastClickedAt ? dateFormatter.format(r.emailEvents.lastClickedAt) : "—"}</span>
+                    {r.emailEvents.bouncedAt && <span className="font-semibold text-error">{t("lifecycle.reminders.events.bounced")}: {dateFormatter.format(r.emailEvents.bouncedAt)}</span>}
+                    {r.emailEvents.complainedAt && <span className="font-semibold text-error">{t("lifecycle.reminders.events.complained")}: {dateFormatter.format(r.emailEvents.complainedAt)}</span>}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

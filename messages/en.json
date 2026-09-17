@@ -1811,6 +1811,13 @@
           "FAILED_FINAL": "Failed (final)",
           "OBSOLETE": "Obsolete",
           "SUPPRESSED": "Suppressed"
+        },
+        "events": {
+          "delivered": "Delivered",
+          "opened": "Opened",
+          "clicked": "Clicked",
+          "bounced": "Bounced",
+          "complained": "Complained"
         }
       },
       "statuses": {

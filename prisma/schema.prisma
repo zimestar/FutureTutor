@@ -2470,12 +2470,87 @@ model LifecycleReminder {
   createdAt         DateTime                      @default(now())
   updatedAt         DateTime                      @updatedAt
 
-  recipient User? @relation(fields: [recipientUserId], references: [id], onDelete: SetNull)
+  recipient   User?                 @relation(fields: [recipientUserId], references: [id], onDelete: SetNull)
+  // LIFECYCLE-1C — see LifecycleEmailEvent's own doc comment. Not a
+  // uniqueness guarantee on providerMessageId (deliberately not added
+  // without evidence it's ever guaranteed globally unique across every row
+  // — see the LIFECYCLE-1C schema decision's own PROVIDER MESSAGE ID
+  // UNIQUENESS AUDIT requirement); an index only, supporting the webhook
+  // correlation lookup. Correlation code must still treat >1 match as
+  // ambiguous and fail closed rather than trust this index for uniqueness.
+  emailEvents LifecycleEmailEvent[]
 
   @@unique([dedupeKey])
   @@index([status, scheduledFor])
   @@index([subjectId, journey, createdAt])
   @@index([episodeKey])
+  @@index([providerMessageId])
+}
+
+// ---------------------------------------------------------------------------
+// LIFECYCLE-1C — append-only provider delivery/engagement truth for a
+// LifecycleReminder. Deliberately a SEPARATE model from LifecycleReminder
+// itself (whose `status` remains an OPERATIONAL field only — "did the send
+// attempt succeed" — never engagement facts): an email can be opened more
+// than once, and DELIVERED/OPENED/CLICKED/BOUNCED/COMPLAINED are not
+// mutually exclusive over an email's lifetime, so none of this can live as
+// a single mutable field. LIFECYCLE-1D's own product-conversion facts
+// (RESUMED/STEP_COMPLETED/JOURNEY_COMPLETED) are explicitly NOT this
+// model's concern — see the LIFECYCLE-1C schema decision.
+//
+// Idempotency: `providerEventId` is Resend's own Standard-Webhooks
+// "webhook-id" header value — a stable, per-real-occurrence identifier a
+// provider retry always reuses (never regenerated for the same underlying
+// event). `@@unique([providerEventId])` is the sole durable duplicate
+// barrier; application code must insert-and-treat-P2002-as-success, never
+// "check then insert" without it.
+//
+// Correlation: resolved ONCE at write time from `event.data.email_id` ->
+// `LifecycleReminder.providerMessageId` (never from recipient email, name,
+// subject, link content, or timestamp proximity). An event whose
+// `email_id` doesn't match a known LifecycleReminder is NOT this table's
+// concern at all (Resend fires webhooks for every email the account sends —
+// booking confirmations, password resets, tutor-application emails
+// included) and is never persisted here. An `email_id` matching MORE THAN
+// ONE LifecycleReminder is ambiguous and is also never persisted — see
+// src/lib/lifecycle/reminders/emailEventCorrelation.ts.
+//
+// onDelete: Cascade (deliberately different from LifecycleReminder's own
+// User relation, which is SetNull) — an event has no independent meaning
+// without the specific LifecycleReminder it describes.
+enum LifecycleEmailEventType {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+}
+
+model LifecycleEmailEvent {
+  id                  String                  @id @default(cuid())
+  lifecycleReminderId String
+  providerEventId     String
+  /// Denormalized copy of the LifecycleReminder's own providerMessageId at
+  /// the moment this event was correlated — defense-in-depth record of
+  /// what correlation actually matched, independent of the FK.
+  providerMessageId   String
+  type                LifecycleEmailEventType
+  /// Provider-reported occurrence time — stored as reported, never trusted
+  /// for ordering (a later-arriving webhook may report an earlier
+  /// occurredAt than one already persisted; both are kept, neither
+  /// reconciles the other).
+  occurredAt          DateTime
+  /// Narrow, explicitly-allowlisted fields ONLY — see
+  /// emailEventCorrelation.ts's METADATA allowlist. Never a raw payload
+  /// dump, never email/name/IP/user-agent/subject/from address.
+  metadata            Json?
+  createdAt           DateTime                @default(now())
+
+  lifecycleReminder LifecycleReminder @relation(fields: [lifecycleReminderId], references: [id], onDelete: Cascade)
+
+  @@unique([providerEventId])
+  @@index([lifecycleReminderId, type, occurredAt])
 }
 
 // ---------------------------------------------------------------------------
