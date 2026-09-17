@@ -83,6 +83,7 @@ export default async function AdminTutorDetailPage({
   const latestInterview = tutor.interviews[0];
   const score = tutor.scores[0];
   const lifecycle = await getTutorLifecycle(db, tutor.id);
+  const reminders = await db.lifecycleReminder.findMany({ where: { subjectId: tutor.id, journey: "TUTOR_CERTIFICATION" }, orderBy: { createdAt: "desc" }, take: 10 });
 
   return (
     <DashboardShell
@@ -122,7 +123,7 @@ export default async function AdminTutorDetailPage({
         }}
       />
 
-      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} />
+      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} reminders={reminders} />
 
       {/* --- Stage actions --- */}
       <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-5">

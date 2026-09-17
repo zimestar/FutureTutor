@@ -24,26 +24,34 @@ export function assessCadenceStep(inactiveDurationMs: number): ReminderNumber | 
 
 /**
  * The reminder number that should actually go out next, given which
- * reminder numbers have already been recorded as SENT for the CURRENT
- * actionable episode (see episode.ts — a stale episode's history must never
- * be passed in here; the caller is responsible for only supplying sent
- * numbers that belong to the episode identified by the current episodeKey).
+ * reminder numbers have already been recorded with status exactly `SENT`
+ * (never PENDING/PROCESSING/FAILED_RETRYABLE/FAILED_FINAL/OBSOLETE/
+ * SUPPRESSED — see the schema decision's §8/§9: a FAILED R1 must never let
+ * R2 leapfrog it) for the CURRENT actionable episode AND the specific
+ * recipient being evaluated (schema decision's MULTI-GUARDIAN correction —
+ * two guardians of the same Student episode each have their own
+ * independent send history, since one guardian's email can bounce while
+ * another's succeeds). A stale episode's history must never be passed in
+ * here — the caller is responsible for only supplying SENT numbers that
+ * belong to the (episodeKey, recipientUserId) pair identified by the
+ * current episode.
  *
  * Enforces the mission's explicit sequencing rule — "R2 cannot precede R1"
  * / "R3 cannot precede R2" — by always proposing exactly one step past the
- * highest already-sent number, never jumping ahead just because elapsed
- * time alone would justify a later step. A cron that starts ticking again
- * after 9 days of downtime still sends R1 first to an episode with no
+ * highest already-SENT number, never jumping ahead just because elapsed
+ * time alone would justify a later step, and never resuming past a
+ * permanently-failed prior reminder. A cron that starts ticking again
+ * after 9 days of downtime still sends R1 first to a recipient with no
  * history, then (on a LATER tick, once R1 is durably recorded SENT) R2, and
  * so on — this is what makes the sequence deterministic and auditable
  * rather than a function of exactly when the cron happened to run.
  */
 export function nextDueReminderNumber(
   cadenceStep: ReminderNumber | null,
-  alreadySentNumbersForEpisode: readonly ReminderNumber[]
+  alreadySentNumbersForRecipient: readonly ReminderNumber[]
 ): ReminderNumber | null {
   if (cadenceStep === null) return null;
-  const maxSent = alreadySentNumbersForEpisode.length > 0 ? Math.max(...alreadySentNumbersForEpisode) : 0;
+  const maxSent = alreadySentNumbersForRecipient.length > 0 ? Math.max(...alreadySentNumbersForRecipient) : 0;
   const nextInSequence = maxSent + 1;
   if (nextInSequence > 3) return null; // sequence exhausted — no 4th reminder
   return nextInSequence <= cadenceStep ? (nextInSequence as ReminderNumber) : null;

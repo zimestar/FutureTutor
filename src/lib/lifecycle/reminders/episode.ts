@@ -64,12 +64,18 @@ export function isEpisodeStillCurrent(storedEpisodeKey: EpisodeKey, currentState
   return computeEpisodeKey(currentState) === storedEpisodeKey;
 }
 
-/** The deterministic dedupeKey a persisted reminder row would use — see the
- * LIFECYCLE-1B schema proposal's IDEMPOTENCY section. Exposed here (rather
- * than only in the not-yet-existing persistence module) so its shape can be
- * unit-tested now, before any schema exists. Mirrors the exact
- * `dedupeKey` + `@@unique` pattern already proven by
- * TutorApplicationNotification / SessionNotification. */
-export function computeReminderDedupeKey(episodeKey: EpisodeKey, reminderNumber: 1 | 2 | 3): string {
-  return `lifecycleReminder:${episodeKey}:R${reminderNumber}`;
+/**
+ * The deterministic dedupeKey a persisted reminder row uses — see the
+ * LIFECYCLE-1B schema decision's MULTI-GUARDIAN correction. Recipient-aware:
+ * a Student episode with two ACTIVE guardians must produce TWO distinct
+ * deliveries (one per guardian), each independently idempotent, so the
+ * recipient is part of the key — a dedupeKey scoped to episode+reminderNumber
+ * alone would let the DB's own unique constraint silently suppress the
+ * second guardian's legitimate reminder. Internal-only: never placed in a
+ * public URL (deep links carry no episodeKey/dedupeKey at all — see
+ * deepLink.ts) and recipientUserId is an opaque internal id, not itself PII
+ * (no email/name is ever part of this string).
+ */
+export function computeReminderDedupeKey(episodeKey: EpisodeKey, reminderNumber: 1 | 2 | 3, recipientUserId: string): string {
+  return `lifecycleReminder:${episodeKey}:R${reminderNumber}:recipient:${recipientUserId}`;
 }

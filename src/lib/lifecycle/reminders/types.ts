@@ -1,4 +1,6 @@
-import type { LifecycleJourneyState } from "../types";
+import type { LifecycleJourneyState, LifecycleRole } from "../types";
+
+export type { LifecycleRole };
 
 /**
  * LIFECYCLE-1B — reminder-engine design layer, built strictly on top of the

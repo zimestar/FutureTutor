@@ -133,6 +133,7 @@ model User {
   adminInvitationAccepted         AdminInvitation?            @relation("AdminInvitationAcceptedUser")
   adminPermissions                AdminPermissionAssignment[] @relation("AdminPermissionUser")
   adminPermissionsGranted         AdminPermissionAssignment[] @relation("AdminPermissionGrantedBy")
+  lifecycleReminders              LifecycleReminder[]
 
   @@index([role])
 }
@@ -1955,7 +1956,7 @@ enum ConversationParticipantRole {
 /// model) and a historical record of who has been part of the thread, not
 /// to gate access.
 model Conversation {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   studentProfileId String
   tutorProfileId   String
@@ -1965,8 +1966,8 @@ model Conversation {
   /// for a future conversation list UI. Null until the first message.
   lastMessageAt DateTime?
 
-  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id])
-  tutorProfile   TutorProfile   @relation(fields: [tutorProfileId], references: [id])
+  studentProfile StudentProfile            @relation(fields: [studentProfileId], references: [id])
+  tutorProfile   TutorProfile              @relation(fields: [tutorProfileId], references: [id])
   participants   ConversationParticipant[]
   messages       Message[]
   reports        MessageReport[]
@@ -1997,14 +1998,14 @@ model ConversationParticipant {
 }
 
 model Message {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderUserId   String
+  id              String   @id @default(cuid())
+  conversationId  String
+  senderUserId    String
   /// Plain text only in V1 — never rendered as HTML, no Markdown. Trimmed
   /// and length-bounded (4000 chars) at the domain-service boundary before
   /// this row is ever written.
-  body           String   @db.Text
-  createdAt      DateTime @default(now())
+  body            String   @db.Text
+  createdAt       DateTime @default(now())
   /// MESSAGING-DUPLICATE-SEND-FIX1 — client-generated (crypto.randomUUID())
   /// idempotency token for one logical send attempt, NOT a display id and
   /// NEVER trusted for authorization (senderUserId still always comes from
@@ -2020,8 +2021,8 @@ model Message {
   /// getOrCreatePaymentForQuote / Payment.bookingId @unique pattern).
   clientMessageId String?
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("MessageSender", fields: [senderUserId], references: [id])
+  conversation Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User            @relation("MessageSender", fields: [senderUserId], references: [id])
   reports      MessageReport[]
 
   @@unique([conversationId, senderUserId, clientMessageId])
@@ -2357,6 +2358,124 @@ model SessionNotification {
   @@unique([dedupeKey])
   @@index([status])
   @@index([bookingId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// LIFECYCLE-1B — onboarding-recovery reminder outbox. Durable, recipient-
+// aware send-history for the LIFECYCLE-1A onboarding-state layer
+// (src/lib/lifecycle/). Deliberately a NEW table, not an extension of
+// TutorApplicationNotification (Tutor-only, no episode/cadence concept) or
+// SessionNotification (Booking-scoped, an unrelated subject domain) — see
+// docs/lifecycle/LIFECYCLE-1B-REMINDER-ENGINE.md's schema-proposal section
+// for the full audit of why those two existing outbox tables are
+// insufficient.
+//
+// dedupeKey is RECIPIENT-aware (`lifecycleReminder:<episodeKey>:R<n>:
+// recipient:<recipientUserId>` — see src/lib/lifecycle/reminders/
+// episode.ts's computeReminderDedupeKey): a Student with two ACTIVE
+// guardians produces two independent LifecycleReminder rows for the same
+// episode + reminder number, one per guardian, each independently
+// idempotent. A dedupeKey scoped to episode+reminderNumber alone would let
+// this table's own @@unique constraint silently suppress the second
+// guardian's legitimate reminder — this was a real defect in the original
+// schema proposal, corrected before implementation.
+//
+// subjectId is a plain, non-FK string (TutorProfile.id | ParentProfile.id |
+// StudentProfile.id, disambiguated by `role`) — deliberately NOT a
+// polymorphic/multi-target foreign key, which Prisma/Postgres cannot
+// enforce correctly across three different target tables. journey/stage
+// are likewise plain strings, frozen at row-creation time from the
+// LifecycleJourneyState the candidate was computed against — the same
+// "denormalized snapshot, never a live join back to a possibly-since-
+// changed record" discipline TutorApplicationNotification.contextSnapshot
+// already established.
+//
+// recipientUserId is nullable with onDelete: SetNull (NOT Cascade) —
+// deliberately different from Notification.userId's Cascade: this table is
+// activation/delivery HISTORY, and a deleted User must not silently erase
+// the historical fact that a reminder was sent, only degrade "who it was
+// sent to" the same way ParentStudentRelationship.createdByUserId/
+// revokedByUserId already do for exactly the same "actor pointer, not the
+// subject of the historical record" reason.
+enum LifecycleReminderRole {
+  TUTOR
+  PARENT
+  STUDENT
+}
+
+enum LifecycleReminderRelationship {
+  SELF
+  GUARDIAN
+}
+
+/// Operational delivery-workflow states only — NEVER extended with
+/// engagement/analytics facts (OPENED, CLICKED, RESUMED, STEP_COMPLETED,
+/// JOURNEY_COMPLETED). Those are LIFECYCLE-1C/1D's own, separate,
+/// append-only event history — this enum answers "did the send attempt
+/// itself succeed," nothing else. OPENED is never "read" anywhere in this
+/// product — see the LIFECYCLE-1B documentation's permanent product rule.
+enum LifecycleReminderStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED_RETRYABLE
+  FAILED_FINAL
+  OBSOLETE
+  SUPPRESSED
+}
+
+model LifecycleReminder {
+  id                String                        @id @default(cuid())
+  role              LifecycleReminderRole
+  /// LifecycleJourney string value (e.g. "TUTOR_CERTIFICATION") — see
+  /// src/lib/lifecycle/types.ts. Plain string, not an enum: mirrors that
+  /// module's own type, avoiding two enums that could drift.
+  journey           String
+  /// TutorProfile.id | ParentProfile.id | StudentProfile.id — see `role`
+  /// for which. Never a StudentProfile.id when the recipient is a guardian
+  /// AND never the guardian's own ParentProfile.id either — subjectId is
+  /// always WHOSE onboarding journey this is about, independent of who
+  /// receives the email (see `recipientUserId` and `relationship`).
+  subjectId         String
+  /// The LIFECYCLE-1A stage this episode was computed against (e.g.
+  /// "DRAFT", "TRAINING_REQUIRED", "STUDENT_SETUP", "PROFILE").
+  stage             String
+  /// computeEpisodeKey() output, frozen at creation time — journey:
+  /// subjectId:stage:progressAnchorIso. Never exposed publicly (not in any
+  /// URL — see deepLink.ts).
+  episodeKey        String
+  reminderNumber    Int
+  /// WHO this specific row's email goes to — may differ from `subjectId`'s
+  /// own identity (a StudentProfile subject's recipient is a guardian
+  /// User). Nullable + SetNull — see this table's own doc comment above.
+  recipientUserId   String?
+  relationship      LifecycleReminderRelationship
+  /// "en" | "fr" at send time — not re-resolved later, so a subsequent
+  /// preference change never retroactively changes historical content.
+  locale            String
+  /// lifecycleReminder:<episodeKey>:R<reminderNumber>:recipient:<recipientUserId>
+  /// — see computeReminderDedupeKey(). The sole idempotency guarantee.
+  dedupeKey         String
+  status            LifecycleReminderStatus       @default(PENDING)
+  scheduledFor      DateTime
+  attemptCount      Int                           @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  providerMessageId String?
+  error             String?
+  /// Set the moment a pre-send recheck (or a later sweep) finds this row's
+  /// episode/recipient no longer current — see
+  /// src/lib/lifecycle/reminders/preSendRecheck.ts.
+  obsoleteAt        DateTime?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+
+  recipient User? @relation(fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  @@unique([dedupeKey])
+  @@index([status, scheduledFor])
+  @@index([subjectId, journey, createdAt])
+  @@index([episodeKey])
 }
 
 // ---------------------------------------------------------------------------

@@ -43,6 +43,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
 
   const isSuspended = Boolean(parent.user?.deactivatedAt);
   const lifecycle = await getParentLifecycle(db, parent.id);
+  const reminders = await db.lifecycleReminder.findMany({ where: { subjectId: parent.id, journey: "PARENT_ACTIVATION" }, orderBy: { createdAt: "desc" }, take: 10 });
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
@@ -68,7 +69,7 @@ export default async function AdminParentDetailPage({ params }: { params: Promis
         )}
         <p className="mt-3 text-xs text-text-secondary">{t("suspendHint")}</p>
       </Surface>
-      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} />
+      <LifecycleSummaryCard state={lifecycle} t={tLifecycle} locale={locale} reminders={reminders} />
       <Surface className="mt-5">
         <h2 className="font-extrabold">{t("children")}</h2>
         {parent.studentRelationships.length ? (

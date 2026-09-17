@@ -1796,6 +1796,23 @@
       "reminderNotEligible": "Not reminder-eligible",
       "suppressionReason": "Why not eligible",
       "unavailable": "No onboarding lifecycle record for this account.",
+      "reminders": {
+        "title": "Reminders",
+        "reminderLabel": "R{number}",
+        "relationship": {
+          "SELF": "to this account",
+          "GUARDIAN": "to guardian"
+        },
+        "statuses": {
+          "PENDING": "Pending",
+          "PROCESSING": "Processing",
+          "SENT": "Sent",
+          "FAILED_RETRYABLE": "Failed (will retry)",
+          "FAILED_FINAL": "Failed (final)",
+          "OBSOLETE": "Obsolete",
+          "SUPPRESSED": "Suppressed"
+        }
+      },
       "statuses": {
         "USER_ACTION_REQUIRED": "User action required",
         "WAITING_ON_FUTURETUTOR": "Waiting on FutureTutor",

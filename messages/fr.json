@@ -1796,6 +1796,23 @@
       "reminderNotEligible": "Non admissible à un rappel",
       "suppressionReason": "Pourquoi non admissible",
       "unavailable": "Aucun parcours d’intégration enregistré pour ce compte.",
+      "reminders": {
+        "title": "Rappels",
+        "reminderLabel": "R{number}",
+        "relationship": {
+          "SELF": "à ce compte",
+          "GUARDIAN": "au tuteur légal"
+        },
+        "statuses": {
+          "PENDING": "En attente",
+          "PROCESSING": "En traitement",
+          "SENT": "Envoyé",
+          "FAILED_RETRYABLE": "Échec (nouvel essai prévu)",
+          "FAILED_FINAL": "Échec (définitif)",
+          "OBSOLETE": "Obsolète",
+          "SUPPRESSED": "Supprimé"
+        }
+      },
       "statuses": {
         "USER_ACTION_REQUIRED": "Action requise de l’utilisateur",
         "WAITING_ON_FUTURETUTOR": "En attente de FutureTutor",

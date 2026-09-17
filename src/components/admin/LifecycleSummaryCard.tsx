@@ -1,4 +1,5 @@
 import type { LifecycleJourneyState, LifecycleStatus } from "@/lib/lifecycle";
+import type { LifecycleReminderStatus } from "@/generated/prisma/enums";
 import { Surface } from "@/components/ui/Surface";
 import { Badge } from "@/components/ui/Badge";
 
@@ -14,22 +15,50 @@ const STATUS_BADGE_VARIANT: Record<LifecycleStatus, "mint" | "blue" | "outline" 
   UNKNOWN: "outline",
 };
 
+const REMINDER_STATUS_BADGE_VARIANT: Record<LifecycleReminderStatus, "mint" | "blue" | "outline" | "neutral"> = {
+  PENDING: "neutral",
+  PROCESSING: "neutral",
+  SENT: "mint",
+  FAILED_RETRYABLE: "outline",
+  FAILED_FINAL: "outline",
+  OBSOLETE: "outline",
+  SUPPRESSED: "outline",
+};
+
+export interface LifecycleReminderRow {
+  id: string;
+  reminderNumber: number;
+  status: LifecycleReminderStatus;
+  relationship: "SELF" | "GUARDIAN";
+  sentAt: Date | null;
+  lastAttemptAt: Date | null;
+  createdAt: Date;
+}
+
 /**
- * LIFECYCLE-1A Phase 12 — READ-ONLY admin observability. No mutation path:
- * no "send reminder" button, no bulk action, no state edit — this only
- * renders an already-computed LifecycleJourneyState (src/lib/lifecycle).
- * Reused identically across the Tutor/Parent/Student admin detail pages so
- * the three surfaces never drift into three different presentations of the
- * same underlying evaluator.
+ * LIFECYCLE-1A Phase 12 / LIFECYCLE-1B Phase 13/18 — READ-ONLY admin
+ * observability. No mutation path anywhere in this component: no "send
+ * reminder"/"retry"/"send all" button, no bulk action, no manual status
+ * edit — this only renders an already-computed LifecycleJourneyState
+ * (src/lib/lifecycle) and, optionally, the already-persisted
+ * LifecycleReminder rows for that same subject (src/services/
+ * lifecycleReminders.ts). Reused identically across the Tutor/Parent/
+ * Student admin detail pages so the three surfaces never drift into three
+ * different presentations of the same underlying evaluator.
  */
 export function LifecycleSummaryCard({
   state,
   t,
   locale,
+  reminders,
 }: {
   state: LifecycleJourneyState | null;
   t: (key: string, values?: Record<string, string | number>) => string;
   locale: string;
+  /** Most-recent-first LifecycleReminder rows for this subject, if the
+   * caller loaded them (optional — LIFECYCLE-1A call sites predate the
+   * reminder table and may omit this). */
+  reminders?: LifecycleReminderRow[];
 }) {
   if (!state) {
     return (
@@ -79,6 +108,27 @@ export function LifecycleSummaryCard({
           </div>
         )}
       </dl>
+      {reminders && reminders.length > 0 && (
+        <div className="mt-5 border-t border-border pt-4">
+          <h3 className="text-sm font-extrabold">{t("lifecycle.reminders.title")}</h3>
+          <ul className="mt-3 space-y-2">
+            {reminders.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span>
+                  {t("lifecycle.reminders.reminderLabel", { number: r.reminderNumber })} ·{" "}
+                  {t(`lifecycle.reminders.relationship.${r.relationship}`)}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Badge variant={REMINDER_STATUS_BADGE_VARIANT[r.status]}>{t(`lifecycle.reminders.statuses.${r.status}`)}</Badge>
+                  <span className="text-text-secondary">
+                    {r.sentAt ? dateFormatter.format(r.sentAt) : r.lastAttemptAt ? dateFormatter.format(r.lastAttemptAt) : "—"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Surface>
   );
 }

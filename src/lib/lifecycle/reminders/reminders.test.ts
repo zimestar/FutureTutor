@@ -62,6 +62,20 @@ describe("Cadence — §1-6", () => {
     // R3 already sent -> sequence exhausted, never a 4th reminder
     expect(nextDueReminderNumber(cadenceStep3, [1, 2, 3])).toBeNull();
   });
+
+  it("ORDERING — a FAILED (never recorded SENT) R1 must never let R2 leapfrog it, however long inactivity continues", () => {
+    // "alreadySentNumbersForRecipient" represents SENT-status numbers only
+    // (schema decision §8/§9) — a FAILED_RETRYABLE/FAILED_FINAL R1 is simply
+    // absent from this array, so the engine keeps proposing R1, not R2, no
+    // matter how far past the R2/R3 elapsed-time thresholds inactivity goes.
+    const cadenceStep = assessCadenceStep(10 * DAY);
+    expect(nextDueReminderNumber(cadenceStep, [])).toBe(1); // R1 failed and was never SENT -> still proposes R1
+  });
+
+  it("ORDERING — a FAILED R2 must never let R3 leapfrog it", () => {
+    const cadenceStep = assessCadenceStep(10 * DAY);
+    expect(nextDueReminderNumber(cadenceStep, [1])).toBe(2); // R1 SENT, R2 failed and never recorded SENT -> still proposes R2, not R3
+  });
 });
 
 describe("Episode identity — §9-10 (stop-on-progress)", () => {
@@ -79,58 +93,134 @@ describe("Episode identity — §9-10 (stop-on-progress)", () => {
     expect(training).not.toBe(exam);
   });
 
+  it("ORDERING — a new episode (new stage) starts a fresh R1 sequence even if the OLD episode had already reached R3", () => {
+    const oldEpisodeState = { journey: "TUTOR_CERTIFICATION" as const, subjectId: "t1", stage: "TRAINING_REQUIRED" as const, lastMeaningfulProgressAt: new Date("2026-09-01T00:00:00Z") };
+    const newEpisodeState = { journey: "TUTOR_CERTIFICATION" as const, subjectId: "t1", stage: "EXAM_REQUIRED" as const, lastMeaningfulProgressAt: new Date("2026-09-10T00:00:00Z") };
+    // A reminder row keyed to the OLD episode's R3 dedupeKey can never match
+    // a candidate computed against the NEW episode's state.
+    const oldDedupeKey = computeReminderDedupeKey(computeEpisodeKey(oldEpisodeState)!, 3, "user-1");
+    const newCandidateDedupeKey = computeReminderDedupeKey(computeEpisodeKey(newEpisodeState)!, 1, "user-1");
+    expect(oldDedupeKey).not.toBe(newCandidateDedupeKey);
+    expect(isEpisodeStillCurrent(computeEpisodeKey(oldEpisodeState)!, newEpisodeState)).toBe(false);
+  });
+
+  it("OBSOLETE — an obsolete (superseded) episode's stored key never again matches a fresh evaluation, permanently orphaning it", () => {
+    const original = { journey: "TUTOR_CERTIFICATION" as const, subjectId: "t1", stage: "TRAINING_REQUIRED" as const, lastMeaningfulProgressAt: new Date("2026-09-01T00:00:00Z") };
+    const storedKey = computeEpisodeKey(original)!;
+    const afterProgress = { ...original, lastMeaningfulProgressAt: new Date("2026-09-05T00:00:00Z") };
+    const afterMoreProgress = { ...original, lastMeaningfulProgressAt: new Date("2026-09-09T00:00:00Z") };
+    expect(isEpisodeStillCurrent(storedKey, afterProgress)).toBe(false);
+    expect(isEpisodeStillCurrent(storedKey, afterMoreProgress)).toBe(false); // still orphaned, not somehow revived
+  });
+
   it("a stable state (no progress, same stage) produces the SAME episode key across repeated evaluations — required for idempotent dedupeKey reuse", () => {
     const state = { journey: "TUTOR_CERTIFICATION" as const, subjectId: "t1", stage: "DRAFT" as const, lastMeaningfulProgressAt: new Date("2026-09-01T00:00:00Z") };
     expect(computeEpisodeKey(state)).toBe(computeEpisodeKey({ ...state }));
   });
 
-  it("dedupeKey is deterministic and reminder-number-specific", () => {
+  it("dedupeKey is deterministic, reminder-number-specific, AND recipient-specific (MULTI-GUARDIAN correction)", () => {
     const key = computeEpisodeKey({ journey: "TUTOR_CERTIFICATION", subjectId: "t1", stage: "DRAFT", lastMeaningfulProgressAt: new Date("2026-09-01T00:00:00Z") })!;
-    expect(computeReminderDedupeKey(key, 1)).not.toBe(computeReminderDedupeKey(key, 2));
-    expect(computeReminderDedupeKey(key, 1)).toBe(computeReminderDedupeKey(key, 1));
+    expect(computeReminderDedupeKey(key, 1, "user-a")).not.toBe(computeReminderDedupeKey(key, 2, "user-a"));
+    expect(computeReminderDedupeKey(key, 1, "user-a")).toBe(computeReminderDedupeKey(key, 1, "user-a"));
+    // Two different recipients for the SAME episode + reminder number must
+    // produce two DISTINCT dedupeKeys — this is the exact correction: the
+    // DB unique constraint must never suppress Guardian B's legitimate
+    // delivery just because Guardian A's already exists.
+    expect(computeReminderDedupeKey(key, 1, "user-a")).not.toBe(computeReminderDedupeKey(key, 1, "user-b"));
+  });
+
+  it("episode key generation is deterministic, timezone-independent (ISO serialization), and contains no PII/free text", () => {
+    const utcDate = new Date("2026-09-01T00:00:00.000Z");
+    const key = computeEpisodeKey({ journey: "TUTOR_CERTIFICATION", subjectId: "t1", stage: "DRAFT", lastMeaningfulProgressAt: utcDate })!;
+    // toISOString() always normalizes to UTC/Z regardless of host timezone,
+    // so two hosts in different timezones evaluating the same Date instant
+    // always produce the identical key.
+    expect(key).toBe(`TUTOR_CERTIFICATION:t1:DRAFT:${utcDate.toISOString()}`);
+    expect(key).not.toMatch(/@|[a-z]+\.[a-z]+@|\s{2,}/); // no email-shaped or freeform-text content
   });
 });
 
 describe("Reminder candidate assessment — §11-18 (suppression)", () => {
   it("§11 completed suppresses (no candidate)", () => {
-    expect(assessReminderCandidate(baseState({ status: "COMPLETED" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "COMPLETED" }), "user-1")).toBeNull();
   });
   it("§12 rejected suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "REJECTED" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "REJECTED" }), "user-1")).toBeNull();
   });
   it("§13 suspended suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "SUSPENDED" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "SUSPENDED" }), "user-1")).toBeNull();
   });
   it("§14 deactivated (modeled as SUSPENDED status by LIFECYCLE-1A) suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "SUSPENDED" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "SUSPENDED" }), "user-1")).toBeNull();
   });
   it("§15 waiting-on-admin suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_ADMIN" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_ADMIN" }), "user-1")).toBeNull();
   });
   it("§16 waiting-on-FutureTutor suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_FUTURETUTOR" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_FUTURETUTOR" }), "user-1")).toBeNull();
   });
   it("§17 waiting-on-guardian suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_GUARDIAN" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "WAITING_ON_GUARDIAN" }), "user-1")).toBeNull();
   });
   it("§18 unknown suppresses", () => {
-    expect(assessReminderCandidate(baseState({ status: "UNKNOWN" }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ status: "UNKNOWN" }), "user-1")).toBeNull();
   });
   it("missing progress anchor (MISSING_STATE_EVIDENCE) suppresses even if otherwise USER_ACTION_REQUIRED", () => {
-    expect(assessReminderCandidate(baseState({ lastMeaningfulProgressAt: null, inactiveDurationMs: null }))).toBeNull();
+    expect(assessReminderCandidate(baseState({ lastMeaningfulProgressAt: null, inactiveDurationMs: null }), "user-1")).toBeNull();
+  });
+  it("missing recipient id suppresses", () => {
+    expect(assessReminderCandidate(baseState(), "")).toBeNull();
   });
   it("a genuinely eligible USER_ACTION_REQUIRED subject produces a real R1 candidate", () => {
-    const candidate = assessReminderCandidate(baseState());
+    const candidate = assessReminderCandidate(baseState(), "user-1");
     expect(candidate).not.toBeNull();
     expect(candidate!.reminderNumber).toBe(1);
     expect(candidate!.episodeKey).toContain("tutor-1");
+    expect(candidate!.recipientUserId).toBe("user-1");
   });
   it("§28 stale pre-send state suppresses — recomputing the candidate against an updated (progressed) state yields a different/no episode", () => {
-    const original = assessReminderCandidate(baseState())!;
+    const original = assessReminderCandidate(baseState(), "user-1")!;
     const progressed = baseState({ lastMeaningfulProgressAt: new Date(), inactiveDurationMs: 0 });
-    const recheck = assessReminderCandidate(progressed);
+    const recheck = assessReminderCandidate(progressed, "user-1");
     expect(recheck).toBeNull(); // <24h since the (now recent) progress — no longer due
     expect(isEpisodeStillCurrent(original.episodeKey, progressed)).toBe(false);
+  });
+
+  describe("MULTI-GUARDIAN — two active guardians of the same Student episode", () => {
+    const studentEpisodeState = (overrides: Partial<ReturnType<typeof baseState>> = {}) =>
+      baseState({ journey: "STUDENT_PROFILE_READINESS", subjectId: "student-1", stage: "PROFILE", ...overrides });
+
+    it("both guardians produce a distinct, independently-idempotent candidate for the same episode + reminder number", () => {
+      const state = studentEpisodeState();
+      const candidateA = assessReminderCandidate(state, "guardian-a")!;
+      const candidateB = assessReminderCandidate(state, "guardian-b")!;
+      expect(candidateA.episodeKey).toBe(candidateB.episodeKey); // same underlying episode
+      expect(candidateA.reminderNumber).toBe(candidateB.reminderNumber); // same cadence step (same subject inactivity)
+      expect(candidateA.dedupeKey).not.toBe(candidateB.dedupeKey); // but distinct deliveries
+    });
+
+    it("duplicate processing for Guardian A is idempotent (same input -> same dedupeKey every time)", () => {
+      const state = studentEpisodeState();
+      const first = assessReminderCandidate(state, "guardian-a")!;
+      const second = assessReminderCandidate(state, "guardian-a")!;
+      expect(first.dedupeKey).toBe(second.dedupeKey);
+    });
+
+    it("duplicate processing for Guardian B is idempotent, and independent of Guardian A's own history", () => {
+      // Inactivity has reached the R2 threshold, so BOTH guardians' cadence
+      // step allows R2 — but only Guardian A has an R1 already SENT.
+      const state = studentEpisodeState({ inactiveDurationMs: LIFECYCLE_INACTIVITY_THRESHOLDS_MS.SECOND_REMINDER });
+      const candidateAAfterR1 = assessReminderCandidate(state, "guardian-a", [1]);
+      const candidateBFirstEver = assessReminderCandidate(state, "guardian-b", []);
+      expect(candidateAAfterR1!.reminderNumber).toBe(2); // A moves on to R2
+      expect(candidateBFirstEver!.reminderNumber).toBe(1); // B is still on R1 — independent sequences
+    });
+
+    it("a guardian with an already-sent R1 AND R2 correctly becomes eligible for R3 once cadence allows, independent of the co-guardian", () => {
+      const state = baseState({ journey: "STUDENT_PROFILE_READINESS", subjectId: "student-1", stage: "PROFILE", inactiveDurationMs: LIFECYCLE_INACTIVITY_THRESHOLDS_MS.THIRD_REMINDER });
+      const candidate = assessReminderCandidate(state, "guardian-a", [1, 2]);
+      expect(candidate!.reminderNumber).toBe(3);
+    });
   });
 });
 
@@ -148,6 +238,24 @@ describe("Deep link — §26-27", () => {
   });
   it("returns null for an insecure/local override (reuses resolveBookingEmailBaseUrl's own fail-closed rule)", () => {
     expect(buildReminderDeepLink("/tutor/training", "en", "http://localhost:3000")).toBeNull();
+  });
+
+  it("every reminder-eligible nextAction route still requires authentication in its own page source (no login bypass introduced)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const appRoot = join(__dirname, "..", "..", "..", "app", "[locale]");
+    const routes = [
+      { nextAction: "/tutor/profile", pagePath: join(appRoot, "tutor", "profile", "page.tsx") },
+      { nextAction: "/tutor/training", pagePath: join(appRoot, "tutor", "training", "page.tsx") },
+      { nextAction: "/tutor/exam", pagePath: join(appRoot, "tutor", "exam", "page.tsx") },
+      { nextAction: "/dashboard/family", pagePath: join(appRoot, "dashboard", "family", "page.tsx") },
+      { nextAction: "/dashboard/profile", pagePath: join(appRoot, "dashboard", "profile", "page.tsx") },
+    ];
+    for (const { nextAction, pagePath } of routes) {
+      const source = readFileSync(pagePath, "utf8");
+      expect(source, nextAction).toMatch(/auth\(\)/);
+      expect(source, nextAction).toMatch(/redirect\(/);
+    }
   });
 });
 
@@ -235,9 +343,20 @@ describe("Financial reachability — zero", () => {
     }
   });
 
-  it("no cron route or scheduled job was created by this mission", async () => {
-    const { existsSync } = await import("node:fs");
+  it("§35/§36 the cron route exists (authorized by the schema decision) but requires a dedicated secret and fails closed without one — and this repo keeps no in-repo scheduler config for it (matches every other cron route's own established 'invoked by an external trigger, not declared here' convention), so nothing in the codebase itself can schedule it", async () => {
+    const { readFileSync, existsSync } = await import("node:fs");
     const { join } = await import("node:path");
-    expect(existsSync(join(__dirname, "..", "..", "..", "app", "api", "cron", "lifecycle-reminders-tick"))).toBe(false);
+    const routePath = join(__dirname, "..", "..", "..", "app", "api", "cron", "lifecycle-reminders-tick", "route.ts");
+    expect(existsSync(routePath)).toBe(true);
+    const source = readFileSync(routePath, "utf8");
+    expect(source).toMatch(/LIFECYCLE_REMINDERS_CRON_SECRET/);
+    expect(source).toMatch(/x-cron-secret/);
+    expect(source).toMatch(/status:\s*500/); // fails closed if the secret isn't configured
+    expect(source).toMatch(/status:\s*401/); // fails closed if the provided secret doesn't match
+    // No schedule/trigger config for this route exists anywhere in the repo
+    // (this codebase has no built-in scheduler at all — every cron route's
+    // own doc comment says so) — searched the one place such config would
+    // live if it existed.
+    expect(existsSync(join(__dirname, "..", "..", "..", "..", "railway.json"))).toBe(false);
   });
 });

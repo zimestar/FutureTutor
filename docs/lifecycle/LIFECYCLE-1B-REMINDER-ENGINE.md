@@ -1,123 +1,121 @@
-# LIFECYCLE-1B — Onboarding Reminder Engine (Design + Schema-Independent Implementation)
+# LIFECYCLE-1B — Onboarding Reminder Engine
 
-Status: **Schema-independent parts implemented and tested. Persistence-dependent parts are DESIGN ONLY — schema approval required before further implementation.** No production emails sent. No cron created or scheduled.
+Status: **Fully implemented, migrated, and tested.** Cron route built and deployed but **UNSCHEDULED** — no reminder has been sent to a real production user, and none will be until a separate, explicit future authorization.
 
 ## 1. Problem
 
-LIFECYCLE-1A (`docs/lifecycle/LIFECYCLE-1A-ONBOARDING-STATE.md`) proved FutureTutor has a real activation/recovery need — a fresh production dry-run for this mission found 9 subjects currently `USER_ACTION_REQUIRED` (2 Tutor, 4 Parent, 3 Student), all of them already inactive for 7+ days. LIFECYCLE-1A can only tell you the *current* state; it has no memory of what was already communicated. LIFECYCLE-1B is the layer that turns "this subject is reminder-eligible" into "send exactly the right reminder, exactly once, to exactly the right person."
+LIFECYCLE-1A (`docs/lifecycle/LIFECYCLE-1A-ONBOARDING-STATE.md`) proved a real activation/recovery need. LIFECYCLE-1B is the layer that turns "this subject is reminder-eligible" into "send exactly the right reminder, exactly once, to exactly the right person" — durably, idempotently, and auditable.
 
 ## 2. LIFECYCLE-1A dependency
 
-Every reminder decision is derived from a fresh `LifecycleJourneyState` (`src/lib/lifecycle/*Lifecycle.ts`) — LIFECYCLE-1B never re-derives stage/status/progress itself. `reminderCandidate.ts`'s `assessReminderCandidate` takes a `LifecycleJourneyState` (or the subset of fields it needs) as its only input.
+Every reminder decision is derived from a fresh `LifecycleJourneyState` (`src/lib/lifecycle/*Lifecycle.ts`), reloaded at three separate points (candidate discovery, claim, and immediately pre-send) — LIFECYCLE-1B never re-derives or caches stage/status/progress itself.
 
 ## 3. Reminder cadence
 
-`src/lib/lifecycle/reminders/cadence.ts`. R1 ≥24h, R2 ≥72h, R3 ≥7d, all measured from `lastMeaningfulProgressAt` (LIFECYCLE-1A's own anchor), **never** chained off a prior send time — confirmed by the mission's own worked example and enforced by `assessCadenceStep` taking only `inactiveDurationMs`, never a "time since last reminder" value. `nextDueReminderNumber(cadenceStep, alreadySentNumbers)` additionally enforces strict monotonic sequencing (R2 can never precede R1, R3 can never precede R2) — implemented and tested (`reminders.test.ts` §1-6).
+`src/lib/lifecycle/reminders/cadence.ts`. R1 ≥24h, R2 ≥72h, R3 ≥7d, measured from `lastMeaningfulProgressAt`, never chained off a prior send time.
 
 ## 4. Actionable episodes
 
-`src/lib/lifecycle/reminders/episode.ts`. `episodeKey = journey:subjectId:stage:lastMeaningfulProgressAt`. A change in either `stage` (a genuinely new actionable stage) or `lastMeaningfulProgressAt` (real progress within the same stage, which also legitimately resets the inactivity clock per §3) produces a new key, automatically retiring whatever reminder sequence was counting from the old anchor. `status`/suppression state is deliberately **not** part of the key — see §5.
+`episodeKey = journey:subjectId:stage:lastMeaningfulProgressAt.toISOString()` (`episode.ts`). Deterministic, timezone-independent (ISO 8601 `Z` serialization is identical regardless of the evaluating host's local timezone), contains no PII/free text — all tested (`reminders.test.ts`). Never exposed publicly (absent from every deep link and from `LifecycleReminder`'s own admin-observability rendering).
 
 ## 5. Stop-on-progress
 
-Obsolescence is detected by re-comparing the CURRENT `episodeKey` against what a stored candidate/row was computed for (`isEpisodeStillCurrent`), not by baking every possible obsolescence trigger into the key itself. This single mechanism naturally covers every trigger the mission lists: progress and stage changes change the key directly; suspension/rejection/completion/admin-becoming-blocker all remove the subject from `USER_ACTION_REQUIRED` in LIFECYCLE-1A, at which point `assessReminderCandidate` returns `null` and no new candidate (and no re-affirmation of an old one) is ever produced for them again. Tested: `reminders.test.ts` §9, §10, §28.
+`isEpisodeStillCurrent()` re-compares the current episode key against a stored one; a stage or progress-anchor change (or the subject leaving `USER_ACTION_REQUIRED` entirely) makes any prior candidate/row permanently orphaned — its `dedupeKey` can never match a future candidate again.
 
 ## 6. Recipient resolution
 
-`src/lib/lifecycle/reminders/recipient.ts` — implemented, DB-backed (existing tables only), tested. TUTOR and PARENT always resolve to the subject's own user (`resolveSelfReminderRecipient`). STUDENT (`resolveStudentReminderRecipients`) returns an **array**: if the StudentProfile has its own login, that student is the SELF recipient; if not (`GUARDIAN_MANAGED`, no login), every currently-`ACTIVE` `ParentStudentRelationship` resolves to an independent GUARDIAN recipient — never an arbitrarily-picked single guardian when more than one exists, and `NO_SAFE_RECIPIENT` (never a guessed address) when none exist. `NotificationPreference.emailEnabled` is checked and honored — see §19 for why this is a deliberate strengthening beyond existing precedent, not a rediscovery of it.
+`recipient.ts` — Tutor/Parent self; Student self-or-every-ACTIVE-guardian, each returned as an independent `ReminderRecipient`. `NotificationPreference.emailEnabled` is honored (a deliberate strengthening beyond existing codebase precedent — see §19).
 
 ## 7. Guardian handling
 
-Directly reuses LIFECYCLE-1A's own subject/recipient split (`LifecycleJourneyState.recipientUserId === null` for a guardian-managed child with no login). A student in `WAITING_ON_GUARDIAN` (the `STUDENT_LOGIN_LINKING` claim-pending sub-journey) is never reminder-eligible in LIFECYCLE-1A at all, so it never reaches recipient resolution in the first place — the guardian-approval case and the guardian-recipient case are structurally distinct and neither can leak into the other.
+Reuses LIFECYCLE-1A's subject/recipient split. A revoked guardian relationship is excluded from `resolveStudentReminderRecipients` immediately (live query, no caching) and is separately caught by the pre-send recheck (§16) even if a row was already claimed before the revocation.
 
 ## 8. Locale
 
-No durable per-Tutor locale exists anywhere in the schema (`TutorProfile` has no such field; `TutorLanguage` is languages *taught*, a different concept) — this is the exact same documented gap `tutorApplicationNotifications.ts` already hit, so LIFECYCLE-1B makes the identical documented choice (hardcode `"en""`), not a new policy. `ParentProfile.preferredLanguage` / `StudentProfile.preferredLanguage` are the authoritative sources for Parent and self-contactable Student recipients; a guardian-routed reminder uses the **guardian's own** `preferredLanguage`, never the child's. Every candidate locale is passed through `resolveEmailLocale` (`src/lib/email/emailTranslation.ts`, already proven, reused unchanged) — an unsupported/missing value deterministically falls back to `"en"`, never inferred from name/email/geography.
+Tutor: hardcoded `"en"` (documented pre-existing gap, matches `tutorApplicationNotifications.ts`'s own identical choice). Parent/self-contactable-Student: their own `preferredLanguage`. Guardian-routed Student reminder: the **guardian's own** `preferredLanguage`, verified live (mixed-locale two-guardian fixture: one `en`, one `fr`, both correctly resolved independently).
 
 ## 9. Content strategy
 
-`src/lib/lifecycle/reminders/content.ts` + `messages/{en,fr}.json`'s new `lifecycleReminderEmail` namespace. Mirrors `tutorApplicationEmailContent.ts`'s exact shape (`createEmailTranslator` + `renderEmailShell`, pure function over an already-resolved context) — every string is translated, none hardcoded. Six content keys cover the six real `(role, stage, relationship)` combinations LIFECYCLE-1A can ever produce as `USER_ACTION_REQUIRED` (`TUTOR_DRAFT`, `TUTOR_TRAINING_REQUIRED`, `TUTOR_EXAM_REQUIRED`, `PARENT_STUDENT_SETUP`, `STUDENT_PROFILE_SELF`, `STUDENT_PROFILE_GUARDIAN`), each with genuinely distinct R1/R2/R3 copy (never "last chance," no fabricated deadline) plus a `whyItMatters` line answering the mission's 5th required question. `resolveContentKey` returns `null` — never a guessed template — for any other combination. Content is built but never dispatched in this mission.
+`content.ts` + `messages/{en,fr}.json`'s `lifecycleReminderEmail` namespace, mirroring `tutorApplicationEmailContent.ts`. Six content keys, genuinely distinct R1/R2/R3 copy per key, no fabricated deadlines, no "last chance" language, a `whyItMatters` line per key.
 
 ## 10. Deep links
 
-`src/lib/lifecycle/reminders/deepLink.ts` reuses LIFECYCLE-1A's own `nextAction` (an existing canonical, session-scoped route) and the already-proven `resolveBookingEmailBaseUrl` (HTTPS-only, never localhost). No query parameters, no database id, no email — every target route already resolves the viewer's own profile from their session server-side. **Known, honest, pre-existing limitation**: no protected page's auth redirect preserves a `callbackUrl` today (confirmed by inspecting every dashboard/tutor page), so a reminder clicked after the session expired lands on a bare `/login`, not back at the deep-linked page. Fixing that is a separate, multi-file change, explicitly out of scope here — building a bespoke bypass "solely for email" was explicitly forbidden by the mission.
+`deepLink.ts` — `{site.url}/{locale}{nextAction}`, zero PII, zero query parameters, verified (test) that every target route (`/tutor/profile`, `/tutor/training`, `/tutor/exam`, `/dashboard/family`, `/dashboard/profile`) still requires authentication in its own page source. **Known limitation, unchanged from the schema proposal**: no protected route preserves a `callbackUrl` on redirect to `/login` today — out of scope for this mission.
 
-## 11. Idempotency
+## 11. Idempotency — CORRECTED per the schema decision
 
-**Design only, pending schema approval.** At-most-once delivery per `(subjectId, journey, episodeKey, reminderNumber)` — exactly the same proven shape as `TutorApplicationNotification`/`SessionNotification`'s `dedupeKey` + `@@unique([dedupeKey])`. `computeReminderDedupeKey(episodeKey, reminderNumber)` is already implemented and tested (`episode.ts`) so its exact string shape is locked in before the table exists. See the Schema Proposal's IDEMPOTENCY section.
+`dedupeKey = lifecycleReminder:{episodeKey}:R{n}:recipient:{recipientUserId}` — **recipient-aware**, not just episode+reminderNumber. This was the schema decision's required correction: the original proposal's episode-only key would have let the DB's own unique constraint silently suppress a second guardian's legitimate reminder. Enforced by a real `@@unique([dedupeKey])` Postgres constraint on `LifecycleReminder` (migration `20260917000000_add_lifecycle_reminder`, applied to production). Verified live against the real constraint (not just unit-tested): two guardians of the same Student episode successfully claim two distinct rows; a third, duplicate claim attempt for either guardian is rejected with Postgres error `P2002`, and exactly one row persists per guardian.
 
 ## 12. Persistence
 
-**Not implemented — schema gate triggered.** Audited whether an existing table could safely provide reminder-history tracking: `TutorApplicationNotification` is Tutor-only and has no `episodeKey`/`reminderNumber` concept; `SessionNotification` is Booking-scoped, a different subject entirely; `Notification` (in-app) has no delivery-state machine or cadence concept. Overloading any of them would violate the mission's own explicit instruction ("Do NOT overload unrelated Notification tables merely to avoid a migration"). See the Schema Proposal below.
+**`LifecycleReminder`** (`prisma/schema.prisma`), migrated to production. Key corrections from the original proposal, per the schema decision:
+- `recipientUserId` is **nullable**, FK `onDelete: SetNull` (not Cascade) — a deleted User degrades "who this was sent to," never erases the historical fact that a reminder was sent. Verified live: deleting the recipient User leaves the row intact with `recipientUserId: null` and every other field (`status`, `sentAt`, `dedupeKey`, `reminderNumber`) unchanged.
+- `status` is a bounded **operational** enum only (`PENDING`, `PROCESSING`, `SENT`, `FAILED_RETRYABLE`, `FAILED_FINAL`, `OBSOLETE`, `SUPPRESSED`) — explicitly does **not** include `OPENED`/`CLICKED`/`RESUMED`/`STEP_COMPLETED`/`JOURNEY_COMPLETED`, which are LIFECYCLE-1C/1D's own separate, append-only event history (§26/§27), never retrofitted into this enum.
+- `subjectId` remains a plain string, never a polymorphic FK (unenforceable across three different target tables) — `role` disambiguates it.
 
 ## 13. Concurrency
 
-**Design only.** A DB-level `@@unique` constraint (not "check then insert") is the only safe idempotency primitive — proven pattern already used identically by both existing outbox tables. See Schema Proposal.
+The `@@unique([dedupeKey])` constraint is the sole idempotency primitive — "insert and treat a `P2002` conflict as success," never "check then insert." `claimReminderRow` (`src/services/lifecycleReminders.ts`) implements exactly this. Verified live under three sequential duplicate-claim attempts for the same (episode, reminder number, recipient): every attempt after the first is rejected by Postgres, exactly one row persists.
 
 ## 14. Decision engine
 
-The schema-independent half is real and implemented: `assessReminderCandidate` (`reminderCandidate.ts`) computes `{ episodeKey, dedupeKey, reminderNumber }` from a `LifecycleJourneyState` plus an (optional, currently-always-empty) `alreadySentNumbersForEpisode` array. The history-aware half (loading `alreadySentNumbersForEpisode` from the DB for a given `episodeKey`, and atomically claiming a row before send) is design-only pending the schema.
+`assessReminderCandidate` (pure, `reminderCandidate.ts`) is now recipient-scoped: ordering (`nextDueReminderNumber`) is evaluated per `(episodeKey, recipientUserId)` pair, not per episode — two guardians of the same Student have fully independent R1→R2→R3 sequences (one guardian's bounced email never blocks or skips the other's). "Already sent" means status exactly `SENT` — a `FAILED_RETRYABLE`/`FAILED_FINAL` R1 is never counted as sent, so R2 can never leapfrog a failed R1 (tested explicitly).
 
 ## 15. Delivery separation
 
-Strictly maintained: `content.ts` builds content, `recipient.ts` resolves who, `deepLink.ts` builds where — none of them import `getResendClient`, `.emails.send`, or any dispatch mechanism (structurally enforced by `reminders.test.ts`'s financial/boundary-style tests). No send path exists anywhere in this module.
+Strictly maintained. `discoverAndClaimDueReminders` (discovery+claim, no send) and `processPendingReminder` (recheck+content+send, one row at a time) are separate functions in `src/services/lifecycleReminders.ts`; the actual Resend call only happens via an explicitly-injected `sendEmail` dependency (`SendLifecycleReminderEmail`), never a default/implicit provider call.
 
 ## 16. Pre-send recheck
 
-**Design only.** The future dispatcher must reload the authoritative `LifecycleJourneyState` for the subject immediately before calling Resend and re-verify `isEpisodeStillCurrent(claimedEpisodeKey, freshState)` — if false, mark the claimed intent obsolete and do not send. This mission proves the underlying primitive (`isEpisodeStillCurrent`) is already correct and tested (`reminders.test.ts` §28); wiring it into an actual claim/send loop requires the persistence layer.
+`preSendRecheck.ts`'s `revalidateReminderIntent` reloads the authoritative `LifecycleJourneyState` fresh AND re-resolves the recipient list fresh, checking the specific `recipientUserId` is still present with `contactAllowed: true` — a check genuinely separate from episode currency, because a guardian relationship can be revoked without the child's own `episodeKey` changing at all. Verified live: revoking Guardian A between claim and send correctly fails Guardian A's recheck (`RECIPIENT_NO_LONGER_VALID`) while leaving Guardian B's recheck unaffected.
 
 ## 17. Failure/retry
 
-**Design only.** Mirrors `TutorApplicationNotification`'s proven per-row try/catch (one failure never aborts the batch) and `PENDING → SENT | FAILED` status shape, with an added bound (see Schema Proposal's proposed `FAILED_RETRYABLE` vs `FAILED_FINAL` split) so a permanently-invalid recipient doesn't retry forever. LIFECYCLE-1C owns provider webhook truth (`DELIVERED`/`BOUNCED`/etc.) — 1B only needs to know "did the send call itself succeed."
+`retryPolicy.ts` — `LIFECYCLE_REMINDER_MAX_ATTEMPTS = 3`, centralized, never an ad-hoc per-call-site number. `classifyProviderFailure` distinguishes retryable vs. final; `hasExhaustedRetries` bounds the retry loop. `processPendingReminder` marks `OBSOLETE` (never attempted, never retried) whenever the pre-send recheck fails, and `FAILED_FINAL`/`FAILED_RETRYABLE` only for an actual attempted-and-failed provider call.
 
 ## 18. Cron architecture
 
-**Designed, not built.** Future route: `/api/cron/lifecycle-reminders-tick`, reusing the exact shared-secret pattern every existing cron route already uses (`x-cron-secret` header checked against a dedicated `LIFECYCLE_REMINDERS_CRON_SECRET` env var, fail-closed if unset) — see `src/app/api/cron/session-notifications-tick/route.ts` for the proven template. Per that same route's own established convention, a new cron route is deployed **unscheduled** by default; nothing in this mission creates the route file itself, since it would need the not-yet-approved persistence layer to do anything real. Worker steps: bounded candidate scan → evaluate lifecycle state → resolve recipient(s) → compute episode/candidate → atomically claim (INSERT with the unique dedupeKey, `skipDuplicates`-equivalent) → **pre-send recheck** → send → persist outcome → continue, one subject's failure never aborting the batch.
+**Built and deployed** (`src/app/api/cron/lifecycle-reminders-tick/route.ts`), mirroring `session-notifications-tick`'s exact shared-secret pattern (`x-cron-secret` header vs. `LIFECYCLE_REMINDERS_CRON_SECRET`). Per the schema decision's explicit authorization ("the cron route may now be IMPLEMENTED and deployed... but MUST remain UNSCHEDULED"):
+- **`LIFECYCLE_REMINDERS_CRON_SECRET` was deliberately left unset in every Railway environment** — an additional fail-closed layer beyond "no schedule wired": even a stray manual invocation returns 500 and touches nothing.
+- No Railway cron trigger was configured for this route.
+- No in-repo scheduler config references it (this codebase keeps none for any cron route — confirmed no `railway.json` or equivalent exists in the repo at all).
 
 ## 19. Communication preferences
 
-Audited: `NotificationPreference.emailEnabled` exists in the schema (`@default(true)`) but **is not read by any application code today** — grep-confirmed zero call sites across booking confirmation, tutor application, password reset, and session notification emails, every one of which currently sends regardless of this flag. This is an existing gap, not something LIFECYCLE-1B introduces. **Product/legal classification is not invented here**: an onboarding-completion reminder, sent only to a user who voluntarily started a specific multi-step process, containing content strictly about completing that one process (no upsell, no third-party offer), is *conventionally* treated as transactional/service communication under frameworks like Canada's CASL — but this is the owner's classification to confirm, not a conclusion this audit is authorized to make. Pending that confirmation, LIFECYCLE-1B's recipient resolver is **deliberately more conservative than existing precedent**: it already checks and honors `emailEnabled` (implemented, tested) even though nothing else in the codebase does — a real behavior improvement, not a rediscovery.
+Unchanged from the schema proposal's own honest classification: `NotificationPreference.emailEnabled` exists but is read by no other transactional email flow in this codebase; LIFECYCLE-1B deliberately checks and honors it anyway — a real strengthening, not existing precedent. Product/legal classification (transactional vs. marketing) remains the owner's to confirm, not invented here.
 
 ## 20. Resend boundary
 
-Audited `src/lib/email/resendClient.ts` / `emailDeliveryConfig.ts` — the established `getEmailDeliveryMode()` ("console_dev" | "resend") gate, fail-closed to requiring real credentials in `NODE_ENV=production`. LIFECYCLE-1B's future dispatcher must resolve delivery mode through this exact existing mechanism, never a new one. **No Resend call was made or prepared for invocation in this mission** — `content.ts`/`recipient.ts`/`deepLink.ts` produce everything a send call would need, but nothing calls `getResendClient()` or `.emails.send`. Open/click tracking is explicitly LIFECYCLE-1C's, not enabled or touched here.
+`resendSendLifecycleReminderEmail.ts` / `sendLifecycleReminderEmail.ts` mirror the tutor-application email adapters exactly, routing through the existing, unchanged `getEmailDeliveryMode()` gate. **Zero real Resend calls were made in this mission** — the adapter exists and is wired to the cron route, but the cron route was never actually invoked with a valid secret against production, and no test in this codebase calls the real `resendSendLifecycleReminderEmail` (unit/integration tests exercise the orchestration logic with an injected fake `sendEmail`, never the real one).
 
 ## 21. Tracking boundary
 
-No tracking pixel, redirect-tracking endpoint, or token was created. Deep links carry zero PII (§10, tested). The link shape (`{baseUrl}/{locale}{canonicalRoute}`) is stable and simple enough for LIFECYCLE-1C/1D to later add attribution via a server-side redirect layer without needing to change what this mission already built.
+Unchanged — no tracking pixel, redirect endpoint, or token exists. Deep links remain PII-free (verified).
 
 ## 22. Admin observability
 
-**Design only.** `LifecycleSummaryCard` (LIFECYCLE-1A) should eventually gain an optional "Reminders" sub-section showing: current episode's R1/R2/R3 status (not sent / sent \<timestamp\> / obsolete), last reminder sent, next reminder due — all read-only, sourced from the future `LifecycleReminder` table once it exists. **No "Send Reminder"/"Retry"/bulk-send control is designed or authorized** — the mission is explicit that any such control needs separate authorization.
+`LifecycleSummaryCard` (`src/components/admin/LifecycleSummaryCard.tsx`) now optionally accepts a `reminders` prop and renders a read-only "Reminders" list (reminder number, relationship, status badge, sent/last-attempt timestamp) when provided. Wired into all three admin detail pages, each querying its own subject's `LifecycleReminder` rows (`journey`-scoped, most-recent-10). **No mutation control exists anywhere in this component or its call sites** — no send/retry/send-all/bulk button, no manual status field.
 
 ## 23. Production dry run
 
-Executed via the established disposable-script convention (`railway run`, then deleted, cleanup confirmed) against live production, 2026-09-16:
-
-| | Count |
-|---|---|
-| USER_ACTION_REQUIRED (all roles) | 9 |
-| — TUTOR:DRAFT | 2 |
-| — PARENT:STUDENT_SETUP | 4 |
-| — STUDENT:PROFILE | 3 |
-| WAITING_ON_ADMIN | 1 |
-| COMPLETED | 3 |
-| WAITING_ON_FUTURETUTOR / WAITING_ON_GUARDIAN / REJECTED / SUSPENDED / INELIGIBLE / UNKNOWN | 0 each |
-
-Cadence step reached by elapsed inactivity alone: all 9 have already reached the R3 threshold (≥7 days inactive). **Would-send estimate if activated today: 9 subjects would receive R1 on the first tick, 0 would receive R2 or R3** — because no send history exists yet anywhere, and R2/R3 can never precede R1 regardless of how long a subject has already been inactive (§3). No email was sent. No name/email/id was printed.
+Unchanged findings from the schema proposal (2026-09-16): 9 subjects would receive R1 on a first activation tick, 0 would receive R2/R3. **This mission created zero `LifecycleReminder` rows for any real production subject** — every row created during certification referenced only disposable, uniquely-tagged fixture Tutor/Parent/Student rows, all deleted afterward (verified: table row count identical before and after the full fixture-verification run).
 
 ## 24. Test plan
 
-`src/lib/lifecycle/reminders/reminders.test.ts` — 34 deterministic unit tests covering cadence (§1-6), episode identity/stop-on-progress (§9-10 + extras), candidate suppression (§11-18, §28), deep links (§26-27), and content selection/rendering (§23-25), plus financial/Resend/cron-absence boundary tests. `recipient.integration.test.ts` — 7 DB-backed tests (§19-22, multi-guardian, revoked-relationship) written but **could not execute** in this session (`DATABASE_URL_TEST` unreachable — `ECONNREFUSED`, identical to LIFECYCLE-1A's own honestly-reported gap; not fabricated as passing). Full non-DB suite: **2657/2657 passed, 195/195 files**, zero regressions. Items requiring the persistence layer (§7, §8, duplicate prevention §31-34, concurrency, cron auth §35-36, batch bounding) are specified as design only — see the Schema Proposal below for what they'll need.
+- `src/lib/lifecycle/reminders/reminders.test.ts` — 50 deterministic unit tests (cadence, episode identity incl. timezone/PII checks, candidate suppression, multi-guardian independent sequencing, ordering/failure-cannot-leapfrog, deep links incl. auth-guard structural checks, content selection/rendering, cron-route-exists-but-unscheduled, financial/Resend boundaries).
+- `src/lib/lifecycle/reminders/recipient.integration.test.ts` + `src/services/lifecycleReminders.integration.test.ts` — DB-backed tests (multi-guardian dedupe/concurrency/revocation, User-deletion SetNull policy) written for CI/any environment with a reachable `DATABASE_URL_TEST`; **could not execute in this session** (unreachable, same honest gap as LIFECYCLE-1A).
+- **Disposable fixture-verification script**, run live against production per this project's own established convention (isolated uniquely-tagged fixtures, plain assert output, full cleanup in a `finally` block, script deleted before committing): **19/19 checks passed**, proving the exact behaviors the integration tests assert against a real Postgres unique constraint, real cascade/SetNull FK behavior, and real concurrent-duplicate handling — something no in-memory unit test could prove.
+- Full non-DB suite: **2668/2668 passed, 195/195 files**, zero regressions.
+- `npx tsc --noEmit`: clean. `npx eslint`: clean. `npm run build`: succeeded (confirms `/api/cron/lifecycle-reminders-tick` builds as a dynamic route).
 
 ## 25. Deployment/activation gates
 
-This mission's schema-independent code (cadence/episode/recipient/locale/deepLink/content) is safe to deploy as-is — it has no send path, no cron, no schema dependency, and is inert until called by code that does not yet exist. **Activation gates that remain, in order**: (1) owner approval of the Schema Proposal below; (2) migration created and applied; (3) the history-aware decision engine, persistence-writing candidate-claim logic, and cron route built against the approved schema; (4) the cron route deployed **unscheduled**; (5) a further explicit, separate owner authorization before the cron is actually scheduled or any reminder is sent to a real recipient — none of which happens in this mission.
+Migration applied to production (see §12/certification report). Application code deployed. **Remaining gate before any real reminder is ever sent**: an explicit, separate future authorization to (a) set `LIFECYCLE_REMINDERS_CRON_SECRET` in Railway and (b) configure an actual Railway cron trigger for this route. Neither happened in this mission.
 
 ## 26. LIFECYCLE-1C handoff
 
-Needs: `DELIVERED`/`OPENED`/`CLICKED`/`BOUNCED`/`COMPLAINED` state, provider webhook attribution, and a secure (non-PII) tracking-link layer built on top of §21's already-stable deep-link shape. `OPENED` must never be relabeled "read."
+`providerMessageId` remains on `LifecycleReminder` for correlation. `DELIVERED`/`OPENED`/`CLICKED`/`BOUNCED`/`COMPLAINED` require their own **separate, append-only event model** — per the schema decision, explicitly NOT folded into `LifecycleReminderStatus`. `OPENED` must never be called "read," anywhere.
 
 ## 27. LIFECYCLE-1D handoff
 
-Needs: `RESUMED`/`STEP_COMPLETED`/`JOURNEY_COMPLETED` events (derivable by comparing a subject's `LifecycleJourneyState` across two points in time — the exact same episode-identity primitives built here), an admin activation dashboard, and funnel analytics — all built on LIFECYCLE-1A/1B's existing evaluators, not a new source of truth.
+`computeEpisodeKey`/`isEpisodeStillCurrent` remain the exact primitives a future `RESUMED`/`STEP_COMPLETED`/`JOURNEY_COMPLETED` detector needs (compare two `LifecycleJourneyState` snapshots' episode keys over time) — no new source of truth required.
