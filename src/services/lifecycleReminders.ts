@@ -11,7 +11,13 @@ import { resolveSelfReminderRecipient, resolveStudentReminderRecipients } from "
 import { revalidateReminderIntent } from "@/lib/lifecycle/reminders/preSendRecheck";
 import { buildReminderDeepLink } from "@/lib/lifecycle/reminders/deepLink";
 import { buildReminderEmailContent } from "@/lib/lifecycle/reminders/content";
-import { classifyProviderFailure, hasExhaustedRetries } from "@/lib/lifecycle/reminders/retryPolicy";
+import {
+  classifyProviderFailure,
+  hasExhaustedRetries,
+  LIFECYCLE_REMINDER_MAX_ATTEMPTS,
+  LIFECYCLE_REMINDER_RETRY_BACKOFF_MINUTES,
+} from "@/lib/lifecycle/reminders/retryPolicy";
+import type { ReminderActivationPolicy } from "@/lib/lifecycle/reminders/activationMode";
 import type { ReminderNumber, ReminderRecipient } from "@/lib/lifecycle/reminders/types";
 import type { LifecycleJourneyState, LifecycleRole } from "@/lib/lifecycle/types";
 
@@ -92,8 +98,15 @@ export interface ClaimedReminder {
  * unbounded table scan) — see schema decision §10/§16 "bounded candidate
  * processing".
  */
-export async function discoverAndClaimDueReminders(limit = 50, now: Date = new Date()): Promise<ClaimedReminder[]> {
+export async function discoverAndClaimDueReminders(options: {
+  policy: ReminderActivationPolicy;
+  limit?: number;
+  now?: Date;
+}): Promise<ClaimedReminder[]> {
+  const { policy, limit = 50, now = new Date() } = options;
   const claimed: ClaimedReminder[] = [];
+  // Disabled mode never even scans — zero queries, zero rows.
+  if (policy.mode === "disabled") return claimed;
 
   const [tutorIds, parentIds, studentIds] = await Promise.all([
     db.tutorProfile.findMany({ where: { applicationStatus: { notIn: ["APPROVED", "REJECTED"] } }, select: { id: true }, take: limit }),
@@ -115,6 +128,9 @@ export async function discoverAndClaimDueReminders(limit = 50, now: Date = new D
       const recipients = await resolveRecipients(role, state);
       for (const recipient of recipients) {
         if (!recipient.contactAllowed) continue;
+        // Checked BEFORE the claim, so in canary mode no LifecycleReminder
+        // row is ever created for a non-allowlisted (real) recipient.
+        if (!policy.isRecipientPermitted(recipient.recipientEmail)) continue;
 
         const freshEpisodeKey = computeEpisodeKey(state);
         if (!freshEpisodeKey) continue;
@@ -171,21 +187,28 @@ async function claimReminderRow(
   }
 }
 
-export type ProcessOutcome = "SENT" | "OBSOLETE" | "FAILED_RETRYABLE" | "FAILED_FINAL";
+/** SKIPPED = nothing was sent and the row was left untouched (not
+ * permitted by the current activation mode, or another worker owns it). */
+export type ProcessOutcome = "SENT" | "OBSOLETE" | "FAILED_RETRYABLE" | "FAILED_FINAL" | "SKIPPED";
 
 /**
- * Phase 2 of the worker — takes ONE already-claimed PENDING row and either
+ * Phase 2 of the worker — takes ONE PENDING/FAILED_RETRYABLE row and either
  * sends it or marks it obsolete/failed. `sendEmail` must be explicitly
  * provided by the caller (never defaults to a real provider) — see this
  * module's own doc comment.
  */
-export async function processPendingReminder(reminderId: string, sendEmail: SendLifecycleReminderEmail, now: Date = new Date()): Promise<ProcessOutcome> {
+export async function processPendingReminder(
+  reminderId: string,
+  sendEmail: SendLifecycleReminderEmail,
+  policy: ReminderActivationPolicy,
+  now: Date = new Date()
+): Promise<ProcessOutcome> {
   const row = await db.lifecycleReminder.findUniqueOrThrow({ where: { id: reminderId } });
 
   if (row.status !== "PENDING" && row.status !== "FAILED_RETRYABLE") {
     // Already terminal (SENT/OBSOLETE/FAILED_FINAL/SUPPRESSED) or mid-flight
     // (PROCESSING, claimed by a concurrent worker) — nothing to do.
-    return row.status === "SENT" ? "SENT" : "OBSOLETE";
+    return row.status === "SENT" ? "SENT" : "SKIPPED";
   }
 
   if (!row.recipientUserId) {
@@ -193,7 +216,26 @@ export async function processPendingReminder(reminderId: string, sendEmail: Send
     return "OBSOLETE";
   }
 
-  await db.lifecycleReminder.updateMany({ where: { id: row.id, status: { in: ["PENDING", "FAILED_RETRYABLE"] } }, data: { status: "PROCESSING" } });
+  // Activation mode re-checked at send time, not just at claim time — an
+  // operator switching back to disabled (or removing an address from the
+  // canary list) takes effect immediately. The row is left untouched so it
+  // can be sent later if re-permitted (the pre-send recheck below still
+  // obsoletes it then if the episode moved on in the meantime).
+  const permissionCheckUser = await db.user.findUnique({ where: { id: row.recipientUserId }, select: { email: true } });
+  if (!permissionCheckUser?.email || !policy.isRecipientPermitted(permissionCheckUser.email)) {
+    return "SKIPPED";
+  }
+
+  // Atomic claim: only the worker whose conditional update actually moved
+  // the row out of PENDING/FAILED_RETRYABLE may send. A concurrent worker
+  // (e.g. a fresh tick overlapping a retry sweep) gets count 0 and stops
+  // here — this is what makes "no duplicate provider send after claim"
+  // hold even when the same row is handed to two workers at once.
+  const claim = await db.lifecycleReminder.updateMany({
+    where: { id: row.id, status: { in: ["PENDING", "FAILED_RETRYABLE"] } },
+    data: { status: "PROCESSING" },
+  });
+  if (claim.count === 0) return "SKIPPED";
 
   const recheck = await revalidateReminderIntent(db, { role: row.role, subjectId: row.subjectId, episodeKey: row.episodeKey, recipientUserId: row.recipientUserId }, now);
   if (!recheck.safe) {
@@ -249,6 +291,37 @@ export async function processPendingReminder(reminderId: string, sendEmail: Send
     });
     return final ? "FAILED_FINAL" : "FAILED_RETRYABLE";
   }
+}
+
+/**
+ * Retry sweep — before this existed, a FAILED_RETRYABLE row (or a PENDING
+ * row left behind by a crash between claim and send) was never picked up
+ * again by anything, AND it permanently blocked that recipient's sequence:
+ * the next tick re-proposed the same R-number (only SENT counts as sent),
+ * whose dedupeKey then collided with the stuck row. Bounded, oldest first,
+ * and only after LIFECYCLE_REMINDER_RETRY_BACKOFF_MINUTES — so rows claimed
+ * in the current tick (scheduledFor = now) are never re-picked by the same
+ * tick, and a provider outage isn't hammered every minute.
+ *
+ * PROCESSING rows are deliberately NOT recovered: a crash mid-send leaves
+ * it unknowable whether the provider already accepted the email, and
+ * re-sending would risk a duplicate. They stay visible in admin
+ * observability for a human to judge.
+ */
+export async function findResumableReminderIds(limit = 50, now: Date = new Date()): Promise<string[]> {
+  const cutoff = new Date(now.getTime() - LIFECYCLE_REMINDER_RETRY_BACKOFF_MINUTES * 60_000);
+  const rows = await db.lifecycleReminder.findMany({
+    where: {
+      OR: [
+        { status: "PENDING", scheduledFor: { lte: cutoff } },
+        { status: "FAILED_RETRYABLE", attemptCount: { lt: LIFECYCLE_REMINDER_MAX_ATTEMPTS }, lastAttemptAt: { lte: cutoff } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+    select: { id: true },
+  });
+  return rows.map((r) => r.id);
 }
 
 async function markRow(

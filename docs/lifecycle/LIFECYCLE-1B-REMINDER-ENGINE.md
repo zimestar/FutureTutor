@@ -119,3 +119,13 @@ Migration applied to production (see §12/certification report). Application cod
 ## 27. LIFECYCLE-1D handoff
 
 `computeEpisodeKey`/`isEpisodeStillCurrent` remain the exact primitives a future `RESUMED`/`STEP_COMPLETED`/`JOURNEY_COMPLETED` detector needs (compare two `LifecycleJourneyState` snapshots' episode keys over time) — no new source of truth required.
+
+## 28. LIFECYCLE-ACTIVATION-1 amendments (2026-11)
+
+Three changes made after 1B was certified, before any activation:
+
+- **Activation mode** (`src/lib/lifecycle/reminders/activationMode.ts`) — a second key independent of the cron secret: `LIFECYCLE_REMINDERS_MODE` = `disabled` (default, also for any unrecognized value) / `canary` (only `LIFECYCLE_REMINDERS_CANARY_EMAILS`) / `live`. Applied in discovery *before* the claim, so canary mode never creates a row for a real recipient, and re-applied at send time, so switching back to `disabled` takes effect immediately (the row is left `PENDING`, outcome `SKIPPED`).
+- **Atomic send claim** — §15's description was incomplete: `processPendingReminder` moved the row to `PROCESSING` without checking that its own update actually won, so two workers handed the same row could both send. It now proceeds only if its conditional update changed the row; the loser returns `SKIPPED`. Proven against real Postgres with two concurrent calls → exactly one send.
+- **Retry sweep** — §17's retry policy had no caller: a `FAILED_RETRYABLE` row (or a `PENDING` row orphaned by a crash between claim and send) was never picked up again, and it permanently blocked that recipient's sequence (the next tick re-proposed the same R-number, whose `dedupeKey` collided with the stuck row). `findResumableReminderIds` now returns such rows after `LIFECYCLE_REMINDER_RETRY_BACKOFF_MINUTES`, and the cron route processes them after the fresh claims. `PROCESSING` rows are deliberately never auto-resumed — whether the provider already accepted the email is unknowable after a crash mid-send.
+
+§24's "DB-backed tests could not execute" is also resolved: the local test database (`docker compose`, `futuretutor_test`) runs them — all lifecycle integration tests pass, plus `lifecycleReminders.activation.integration.test.ts` (9 tests) for the three changes above. Activation steps for the owner: `docs/lifecycle/LIFECYCLE-ACTIVATION-RUNBOOK.md`.

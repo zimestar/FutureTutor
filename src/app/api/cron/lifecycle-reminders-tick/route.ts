@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { discoverAndClaimDueReminders, processPendingReminder } from "@/services/lifecycleReminders";
+import { discoverAndClaimDueReminders, processPendingReminder, findResumableReminderIds } from "@/services/lifecycleReminders";
+import { resolveReminderActivationPolicy } from "@/lib/lifecycle/reminders/activationMode";
 import { resolveSendLifecycleReminderEmail } from "@/lib/email/sendLifecycleReminderEmail";
 
 /**
@@ -37,19 +38,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const claimed = await discoverAndClaimDueReminders(50);
+  // Second, independent safety key (LIFECYCLE-ACTIVATION-1): even with a
+  // valid secret, nothing is scanned, claimed, or sent unless
+  // LIFECYCLE_REMINDERS_MODE is explicitly "canary" or "live".
+  const policy = resolveReminderActivationPolicy();
+  if (policy.mode === "disabled") {
+    return NextResponse.json({ ok: true, mode: "disabled", claimed: 0, resumed: 0 });
+  }
+
+  const claimed = await discoverAndClaimDueReminders({ policy, limit: 50 });
+  const resumableIds = await findResumableReminderIds(50);
 
   const sendEmail = resolveSendLifecycleReminderEmail();
-  const outcomes = { SENT: 0, OBSOLETE: 0, FAILED_RETRYABLE: 0, FAILED_FINAL: 0 };
-  for (const reminder of claimed) {
+  const outcomes = { SENT: 0, OBSOLETE: 0, FAILED_RETRYABLE: 0, FAILED_FINAL: 0, SKIPPED: 0 };
+  // Fresh claims first, then the retry sweep. processPendingReminder's own
+  // atomic claim makes any overlap between the two lists harmless.
+  const ids = [...claimed.map((c) => c.id), ...resumableIds];
+  for (const id of ids) {
     try {
-      const outcome = await processPendingReminder(reminder.id, sendEmail);
+      const outcome = await processPendingReminder(id, sendEmail, policy);
       outcomes[outcome]++;
     } catch (error) {
       // One reminder's unexpected failure must never abort the batch.
-      console.error("[lifecycle-reminders-tick] processPendingReminder failed", reminder.id, error instanceof Error ? error.message : String(error));
+      console.error("[lifecycle-reminders-tick] processPendingReminder failed", id, error instanceof Error ? error.message : String(error));
     }
   }
 
-  return NextResponse.json({ ok: true, claimed: claimed.length, outcomes });
+  return NextResponse.json({ ok: true, mode: policy.mode, claimed: claimed.length, resumed: resumableIds.length, outcomes });
 }
