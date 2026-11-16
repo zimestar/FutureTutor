@@ -371,11 +371,16 @@ function claimInvitationWithRetry(params: { tutorInvitationId: string; tutorProf
         if (!request || request.status !== "MATCHING" || !request.customerPriceQuoteId) {
           throw new InvitationNotPendingError();
         }
+        // RW-02 — mirrors acceptTutorInvitationAction's legacy-BOTH refusal.
+        if (request.tutoringMode !== "ONLINE" && request.tutoringMode !== "IN_PERSON") {
+          throw new InvitationNotPendingError();
+        }
+        const requestMode = request.tutoringMode;
 
         const stillEligible = await isTutorEligibleForRequest(tx, params.tutorProfileId, {
           subjectId: request.subjectId,
           academicLevelId: request.academicLevelId,
-          tutoringMode: request.tutoringMode,
+          tutoringMode: requestMode,
           requestedStartAt: request.requestedStartAt,
           durationMinutes: request.durationMinutes,
           city: request.city,
@@ -404,7 +409,7 @@ function claimInvitationWithRetry(params: { tutorInvitationId: string; tutorProf
           startAt: request.requestedStartAt,
           endAt,
           timezone: "UTC",
-          mode: request.tutoringMode,
+          mode: requestMode,
           paymentId: payment.id,
           customerPriceQuoteId: request.customerPriceQuoteId,
           tutorPayoutQuoteId: invitation.tutorPayoutQuoteId,

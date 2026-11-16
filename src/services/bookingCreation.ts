@@ -1,7 +1,8 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import type { TutorApplicationStatus, TutoringMode } from "@/generated/prisma/enums";
+import type { TutorApplicationStatus } from "@/generated/prisma/enums";
 import { isTutorBookable } from "@/lib/tutorBookability";
+import { assertActualTutoringMode, type EffectiveTutoringMode } from "@/lib/tutoringModeResolution";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { validateAndConsumeCustomerPriceQuote } from "@/services/customerPricing";
 import { validateAndConsumeTutorPayoutQuote } from "@/services/tutorPayout";
@@ -156,7 +157,8 @@ export interface ReserveBookingPendingPaymentInput {
   startAt: Date;
   endAt: Date;
   timezone: string;
-  mode: TutoringMode;
+  /** RW-02 — the booking's ACTUAL session mode; never BOTH. */
+  mode: EffectiveTutoringMode;
   // The already-authorized Payment (Payment.status === AUTHORIZED) this
   // reservation is being made against — linked here, consumed later in
   // src/services/payments.ts's convergeToCaptured once capture succeeds.
@@ -222,6 +224,11 @@ export async function reserveBookingPendingPayment(
   tx: Prisma.TransactionClient,
   input: ReserveBookingPendingPaymentInput
 ) {
+  // RW-02 — a Booking is only ever created for one actual session mode.
+  // Pure check, before any lock, read, or write — a BOTH (or any non-actual)
+  // mode aborts the reservation with nothing written.
+  assertActualTutoringMode(input.mode, "reserveBookingPendingPayment");
+
   // RW-03 — first, so the tutor rows are locked before anything else is
   // read or written in this reservation (see lockAndAssertTutorBookable).
   await lockAndAssertTutorBookable(tx, input.tutorProfileId);

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveRequestedTutoringMode } from "./tutoringModeResolution";
+import {
+  assertActualTutoringMode,
+  InvalidActualTutoringModeError,
+  isActualTutoringMode,
+  resolveRequestedTutoringMode,
+} from "./tutoringModeResolution";
 
 // PROD-DIRECT-BOOKING-MODEFIX1 — exhaustive coverage of the capability x
 // requested-mode matrix. Mirrors the mission's own Part 2 spec table
@@ -61,5 +66,33 @@ describe("resolveRequestedTutoringMode", () => {
       expect(resolveRequestedTutoringMode({ tutorCapability: "BOTH", requestedMode: "hybrid" })).toBeNull();
       expect(resolveRequestedTutoringMode({ tutorCapability: "ONLINE", requestedMode: "" })).toBeNull();
     });
+  });
+});
+
+// RW-02 — the shared actual-mode guard used before every actual-mode write.
+
+describe("isActualTutoringMode / assertActualTutoringMode (RW-02)", () => {
+  it.each(["ONLINE", "IN_PERSON"])("%s is an actual mode", (mode) => {
+    expect(isActualTutoringMode(mode)).toBe(true);
+    expect(() => assertActualTutoringMode(mode, "test")).not.toThrow();
+  });
+
+  it.each(["BOTH", "", "online", "in_person", "Online", " ONLINE", "HYBRID", null, undefined, 0, {}])(
+    "%j is not an actual mode",
+    (mode) => {
+      expect(isActualTutoringMode(mode)).toBe(false);
+      expect(() => assertActualTutoringMode(mode, "test")).toThrow(InvalidActualTutoringModeError);
+    }
+  );
+
+  it("the error names the call site but never echoes the rejected value", () => {
+    try {
+      assertActualTutoringMode("BOTH", "reserveBookingPendingPayment");
+      throw new Error("expected a throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(InvalidActualTutoringModeError);
+      expect((error as Error).message).toContain("reserveBookingPendingPayment");
+      expect((error as Error).message).not.toContain("BOTH");
+    }
   });
 });

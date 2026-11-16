@@ -191,7 +191,7 @@ async function makeQuote(params: {
   studentProfileId: string;
   subjectId?: string;
   academicLevelId?: string | null;
-  mode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  mode?: "ONLINE" | "IN_PERSON"; // RW-02 — an actual mode, never BOTH
   requestedStartAt?: Date;
 }) {
   const quote = await createCustomerPriceQuote(
@@ -215,7 +215,7 @@ async function makePayoutQuote(params: {
   customerQuoteId: string;
   subjectId?: string;
   academicLevelId?: string | null;
-  mode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  mode?: "ONLINE" | "IN_PERSON"; // RW-02 — an actual mode, never BOTH
   requestedStartAt?: Date;
 }) {
   const payoutQuote = await createTutorPayoutQuote(
@@ -271,7 +271,7 @@ async function buildScenario(overrides: {
   startAt?: Date;
   subjectId?: string;
   academicLevelId?: string | null;
-  mode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  mode?: "ONLINE" | "IN_PERSON"; // RW-02 — an actual mode, never BOTH
 } = {}) {
   const tutor = await createTutorUser();
   const student = await createSelfManagedStudent();

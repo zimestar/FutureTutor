@@ -18,6 +18,36 @@
  */
 export type EffectiveTutoringMode = "ONLINE" | "IN_PERSON";
 
+/**
+ * RW-02 — thrown when a value that is about to be persisted (or acted on) as
+ * an ACTUAL session mode — TutoringRequest.tutoringMode,
+ * CustomerPriceQuote.tutoringMode, TutorPayoutQuote.tutoringMode,
+ * Booking.mode — is not exactly ONLINE or IN_PERSON. "BOTH" is a legal
+ * CAPABILITY / PREFERENCE value (TutorProfile.learningMode,
+ * TutorAvailability.mode, StudentProfile.tutoringMode) and is never a legal
+ * actual mode. The message never echoes the offending value.
+ */
+export class InvalidActualTutoringModeError extends Error {
+  constructor(where: string) {
+    super(`An actual tutoring session mode must be ONLINE or IN_PERSON (${where}).`);
+    this.name = "InvalidActualTutoringModeError";
+  }
+}
+
+/** RW-02 — exact-match check: only the literal strings "ONLINE" and
+ * "IN_PERSON" are actual session modes. BOTH, empty, lowercase, null,
+ * undefined and any unknown value are not. */
+export function isActualTutoringMode(mode: unknown): mode is EffectiveTutoringMode {
+  return mode === "ONLINE" || mode === "IN_PERSON";
+}
+
+/** RW-02 — the shared persistence guard. Call it BEFORE any write (and before
+ * opening a transaction where possible) so a rejected mode can never leave a
+ * partial row behind. */
+export function assertActualTutoringMode(mode: unknown, where: string): asserts mode is EffectiveTutoringMode {
+  if (!isActualTutoringMode(mode)) throw new InvalidActualTutoringModeError(where);
+}
+
 export function resolveRequestedTutoringMode(params: {
   tutorCapability: "ONLINE" | "IN_PERSON" | "BOTH";
   /** Untrusted input — a raw client-submitted value (or absent). Only the

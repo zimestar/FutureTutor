@@ -9,6 +9,7 @@ import { getUrgencyBand } from "@/lib/urgency";
 import { getSupplySignal } from "@/services/marketplaceSupply";
 import { calculateTax } from "@/services/tax";
 import { getDistance } from "@/services/distance";
+import { assertActualTutoringMode, type EffectiveTutoringMode } from "@/lib/tutoringModeResolution";
 
 export const CUSTOMER_PRICING_VERSION = "CUSTOMER_PRICING_V1";
 
@@ -35,6 +36,9 @@ export interface CustomerPriceCalculationInput {
 
 /** Adds the quote-ownership fields required only when persisting a real quote. */
 export interface CustomerPricingContext extends CustomerPriceCalculationInput {
+  /** RW-02 — a persisted quote is always priced for ONE actual session mode,
+   * never BOTH (non-persisted previews keep the wider calculation type). */
+  tutoringMode: EffectiveTutoringMode;
   createdByUserId: string;
   studentProfileId: string;
 }
@@ -209,6 +213,8 @@ export async function calculateCustomerPrice(
  * reasoning: defaults to the ambient `db`, identical behavior for every
  * existing caller. */
 export async function createCustomerPriceQuote(context: CustomerPricingContext, client: PrismaClient = db) {
+  // RW-02 — before the transaction opens: a non-actual mode writes nothing.
+  assertActualTutoringMode(context.tutoringMode, "createCustomerPriceQuote");
   return client.$transaction(
     async (tx) => {
       const { result, settings } = await calculateWithinSnapshot(tx, context);
@@ -304,10 +310,15 @@ export async function lockCustomerPriceQuote(
   tx: Prisma.TransactionClient,
   quoteId: string,
   userId: string,
-  expectedContext: QuoteContextFingerprint
+  expectedContext: QuoteContextFingerprint & { tutoringMode: EffectiveTutoringMode }
 ) {
+  // RW-02 — a quote is only ever locked for one actual session mode. Checked
+  // before any read/write; the stored quote's own mode is re-checked below
+  // (a legacy BOTH quote is refused even if its contextHash would match).
+  assertActualTutoringMode(expectedContext.tutoringMode, "lockCustomerPriceQuote");
   const quote = await tx.customerPriceQuote.findUnique({ where: { id: quoteId } });
   if (!quote) throw new QuoteNotFoundError();
+  assertActualTutoringMode(quote.tutoringMode, "lockCustomerPriceQuote (stored quote)");
   if (quote.createdByUserId !== userId) throw new QuoteNotOwnedError();
   if (quote.status === "LOCKED" || quote.status === "CONSUMED") throw new QuoteAlreadyLockedError();
   if (quote.status === "CANCELLED") throw new QuoteNotActiveError();

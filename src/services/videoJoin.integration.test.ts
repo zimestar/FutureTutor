@@ -200,7 +200,7 @@ async function createGuardianManagedStudentWithParent(relationshipStatus: "ACTIV
   return { parentUser, parentProfile, studentProfile };
 }
 
-async function setupConfirmedBooking(overrides: { startAt?: Date; mode?: "ONLINE" | "IN_PERSON" | "BOTH" } = {}) {
+async function setupConfirmedBooking(overrides: { startAt?: Date; mode?: "ONLINE" | "IN_PERSON" } = {}) {
   const startAt = overrides.startAt ?? DEFAULT_TEST_START_AT;
   const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
   const mode = overrides.mode ?? "ONLINE";
@@ -420,8 +420,14 @@ describe("requestVideoJoinToken — authorization matrix", () => {
     ).rejects.toThrow(VideoNotSupportedForBookingError);
   });
 
-  it("accepts a BOTH-mode booking", async () => {
-    const { student, booking } = await setupConfirmedBooking({ mode: "BOTH" });
+  it("accepts a legacy BOTH-mode booking (backward-compatible reader, kept until RW-04)", async () => {
+    // RW-02 — a BOTH booking can no longer be created through
+    // reserveBookingPendingPayment (assertActualTutoringMode). Legacy rows may
+    // still exist, so the reader must keep tolerating them: book ONLINE
+    // through the real path, then rewrite the stored mode to BOTH directly in
+    // the isolated test database to reproduce a pre-RW-02 row.
+    const { student, booking: onlineBooking } = await setupConfirmedBooking({ mode: "ONLINE" });
+    const booking = await db.booking.update({ where: { id: onlineBooking.id }, data: { mode: "BOTH" } });
     const provider = makeFakeProvider();
     const result = await requestVideoJoinToken(booking.id, student.user.id, provider, { actorRole: "STUDENT" });
     expect(result.participantRole).toBe("STUDENT");

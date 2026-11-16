@@ -18,7 +18,11 @@ export const createTutoringRequestSchema = z
     // in src/schemas/pricing.ts. An unresolved/"Any level" academic level
     // must never reach quote generation.
     academicLevelId: z.string().min(1),
-    tutoringMode: z.enum(["ONLINE", "IN_PERSON", "BOTH"]),
+    // RW-02 — the ACTUAL session mode for this one request: exactly ONLINE or
+    // IN_PERSON. "BOTH" is a tutor capability / learner preference value,
+    // never an actual mode, and is rejected here regardless of Closed Beta
+    // (as are empty, lowercase, and unknown values — z.enum is exact-match).
+    tutoringMode: z.enum(["ONLINE", "IN_PERSON"]),
     durationMinutes: z.coerce.number().int().min(15).max(240),
     requestedStartAt: z.coerce.date(),
     notes: z.string().max(2000).optional(),

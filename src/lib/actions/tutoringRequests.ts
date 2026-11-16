@@ -29,6 +29,7 @@ import {
   PaymentIntentVerificationError,
 } from "@/services/payments";
 import { advanceDispatch, closeTutoringRequest } from "@/services/quickMatchDispatch";
+import { isActualTutoringMode } from "@/lib/tutoringModeResolution";
 import {
   createTutoringRequestForLearnerInOwnTransaction,
   NotAuthorizedForLearnerError,
@@ -83,9 +84,10 @@ export async function createTutoringRequestAction(
   if (!parsed.success) return { success: false, error: t("invalidInput") };
   const data = parsed.data;
 
-  // BETA-HARDEN1 — Closed Beta is online-only (BETA-USER1 §20 #5). "BOTH"
-  // is rejected alongside "IN_PERSON" since it still permits an in-person
-  // match. Checked before any DB write (quote creation, request creation)
+  // BETA-HARDEN1 — Closed Beta is online-only (BETA-USER1 §20 #5). Since
+  // RW-02, "BOTH" never reaches this point at all — the schema above rejects
+  // it unconditionally (it is never an actual session mode); this gate is
+  // unchanged and still rejects IN_PERSON while Closed Beta is active. Checked before any DB write (quote creation, request creation)
   // so a crafted request can never even produce an orphaned in-person
   // TutoringRequest row while the gate is active.
   if (closedBetaOnlineOnlyActive() && data.tutoringMode !== "ONLINE") {
@@ -228,6 +230,9 @@ export async function preparePaymentForRequestAction(tutoringRequestId: string):
   if (!request || !request.customerPriceQuoteId) return { success: false, error: t("notFound"), retryable: false };
   if (request.createdByUserId !== session.user.id) return { success: false, error: t("notYours"), retryable: false };
   if (request.status !== "PRICED") return { success: false, error: t("invalidState"), retryable: false };
+  // RW-02 — a legacy BOTH-mode request is not a payable actual session:
+  // refused before any PaymentIntent/Payment is prepared. Request untouched.
+  if (!isActualTutoringMode(request.tutoringMode)) return { success: false, error: t("invalidState"), retryable: false };
 
   // Phase H.5 security correction: initiating Stripe PaymentIntent
   // preparation previously only checked createdByUserId self-match, no H.2
@@ -286,6 +291,10 @@ export async function confirmTutoringRequestAction(
   if (!request) return { error: t("notFound") };
   if (request.createdByUserId !== session.user.id) return { error: t("notYours") };
   if (request.status !== "PRICED") return { error: t("invalidState") };
+  // RW-02 — a legacy BOTH-mode request is refused before any payment
+  // verification/authorization and before the quote lock. Request untouched.
+  if (!isActualTutoringMode(request.tutoringMode)) return { error: t("invalidState") };
+  const requestMode = request.tutoringMode;
   if (request.customerPriceQuoteId !== customerPriceQuoteId) return { error: t("invalidInput") };
 
   // Phase H.5 security correction: confirming authorizes the Stripe
@@ -321,7 +330,7 @@ export async function confirmTutoringRequestAction(
         const locked = await lockCustomerPriceQuote(tx, customerPriceQuoteId, session.user.id, {
           subjectId: request.subjectId,
           academicLevelId: request.academicLevelId,
-          tutoringMode: request.tutoringMode,
+          tutoringMode: requestMode,
           durationMinutes: request.durationMinutes,
           requestedStartAt: request.requestedStartAt,
         });

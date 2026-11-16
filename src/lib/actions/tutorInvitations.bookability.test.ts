@@ -141,3 +141,78 @@ describe("acceptTutorInvitationAction — RW-03 tutor no longer bookable", () =>
     expect(mocks.advanceDispatch).toHaveBeenCalledWith("request-1");
   });
 });
+
+// RW-02 — acceptance of a legacy TutoringRequest stored with tutoringMode=BOTH.
+describe("acceptTutorInvitationAction — RW-02 legacy BOTH-mode request", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.auth.mockResolvedValue({ user: { id: "tutor-user-1", role: "TUTOR" } });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", userId: "tutor-user-1" });
+    mocks.dbTutorInvitationFindUnique.mockResolvedValue({ tutoringRequestId: "request-1" });
+    mocks.paymentsUseStripe.mockReturnValue(true);
+    mocks.isTutorEligibleForRequest.mockResolvedValue(true);
+    fakeTx.tutorInvitation.findUnique.mockResolvedValue({
+      id: "invitation-1",
+      tutorProfileId: "tutor-1",
+      status: "PENDING",
+      expiresAt: new Date(Date.now() + 3600_000),
+      tutorPayoutQuoteId: "payout-quote-1",
+      tutoringRequestId: "request-1",
+    });
+    fakeTx.payment.findUnique.mockResolvedValue({ id: "payment-1" });
+    fakeTx.tutorAvailability.findFirst.mockResolvedValue({ timezone: "UTC" });
+    mocks.claimUpdateMany.mockResolvedValue({ count: 1 });
+  });
+
+  function request(tutoringMode: string) {
+    return {
+      id: "request-1",
+      status: "MATCHING",
+      customerPriceQuoteId: "quote-1",
+      subjectId: "subject-1",
+      academicLevelId: null,
+      tutoringMode,
+      requestedStartAt: new Date(Date.now() + 2 * 24 * 3600_000),
+      durationMinutes: 60,
+      city: "Ottawa",
+      addressLine1: "1 Main St",
+      addressLine2: null,
+      province: "ON",
+      postalCode: "K1A0A1",
+      arrivalInstructions: null,
+      createdByUserId: "parent-user-1",
+      studentProfileId: "student-1",
+    };
+  }
+
+  it("BOTH -> invitationNoLongerAvailable before eligibility, claim, payout acceptance, reservation or capture", async () => {
+    fakeTx.tutoringRequest.findUnique.mockResolvedValue(request("BOTH"));
+
+    const result = await acceptTutorInvitationAction(undefined, formData());
+
+    expect(result).toEqual({ error: "invitationNoLongerAvailable" });
+    expect(mocks.isTutorEligibleForRequest).not.toHaveBeenCalled();
+    expect(mocks.claimUpdateMany).not.toHaveBeenCalled(); // request status never touched
+    expect(mocks.acceptTutorPayoutQuote).not.toHaveBeenCalled();
+    expect(mocks.reserveBookingPendingPayment).not.toHaveBeenCalled();
+    expect(mocks.captureAuthorizedPayment).not.toHaveBeenCalled();
+    expect(mocks.convergeToCaptured).not.toHaveBeenCalled();
+    expect(fakeTx.tutorInvitation.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["ONLINE", null],
+    ["IN_PERSON", "1 Main St"],
+  ])("%s request -> reaches the reservation with that exact mode; location attached only for IN_PERSON", async (mode, expectedAddress) => {
+    fakeTx.tutoringRequest.findUnique.mockResolvedValue(request(mode));
+    mocks.reserveBookingPendingPayment.mockRejectedValue(new Error("stop — reached the reservation"));
+
+    await acceptTutorInvitationAction(undefined, formData());
+
+    expect(mocks.isTutorEligibleForRequest).toHaveBeenCalledWith(fakeTx, "tutor-1", expect.objectContaining({ tutoringMode: mode }));
+    expect(mocks.reserveBookingPendingPayment).toHaveBeenCalledTimes(1);
+    const reserveInput = mocks.reserveBookingPendingPayment.mock.calls[0][1] as { mode: string; location: { addressLine1: string } | null };
+    expect(reserveInput.mode).toBe(mode);
+    expect(reserveInput.location?.addressLine1 ?? null).toBe(expectedAddress);
+  });
+});

@@ -4,6 +4,7 @@ import type { TutoringMode } from "@/generated/prisma/enums";
 import { isTutorFreeAt } from "@/lib/availability";
 import { normalizeCity } from "@/lib/normalizeCity";
 import { BOOKABLE_TUTOR_WHERE, isTutorBookable } from "@/lib/tutorBookability";
+import type { EffectiveTutoringMode } from "@/lib/tutoringModeResolution";
 
 export interface EligibilityRequest {
   // TutoringRequest id — when given, excludes tutors who already hold *any*
@@ -14,7 +15,8 @@ export interface EligibilityRequest {
   id?: string;
   subjectId: string;
   academicLevelId?: string | null;
-  tutoringMode: TutoringMode;
+  /** RW-02 — the request's ACTUAL session mode (never BOTH). */
+  tutoringMode: EffectiveTutoringMode;
   requestedStartAt: Date;
   durationMinutes: number;
   // Required by src/schemas/tutoringRequest.ts whenever tutoringMode is
@@ -24,9 +26,12 @@ export interface EligibilityRequest {
   city?: string | null;
 }
 
-function isModeCompatible(tutorMode: TutoringMode, requestMode: TutoringMode): boolean {
-  if (tutorMode === "BOTH" || requestMode === "BOTH") return true;
-  return tutorMode === requestMode;
+/** RW-02 — tutor CAPABILITY (may be BOTH) vs. the request's ACTUAL mode
+ * (never BOTH). A BOTH-capable tutor matches ONLINE and IN_PERSON requests;
+ * a single-mode tutor matches only that mode. There is no "BOTH request"
+ * branch: a request is always for exactly one actual mode. */
+function isModeCompatible(tutorCapability: TutoringMode, requestMode: EffectiveTutoringMode): boolean {
+  return tutorCapability === "BOTH" || tutorCapability === requestMode;
 }
 
 /**

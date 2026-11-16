@@ -1,11 +1,11 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { TutoringMode } from "@/generated/prisma/enums";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { writeAuditLog } from "@/lib/audit";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { NotAuthorizedForLearnerError } from "@/services/bookingCreation";
+import { assertActualTutoringMode, type EffectiveTutoringMode } from "@/lib/tutoringModeResolution";
 
 export { NotAuthorizedForLearnerError };
 
@@ -101,7 +101,8 @@ export interface CreateTutoringRequestForLearnerInput {
   studentProfileId: string;
   subjectId: string;
   academicLevelId?: string | null;
-  tutoringMode: TutoringMode;
+  /** RW-02 — the requested ACTUAL session mode; never BOTH. */
+  tutoringMode: EffectiveTutoringMode;
   durationMinutes: number;
   requestedStartAt: Date;
   addressLine1?: string | null;
@@ -159,6 +160,9 @@ export async function createTutoringRequestForLearner(
   tx: Prisma.TransactionClient,
   input: CreateTutoringRequestForLearnerInput
 ) {
+  // RW-02 — also guarded here (not only in the InOwnTransaction wrapper) for
+  // any caller that supplies its own transaction: checked before any write.
+  assertActualTutoringMode(input.tutoringMode, "createTutoringRequestForLearner");
   const authorized = await canInitiatePaidBooking(tx, input.actorUserId, input.studentProfileId);
   if (!authorized) throw new NotAuthorizedForLearnerError();
 
@@ -232,6 +236,8 @@ export async function createTutoringRequestForLearnerInOwnTransaction(
   client: PrismaClient,
   input: CreateTutoringRequestForLearnerInput
 ) {
+  // RW-02 — before the transaction opens: a non-actual mode writes nothing.
+  assertActualTutoringMode(input.tutoringMode, "createTutoringRequestForLearner");
   return withSerializableRetry(() =>
     client.$transaction((tx) => createTutoringRequestForLearner(tx, input), {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,

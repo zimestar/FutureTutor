@@ -390,12 +390,24 @@ describe("BETA-HARDEN1 — Closed Beta online-only enforcement (createTutoringRe
     return fd;
   }
 
-  it.each(["IN_PERSON", "BOTH"] as const)(
-    "gate active: tutoringMode=%s is rejected before any quote/request DB write",
-    async (mode) => {
-      mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
-      const result = await createTutoringRequestAction(undefined, requestFormData(mode));
-      expect(result).toMatchObject({ success: false, error: "betaOnlineOnly" });
+  it("gate active: tutoringMode=IN_PERSON is rejected before any quote/request DB write", async () => {
+    mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
+    const result = await createTutoringRequestAction(undefined, requestFormData("IN_PERSON"));
+    expect(result).toMatchObject({ success: false, error: "betaOnlineOnly" });
+    expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
+    expect(mocks.createTutoringRequestForLearnerInOwnTransaction).not.toHaveBeenCalled();
+  });
+
+  // RW-02 — BOTH is never an actual session mode: rejected by the schema
+  // itself (invalidInput) before the Closed Beta gate is even consulted, so
+  // the outcome is identical with the gate active or inactive.
+  it.each([true, false])(
+    "gate active=%s: tutoringMode=BOTH is rejected by schema validation before any quote/request DB write",
+    async (gateActive) => {
+      mocks.closedBetaOnlineOnlyActive.mockReturnValue(gateActive);
+      const result = await createTutoringRequestAction(undefined, requestFormData("BOTH"));
+      expect(result).toMatchObject({ success: false, error: "invalidInput" });
+      expect(mocks.dbFindUnique).not.toHaveBeenCalled();
       expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
       expect(mocks.createTutoringRequestForLearnerInOwnTransaction).not.toHaveBeenCalled();
     }
@@ -417,5 +429,69 @@ describe("BETA-HARDEN1 — Closed Beta online-only enforcement (createTutoringRe
     mocks.createCustomerPriceQuote.mockRejectedValue(new Error("stop here — proves the gate let it through"));
     await createTutoringRequestAction(undefined, requestFormData("IN_PERSON"));
     expect(mocks.createCustomerPriceQuote).toHaveBeenCalled();
+  });
+});
+
+// RW-02 — a legacy TutoringRequest stored with tutoringMode=BOTH (possible
+// only before RW-02's schema tightening) is never payable: both Quick Match
+// financial steps refuse it with invalidState BEFORE any Payment /
+// PaymentIntent work, before the quote lock, and without writing anything.
+describe("RW-02 — legacy BOTH-mode Quick Match request is refused before any payment step", () => {
+  const legacyRequest = {
+    id: "request-1",
+    createdByUserId: "user-1",
+    studentProfileId: "student-1",
+    status: "PRICED",
+    tutoringMode: "BOTH",
+    customerPriceQuoteId: "quote-1",
+    subjectId: "subject-1",
+    academicLevelId: null,
+    durationMinutes: 60,
+    requestedStartAt: new Date(Date.now() + 48 * 3600_000),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.auth.mockResolvedValue(sessionFor("STUDENT"));
+    mocks.closedBetaFinancialGateActive.mockReturnValue(false);
+    mocks.financialE2EEnabled.mockReturnValue(false);
+    mocks.paymentsUseStripe.mockReturnValue(true);
+    mocks.canPayForStudent.mockResolvedValue(true);
+    mocks.dbFindUnique.mockResolvedValue(legacyRequest);
+  });
+
+  function expectNoPaymentWork() {
+    expect(mocks.getOrCreatePaymentForQuote).not.toHaveBeenCalled();
+    expect(mocks.ensureStripePaymentIntent).not.toHaveBeenCalled();
+    expect(mocks.preparePaymentForQuote).not.toHaveBeenCalled();
+    expect(mocks.verifyAndAuthorizePaymentIntent).not.toHaveBeenCalled();
+    expect(mocks.captureAuthorizedPayment).not.toHaveBeenCalled();
+    expect(mocks.convergeToCaptured).not.toHaveBeenCalled();
+    expect(mocks.lockCustomerPriceQuote).not.toHaveBeenCalled();
+    expect(mocks.dbTransaction).not.toHaveBeenCalled();
+    expect(mocks.advanceDispatch).not.toHaveBeenCalled();
+  }
+
+  it("preparePaymentForRequestAction -> invalidState, no payment prepared", async () => {
+    const result = await preparePaymentForRequestAction("request-1");
+    expect(result).toEqual({ success: false, error: "invalidState", retryable: false });
+    expectNoPaymentWork();
+  });
+
+  it("confirmTutoringRequestAction -> invalidState, no payment verified, no quote locked, no dispatch", async () => {
+    const fd = new FormData();
+    fd.set("tutoringRequestId", "request-1");
+    fd.set("customerPriceQuoteId", "quote-1");
+    fd.set("stripePaymentIntentId", "pi_test_legacy");
+    const result = await confirmTutoringRequestAction(undefined, fd);
+    expect(result).toEqual({ error: "invalidState" });
+    expectNoPaymentWork();
+  });
+
+  it("an ONLINE request with the same shape still proceeds to payment preparation (control)", async () => {
+    mocks.dbFindUnique.mockResolvedValue({ ...legacyRequest, tutoringMode: "ONLINE" });
+    mocks.getOrCreatePaymentForQuote.mockRejectedValue(new Error("stop — reached payment preparation"));
+    await preparePaymentForRequestAction("request-1").catch(() => {});
+    expect(mocks.getOrCreatePaymentForQuote).toHaveBeenCalled();
   });
 });

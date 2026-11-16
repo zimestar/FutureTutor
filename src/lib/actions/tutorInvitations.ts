@@ -28,6 +28,7 @@ import {
   TutorPayoutQuoteAlreadyAcceptedError,
 } from "@/services/tutorPayout";
 import { advanceDispatch } from "@/services/quickMatchDispatch";
+import { isActualTutoringMode } from "@/lib/tutoringModeResolution";
 
 export type InvitationActionState = { error?: string; success?: boolean } | undefined;
 
@@ -35,6 +36,11 @@ class InvitationNotPendingError extends Error {}
 class InvitationExpiredError extends Error {}
 class TutorNotEligibleError extends Error {}
 class PaymentNotReadyError extends Error {}
+/** RW-02 — the request was stored with a non-actual tutoringMode (legacy
+ * BOTH, from before RW-02's schema tightening). Never booked, never
+ * converted; refused before the claim, payout-quote acceptance, reservation
+ * or capture — the transaction rolls back with nothing written. */
+class RequestModeNotBookableError extends Error {}
 
 /**
  * Step A (Serializable, no Stripe call) — full revalidation, then an
@@ -110,11 +116,13 @@ export async function acceptTutorInvitationAction(
         if (!request || request.status !== "MATCHING" || !request.customerPriceQuoteId) {
           throw new InvitationNotPendingError();
         }
+        if (!isActualTutoringMode(request.tutoringMode)) throw new RequestModeNotBookableError();
+        const requestMode = request.tutoringMode;
 
         const stillEligible = await isTutorEligibleForRequest(tx, tutorProfile.id, {
           subjectId: request.subjectId,
           academicLevelId: request.academicLevelId,
-          tutoringMode: request.tutoringMode,
+          tutoringMode: requestMode,
           requestedStartAt: request.requestedStartAt,
           durationMinutes: request.durationMinutes,
           city: request.city,
@@ -153,13 +161,13 @@ export async function acceptTutorInvitationAction(
           startAt: request.requestedStartAt,
           endAt,
           timezone,
-          mode: request.tutoringMode,
+          mode: requestMode,
           paymentId: payment.id,
           customerPriceQuoteId: request.customerPriceQuoteId,
           tutorPayoutQuoteId: invitation.tutorPayoutQuoteId,
           tutoringRequestId: request.id,
           location:
-            request.tutoringMode !== "ONLINE"
+            requestMode === "IN_PERSON"
               ? {
                   addressLine1: request.addressLine1,
                   addressLine2: request.addressLine2,
@@ -218,6 +226,11 @@ export async function acceptTutorInvitationAction(
       error instanceof SlotTakenError ||
       error instanceof InvitationNotPendingError ||
       error instanceof InvitationExpiredError ||
+      // RW-02 — legacy BOTH-mode request: the same "no longer available"
+      // outcome as a request that is no longer MATCHING. advanceDispatch
+      // below is a deliberate no-op for such a request (see
+      // quickMatchDispatch.ts), so it stays exactly as stored.
+      error instanceof RequestModeNotBookableError ||
       error instanceof TutorNotEligibleError ||
       // RW-03 — the reservation's row-locked re-check found the tutor no
       // longer bookable (suspended/deactivated after the eligibility check

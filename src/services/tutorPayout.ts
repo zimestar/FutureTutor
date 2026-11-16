@@ -6,6 +6,7 @@ import { roundMinorUnits, proRateCents, sumCents } from "@/lib/money";
 import { pickHighestPriorityRule } from "@/lib/ruleResolution";
 import { getUrgencyBand } from "@/lib/urgency";
 import { getDistance } from "@/services/distance";
+import { assertActualTutoringMode, type EffectiveTutoringMode } from "@/lib/tutoringModeResolution";
 
 export const TUTOR_PAYOUT_VERSION = "TUTOR_PAYOUT_V1";
 
@@ -157,11 +158,20 @@ export async function calculateTutorPayout(
  * running this coherent-snapshot logic inside a Serializable transaction is
  * still safe.
  */
+/** RW-02 — a persisted payout quote is always for ONE actual session mode. */
+export interface TutorPayoutQuoteContext extends TutorPayoutContext {
+  tutoringMode: EffectiveTutoringMode;
+}
+
 async function createTutorPayoutQuoteInTx(
   tx: Prisma.TransactionClient,
-  context: TutorPayoutContext,
+  context: TutorPayoutQuoteContext,
   customerPriceQuoteId: string
 ) {
+  // RW-02 — the single shared body behind both payout-quote entry points
+  // (direct booking and Quick Match dispatch): guarded before any read or
+  // write, so a non-actual mode never reaches tutorPayoutQuote.create.
+  assertActualTutoringMode(context.tutoringMode, "createTutorPayoutQuote");
   const customerQuote = await tx.customerPriceQuote.findUnique({ where: { id: customerPriceQuoteId } });
   // Direct booking calls this while the customer quote is still ACTIVE.
   // Quick Match calls this while dispatching a candidate — by that point
@@ -212,7 +222,7 @@ async function createTutorPayoutQuoteInTx(
 
 /** Phase H.7 — same `client` plumbing as calculateTutorPayout above. */
 export async function createTutorPayoutQuote(
-  context: TutorPayoutContext,
+  context: TutorPayoutQuoteContext,
   customerPriceQuoteId: string,
   client: PrismaClient = db
 ) {
@@ -224,7 +234,7 @@ export async function createTutorPayoutQuote(
 /** Quick Match only — see createTutorPayoutQuoteInTx's doc comment above. */
 export async function createTutorPayoutQuoteWithTx(
   tx: Prisma.TransactionClient,
-  context: TutorPayoutContext,
+  context: TutorPayoutQuoteContext,
   customerPriceQuoteId: string
 ) {
   return createTutorPayoutQuoteInTx(tx, context, customerPriceQuoteId);

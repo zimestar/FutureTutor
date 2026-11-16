@@ -8,6 +8,7 @@ import { getEligibleTutors } from "@/services/tutorEligibility";
 import { rankCandidates } from "@/services/tutorRanking";
 import { createTutorPayoutQuoteWithTx, cancelTutorPayoutQuote, TutorPayoutRuleNotFoundError, NegativeSpreadError } from "@/services/tutorPayout";
 import { cancelLockedCustomerPriceQuote } from "@/services/customerPricing";
+import { isActualTutoringMode } from "@/lib/tutoringModeResolution";
 
 /**
  * The single orchestrator entry point — called (a) right after a request
@@ -26,6 +27,16 @@ export async function advanceDispatch(tutoringRequestId: string): Promise<void> 
       async (tx) => {
         const request = await tx.tutoringRequest.findUnique({ where: { id: tutoringRequestId } });
         if (!request || request.status !== "MATCHING") return;
+
+        // RW-02 — a legacy request stored with tutoringMode=BOTH (only
+        // possible before RW-02's schema tightening) is not a valid actual
+        // session mode: no tutor can be dispatched against it (every payout
+        // quote would be refused by assertActualTutoringMode) and it is never
+        // auto-converted. Per the approved policy it is left exactly as is —
+        // no new invitations, no status change, no write at all — for the
+        // RW-04 production data audit / manual handling.
+        if (!isActualTutoringMode(request.tutoringMode)) return;
+        const requestMode = request.tutoringMode;
 
         const pendingCount = await tx.tutorInvitation.count({
           where: { tutoringRequestId, status: "PENDING" },
@@ -65,7 +76,7 @@ export async function advanceDispatch(tutoringRequestId: string): Promise<void> 
           id: tutoringRequestId,
           subjectId: request.subjectId,
           academicLevelId: request.academicLevelId,
-          tutoringMode: request.tutoringMode,
+          tutoringMode: requestMode,
           requestedStartAt: request.requestedStartAt,
           durationMinutes: request.durationMinutes,
           city: request.city,
@@ -101,7 +112,7 @@ export async function advanceDispatch(tutoringRequestId: string): Promise<void> 
                 tutorProfileId: candidate.tutorProfileId,
                 subjectId: request.subjectId,
                 academicLevelId: request.academicLevelId,
-                tutoringMode: request.tutoringMode,
+                tutoringMode: requestMode,
                 durationMinutes: request.durationMinutes,
                 requestedStartAt: request.requestedStartAt,
               },
