@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { resolveRequestedTutoringMode } from "@/lib/tutoringModeResolution";
+import { isTutorBookable } from "@/lib/tutorBookability";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { createPriceQuoteSchema } from "@/schemas/pricing";
 import { createCustomerPriceQuote, PricingRuleNotFoundError, type PriceAdjustment } from "@/services/customerPricing";
@@ -67,15 +68,24 @@ export async function createPriceQuoteAction(input: {
   const authorized = await canInitiatePaidBooking(db, session.user.id, studentProfile.id);
   if (!authorized) return { success: false, error: t("notAStudent") };
 
-  const tutorProfile = await db.tutorProfile.findUnique({ where: { id: parsed.data.tutorProfileId } });
+  const tutorProfile = await db.tutorProfile.findUnique({
+    where: { id: parsed.data.tutorProfileId },
+    include: { user: { select: { deactivatedAt: true } } },
+  });
   if (!tutorProfile) return { success: false, error: t("invalidInput") };
 
-  // RW-01 — only an APPROVED tutor can be quoted for a direct booking. Every
-  // other TutorApplicationStatus (DRAFT, the in-progress validation stages,
-  // REJECTED, SUSPENDED) is refused here, before any quote row is created.
-  // tutorAgreementAcceptedAt is NOT evidence of approval: it is written when
-  // the tutor submits the application (tutorProfile.ts), long before review.
-  if (tutorProfile.applicationStatus !== "APPROVED") {
+  // RW-01 / RW-03 — only a bookable tutor (APPROVED, account not
+  // deactivated — see src/lib/tutorBookability.ts) can be quoted for a direct
+  // booking. Every other TutorApplicationStatus (DRAFT, the in-progress
+  // validation stages, REJECTED, SUSPENDED) is refused here, before any quote
+  // row is created. tutorAgreementAcceptedAt is NOT evidence of approval: it
+  // is written when the tutor submits the application (tutorProfile.ts).
+  if (
+    !isTutorBookable({
+      applicationStatus: tutorProfile.applicationStatus,
+      userDeactivatedAt: tutorProfile.user?.deactivatedAt,
+    })
+  ) {
     return { success: false, error: t("tutorUnavailable") };
   }
 

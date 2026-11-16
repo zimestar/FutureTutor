@@ -119,6 +119,7 @@ vi.mock("@/services/bookingCreation", () => ({
   QuoteLearnerMismatchError: class QuoteLearnerMismatchError extends Error {},
   PaymentReservationMismatchError: class PaymentReservationMismatchError extends Error {},
   PaymentAlreadyAttachedError: class PaymentAlreadyAttachedError extends Error {},
+  TutorNotBookableError: class TutorNotBookableError extends Error {},
 }));
 vi.mock("@/services/cancellationAuthorization", () => ({
   resolveCancellationAuthority: mocks.resolveCancellationAuthority,

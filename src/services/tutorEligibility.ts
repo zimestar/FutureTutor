@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
 import { isTutorFreeAt } from "@/lib/availability";
 import { normalizeCity } from "@/lib/normalizeCity";
+import { BOOKABLE_TUTOR_WHERE, isTutorBookable } from "@/lib/tutorBookability";
 
 export interface EligibilityRequest {
   // TutoringRequest id — when given, excludes tutors who already hold *any*
@@ -47,7 +48,8 @@ function isModeCompatible(tutorMode: TutoringMode, requestMode: TutoringMode): b
 export async function getEligibleTutors(tx: Prisma.TransactionClient, request: EligibilityRequest) {
   const candidates = await tx.tutorProfile.findMany({
     where: {
-      applicationStatus: "APPROVED",
+      // RW-03 — APPROVED and account not deactivated (src/lib/tutorBookability.ts).
+      ...BOOKABLE_TUTOR_WHERE,
       // FG-LEGAL2 — a tutor approved before the Tutor Agreement existed (or
       // who somehow reached APPROVED without accepting) is excluded from new
       // dispatch until they accept, per "no new tutoring commitment until
@@ -103,8 +105,14 @@ export async function isTutorEligibleForRequest(
   tutorProfileId: string,
   request: EligibilityRequest
 ): Promise<boolean> {
-  const tutor = await tx.tutorProfile.findUnique({ where: { id: tutorProfileId } });
-  if (!tutor || tutor.applicationStatus !== "APPROVED") return false;
+  const tutor = await tx.tutorProfile.findUnique({
+    where: { id: tutorProfileId },
+    include: { user: { select: { deactivatedAt: true } } },
+  });
+  // RW-03 — same rule as getEligibleTutors' BOOKABLE_TUTOR_WHERE.
+  if (!tutor || !isTutorBookable({ applicationStatus: tutor.applicationStatus, userDeactivatedAt: tutor.user?.deactivatedAt })) {
+    return false;
+  }
   // FG-LEGAL2 — see the matching comment in getEligibleTutors.
   if (!tutor.tutorAgreementAcceptedAt) return false;
 

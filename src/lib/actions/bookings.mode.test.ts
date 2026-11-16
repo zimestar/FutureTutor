@@ -58,6 +58,7 @@ vi.mock("@/services/bookingCreation", () => ({
   QuoteLearnerMismatchError: class QuoteLearnerMismatchError extends Error {},
   PaymentReservationMismatchError: class PaymentReservationMismatchError extends Error {},
   PaymentAlreadyAttachedError: class PaymentAlreadyAttachedError extends Error {},
+  TutorNotBookableError: class TutorNotBookableError extends Error {},
 }));
 vi.mock("@/services/payments", () => ({
   preparePaymentForQuote: vi.fn(),
@@ -122,26 +123,26 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
   });
 
   it("A. ONLINE-capability tutor, no requested mode -> reaches past the mode gate", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
     await expect(createBookingAction(undefined, formData())).rejects.toThrow("reached past the mode gate");
   });
 
   it("B. BOTH-capability tutor, requested ONLINE -> reaches past the mode gate", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
     await expect(
       createBookingAction(undefined, formData({ tutoringMode: "ONLINE" }))
     ).rejects.toThrow("reached past the mode gate");
   });
 
   it("C. BOTH-capability tutor, requested IN_PERSON -> rejected, never reaches getAvailableSlots", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: "IN_PERSON" }));
     expect(result).toMatchObject({ error: "directInPersonUnavailable" });
     expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
   });
 
   it("D. BOTH-capability tutor, missing requested mode -> rejected", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: undefined }));
     expect(result).toMatchObject({ error: "invalidInput" });
     expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
@@ -154,28 +155,28 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
   });
 
   it("F. ONLINE-capability tutor, requested IN_PERSON -> rejected", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: "IN_PERSON" }));
     expect(result).toMatchObject({ error: "invalidInput" });
     expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
   });
 
   it("G. IN_PERSON-capability tutor, requested ONLINE -> rejected", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "IN_PERSON", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "IN_PERSON", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: "ONLINE" }));
     expect(result).toMatchObject({ error: "invalidInput" });
     expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
   });
 
   it("I. IN_PERSON-capability tutor, deterministic missing mode -> also rejected (direct booking never supports IN_PERSON today)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "IN_PERSON", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "IN_PERSON", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: undefined }));
     expect(result).toMatchObject({ error: "directInPersonUnavailable" });
   });
 
   it("H. Closed Beta active + resolved ONLINE -> passes the online-only product gate (reaches past the mode gate)", async () => {
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE", tutorAgreementAcceptedAt: new Date() });
     await expect(createBookingAction(undefined, formData())).rejects.toThrow("reached past the mode gate");
   });
 
@@ -189,7 +190,7 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
   // explicitly asked to see spelled out, on top of the matrix above.
   it("IN_PERSON during Closed Beta -> rejected (both the permanent direct-IN_PERSON block and the online-only invariant would independently reject it)", async () => {
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
     const result = await createBookingAction(undefined, formData({ tutoringMode: "IN_PERSON" }));
     expect(result).toMatchObject({ error: "directInPersonUnavailable" });
     expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
@@ -201,7 +202,7 @@ describe("createBookingAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolution",
     mocks.financialE2EEnabled.mockReturnValue(true);
     mocks.isFinancialE2EExceptionAllowed.mockResolvedValue(true);
     mocks.auth.mockResolvedValue({ user: { id: "controlled-actor", role: "STUDENT" } });
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH", tutorAgreementAcceptedAt: new Date() });
     await expect(
       createBookingAction(undefined, formData({ tutoringMode: "ONLINE" }))
     ).rejects.toThrow("reached past the mode gate");
@@ -263,6 +264,7 @@ describe("createBookingAction — RW-01 tutor approval enforcement", () => {
       mocks.dbTutorProfileFindUnique.mockResolvedValue({
         id: "tutor-1",
         applicationStatus,
+        user: { deactivatedAt: null },
         learningMode: "ONLINE",
         tutorAgreementAcceptedAt: new Date(),
       });
@@ -286,6 +288,7 @@ describe("createBookingAction — RW-01 tutor approval enforcement", () => {
     mocks.dbTutorProfileFindUnique.mockResolvedValue({
       id: "tutor-1",
       applicationStatus: "SUSPENDED",
+      user: { deactivatedAt: null },
       learningMode: "ONLINE",
       tutorAgreementAcceptedAt: new Date(),
     });
@@ -298,6 +301,7 @@ describe("createBookingAction — RW-01 tutor approval enforcement", () => {
     mocks.dbTutorProfileFindUnique.mockResolvedValue({
       id: "tutor-1",
       applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
       learningMode: "ONLINE",
       tutorAgreementAcceptedAt: new Date(),
     });
@@ -309,6 +313,7 @@ describe("createBookingAction — RW-01 tutor approval enforcement", () => {
     mocks.dbTutorProfileFindUnique.mockResolvedValue({
       id: "tutor-1",
       applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
       learningMode: "ONLINE",
       tutorAgreementAcceptedAt: null,
     });
@@ -321,5 +326,81 @@ describe("createBookingAction — RW-01 tutor approval enforcement", () => {
     const { TutorApplicationStatus } = await import("@/generated/prisma/enums");
     const nonApproved = Object.values(TutorApplicationStatus).filter((s) => s !== "APPROVED").sort();
     expect([...NON_APPROVED_STATUSES].sort()).toEqual(nonApproved);
+  });
+});
+
+// RW-03 — the shared bookability rule at the booking boundary, plus the
+// mapping of the reservation's own row-locked refusal (TutorNotBookableError,
+// thrown inside the Serializable transaction when the tutor was suspended or
+// deactivated after the action-level check passed).
+describe("createBookingAction — RW-03 tutor account deactivation and in-transaction refusal", () => {
+  const START_AT = new Date(Date.now() + 3 * 24 * 3600_000);
+  START_AT.setUTCMinutes(0, 0, 0);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.auth.mockResolvedValue({ user: { id: "user-1", role: "STUDENT" } });
+    mocks.closedBetaFinancialGateActive.mockReturnValue(false);
+    mocks.closedBetaOnlineOnlyActive.mockReturnValue(false);
+    mocks.dbStudentProfileFindUnique.mockResolvedValue({ id: "student-1" });
+    mocks.canInitiatePaidBooking.mockResolvedValue(true);
+    mocks.financialE2EEnabled.mockReturnValue(false);
+    mocks.paymentsUseStripe.mockReturnValue(false);
+    mocks.getAvailableSlots.mockResolvedValue({ timezone: "UTC", days: [{ slots: [{ startAt: START_AT }] }] });
+  });
+
+  it("APPROVED tutor with a deactivated User account -> tutorUnavailable before any slot/payment/reservation work", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({
+      id: "tutor-1",
+      applicationStatus: "APPROVED",
+      user: { deactivatedAt: new Date() },
+      learningMode: "ONLINE",
+      tutorAgreementAcceptedAt: new Date(),
+    });
+    const result = await createBookingAction(undefined, formData({ startAt: START_AT.toISOString() }));
+    expect(result).toEqual({ error: "tutorUnavailable" });
+    const payments = await import("@/services/payments");
+    const { withSerializableRetry } = await import("@/lib/serializableRetry");
+    expect(mocks.getAvailableSlots).not.toHaveBeenCalled();
+    expect(payments.preparePaymentForQuote).not.toHaveBeenCalled();
+    expect(withSerializableRetry).not.toHaveBeenCalled();
+  });
+
+  it("reservation throws TutorNotBookableError (suspended mid-flight) -> tutorUnavailable, never captured or converged", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({
+      id: "tutor-1",
+      applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
+      learningMode: "ONLINE",
+      tutorAgreementAcceptedAt: new Date(),
+    });
+    const payments = await import("@/services/payments");
+    const bookingCreation = await import("@/services/bookingCreation");
+    const { withSerializableRetry } = await import("@/lib/serializableRetry");
+    vi.mocked(payments.preparePaymentForQuote).mockResolvedValue({ id: "payment-1" } as never);
+    vi.mocked(withSerializableRetry).mockRejectedValue(new bookingCreation.TutorNotBookableError());
+
+    const result = await createBookingAction(undefined, formData({ startAt: START_AT.toISOString() }));
+
+    expect(result).toEqual({ error: "tutorUnavailable" });
+    expect(withSerializableRetry).toHaveBeenCalledTimes(1);
+    expect(payments.captureAuthorizedPayment).not.toHaveBeenCalled();
+    expect(payments.convergeToCaptured).not.toHaveBeenCalled();
+  });
+
+  it("loads the tutor's own User.deactivatedAt alongside the profile", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({
+      id: "tutor-1",
+      applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
+      learningMode: "ONLINE",
+      tutorAgreementAcceptedAt: new Date(),
+    });
+    mocks.getAvailableSlots.mockRejectedValue(new Error("reached slot validation"));
+    await expect(createBookingAction(undefined, formData())).rejects.toThrow("reached slot validation");
+    expect(mocks.dbTutorProfileFindUnique).toHaveBeenCalledWith({
+      where: { id: "tutor-1" },
+      include: { user: { select: { deactivatedAt: true } } },
+    });
   });
 });

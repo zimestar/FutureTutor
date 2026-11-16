@@ -18,12 +18,13 @@ import { getAvailableSlots } from "@/lib/availability";
 import { paymentsUseStripe } from "@/lib/paymentMode";
 import { listBookableStudentsForActor } from "@/services/learnerSelection";
 import { publicPageMetadata } from "@/lib/publicMetadata";
+import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
 type Params = { locale: string; slug: string };
 
 const findApprovedTutor = cache(async (slug: string) => {
   return db.tutorProfile.findFirst({
-    where: { slug, applicationStatus: "APPROVED" },
+    where: { slug, ...BOOKABLE_TUTOR_WHERE },
     include: {
       user: { select: { name: true, image: true } },
       subjects: { select: { subject: { select: { id: true, slug: true } } } },

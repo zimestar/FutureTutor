@@ -11,6 +11,7 @@ import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { displayModeToDb } from "@/lib/tutorMode";
 import { calculateCustomerPrice, PricingRuleNotFoundError } from "@/services/customerPricing";
 import type { GradeLevelKey, LearningMode } from "@/types/tutor";
+import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
 const gradeLevelKeys: GradeLevelKey[] = ["elementary", "middleSchool", "highSchool", "cegepCollege", "university", "adultLearner"];
 
@@ -44,7 +45,7 @@ export async function TutorDirectory({ locale, searchParams, authenticated = fal
   const [tutorProfiles, favoritedIds] = await Promise.all([
     db.tutorProfile.findMany({
       where: {
-        applicationStatus: "APPROVED",
+        ...BOOKABLE_TUTOR_WHERE,
         ...(matchedSubjectSlugs ? { subjects: { some: { subject: { slug: { in: matchedSubjectSlugs } } } } } : {}),
         ...(levelKey ? { levels: { some: { academicLevel: { slug: levelKey } } } } : {}),
         ...(modeKey ? { OR: [{ learningMode: displayModeToDb(modeKey) }, { learningMode: "BOTH" }] } : {}),

@@ -10,6 +10,7 @@ import { paymentsUseStripe } from "@/lib/paymentMode";
 import { closedBetaFinancialGateActive, closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
 import { financialE2EEnabled, isFinancialE2EExceptionAllowed, auditFinancialE2EExceptionUsed } from "@/lib/financialE2EConfig";
 import { resolveRequestedTutoringMode } from "@/lib/tutoringModeResolution";
+import { isTutorBookable } from "@/lib/tutorBookability";
 import { withSerializableRetry } from "@/lib/serializableRetry";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { resolveCancellationAuthority } from "@/services/cancellationAuthorization";
@@ -21,6 +22,7 @@ import {
   QuoteLearnerMismatchError,
   PaymentReservationMismatchError,
   PaymentAlreadyAttachedError,
+  TutorNotBookableError,
 } from "@/services/bookingCreation";
 import {
   preparePaymentForQuote,
@@ -133,17 +135,30 @@ export async function createBookingAction(
   // (§17 — see reserveBookingPendingPayment's own re-check).
   const [studentProfile, tutorProfile] = await Promise.all([
     db.studentProfile.findUnique({ where: { id: studentProfileId } }),
-    db.tutorProfile.findUnique({ where: { id: tutorProfileId } }),
+    db.tutorProfile.findUnique({
+      where: { id: tutorProfileId },
+      include: { user: { select: { deactivatedAt: true } } },
+    }),
   ]);
   if (!studentProfile || !tutorProfile) return { error: t("invalidInput") };
 
-  // RW-01 — independent re-check of createPriceQuoteAction's identical gate,
-  // read fresh from this request (a tutor suspended or rejected after their
-  // quote was issued is refused here). Runs before mode resolution, slot
-  // validation, payment preparation, and the reservation transaction.
+  // RW-01 / RW-03 — independent re-check of createPriceQuoteAction's
+  // identical gate (src/lib/tutorBookability.ts), read fresh from this
+  // request (a tutor suspended or rejected after their quote was issued is
+  // refused here). Runs before mode resolution, slot validation, payment
+  // preparation, and the reservation transaction — which itself re-checks
+  // under a row lock (bookingCreation.ts's lockAndAssertTutorBookable) to
+  // close the window between this check and the commit.
   // tutorAgreementAcceptedAt (checked below) is set at application submit,
   // so it never substitutes for approval.
-  if (tutorProfile.applicationStatus !== "APPROVED") return { error: t("tutorUnavailable") };
+  if (
+    !isTutorBookable({
+      applicationStatus: tutorProfile.applicationStatus,
+      userDeactivatedAt: tutorProfile.user?.deactivatedAt,
+    })
+  ) {
+    return { error: t("tutorUnavailable") };
+  }
 
   // PROD-DIRECT-BOOKING-MODEFIX1 — independent, defense-in-depth re-check of
   // the exact same resolution createPriceQuoteAction already performed when
@@ -268,6 +283,11 @@ export async function createBookingAction(
     );
   } catch (error) {
     if (error instanceof SlotTakenError) return { error: t("slotTaken") };
+    // RW-03 — the tutor was suspended/deactivated between the action-level
+    // check above and the reservation's row-locked re-check. Nothing was
+    // written (the transaction rolled back before any quote consumption or
+    // Booking row); same message as the action-level refusal.
+    if (error instanceof TutorNotBookableError) return { error: t("tutorUnavailable") };
     // Phase H.7 — the transaction-bound re-check denied the actor's
     // authority over the learner (revoked between pre-check and here), or
     // the quote/learner pairing was inconsistent. Same fail-closed

@@ -19,6 +19,7 @@ import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { publicPageMetadata } from "@/lib/publicMetadata";
 import { TrackPageView } from "@/components/marketing/TrackPageView";
 import type { Locale } from "@/lib/analytics";
+import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
 type Params = { locale: string; subject: string };
 
@@ -59,7 +60,7 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
   const [tutorProfiles, favoritedIds] = await Promise.all([
     db.tutorProfile.findMany({
       where: {
-        applicationStatus: "APPROVED",
+        ...BOOKABLE_TUTOR_WHERE,
         subjects: { some: { subject: { slug } } },
       },
       include: {

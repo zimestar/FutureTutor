@@ -108,7 +108,10 @@ describe("Dynamic route determinism — noindex for private dynamic-ID routes do
   it("the public dynamic /tutors/[slug] route calls notFound() for any non-APPROVED or nonexistent slug before ever returning indexable metadata — no database ID is exposed in metadata", () => {
     const source = readPage("tutors", "[slug]");
     expect(source).toContain("notFound()");
-    expect(source).toContain('applicationStatus: "APPROVED"');
+    // RW-03 — the APPROVED (and account-not-deactivated) filter now comes from
+    // the single shared bookability rule, spread into this query.
+    expect(source).toContain("...BOOKABLE_TUTOR_WHERE");
+    expect(readFileSync("src/lib/tutorBookability.ts", "utf8")).toContain('applicationStatus: "APPROVED"');
     // No metadata field should ever be built from tutor.id (a database
     // identifier) — only slug/name/headline-shaped public fields.
     expect(source).not.toMatch(/description:\s*[^,}]*tutor\.id/);

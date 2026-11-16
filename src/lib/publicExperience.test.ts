@@ -21,7 +21,9 @@ describe("public experience regression boundary", () => {
     const featured = readFileSync("src/components/marketing/FeaturedTutors.tsx", "utf8");
     const sitemap = readFileSync("src/app/sitemap.ts", "utf8");
 
-    expect(featured).toContain('applicationStatus: "APPROVED"');
+    // RW-03 — APPROVED (and account-not-deactivated) via the shared rule.
+    expect(featured).toContain("...BOOKABLE_TUTOR_WHERE");
+    expect(readFileSync("src/lib/tutorBookability.ts", "utf8")).toContain('applicationStatus: "APPROVED"');
     expect(featured).toContain("tutorProfileToCardData");
     expect(featured).not.toMatch(/demoTutors|DemoTutor/);
     expect(sitemap).not.toMatch(/demoTutors|DemoTutor/);

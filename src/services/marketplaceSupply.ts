@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { TutoringMode } from "@/generated/prisma/enums";
+import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
 export interface SupplySignal {
   qualifiedTutorCount: number;
@@ -19,7 +20,7 @@ export async function getSupplySignal(
 ): Promise<SupplySignal> {
   const qualifiedTutorCount = await tx.tutorProfile.count({
     where: {
-      applicationStatus: "APPROVED",
+      ...BOOKABLE_TUTOR_WHERE,
       subjects: { some: { subjectId: params.subjectId } },
       ...(params.academicLevelId ? { levels: { some: { academicLevelId: params.academicLevelId } } } : {}),
       ...(params.mode !== "BOTH" ? { OR: [{ learningMode: params.mode }, { learningMode: "BOTH" }] } : {}),

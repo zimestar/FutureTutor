@@ -46,6 +46,19 @@ const DEFAULT_MAX_RETRIES = 6;
  */
 function isRetryableSerializationConflict(error: unknown): boolean {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") return true;
+  // RW-03 — the third shape of the SAME event: a 40001 raised by a raw query
+  // ($queryRaw — e.g. bookingCreation.ts's `SELECT ... FOR SHARE` tutor
+  // bookability lock hitting "could not serialize access due to concurrent
+  // update") is wrapped by Prisma as P2010 "Raw query failed", with the
+  // adapter's mapped error under meta.driverAdapterError. Matched only when
+  // BOTH the original SQLSTATE is exactly "40001" (serialization_failure) AND
+  // the adapter mapped it to TransactionWriteConflict — any other raw-query
+  // failure, including a deadlock (40P01), is still rethrown, never retried.
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2010") {
+    const cause = (error.meta as { driverAdapterError?: { cause?: { originalCode?: unknown; kind?: unknown } } } | undefined)
+      ?.driverAdapterError?.cause;
+    if (cause?.originalCode === "40001" && cause?.kind === "TransactionWriteConflict") return true;
+  }
   if (
     typeof error === "object" &&
     error !== null &&

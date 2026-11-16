@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import type { TutoringMode } from "@/generated/prisma/enums";
+import type { TutorApplicationStatus, TutoringMode } from "@/generated/prisma/enums";
+import { isTutorBookable } from "@/lib/tutorBookability";
 import { canInitiatePaidBooking } from "@/services/studentAuthorization";
 import { validateAndConsumeCustomerPriceQuote } from "@/services/customerPricing";
 import { validateAndConsumeTutorPayoutQuote } from "@/services/tutorPayout";
@@ -38,6 +39,70 @@ export class PaymentReservationMismatchError extends Error {}
  * capture is attempted.
  */
 export class PaymentAlreadyAttachedError extends Error {}
+/**
+ * RW-03 — the tutor is not bookable at the moment this reservation
+ * transaction takes its row locks (see lockAndAssertTutorBookable): their
+ * TutorProfile is not APPROVED, their User account is deactivated, or either
+ * row is missing. Thrown before any quote is consumed or Booking row exists.
+ */
+export class TutorNotBookableError extends Error {}
+
+/**
+ * RW-03 — authoritative, lock-protected tutor bookability check, run as the
+ * FIRST statement of every reservation (direct booking and Quick Match both
+ * go through reserveBookingPendingPayment).
+ *
+ * Why a row lock and not Serializable isolation alone: Postgres SSI only
+ * detects dangerous structures among Serializable transactions, and
+ * suspendTutor (tutorApplicationWorkflow.ts) runs at the default READ
+ * COMMITTED level. Even if it were Serializable, a single read-write
+ * antidependency (reservation reads APPROVED, suspension writes SUSPENDED)
+ * is serializable as "reservation first" — so a plain read would let a
+ * booking commit on stale eligibility after a suspension already committed
+ * (proven by the negative-control test in
+ * tutorBookability.integration.test.ts).
+ *
+ * `FOR SHARE` closes it in every ordering:
+ *  - Reservation locks first: a concurrent UPDATE of either row (suspension
+ *    or deactivation) blocks until the reservation commits or rolls back, so
+ *    the booking is genuinely ordered before the suspension.
+ *  - Suspension's UPDATE is in flight: this lock waits for it; once it
+ *    commits, Postgres raises 40001 (concurrent update) for this
+ *    Serializable transaction, which the pg adapter maps to
+ *    TransactionWriteConflict and withSerializableRetry retries with a fresh
+ *    snapshot — where the tutor is now SUSPENDED and this throws.
+ *  - Suspension committed after this transaction's snapshot but before this
+ *    lock: same 40001 -> retry -> refused.
+ *  - Suspension committed before this transaction started: read directly.
+ *
+ * Contention: FOR SHARE is compatible with other FOR SHARE locks, so
+ * concurrent reservations for the same tutor never block each other — only
+ * writers to that one TutorProfile/User row wait, for the duration of a
+ * short, network-free transaction. Lock order is fixed (TutorProfile, then
+ * User); no transaction in the codebase writes both rows, so this order has
+ * no deadlock partner today.
+ */
+export async function lockAndAssertTutorBookable(tx: Prisma.TransactionClient, tutorProfileId: string): Promise<void> {
+  const profiles = await tx.$queryRaw<Array<{ applicationStatus: TutorApplicationStatus; userId: string }>>`
+    SELECT "applicationStatus"::text AS "applicationStatus", "userId"
+    FROM "TutorProfile"
+    WHERE "id" = ${tutorProfileId}
+    FOR SHARE`;
+  const profile = profiles[0];
+  if (!profile) throw new TutorNotBookableError();
+
+  const users = await tx.$queryRaw<Array<{ deactivatedAt: Date | null }>>`
+    SELECT "deactivatedAt"
+    FROM "User"
+    WHERE "id" = ${profile.userId}
+    FOR SHARE`;
+  const user = users[0];
+  if (!user) throw new TutorNotBookableError();
+
+  if (!isTutorBookable({ applicationStatus: profile.applicationStatus, userDeactivatedAt: user.deactivatedAt })) {
+    throw new TutorNotBookableError();
+  }
+}
 
 /**
  * True interval-overlap conflict check: existing.startAt < newEnd AND
@@ -157,6 +222,10 @@ export async function reserveBookingPendingPayment(
   tx: Prisma.TransactionClient,
   input: ReserveBookingPendingPaymentInput
 ) {
+  // RW-03 — first, so the tutor rows are locked before anything else is
+  // read or written in this reservation (see lockAndAssertTutorBookable).
+  await lockAndAssertTutorBookable(tx, input.tutorProfileId);
+
   const authorized = await canInitiatePaidBooking(tx, input.actorUserId, input.studentProfileId);
   if (!authorized) throw new NotAuthorizedForLearnerError();
 

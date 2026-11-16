@@ -64,7 +64,7 @@ describe("createPriceQuoteAction — BETA-PRICINGFIX1 academic-level guard", () 
     vi.clearAllMocks();
     mocks.auth.mockResolvedValue({ user: { id: "user-1", role: "STUDENT" } });
     mocks.dbStudentProfileFindUnique.mockResolvedValue({ id: "student-1" });
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE" });
     mocks.canInitiatePaidBooking.mockResolvedValue(true);
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(false);
     mocks.createCustomerPriceQuote.mockResolvedValue({
@@ -131,7 +131,7 @@ describe("createPriceQuoteAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolutio
   });
 
   it("A. ONLINE-capability tutor, no requested mode -> quote generated with tutoringMode ONLINE", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE" });
     const result = await createPriceQuoteAction(baseInput());
     expect(result.success).toBe(true);
     expect(mocks.createCustomerPriceQuote).toHaveBeenCalledWith(expect.objectContaining({ tutoringMode: "ONLINE" }));
@@ -142,21 +142,21 @@ describe("createPriceQuoteAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolutio
   });
 
   it("B. BOTH-capability tutor, requested ONLINE -> quote generated with tutoringMode ONLINE (never BOTH)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: "ONLINE" }));
     expect(result.success).toBe(true);
     expect(mocks.createCustomerPriceQuote).toHaveBeenCalledWith(expect.objectContaining({ tutoringMode: "ONLINE" }));
   });
 
   it("C. BOTH-capability tutor, requested IN_PERSON -> rejected before any quote is created (direct booking has no address support yet)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: "IN_PERSON" }));
     expect(result).toMatchObject({ success: false, error: "directInPersonUnavailable" });
     expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
   });
 
   it("D. BOTH-capability tutor, missing requested mode -> rejected, never silently inferred", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "BOTH" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: undefined }));
     expect(result).toMatchObject({ success: false, error: "invalidInput" });
     expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
@@ -170,35 +170,35 @@ describe("createPriceQuoteAction — PROD-DIRECT-BOOKING-MODEFIX1 mode resolutio
   });
 
   it("F. ONLINE-capability tutor, requested IN_PERSON -> rejected (not a legal subset of capability)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: "IN_PERSON" }));
     expect(result).toMatchObject({ success: false, error: "invalidInput" });
     expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
   });
 
   it("G. IN_PERSON-capability tutor, requested ONLINE -> rejected (not a legal subset of capability)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "IN_PERSON" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "IN_PERSON" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: "ONLINE" }));
     expect(result).toMatchObject({ success: false, error: "invalidInput" });
     expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
   });
 
   it("I. IN_PERSON-capability tutor, deterministic missing mode -> also rejected (direct booking never supports IN_PERSON today)", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "IN_PERSON" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "IN_PERSON" });
     const result = await createPriceQuoteAction(baseInput({ tutoringMode: undefined }));
     expect(result).toMatchObject({ success: false, error: "directInPersonUnavailable" });
   });
 
   it("H. Closed Beta active + resolved ONLINE -> passes the online-only product gate (reaches quote generation)", async () => {
     mocks.closedBetaOnlineOnlyActive.mockReturnValue(true);
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "ONLINE" });
     const result = await createPriceQuoteAction(baseInput());
     expect(result.success).toBe(true);
     expect(mocks.createCustomerPriceQuote).toHaveBeenCalled();
   });
 
   it("L. Controlled scenario — BOTH-capability tutor, requested ONLINE, resolves to tutoringMode ONLINE for both quote calls", async () => {
-    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "matthew-allen", applicationStatus: "APPROVED", learningMode: "BOTH" });
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "matthew-allen", applicationStatus: "APPROVED", user: { deactivatedAt: null }, learningMode: "BOTH" });
     const result = await createPriceQuoteAction(
       baseInput({ tutorProfileId: "matthew-allen", tutoringMode: "ONLINE", academicLevelId: "elementary-level" })
     );
@@ -257,6 +257,7 @@ describe("createPriceQuoteAction — RW-01 tutor approval enforcement", () => {
       mocks.dbTutorProfileFindUnique.mockResolvedValue({
         id: "tutor-1",
         applicationStatus,
+        user: { deactivatedAt: null },
         learningMode: "ONLINE",
         tutorAgreementAcceptedAt: new Date(),
       });
@@ -278,6 +279,7 @@ describe("createPriceQuoteAction — RW-01 tutor approval enforcement", () => {
     mocks.dbTutorProfileFindUnique.mockResolvedValue({
       id: "tutor-1",
       applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
       learningMode: "ONLINE",
       tutorAgreementAcceptedAt: new Date(),
     });
@@ -291,5 +293,66 @@ describe("createPriceQuoteAction — RW-01 tutor approval enforcement", () => {
     const { TutorApplicationStatus } = await import("@/generated/prisma/enums");
     const nonApproved = Object.values(TutorApplicationStatus).filter((s) => s !== "APPROVED").sort();
     expect([...NON_APPROVED_STATUSES].sort()).toEqual(nonApproved);
+  });
+});
+
+// RW-03 — the shared bookability rule (src/lib/tutorBookability.ts) at the
+// quote boundary: an APPROVED tutor whose own User account is deactivated is
+// refused exactly like a non-approved tutor, before any quote is created.
+describe("createPriceQuoteAction — RW-03 tutor account deactivation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.auth.mockResolvedValue({ user: { id: "user-1", role: "STUDENT" } });
+    mocks.dbStudentProfileFindUnique.mockResolvedValue({ id: "student-1" });
+    mocks.canInitiatePaidBooking.mockResolvedValue(true);
+    mocks.closedBetaOnlineOnlyActive.mockReturnValue(false);
+    mocks.createCustomerPriceQuote.mockResolvedValue({
+      id: "quote-1",
+      basePriceCents: 3200,
+      breakdown: [],
+      subtotalCents: 3200,
+      taxCents: 0,
+      taxConfigured: false,
+      totalCents: 3200,
+      currency: "CAD",
+      expiresAt: new Date(),
+    });
+    mocks.createTutorPayoutQuote.mockResolvedValue({ id: "payout-quote-1" });
+  });
+
+  it("APPROVED tutor with a deactivated User account -> tutorUnavailable, no quote created", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({
+      id: "tutor-1",
+      applicationStatus: "APPROVED",
+      user: { deactivatedAt: new Date() },
+      learningMode: "ONLINE",
+      tutorAgreementAcceptedAt: new Date(),
+    });
+    const result = await createPriceQuoteAction(baseInput());
+    expect(result).toEqual({ success: false, error: "tutorUnavailable" });
+    expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
+    expect(mocks.createTutorPayoutQuote).not.toHaveBeenCalled();
+  });
+
+  it("APPROVED tutor whose user state was not loaded -> fails closed", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({ id: "tutor-1", applicationStatus: "APPROVED", learningMode: "ONLINE" });
+    const result = await createPriceQuoteAction(baseInput());
+    expect(result).toEqual({ success: false, error: "tutorUnavailable" });
+    expect(mocks.createCustomerPriceQuote).not.toHaveBeenCalled();
+  });
+
+  it("loads the tutor's own User.deactivatedAt alongside the profile", async () => {
+    mocks.dbTutorProfileFindUnique.mockResolvedValue({
+      id: "tutor-1",
+      applicationStatus: "APPROVED",
+      user: { deactivatedAt: null },
+      learningMode: "ONLINE",
+    });
+    const result = await createPriceQuoteAction(baseInput());
+    expect(result.success).toBe(true);
+    expect(mocks.dbTutorProfileFindUnique).toHaveBeenCalledWith({
+      where: { id: "tutor-1" },
+      include: { user: { select: { deactivatedAt: true } } },
+    });
   });
 });

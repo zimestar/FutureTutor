@@ -5,6 +5,7 @@ import { TutorCard } from "@/components/marketing/TutorCard";
 import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 import { db } from "@/lib/db";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
+import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
 export async function FeaturedTutors({ locale }: { locale: string }) {
   const [t, tSubjects, tutors] = await Promise.all([
@@ -12,7 +13,7 @@ export async function FeaturedTutors({ locale }: { locale: string }) {
     getTranslations({ locale, namespace: "subjects.items" }),
     db.tutorProfile
       .findMany({
-        where: { applicationStatus: "APPROVED" },
+        where: { ...BOOKABLE_TUTOR_WHERE },
         include: {
           user: { select: { name: true, image: true } },
           subjects: { select: { subject: { select: { slug: true } } } },

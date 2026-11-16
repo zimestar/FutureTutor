@@ -16,6 +16,7 @@ import {
   SlotTakenError,
   NotAuthorizedForLearnerError,
   QuoteLearnerMismatchError,
+  TutorNotBookableError,
 } from "@/services/bookingCreation";
 import { captureAuthorizedPayment, convergeToCaptured } from "@/services/payments";
 import {
@@ -218,6 +219,10 @@ export async function acceptTutorInvitationAction(
       error instanceof InvitationNotPendingError ||
       error instanceof InvitationExpiredError ||
       error instanceof TutorNotEligibleError ||
+      // RW-03 — the reservation's row-locked re-check found the tutor no
+      // longer bookable (suspended/deactivated after the eligibility check
+      // above). Candidate-level: the claim rolled back, dispatch continues.
+      error instanceof TutorNotBookableError ||
       error instanceof PaymentNotReadyError ||
       error instanceof TutorPayoutQuoteNotFoundError ||
       error instanceof TutorPayoutQuoteExpiredError ||
