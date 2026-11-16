@@ -30,6 +30,13 @@ describe("admin.financialOps translations", () => {
       }
     });
 
+    it(`${locale} has every RW-22 Closed Beta gate label`, () => {
+      const gates = (messages.admin.financialOps as unknown as { betaGates?: Record<string, string> }).betaGates;
+      for (const key of ["title", "financialGate", "onlineOnly", "active", "inactive", "note"]) {
+        expect(gates?.[key], `missing ${locale} admin.financialOps.betaGates.${key}`).toBeTruthy();
+      }
+    });
+
     it(`${locale} has every summary tile label`, () => {
       for (const key of ["totalCount", "totalAmount", "pendingSessionOutcome", "waiting24h", "awaitingConvergence", "eligible", "held", "transferPending", "transferred", "transferFailed"]) {
         expect((messages.admin.financialOps.summary as Record<string, string>)[key], `missing ${locale} summary.${key}`).toBeTruthy();

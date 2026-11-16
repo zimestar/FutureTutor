@@ -2017,7 +2017,15 @@
         }
       },
       "empty": "No tutor earnings match these filters.",
-      "bankPayoutNote": "FutureTutor does not track bank deposit status locally. A \"Transferred\" earning means FutureTutor has sent funds to the tutor's connected payout account — Stripe still deposits to the tutor's bank according to that account's own payout schedule."
+      "bankPayoutNote": "FutureTutor does not track bank deposit status locally. A \"Transferred\" earning means FutureTutor has sent funds to the tutor's connected payout account — Stripe still deposits to the tutor's bank according to that account's own payout schedule.",
+      "betaGates": {
+        "title": "Closed Beta gates (effective, read-only)",
+        "financialGate": "Financial gate",
+        "onlineOnly": "Online-only",
+        "active": "ACTIVE",
+        "inactive": "INACTIVE",
+        "note": "Resolved values currently in force on this server. They can only be changed through deployment configuration, never from this page."
+      }
     },
     "messageReports": {
       "title": "Message Reports",

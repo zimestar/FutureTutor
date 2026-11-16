@@ -2017,7 +2017,15 @@
         }
       },
       "empty": "Aucune rémunération de tuteur ne correspond à ces filtres.",
-      "bankPayoutNote": "FutureTutor ne suit pas localement l'état du dépôt bancaire. Une rémunération « Transférée » signifie que FutureTutor a envoyé les fonds au compte de versement connecté du tuteur — Stripe effectue ensuite le dépôt dans le compte bancaire du tuteur selon le calendrier propre à ce compte."
+      "bankPayoutNote": "FutureTutor ne suit pas localement l'état du dépôt bancaire. Une rémunération « Transférée » signifie que FutureTutor a envoyé les fonds au compte de versement connecté du tuteur — Stripe effectue ensuite le dépôt dans le compte bancaire du tuteur selon le calendrier propre à ce compte.",
+      "betaGates": {
+        "title": "Restrictions de la bêta fermée (valeurs effectives, lecture seule)",
+        "financialGate": "Restriction financière",
+        "onlineOnly": "En ligne uniquement",
+        "active": "ACTIVE",
+        "inactive": "INACTIVE",
+        "note": "Valeurs résolues actuellement en vigueur sur ce serveur. Elles ne peuvent être modifiées que par la configuration du déploiement, jamais depuis cette page."
+      }
     },
     "messageReports": {
       "title": "Signalements de messages",

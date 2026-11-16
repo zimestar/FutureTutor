@@ -12,6 +12,7 @@ import { homePathForRole } from "@/lib/authorization";
 import { hasAdminPermission } from "@/lib/adminPermission";
 import { reconstructNoShowOutcome } from "@/services/sessionLifecycle";
 import { classifyTutorEarningForAdmin, type AdminEarningReasonKey } from "@/lib/adminFinancialOpsPresentation";
+import { getEffectiveClosedBetaGates } from "@/lib/closedBetaConfig";
 import type { TutorEarningSessionFacts } from "@/lib/tutorEarningPresentation";
 
 /**
@@ -170,6 +171,15 @@ export default async function AdminFinancialOpsPage({
 
   const visible = reasonFilter ? classified.filter((c) => c.classification.key === reasonFilter) : classified;
 
+  // RW-22 — the two RESOLVED Closed Beta gates (never raw env strings), read
+  // only after the role + DB-fresh ADMIN_PAYMENTS_READ checks above.
+  // Display only: nothing on this page can change either value.
+  const betaGates = getEffectiveClosedBetaGates();
+  const betaGateRows = [
+    { key: "financialGate", label: t("betaGates.financialGate"), active: betaGates.financialGate === "active" },
+    { key: "onlineOnly", label: t("betaGates.onlineOnly"), active: betaGates.onlineOnly === "active" },
+  ];
+
   const currencyFormatter = new Intl.NumberFormat(locale, { style: "currency", currency });
   const dateTimeFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
 
@@ -189,6 +199,21 @@ export default async function AdminFinancialOpsPage({
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <PageHeader title={t("title")} description={t("description")} />
+
+      <Surface padding="sm" className="mt-6" data-testid="financial-ops-beta-gates">
+        <p className="text-xs font-semibold text-text-muted">{t("betaGates.title")}</p>
+        <dl className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
+          {betaGateRows.map((gate) => (
+            <div key={gate.key} className="flex items-center gap-2" data-testid={`beta-gate-${gate.key}`}>
+              <dt className="text-sm text-navy">{gate.label}:</dt>
+              <dd className={`text-sm font-extrabold ${gate.active ? "text-navy" : "text-error"}`}>
+                {gate.active ? t("betaGates.active") : t("betaGates.inactive")}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-2 text-xs text-text-muted">{t("betaGates.note")}</p>
+      </Surface>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="financial-ops-summary">
         {summaryTiles.map((tile) => (

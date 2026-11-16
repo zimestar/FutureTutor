@@ -73,4 +73,33 @@ describe("/admin/financial-ops page.tsx", () => {
   it("the bank-payout distinction note is rendered", () => {
     expect(source).toContain('t("bankPayoutNote")');
   });
+
+  // RW-22 — read-only effective Closed Beta gate status.
+  it("RW-22 — shows the two RESOLVED Closed Beta gates via getEffectiveClosedBetaGates(), never raw environment values", () => {
+    expect(source).toContain('import { getEffectiveClosedBetaGates } from "@/lib/closedBetaConfig";');
+    expect(sourceWithoutComments).toContain("getEffectiveClosedBetaGates()");
+    expect(source).toContain('data-testid="financial-ops-beta-gates"');
+    expect(source).toContain('t("betaGates.financialGate")');
+    expect(source).toContain('t("betaGates.onlineOnly")');
+    expect(source).toContain('t("betaGates.active")');
+    expect(source).toContain('t("betaGates.inactive")');
+    // Never reads or prints environment variables directly.
+    expect(sourceWithoutComments).not.toMatch(/process\.env/);
+    expect(sourceWithoutComments).not.toMatch(/CLOSED_BETA_(MODE|FINANCIAL_GATE|ONLINE_ONLY)/);
+  });
+
+  it("RW-22 — the gate status is resolved only AFTER both the role pre-filter and the DB-fresh permission check", () => {
+    const roleGuard = sourceWithoutComments.indexOf('user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"');
+    const permissionGuard = sourceWithoutComments.indexOf('hasAdminPermission(user, "ADMIN_PAYMENTS_READ")');
+    const gateRead = sourceWithoutComments.indexOf("getEffectiveClosedBetaGates()");
+    expect(roleGuard).toBeGreaterThan(-1);
+    expect(permissionGuard).toBeGreaterThan(roleGuard);
+    expect(gateRead).toBeGreaterThan(permissionGuard);
+  });
+
+  it("RW-22 — the gate status is display-only: no setter, control, or extra form is introduced", () => {
+    expect(sourceWithoutComments).not.toMatch(/set(ClosedBeta|BetaGate|Financial|OnlineOnly)/);
+    expect((source.match(/<form/g) ?? []).length).toBe(1);
+    expect(sourceWithoutComments).not.toMatch(/<button[^>]*beta/i);
+  });
 });
