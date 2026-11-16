@@ -137,6 +137,14 @@ export async function createBookingAction(
   ]);
   if (!studentProfile || !tutorProfile) return { error: t("invalidInput") };
 
+  // RW-01 — independent re-check of createPriceQuoteAction's identical gate,
+  // read fresh from this request (a tutor suspended or rejected after their
+  // quote was issued is refused here). Runs before mode resolution, slot
+  // validation, payment preparation, and the reservation transaction.
+  // tutorAgreementAcceptedAt (checked below) is set at application submit,
+  // so it never substitutes for approval.
+  if (tutorProfile.applicationStatus !== "APPROVED") return { error: t("tutorUnavailable") };
+
   // PROD-DIRECT-BOOKING-MODEFIX1 — independent, defense-in-depth re-check of
   // the exact same resolution createPriceQuoteAction already performed when
   // the quote being consumed below was created. Never trusts that earlier

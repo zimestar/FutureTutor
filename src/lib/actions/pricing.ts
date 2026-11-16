@@ -70,6 +70,15 @@ export async function createPriceQuoteAction(input: {
   const tutorProfile = await db.tutorProfile.findUnique({ where: { id: parsed.data.tutorProfileId } });
   if (!tutorProfile) return { success: false, error: t("invalidInput") };
 
+  // RW-01 — only an APPROVED tutor can be quoted for a direct booking. Every
+  // other TutorApplicationStatus (DRAFT, the in-progress validation stages,
+  // REJECTED, SUSPENDED) is refused here, before any quote row is created.
+  // tutorAgreementAcceptedAt is NOT evidence of approval: it is written when
+  // the tutor submits the application (tutorProfile.ts), long before review.
+  if (tutorProfile.applicationStatus !== "APPROVED") {
+    return { success: false, error: t("tutorUnavailable") };
+  }
+
   // PROD-DIRECT-BOOKING-MODEFIX1 — tutorProfile.learningMode is the tutor's
   // CAPABILITY (ONLINE/IN_PERSON/BOTH — "what this tutor is willing to
   // offer"), never the actual session mode on its own. resolveRequestedTutoringMode
