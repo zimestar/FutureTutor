@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
+import { futureSlotUtc } from "@/test-support/testSlots";
 
 // PROD-DISPATCHFIX1 — permanent regression coverage for the Quick Match
 // dispatch batch-progression defect: advanceDispatch's parallel-round branch
@@ -43,7 +44,7 @@ const createdTutorProfileIds: string[] = [];
 const createdCustomerQuoteIds: string[] = [];
 const createdTutoringRequestIds: string[] = [];
 
-const FAR_FUTURE_START = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // always NORMAL urgency band
+const FAR_FUTURE_START = futureSlotUtc(90); // always NORMAL urgency band
 
 beforeAll(async () => {
   const target = resolveVerifiedTestDatabase();

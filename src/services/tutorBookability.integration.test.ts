@@ -4,6 +4,7 @@ import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { TutorApplicationStatus } from "@/generated/prisma/enums";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
+import { futureSlotUtc } from "@/test-support/testSlots";
 
 // RW-03 — real-PostgreSQL proof of the shared tutor bookability rule and of
 // the row-locked, in-transaction re-check inside reserveBookingPendingPayment.
@@ -50,12 +51,10 @@ const createdCustomerQuoteIds: string[] = [];
 const createdTutorPayoutQuoteIds: string[] = [];
 const createdPaymentIds: string[] = [];
 
-const DAY = 24 * 60 * 60 * 1000;
-const BASE_START = new Date(Math.ceil((Date.now() + 70 * DAY) / 3_600_000) * 3_600_000);
 let slotCounter = 0;
 function nextSlot(): Date {
   slotCounter += 1;
-  return new Date(BASE_START.getTime() + slotCounter * 2 * 3_600_000);
+  return futureSlotUtc(70 + slotCounter);
 }
 
 beforeAll(async () => {

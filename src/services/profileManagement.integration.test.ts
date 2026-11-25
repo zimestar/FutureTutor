@@ -84,7 +84,7 @@ async function createBareStudentUser() {
   return { user };
 }
 
-async function createGuardianManagedChild(parentProfileId: string, overrides: Partial<{ firstName: string; city: string | null }> = {}) {
+async function createGuardianManagedChild(parentProfileId: string, overrides: Partial<{ firstName: string; city: string | null; tutoringMode: "ONLINE" | "BOTH" }> = {}) {
   const studentProfile = await db.studentProfile.create({
     data: {
       firstName: overrides.firstName ?? "Kid",
@@ -93,6 +93,7 @@ async function createGuardianManagedChild(parentProfileId: string, overrides: Pa
       managementMode: "GUARDIAN_MANAGED",
       city: overrides.city ?? null,
       userId: null,
+      ...(overrides.tutoringMode ? { tutoringMode: overrides.tutoringMode } : {}),
     },
   });
   createdStudentProfileIds.push(studentProfile.id);
@@ -484,7 +485,9 @@ describe("BETA-HARDEN1 — online-only tutoringMode gate", () => {
   it("33. gate active: an ACTIVE guardian cannot change a child's tutoringMode to BOTH", async () => {
     process.env.CLOSED_BETA_MODE = "active";
     const { user, parentProfile } = await createParentUser();
-    const { studentProfile } = await createGuardianManagedChild(parentProfile.id);
+    // Must start ONLINE: the schema default is BOTH, and resubmitting an
+    // unchanged historical value is deliberately allowed (see test 35).
+    const { studentProfile } = await createGuardianManagedChild(parentProfile.id, { tutoringMode: "ONLINE" });
     await expect(
       updateStudentProfileForActor(db, user.id, studentProfile.id, { tutoringMode: "BOTH" })
     ).rejects.toThrow(BetaOnlineOnlyModeError);

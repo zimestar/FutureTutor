@@ -18,6 +18,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // RW-11 — hermetic env + network block; a no-op outside integration tests.
+    setupFiles: ["src/test-support/integrationTestEnv.ts"],
   },
   // Vitest runs test files through Vite's SSR module runner (not the
   // client-style resolver), so the "react-server" condition must be set

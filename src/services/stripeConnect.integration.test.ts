@@ -151,6 +151,15 @@ function makeFakeStripeClient(
   };
 }
 
+// The gate defaults to disabled; this suite covers the enabled path against
+// the module-wide Stripe fake (stripeConnectGate.test.ts covers disabled).
+beforeAll(() => {
+  vi.stubEnv("STRIPE_CONNECT_ENABLED", "true");
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
+
 beforeAll(async () => {
   const target = resolveVerifiedTestDatabase();
   const devDatabaseUrlForSafetyCheckOnly = process.env.DATABASE_URL;

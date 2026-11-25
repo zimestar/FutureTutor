@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
+import { futureSlotUtc } from "@/test-support/testSlots";
 
 // FG-LEGAL2 — permanent DB-integration coverage for the two
 // Tutor-Agreement-acceptance gates enforced at the service layer:
@@ -189,7 +190,7 @@ describe("FG-LEGAL2 — Quick Match eligibility excludes an unaccepted (but APPR
       getEligibleTutors(tx, {
         subjectId,
         tutoringMode: "ONLINE",
-        requestedStartAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        requestedStartAt: futureSlotUtc(2),
         durationMinutes: 60,
       })
     );
@@ -205,7 +206,7 @@ describe("FG-LEGAL2 — Quick Match eligibility excludes an unaccepted (but APPR
     const request = {
       subjectId,
       tutoringMode: "ONLINE" as const,
-      requestedStartAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      requestedStartAt: futureSlotUtc(2),
       durationMinutes: 60,
     };
 
@@ -229,7 +230,7 @@ describe("FG-LEGAL2 — Quick Match eligibility excludes an unaccepted (but APPR
       isTutorEligibleForRequest(tx, tutor.id, {
         subjectId,
         tutoringMode: "ONLINE",
-        requestedStartAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        requestedStartAt: futureSlotUtc(2),
         durationMinutes: 60,
       })
     );

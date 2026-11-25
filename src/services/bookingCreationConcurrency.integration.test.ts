@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
+import { futureSlotUtc } from "@/test-support/testSlots";
 
 // P0 booking hardening — permanent concurrency/regression coverage for the
 // Serializable-retry wrapping added around reserveBookingPendingPayment's
@@ -78,7 +79,7 @@ const createdBookingIds: string[] = [];
 const createdTutorInvitationIds: string[] = [];
 const createdTutoringRequestIds: string[] = [];
 
-const FAR_FUTURE_START = new Date(Date.now() + 62 * 24 * 60 * 60 * 1000);
+const FAR_FUTURE_START = futureSlotUtc(62);
 
 beforeAll(async () => {
   const target = resolveVerifiedTestDatabase();

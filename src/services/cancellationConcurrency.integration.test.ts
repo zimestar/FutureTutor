@@ -732,7 +732,6 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
     // succeeds within the bounded retry budget, the Booking/TutorEarning
     // always reach the correct terminal CANCELLED state, no P2034 ever
     // escapes to the caller, and no partial/duplicate state survives.
-    let observedAtLeastOneRetry = false;
     for (let i = 0; i < 6; i++) {
       const { booking, student } = await setupConfirmedCapturedBooking();
       const earning = await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } });
@@ -763,7 +762,7 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
       }
       expect(cancelSettled.status).toBe("fulfilled");
 
-      if (transactionCalls > 1) observedAtLeastOneRetry = true;
+      expect(transactionCalls).toBeGreaterThanOrEqual(1);
 
       const finalBooking = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
       expect(finalBooking.status).toBe("CANCELLED"); // reaches the correct cancelled state, no partial intermediate state
@@ -785,14 +784,53 @@ describe("Phase H.8 concurrency/race regression suite (§AF, amended §AM)", () 
       });
       expect(cancelAuditCountAfter).toBe(1); // never duplicated by a retry
     }
-    // Non-flaky evidence requirement: across the repeated race, at least
-    // one iteration's cancelBookingWithRefund call genuinely invoked
-    // db.$transaction more than once — i.e. a real P2034 was caught by
-    // withSerializableRetry and transparently retried, not merely "never
-    // happened to collide this run." (If this ever starts failing, it
-    // means the race stopped reproducing real contention at all — worth
-    // re-investigating, not silencing.)
-    expect(observedAtLeastOneRetry).toBe(true);
+    // Deterministic retry evidence. Since Phase 5B the sweep above no longer
+    // writes a SCHEDULED session's earning, so the race only collided by
+    // chance (RW-11). Here another connection holds an uncommitted write on
+    // the same TutorEarning row until cancellation is observed waiting on it;
+    // committing it then forces a real Postgres 40001 for cancellation's
+    // Serializable transaction, which must be retried transparently.
+    {
+      const { booking, student } = await setupConfirmedCapturedBooking();
+      vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
+      let rowLocked!: () => void;
+      let commit!: () => void;
+      const lockedPromise = new Promise<void>((r) => (rowLocked = r));
+      const commitPromise = new Promise<void>((r) => (commit = r));
+      const holder = db.$transaction(
+        async (tx) => {
+          await tx.tutorEarning.update({ where: { bookingId: booking.id }, data: { eligibleAt: new Date(Date.now() - 1000) } });
+          rowLocked();
+          await commitPromise;
+        },
+        { timeout: 20_000 }
+      );
+      await lockedPromise;
+
+      const cancellation = withTransactionCallCounter(() =>
+        cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" })
+      );
+      cancellation.catch(() => {}); // awaited below; avoids an unhandled rejection if the poll throws first
+      try {
+        const deadline = Date.now() + 4_000;
+        for (;;) {
+          const [{ n }] = await db.$queryRaw<Array<{ n: number }>>`
+            SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%TutorEarning%'`;
+          if (n > 0) break;
+          if (Date.now() > deadline) throw new Error("cancellation was never observed waiting on the TutorEarning row");
+          await new Promise((r) => setTimeout(r, 20));
+        }
+      } finally {
+        commit();
+        await holder;
+      }
+
+      const { transactionCalls } = await cancellation;
+      expect(transactionCalls).toBeGreaterThan(1); // a genuine conflict was retried
+      expect((await db.booking.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe("CANCELLED");
+      expect((await db.tutorEarning.findUniqueOrThrow({ where: { bookingId: booking.id } })).status).toBe("CANCELLED");
+    }
   });
 
   it("8. Retry exhaustion: persistent P2034 beyond the bounded budget propagates, never loops infinitely, never leaves partial cancellation state", async () => {

@@ -3,6 +3,7 @@ import { randomUUID, createHash } from "crypto";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { resolveVerifiedTestDatabase } from "@/test-support/testDatabaseSafety";
+import { futureSlotUtc } from "@/test-support/testSlots";
 
 // RW-02 — real-PostgreSQL proof that a Quick Match request carries ONE actual
 // session mode end to end (request -> customer quote -> lock -> dispatch /
@@ -64,12 +65,10 @@ const createdUserIds: string[] = [];
 const createdTutorProfileIds: string[] = [];
 const createdStudentProfileIds: string[] = [];
 
-const DAY = 24 * 60 * 60 * 1000;
 let slot = 0;
 function nextStart(): Date {
   slot += 1;
-  const base = Math.ceil((Date.now() + 12 * DAY) / 3_600_000) * 3_600_000;
-  return new Date(base + slot * 3 * 3_600_000);
+  return futureSlotUtc(12 + slot);
 }
 
 beforeAll(async () => {

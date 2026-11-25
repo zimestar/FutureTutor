@@ -1253,18 +1253,19 @@ describe("payer-aware notifications and audit model", () => {
   });
 
   it("tutor cancellation notification: a distinct tutor notice fires when a non-tutor actor cancels (§X)", async () => {
-    // Pre-sandbox verification gap closure: cancellationPolicy.ts writes a
-    // distinct `booking.cancelled_notify_tutor` notification to the tutor
-    // (unless the tutor is the one cancelling) — this was implemented but
-    // had no permanent regression test before this pass.
+    // cancellationPolicy.ts notifies the tutor (unless the tutor is the one
+    // cancelling) through the session-notification outbox since 2d8753b,
+    // which replaced the original `booking.cancelled_notify_tutor` type.
     const { tutor, student, booking } = await setupConfirmedCapturedBooking();
     vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
     await cancelBookingWithRefund(booking.id, student.user.id, { actorRole: "STUDENT" });
     const tutorNotification = await db.notification.findFirst({
-      where: { userId: tutor.user.id, type: "booking.cancelled_notify_tutor" },
+      where: { userId: tutor.user.id, type: "session.session_cancelled" },
     });
     expect(tutorNotification).not.toBeNull();
     expect((tutorNotification?.metadata as Record<string, unknown>)?.bookingId).toBe(booking.id);
+    const outbox = await db.sessionNotification.findMany({ where: { bookingId: booking.id, event: "SESSION_CANCELLED" } });
+    expect(outbox.map((row) => [row.recipientRole, row.recipientUserId])).toEqual([["TUTOR", tutor.user.id]]);
   });
 
   it("tutor cancellation notification: NOT sent to the tutor when the tutor is the one who cancelled", async () => {
@@ -1272,7 +1273,7 @@ describe("payer-aware notifications and audit model", () => {
     vi.mocked(getStripeClient).mockReturnValue(makeFakeStripeClient() as never);
     await cancelBookingWithRefund(booking.id, tutor.user.id, { actorRole: "TUTOR" });
     const tutorNotification = await db.notification.findFirst({
-      where: { userId: tutor.user.id, type: "booking.cancelled_notify_tutor" },
+      where: { userId: tutor.user.id, type: "session.session_cancelled" },
     });
     expect(tutorNotification).toBeNull(); // the tutor already knows — they cancelled it themselves
   });
