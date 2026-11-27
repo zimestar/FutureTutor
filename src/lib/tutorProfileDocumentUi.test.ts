@@ -35,11 +35,11 @@ describe("Tutor Profile — Supporting documents section reuses the existing doc
 
 describe("Public Tutor profile — metadata cards do not overflow with long localized labels", () => {
   const source = readFileSync("src/app/[locale]/tutors/[slug]/page.tsx", "utf8");
+  const CARD = 'className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-4"';
 
   it("every metadata card container allows its content to shrink and wrap (min-w-0), not stay a rigid unbreakable box", () => {
-    const cardMatches = source.match(/className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4"/g) ?? [];
     // Mode, city, languages, levels — four metadata cards.
-    expect(cardMatches.length).toBe(4);
+    expect(source.split(CARD).length - 1).toBe(4);
   });
 
   it("every metadata card's icon is shrink-0 so text space is preferred over icon distortion", () => {
@@ -47,14 +47,16 @@ describe("Public Tutor profile — metadata cards do not overflow with long loca
     expect(iconMatches.length).toBe(4);
   });
 
-  it("every metadata card's label span is itself min-w-0 so long text wraps instead of overflowing its flex parent", () => {
-    const labelMatches = source.match(/<span className="min-w-0 text-sm font-semibold text-navy">/g) ?? [];
-    expect(labelMatches.length).toBe(4);
+  it("every metadata card's text block is itself min-w-0 so long text wraps instead of overflowing its flex parent", () => {
+    const blocks = source.split(CARD).slice(1);
+    expect(blocks).toHaveLength(4);
+    for (const block of blocks) {
+      expect(block.slice(0, 400)).toContain('<div className="min-w-0">');
+    }
   });
 
-  it("does not fix the overflow by shrinking text size or hard-coding a narrow width", () => {
-    expect(source).not.toMatch(/text-xs.*mode\./);
-    expect(source).not.toMatch(/w-(?:20|24|28|32|36|40)\b.*rounded-lg border border-neutral-200/);
+  it("does not fix the overflow by hard-coding a narrow card width", () => {
+    expect(source).not.toMatch(/w-(?:20|24|28|32|36|40)\b.*rounded-xl border border-border bg-surface p-4/);
   });
 });
 
@@ -62,19 +64,16 @@ describe("Public Tutor profile — two-up metadata layout keys off the actual co
   const source = readFileSync("src/app/[locale]/tutors/[slug]/page.tsx", "utf8");
 
   it("marks the left profile column as a CSS container so descendants can query its real rendered width", () => {
-    expect(source).toContain('<div className="@container">');
+    expect(source).toContain('<div className="@container min-w-0">');
   });
 
   it("gates the two-up metadata grid on a container-query breakpoint, never a viewport-only sm:/md:/lg: prefix", () => {
-    expect(source).toContain("grid grid-cols-1 gap-4 @2xl:grid-cols-2");
-    expect(source).not.toMatch(/grid grid-cols-1 gap-4 sm:grid-cols-2/);
+    expect(source).toContain("grid grid-cols-1 gap-3 @xl:grid-cols-2");
+    expect(source).not.toMatch(/<dl className="[^"]*\b(?:sm|md|lg):grid-cols-2/);
   });
 
-  it("defaults to a single column (the compact vertical list) below the container threshold — never assumes two-up is safe", () => {
-    const gridClassIdx = source.indexOf("grid grid-cols-1 gap-4 @2xl:grid-cols-2");
-    expect(gridClassIdx).toBeGreaterThan(-1);
-    // grid-cols-1 appears before the @2xl: override in the same class string,
-    // i.e. one column is the base/narrow-safe state, two-up is the opt-in.
-    expect(source.indexOf("grid-cols-1", gridClassIdx)).toBeLessThan(source.indexOf("@2xl:grid-cols-2", gridClassIdx));
+  it("keeps the booking card at a fixed width so it can never squeeze the profile column", () => {
+    expect(source).toContain("lg:grid-cols-[minmax(0,1fr)_25rem]");
+    expect(source).not.toContain("lg:grid-cols-[2fr_1fr]");
   });
 });

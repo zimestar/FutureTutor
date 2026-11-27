@@ -100,90 +100,103 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
             {tProfile("backToTutorSearch")}
           </Button>
         )}
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[2fr_1fr]">
-          <div className="@container">
-            <div className="flex items-start gap-5">
-              <Avatar name={firstName} src={tutor.user.image ?? undefined} size={80} />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-bold text-navy">{firstName}</h1>
-                  {favoritedIds !== undefined && (
-                    <FavoriteButton tutorProfileId={tutor.id} initialFavorited={favoritedIds.has(tutor.id)} />
-                  )}
+        {/* DESIGN-SYSTEM2 — profile column + fixed-width sticky booking card.
+            A fixed aside width (instead of 2fr/1fr) keeps the widget's long
+            day row from stealing the profile column's width. */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-12 xl:grid-cols-[minmax(0,1fr)_27rem]">
+          <div className="@container min-w-0">
+            <div className="rounded-2xl border border-border bg-surface p-6 shadow-(--shadow-card) sm:p-8">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                <Avatar name={firstName} src={tutor.user.image ?? undefined} size={96} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">{firstName}</h1>
+                    {favoritedIds !== undefined && (
+                      <FavoriteButton tutorProfileId={tutor.id} initialFavorited={favoritedIds.has(tutor.id)} />
+                    )}
+                  </div>
+                  {tutor.headline && <p className="mt-2 text-lg font-semibold leading-snug text-text-secondary">{tutor.headline}</p>}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-secondary">
+                    {tutor.reviewCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Star size={16} className="text-warning" fill="currentColor" strokeWidth={0} />
+                        <span className="font-bold text-navy">{tutor.ratingAverage.toFixed(1)}</span>
+                        <span>{tCard("reviews", { count: tutor.reviewCount })}</span>
+                      </span>
+                    )}
+                    {(tutor.yearsExperience ?? 0) > 0 && (
+                      <span className="font-semibold">{tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}</span>
+                    )}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {tutor.subjects.map((s) => (
+                      <Badge key={s.subject.slug} variant="neutral">
+                        {tSubjects(s.subject.slug)}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-1 text-lg font-semibold text-slate">{tutor.headline}</p>
-                {tutor.reviewCount > 0 && (
-                  <div className="mt-2 flex items-center gap-1">
-                    <Star size={16} className="text-warning" fill="currentColor" strokeWidth={0} />
-                    <span className="font-bold text-navy">{tutor.ratingAverage.toFixed(1)}</span>
-                    <span className="text-slate">{tCard("reviews", { count: tutor.reviewCount })}</span>
+              </div>
+            </div>
+
+            {tutor.bio && (
+              <section aria-labelledby="tutor-about" className="mt-10">
+                <h2 id="tutor-about" className="text-xl font-bold text-navy">
+                  {tProfile("aboutTitle", { name: firstName })}
+                </h2>
+                <p className="mt-3 max-w-3xl whitespace-pre-line text-base leading-7 text-text-secondary">{tutor.bio}</p>
+              </section>
+            )}
+
+            <section aria-labelledby="tutor-details" className="mt-10">
+              <h2 id="tutor-details" className="text-xl font-bold text-navy">
+                {tProfile("detailsTitle")}
+              </h2>
+              <dl className="mt-4 grid grid-cols-1 gap-3 @xl:grid-cols-2">
+                <div className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-4">
+                  <Laptop size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{tProfile("detailMode")}</dt>
+                    <dd className="mt-1 text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</dd>
+                  </div>
+                </div>
+                {tutor.city && (
+                  <div className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-4">
+                    <MapPin size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{tProfile("detailLocation")}</dt>
+                      <dd className="mt-1 text-sm font-semibold text-navy">
+                        {tutor.city}
+                        {tutor.province ? `, ${tutor.province}` : ""}
+                      </dd>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate">{tutor.bio}</p>
-
-            {/*
-              Two-up presentation is gated on the ACTUAL rendered width of
-              this column (a CSS container query), not the browser viewport.
-              At lg+ viewports the outer grid above splits into a 2fr/1fr
-              layout, and this column's real width can land anywhere from
-              ~250px to ~700px depending on viewport — a viewport-based
-              sm:grid-cols-2 was already "true" long before this column was
-              actually wide enough to hold two cards without cramming long
-              localized phrases (FR mode/level labels) into a narrow card
-              and wrapping them word-by-word. @2xl here means "only go
-              two-up once this column itself has ~42rem to work with" —
-              comfortably wide either at full page width pre-lg, or once
-              the split column itself is genuinely spacious.
-            */}
-            <div className="mt-8 grid grid-cols-1 gap-4 @2xl:grid-cols-2">
-              <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                <Laptop size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
-                <span className="min-w-0 text-sm font-semibold text-navy">{tCard(`mode.${displayMode}`)}</span>
-              </div>
-              {tutor.city && (
-                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <MapPin size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
-                  <span className="min-w-0 text-sm font-semibold text-navy">
-                    {tutor.city}
-                    {tutor.province ? `, ${tutor.province}` : ""}
-                  </span>
-                </div>
-              )}
-              {tutor.languages.length > 0 && (
-                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <Languages size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
-                  <span className="min-w-0 text-sm font-semibold text-navy">
-                    {tutor.languages.map((l) => tLanguages(l.language)).join(", ")}
-                  </span>
-                </div>
-              )}
-              {tutor.levels.length > 0 && (
-                <div className="flex min-w-0 items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-                  <GraduationCap size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
-                  <span className="min-w-0 text-sm font-semibold text-navy">
-                    {tutor.levels.map((l) => tLevels(l.academicLevel.slug)).join(", ")}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-2">
-              {tutor.subjects.map((s) => (
-                <Badge key={s.subject.slug} variant="neutral">
-                  {tSubjects(s.subject.slug)}
-                </Badge>
-              ))}
-            </div>
+                {tutor.languages.length > 0 && (
+                  <div className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-4">
+                    <Languages size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{tProfile("detailLanguages")}</dt>
+                      <dd className="mt-1 text-sm font-semibold text-navy">{tutor.languages.map((l) => tLanguages(l.language)).join(", ")}</dd>
+                    </div>
+                  </div>
+                )}
+                {tutor.levels.length > 0 && (
+                  <div className="flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-4">
+                    <GraduationCap size={18} className="mt-0.5 shrink-0 text-blue" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{tProfile("detailLevels")}</dt>
+                      <dd className="mt-1 text-sm font-semibold text-navy">{tutor.levels.map((l) => tLevels(l.academicLevel.slug)).join(", ")}</dd>
+                    </div>
+                  </div>
+                )}
+              </dl>
+            </section>
           </div>
 
-          <aside className="h-fit rounded-lg border border-neutral-200 bg-white p-6 shadow-card">
-            <p className="text-sm font-semibold text-slate">{tProfile("pricingNote")}</p>
-            <p className="mt-1 text-sm text-slate">
-              {tProfile("yearsExperience", { count: tutor.yearsExperience ?? 0 })}
-            </p>
+          <aside className="h-fit rounded-2xl border border-border bg-surface p-6 shadow-(--shadow-card) lg:sticky lg:top-24">
+            <h2 className="text-lg font-bold text-navy">{tProfile("bookTitle", { name: firstName })}</h2>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">{tProfile("pricingNote")}</p>
             {canBook ? (
               timezone ? (
                 <BookingWidget

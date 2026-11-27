@@ -655,6 +655,13 @@
     }
   },
   "tutorProfilePage": {
+    "aboutTitle": "À propos de {name}",
+    "detailsTitle": "Détails de l'enseignement",
+    "detailMode": "Format",
+    "detailLocation": "Lieu",
+    "detailLanguages": "Langues",
+    "detailLevels": "Niveaux",
+    "bookTitle": "Réserver une séance avec {name}",
     "yearsExperience": "{count}+ ans d'expérience",
     "requestToBook": "Demander une réservation",
     "bookingNote": "Créez un compte ou connectez-vous pour poursuivre la réservation.",

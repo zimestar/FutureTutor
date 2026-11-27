@@ -218,7 +218,7 @@ export function BookingWidget({
     // not an ancestor — mirroring the pattern QuickMatchPriceReview.tsx
     // already uses correctly. All the fields that form needs are tracked in
     // React state already and passed via hidden inputs on that form alone.
-    <div className="mt-6 flex flex-col gap-4">
+    <div className="mt-5 flex flex-col gap-5">
       {state?.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {state.error}
@@ -267,7 +267,7 @@ export function BookingWidget({
 
       <div>
         <p className="mb-1.5 text-sm font-semibold text-navy">{t("selectDay")}</p>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
           {days.map((day) => (
             <button
               key={day.date}
@@ -277,10 +277,11 @@ export function BookingWidget({
                 setSelectedDate(day.date);
                 setSelectedSlot("");
               }}
-              className={`shrink-0 rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
+              aria-pressed={day.date === selectedDate}
+              className={`shrink-0 snap-start whitespace-nowrap rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-colors ${
                 day.date === selectedDate
-                  ? "border-blue bg-blue/5 text-blue"
-                  : "border-neutral-300 text-navy hover:border-blue"
+                  ? "border-blue bg-blue text-white shadow-sm"
+                  : "border-border bg-surface text-navy hover:border-blue/50"
               }`}
             >
               {dayFormatter.format(new Date(`${day.date}T12:00:00Z`))}
@@ -292,7 +293,7 @@ export function BookingWidget({
       {selectedDay && (
         <div>
           <p className="mb-1.5 text-sm font-semibold text-navy">{t("selectTime")}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3">
             {selectedDay.slots.map((slot) => (
               <button
                 key={slot.startAt}
@@ -300,10 +301,11 @@ export function BookingWidget({
                 data-testid="time-slot"
                 data-slot-start={slot.startAt}
                 onClick={() => setSelectedSlot(slot.startAt)}
-                className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
+                aria-pressed={slot.startAt === selectedSlot}
+                className={`rounded-xl border px-2 py-2.5 text-sm font-semibold tabular-nums transition-colors ${
                   slot.startAt === selectedSlot
-                    ? "border-blue bg-blue/5 text-blue"
-                    : "border-neutral-300 text-navy hover:border-blue"
+                    ? "border-blue bg-blue text-white shadow-sm"
+                    : "border-border bg-surface text-navy hover:border-blue/50"
                 }`}
               >
                 {timeFormatter.format(new Date(slot.startAt))}
@@ -379,7 +381,7 @@ export function BookingWidget({
       )}
 
       {selectedSlot && (
-        <div className="rounded-md border border-neutral-200 bg-off-white p-4" data-testid="price-summary">
+        <div className="rounded-xl border border-border bg-canvas p-4" data-testid="price-summary">
           {!academicLevelId && (
             <p className="text-sm text-slate" data-testid="level-required-hint">
               {t("selectLevelToSeePricing")}
@@ -404,7 +406,7 @@ export function BookingWidget({
                   <span>{formatCents(quote.taxCents)}</span>
                 </div>
               )}
-              <div className="mt-1 flex justify-between border-t border-neutral-200 pt-1 font-bold text-navy">
+              <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold text-navy">
                 <span>{t("total")}</span>
                 <span data-testid="total-price">{formatCents(quote.totalCents)}</span>
               </div>
@@ -472,7 +474,7 @@ export function BookingWidget({
             type="submit"
             data-testid="confirm-booking"
             disabled={pending || quotePending || !readyToSubmit}
-            className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-12 w-full rounded-xl bg-blue text-[15px] font-bold text-white shadow-sm transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? t("confirming") : t("confirmCta")}
           </button>
