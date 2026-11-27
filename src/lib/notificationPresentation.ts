@@ -30,6 +30,12 @@ export function resolveNotificationLink(type: string, metadata: unknown): string
     return `/session/${meta.bookingId}`;
   }
   if (type.startsWith("tutor_application.")) return "/tutor/dashboard";
+  // TUTOR-PIPELINE1 — admin alerts open the application, or the board for the digest.
+  if (type.startsWith("admin_alert.")) {
+    return typeof meta.tutorProfileId === "string" && meta.tutorProfileId.length > 0
+      ? `/admin/tutors/${meta.tutorProfileId}`
+      : "/admin/tutors/pipeline";
+  }
   if (type === "tutor_transfer.completed") return "/tutor/payouts";
   if (type.startsWith("quickmatch.")) return "/tutor/quick-match";
   // MESSAGING-MVP1C — metadata carries only { conversationId }, an opaque

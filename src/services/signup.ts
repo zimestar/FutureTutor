@@ -93,7 +93,18 @@ export async function createUserForSignup(client: SignupClient, input: CreateUse
   }
 
   return client.user.create({
-    data: { name, email, passwordHash, role, termsAcceptedAt, termsAcceptedVersion, termsAcceptedLocale, ...profileData },
+    data: {
+      name,
+      email,
+      passwordHash,
+      role,
+      termsAcceptedAt,
+      termsAcceptedVersion,
+      termsAcceptedLocale,
+      // TUTOR-PIPELINE1 — the signup language is the first known preference.
+      preferredLocale: termsAcceptedLocale,
+      ...profileData,
+    },
   });
 }
 

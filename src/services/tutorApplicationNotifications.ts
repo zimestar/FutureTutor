@@ -37,15 +37,10 @@ import type { SendTutorApplicationEmail } from "@/lib/email/resendSendTutorAppli
  *     already durably committed by the time this runs, exactly matching
  *     this mission's transaction-safety requirement.
  *
- * Tutor locale: no durable per-tutor locale/language preference exists
- * anywhere in the schema today (TutorProfile has none, User has none —
- * confirmed by the same audit that built this feature; TutorLanguage is
- * the languages a tutor *teaches in*, a different concept).
- * bookingNotifications.ts already hit this identical gap for tutor
- * recipients and documented hardcoding "en" as the fallback rather than
- * inventing a new policy — this module makes the same documented choice,
- * for the same reason, via the same resolveEmailLocale() fallback
- * mechanism (never a bespoke hardcode).
+ * Tutor locale: TUTOR-PIPELINE1 added User.preferredLocale (signup language,
+ * refreshed at each sign-in). Emails use it; unknown falls back to "en"
+ * through resolveEmailLocale(). TutorLanguage is a different concept (the
+ * languages a tutor teaches in).
  */
 
 export const consoleDevSendTutorApplicationEmail: SendTutorApplicationEmail = async ({ to, subject }) => {
@@ -119,15 +114,18 @@ export async function emitTutorApplicationEvent(tx: Prisma.TransactionClient, pa
 
 async function loadTutorApplicationEmailContext(
   tutorProfileId: string
-): Promise<{ tutorEmail: string; tutorFirstName: string } | null> {
+): Promise<{ tutorEmail: string; tutorFirstName: string; locale: string } | null> {
   const tutorProfile = await db.tutorProfile.findUnique({
     where: { id: tutorProfileId },
-    select: { user: { select: { name: true, email: true } } },
+    select: { user: { select: { name: true, email: true, preferredLocale: true } } },
   });
   if (!tutorProfile) return null;
   return {
     tutorEmail: tutorProfile.user.email,
     tutorFirstName: tutorProfile.user.name?.split(" ")[0] ?? "",
+    // TUTOR-PIPELINE1 — the candidate's own language (signup or latest
+    // sign-in); resolveEmailLocale falls back to "en" when unknown.
+    locale: tutorProfile.user.preferredLocale ?? "en",
   };
 }
 
@@ -160,8 +158,7 @@ export async function dispatchTutorApplicationNotifications(
   ]);
   const sendEmail = deps.sendEmail ?? resolveSendTutorApplicationEmail();
 
-  // Documented gap — see this module's doc comment above.
-  const locale = "en";
+  const locale = loaded.locale;
 
   for (const row of pending) {
     try {

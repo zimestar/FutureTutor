@@ -689,7 +689,8 @@
       "notATutor": "Seuls les comptes tuteurs peuvent modifier un profil de tuteur.",
       "invalidInput": "Veuillez vérifier vos informations — certains champs sont manquants ou trop courts.",
       "alreadySubmitted": "Votre profil a déjà été soumis et ne peut plus être modifié ici.",
-      "tutorAgreementRequired": "Vous devez lire et accepter l'Entente de prestataire de services indépendant pour les tuteurs avant de soumettre."
+      "tutorAgreementRequired": "Vous devez lire et accepter l'Entente de prestataire de services indépendant pour les tuteurs avant de soumettre.",
+      "educationDocumentRequired": "Déposez au moins un relevé de notes, un diplôme ou un grade dans Documents avant de soumettre votre candidature."
     }
   },
   "becomeATutorPage": {
@@ -1313,6 +1314,7 @@
       "profile": "Profil",
       "favorites": "Favoris",
       "tutors": "Tuteurs",
+      "tutorPipeline": "Tableau des candidatures",
       "availability": "Disponibilités",
       "bookings": "Réservations",
       "sessions": "Sessions",
@@ -1778,6 +1780,21 @@
     "revoke": "Révoquer"
   },
   "admin": {
+    "tutorPipeline": {
+      "title": "Tableau des candidatures",
+      "description": "Toutes les candidatures de tuteurs en cours, par étape. Ce qui attend l'équipe apparaît en premier.",
+      "navLabel": "Tableau des candidatures",
+      "summaryAdmin": "{count, plural, =0 {Rien n'attend l'équipe} one {# en attente de l'équipe} other {# en attente de l'équipe}}",
+      "summaryCandidate": "{count, plural, =0 {Aucune action candidat en attente} one {# en attente d'un candidat} other {# en attente des candidats}}",
+      "ownerAdmin": "Équipe",
+      "ownerCandidate": "Candidat",
+      "ownerNone": "Planifié",
+      "waitingDays": "{days, plural, =0 {aujourd'hui} one {# jour} other {# jours}}",
+      "overdue": "En retard",
+      "open": "Ouvrir",
+      "emptyStage": "Aucune candidature à cette étape.",
+      "backToList": "Retour à la liste des tuteurs"
+    },
     "shared": {
       "errorTitle": "Cette vue d’administration n’a pas pu être chargée",
       "errorDescription": "Aucune modification n’a été apportée. Essayez de charger les données actuelles de nouveau.",
@@ -3604,6 +3621,62 @@
       "hero": { "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" },
       "guidance": { "heading": "Vous ne savez pas par où commencer?", "description": "Si votre enfant prend du retard dans un cours précis, commencez par cette matière. Pour un soutien scolaire général sans matière précise en tête, le Soutien au primaire ou la Préparation aux examens peut mieux convenir. Vous pouvez de toute façon chercher dans le répertoire complet par matière, niveau et mode en tout temps." },
       "explore": { "heading": "Poursuivre votre recherche", "howItWorks": "Voir comment fonctionne la réservation", "chooseATutor": "Comment choisir un tuteur", "whenToGetATutor": "Quand faire appel à un tuteur", "edmonton": "Tutorat à Edmonton" }
+    }
+  },
+  "adminAlertEmail": {
+    "candidateLabel": "Candidat",
+    "stageLabel": "Étape actuelle",
+    "unnamedCandidate": "Candidat sans nom",
+    "digestRow": "{status} · en attente depuis {days, plural, one {# jour} other {# jours}} · {action}",
+    "footer": "Vous recevez ce courriel parce que vous examinez les candidatures de tuteurs sur FutureTutor.",
+    "nextActions": {
+      "completeApplication": "Le candidat doit compléter sa candidature",
+      "startReview": "Ouvrir l'examen du dossier",
+      "reviewDocuments": "Examiner les documents",
+      "uploadDocuments": "Le candidat doit déposer un justificatif d'études",
+      "requireInterview": "Passer à l'entretien",
+      "scheduleInterview": "Planifier l'entretien",
+      "attendInterview": "Entretien planifié",
+      "recordInterview": "Saisir le résultat de l'entretien",
+      "requireTraining": "Débloquer la formation",
+      "completeTraining": "Le candidat suit la formation",
+      "requireExam": "Débloquer l'examen",
+      "passExam": "Le candidat passe l'examen",
+      "sendToFinalReview": "Envoyer en révision finale",
+      "finalDecision": "Approuver ou refuser",
+      "none": "Rien à faire"
+    },
+    "events": {
+      "TUTOR_APPLICATION_SUBMITTED": {
+        "subject": "Nouvelle candidature de tuteur : {tutorName}",
+        "heading": "Nouvelle candidature de tuteur",
+        "intro": "{tutorName} vient de soumettre sa candidature. Ses documents attendent votre examen.",
+        "cta": "Examiner la candidature"
+      },
+      "TUTOR_DOCUMENT_UPLOADED": {
+        "subject": "Nouveau document de {tutorName}",
+        "heading": "Un document attend votre décision",
+        "intro": "{tutorName} a déposé un document ({documentType}).",
+        "cta": "Examiner le document"
+      },
+      "TUTOR_TRAINING_COMPLETED": {
+        "subject": "{tutorName} a terminé la formation",
+        "heading": "Formation terminée",
+        "intro": "{tutorName} a terminé tous les modules de formation obligatoires. Vous pouvez maintenant débloquer l'examen.",
+        "cta": "Ouvrir la candidature"
+      },
+      "TUTOR_EXAM_PASSED": {
+        "subject": "{tutorName} a réussi l'examen",
+        "heading": "Examen réussi",
+        "intro": "{tutorName} a réussi l'examen de la plateforme. La candidature est prête pour la révision finale.",
+        "cta": "Ouvrir la candidature"
+      },
+      "TUTOR_PIPELINE_DIGEST": {
+        "subject": "Candidatures de tuteurs en attente de l'équipe",
+        "heading": "Candidatures en attente d'une action",
+        "intro": "{count, plural, one {# candidature attend} other {# candidatures attendent}} l'équipe depuis 2 jours ou plus.",
+        "cta": "Ouvrir le tableau des candidatures"
+      }
     }
   }
 }

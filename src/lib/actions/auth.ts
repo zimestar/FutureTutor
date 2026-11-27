@@ -208,6 +208,11 @@ export async function loginAction(
   }
 
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
+  // TUTOR-PIPELINE1 — remember the language of the latest sign-in so emails
+  // sent later, outside any request, use it. Best-effort: never blocks login.
+  if (user && user.preferredLocale !== locale) {
+    await db.user.update({ where: { id: user.id }, data: { preferredLocale: locale } }).catch(() => undefined);
+  }
   redirect({ href: homePathForRole(user?.role ?? "STUDENT"), locale });
 }
 

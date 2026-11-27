@@ -15,7 +15,12 @@ import {
   FileTooLargeError,
   DocumentStorageError,
 } from "@/lib/storage";
-import { approveDocument, rejectDocument, requestDocumentReplacement } from "@/services/tutorApplicationWorkflow";
+import {
+  approveDocument,
+  rejectDocument,
+  requestDocumentReplacement,
+  recordTutorDocumentUploaded,
+} from "@/services/tutorApplicationWorkflow";
 import type { TutorDocumentType } from "@/generated/prisma/enums";
 
 export type DocumentActionState = { error?: string; success?: boolean } | undefined;
@@ -78,8 +83,9 @@ export async function uploadDocumentAction(
     throw error;
   }
 
+  let createdDocumentId: string;
   try {
-    await db.tutorDocument.create({
+    const created = await db.tutorDocument.create({
       data: {
         tutorProfileId: tutorProfile.id,
         type: type as TutorDocumentType,
@@ -89,7 +95,9 @@ export async function uploadDocumentAction(
         sizeBytes: buffer.byteLength,
         status: "PENDING_REVIEW",
       },
+      select: { id: true },
     });
+    createdDocumentId = created.id;
   } catch (error) {
     // The DB row never got created — the newly uploaded object is orphaned.
     // Best-effort cleanup; failure here must not mask the original error.
@@ -97,8 +105,22 @@ export async function uploadDocumentAction(
     throw error;
   }
 
+  await notifyAdminsOfUpload(tutorProfile.id, createdDocumentId, "initial");
+
   revalidatePath("/tutor/documents");
   return { success: true };
+}
+
+/**
+ * TUTOR-PIPELINE1 — the document itself is already saved; a failure to
+ * record the admin alert must not turn a successful upload into an error.
+ */
+async function notifyAdminsOfUpload(tutorProfileId: string, documentId: string, revision: string) {
+  try {
+    await recordTutorDocumentUploaded(tutorProfileId, documentId, revision);
+  } catch (error) {
+    console.error("[tutorDocuments] admin upload alert failed", error instanceof Error ? error.message : String(error));
+  }
 }
 
 export type ReplaceDocumentState = { error?: string; success?: boolean } | undefined;
@@ -166,6 +188,9 @@ export async function replaceDocumentAction(
   // best-effort remove the old one. Cleanup failure is non-fatal; a
   // successful replacement must never be rolled back by it.
   try { await storage.deletePrivateFile(oldKey); } catch { /* orphan cleanup can be retried operationally */ }
+
+  // The new storage key identifies this upload revision.
+  await notifyAdminsOfUpload(tutorProfile.id, documentId, newKey);
 
   revalidatePath("/tutor/documents");
   return { success: true };

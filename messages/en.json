@@ -689,7 +689,8 @@
       "notATutor": "Only tutor accounts can edit a tutor profile.",
       "invalidInput": "Please check your information — some fields are missing or too short.",
       "alreadySubmitted": "Your profile has already been submitted and can no longer be edited here.",
-      "tutorAgreementRequired": "You must read and accept the Tutor Independent Service Provider Agreement before submitting."
+      "tutorAgreementRequired": "You must read and accept the Tutor Independent Service Provider Agreement before submitting.",
+      "educationDocumentRequired": "Upload at least one transcript, diploma or degree in Documents before submitting your application."
     }
   },
   "becomeATutorPage": {
@@ -1313,6 +1314,7 @@
       "profile": "Profile",
       "favorites": "Favorites",
       "tutors": "Tutors",
+      "tutorPipeline": "Applications board",
       "availability": "Availability",
       "bookings": "Bookings",
       "sessions": "Sessions",
@@ -1778,6 +1780,21 @@
     "revoke": "Revoke"
   },
   "admin": {
+    "tutorPipeline": {
+      "title": "Applications board",
+      "description": "Every open tutor application, grouped by stage. Items waiting on the team come first.",
+      "navLabel": "Applications board",
+      "summaryAdmin": "{count, plural, =0 {Nothing waiting for the team} one {# waiting for the team} other {# waiting for the team}}",
+      "summaryCandidate": "{count, plural, =0 {No candidate action pending} one {# waiting for a candidate} other {# waiting for candidates}}",
+      "ownerAdmin": "Team",
+      "ownerCandidate": "Candidate",
+      "ownerNone": "Scheduled",
+      "waitingDays": "{days, plural, =0 {today} one {# day} other {# days}}",
+      "overdue": "Overdue",
+      "open": "Open",
+      "emptyStage": "No application at this stage.",
+      "backToList": "Back to the tutor list"
+    },
     "shared": {
       "errorTitle": "This Admin view could not load",
       "errorDescription": "No changes were made. Try loading the current data again.",
@@ -3604,6 +3621,62 @@
       "hero": { "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" },
       "guidance": { "heading": "Not sure where to start?", "description": "If your child is behind in one specific class, start with that subject. For general academic support without one subject in mind, Elementary Support or Exam Preparation may fit better. Either way, you can search the full directory by subject, level and mode at any time." },
       "explore": { "heading": "Keep exploring", "howItWorks": "See how booking works", "chooseATutor": "How to choose a tutor", "whenToGetATutor": "When to get a tutor", "edmonton": "Tutoring in Edmonton" }
+    }
+  },
+  "adminAlertEmail": {
+    "candidateLabel": "Candidate",
+    "stageLabel": "Current stage",
+    "unnamedCandidate": "Unnamed candidate",
+    "digestRow": "{status} · waiting {days, plural, one {# day} other {# days}} · {action}",
+    "footer": "You receive this email because you review tutor applications on FutureTutor.",
+    "nextActions": {
+      "completeApplication": "Candidate must complete the application",
+      "startReview": "Open the review",
+      "reviewDocuments": "Review the documents",
+      "uploadDocuments": "Candidate must upload proof of education",
+      "requireInterview": "Move to interview",
+      "scheduleInterview": "Schedule the interview",
+      "attendInterview": "Interview scheduled",
+      "recordInterview": "Record the interview result",
+      "requireTraining": "Unlock training",
+      "completeTraining": "Candidate is doing the training",
+      "requireExam": "Unlock the exam",
+      "passExam": "Candidate is taking the exam",
+      "sendToFinalReview": "Send to final review",
+      "finalDecision": "Approve or reject",
+      "none": "Nothing to do"
+    },
+    "events": {
+      "TUTOR_APPLICATION_SUBMITTED": {
+        "subject": "New tutor application: {tutorName}",
+        "heading": "New tutor application",
+        "intro": "{tutorName} just submitted an application. Their documents are waiting for your review.",
+        "cta": "Review the application"
+      },
+      "TUTOR_DOCUMENT_UPLOADED": {
+        "subject": "New document from {tutorName}",
+        "heading": "A document needs your decision",
+        "intro": "{tutorName} uploaded a document ({documentType}).",
+        "cta": "Review the document"
+      },
+      "TUTOR_TRAINING_COMPLETED": {
+        "subject": "{tutorName} completed the training",
+        "heading": "Training completed",
+        "intro": "{tutorName} completed every required training module. You can now unlock the exam.",
+        "cta": "Open the application"
+      },
+      "TUTOR_EXAM_PASSED": {
+        "subject": "{tutorName} passed the exam",
+        "heading": "Exam passed",
+        "intro": "{tutorName} passed the platform exam. The application is ready for final review.",
+        "cta": "Open the application"
+      },
+      "TUTOR_PIPELINE_DIGEST": {
+        "subject": "Tutor applications waiting for the team",
+        "heading": "Applications waiting for an action",
+        "intro": "{count, plural, one {# application has} other {# applications have}} been waiting for the team for 2 days or more.",
+        "cta": "Open the applications board"
+      }
     }
   }
 }

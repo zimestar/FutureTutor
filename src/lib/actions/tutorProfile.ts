@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tutorProfileSchema, type TutorProfileInput } from "@/schemas/tutorProfile";
-import { submitApplication } from "@/services/tutorApplicationWorkflow";
+import { submitApplication, MissingEducationDocumentError } from "@/services/tutorApplicationWorkflow";
 import { TUTOR_AGREEMENT_VERSION } from "@/content/legal/tutorAgreementContent.en";
 
 export type TutorProfileActionState = { error?: string; success?: boolean } | undefined;
@@ -101,7 +101,8 @@ export async function updateTutorProfileAction(
     });
     try {
       await submitApplication(tutorProfile.id, tutorProfile.userId);
-    } catch {
+    } catch (error) {
+      if (error instanceof MissingEducationDocumentError) return { error: t("educationDocumentRequired") };
       return { error: t("invalidInput") };
     }
     revalidatePath("/tutor/dashboard");

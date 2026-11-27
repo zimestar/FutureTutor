@@ -20,11 +20,13 @@ async function buildRecipientFromUser(
   params: { subjectId: string; recipientUserId: string; relationship: ReminderRelationship; localeCandidate: string | null }
 ): Promise<ReminderRecipient> {
   const [user, preference] = await Promise.all([
-    client.user.findUnique({ where: { id: params.recipientUserId }, select: { email: true, deactivatedAt: true } }),
+    client.user.findUnique({ where: { id: params.recipientUserId }, select: { email: true, deactivatedAt: true, preferredLocale: true } }),
     client.notificationPreference.findUnique({ where: { userId: params.recipientUserId }, select: { emailEnabled: true } }),
   ]);
 
-  const locale = resolveEmailLocale(params.localeCandidate);
+  // TUTOR-PIPELINE1 — fall back to the recipient's own language when the
+  // caller has no more specific one (e.g. a student's preferredLanguage).
+  const locale = resolveEmailLocale(params.localeCandidate ?? user?.preferredLocale ?? null);
 
   if (!user || !user.email) {
     return {

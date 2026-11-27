@@ -2,9 +2,11 @@ import { db } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit";
 import { calculateInitialTutorScore } from "@/services/tutorScoring";
 import { emitTutorApplicationEvent, dispatchTutorApplicationNotifications } from "@/services/tutorApplicationNotifications";
+import { emitAdminAlert, dispatchAdminAlertsAfterCommit } from "@/services/adminAlerts";
 import { Prisma } from "@/generated/prisma/client";
 import type {
   TutorApplicationStatus,
+  TutorDocumentStatus,
   TutorDocumentType,
   TutorInterviewCriterion,
 } from "@/generated/prisma/enums";
@@ -43,6 +45,8 @@ import type {
 
 export class IllegalTransitionError extends Error {}
 export class TransitionGateError extends Error {}
+/** TUTOR-PIPELINE1 — submission refused: no transcript, diploma or degree provided. */
+export class MissingEducationDocumentError extends TransitionGateError {}
 
 const REQUIRED_EDUCATION_DOCUMENT_TYPES: TutorDocumentType[] = ["TRANSCRIPT", "DIPLOMA", "DEGREE"];
 const INTERVIEW_CRITERIA: TutorInterviewCriterion[] = [
@@ -86,6 +90,18 @@ function dispatchAfterCommit(tutorProfileId: string): Promise<void> {
     );
   });
 }
+
+/** TUTOR-PIPELINE1 — the candidate's display name, frozen into admin alerts. */
+async function loadTutorDisplayName(tx: Prisma.TransactionClient, tutorProfileId: string): Promise<string> {
+  const tutor = await tx.tutorProfile.findUniqueOrThrow({
+    where: { id: tutorProfileId },
+    select: { user: { select: { name: true, email: true } } },
+  });
+  return tutor.user.name?.trim() || tutor.user.email;
+}
+
+/** Document statuses that still count as "provided" when submitting. */
+const SUBMITTABLE_DOCUMENT_STATUSES: TutorDocumentStatus[] = ["UPLOADED", "PENDING_REVIEW", "APPROVED"];
 
 async function assertStatus(
   tx: Prisma.TransactionClient,
@@ -162,13 +178,38 @@ export async function submitApplication(tutorProfileId: string, actorUserId: str
     if (!tutor.tutorAgreementAcceptedAt) {
       throw new TransitionGateError("Tutor Independent Service Provider Agreement must be accepted before submitting");
     }
+    // TUTOR-PIPELINE1 — an application without any proof of education can't
+    // be reviewed, so it can't be submitted either.
+    const educationDocumentCount = await tx.tutorDocument.count({
+      where: {
+        tutorProfileId,
+        type: { in: REQUIRED_EDUCATION_DOCUMENT_TYPES },
+        status: { in: SUBMITTABLE_DOCUMENT_STATUSES },
+      },
+    });
+    if (educationDocumentCount === 0) {
+      throw new MissingEducationDocumentError("At least one transcript, diploma or degree must be uploaded before submitting");
+    }
 
+    // TUTOR-PIPELINE1 — a submitted application goes straight into review:
+    // the separate "start review" click added a delay and no information.
+    // SUBMITTED stays a valid state for applications submitted before this.
     const updated = await tx.tutorProfile.update({
       where: { id: tutorProfileId },
-      data: { applicationStatus: "SUBMITTED" },
+      data: { applicationStatus: "UNDER_REVIEW" },
     });
     await writeAuditLog(
       { actorUserId, action: "tutor.application.submitted", entityType: "TutorProfile", entityId: tutorProfileId },
+      tx
+    );
+    await writeAuditLog(
+      {
+        actorUserId,
+        action: "tutor.documentReview.started",
+        entityType: "TutorProfile",
+        entityId: tutorProfileId,
+        metadata: { automatic: true },
+      },
       tx
     );
     await emitTutorApplicationEvent(tx, {
@@ -180,9 +221,19 @@ export async function submitApplication(tutorProfileId: string, actorUserId: str
       inAppTitle: "Application submitted",
       inAppBody: "We received your FutureTutor tutor application — it's now in our review queue.",
     });
+    const tutorName = await loadTutorDisplayName(tx, tutorProfileId);
+    await emitAdminAlert(tx, {
+      event: "TUTOR_APPLICATION_SUBMITTED",
+      dedupeKey: `tutorProfile:${tutorProfileId}:APPLICATION_SUBMITTED`,
+      tutorProfileId,
+      detail: { tutorName, applicationStatus: updated.applicationStatus },
+      inAppTitle: "New tutor application",
+      inAppBody: `${tutorName} submitted an application. Their documents are ready for review.`,
+    });
     return updated;
   });
   await dispatchAfterCommit(tutorProfileId);
+  await dispatchAdminAlertsAfterCommit();
   return updated;
 }
 
@@ -316,9 +367,19 @@ export async function completeTraining(tutorProfileId: string, actorUserId: stri
       inAppTitle: "Training completed",
       inAppBody: "You've completed all required training modules.",
     });
+    const tutorName = await loadTutorDisplayName(tx, tutorProfileId);
+    await emitAdminAlert(tx, {
+      event: "TUTOR_TRAINING_COMPLETED",
+      dedupeKey: `tutorProfile:${tutorProfileId}:TRAINING_COMPLETED`,
+      tutorProfileId,
+      detail: { tutorName, applicationStatus: updated.applicationStatus },
+      inAppTitle: "Training completed",
+      inAppBody: `${tutorName} completed the training. The exam can now be unlocked.`,
+    });
     return updated;
   });
   await dispatchAfterCommit(tutorProfileId);
+  await dispatchAdminAlertsAfterCommit();
   return updated;
 }
 
@@ -371,9 +432,19 @@ export async function completeExam(tutorProfileId: string, actorUserId: string) 
       inAppTitle: "Exam passed",
       inAppBody: "Congratulations — you passed the platform exam.",
     });
+    const tutorName = await loadTutorDisplayName(tx, tutorProfileId);
+    await emitAdminAlert(tx, {
+      event: "TUTOR_EXAM_PASSED",
+      dedupeKey: `tutorProfile:${tutorProfileId}:EXAM_PASSED`,
+      tutorProfileId,
+      detail: { tutorName, applicationStatus: updated.applicationStatus },
+      inAppTitle: "Exam passed",
+      inAppBody: `${tutorName} passed the platform exam. The application is ready for final review.`,
+    });
     return updated;
   });
   await dispatchAfterCommit(tutorProfileId);
+  await dispatchAdminAlertsAfterCommit();
   return updated;
 }
 
@@ -907,4 +978,35 @@ async function writeAuditLogReturningRow(
     where: { entityType: params.entityType, entityId: params.entityId ?? undefined, action: params.action },
     orderBy: { createdAt: "desc" },
   });
+}
+
+// --- Document uploads --------------------------------------------------
+
+/**
+ * TUTOR-PIPELINE1 — admin alert for a newly uploaded or replaced document,
+ * once the application is in front of the team (never for DRAFT: a draft's
+ * documents are announced together by the submission alert). Called by the
+ * upload Server Actions right after the TutorDocument write. `revision`
+ * distinguishes successive uploads of the same document row.
+ */
+export async function recordTutorDocumentUploaded(tutorProfileId: string, documentId: string, revision: string) {
+  const emitted = await db.$transaction(async (tx) => {
+    const tutor = await tx.tutorProfile.findUniqueOrThrow({
+      where: { id: tutorProfileId },
+      select: { applicationStatus: true },
+    });
+    if (tutor.applicationStatus === "DRAFT") return false;
+    const document = await tx.tutorDocument.findUniqueOrThrow({ where: { id: documentId }, select: { type: true } });
+    const tutorName = await loadTutorDisplayName(tx, tutorProfileId);
+    await emitAdminAlert(tx, {
+      event: "TUTOR_DOCUMENT_UPLOADED",
+      dedupeKey: `tutorDocument:${documentId}:${revision}:UPLOADED`,
+      tutorProfileId,
+      detail: { tutorName, documentType: document.type, applicationStatus: tutor.applicationStatus },
+      inAppTitle: "New document to review",
+      inAppBody: `${tutorName} uploaded a document that needs a decision.`,
+    });
+    return true;
+  });
+  if (emitted) await dispatchAdminAlertsAfterCommit();
 }

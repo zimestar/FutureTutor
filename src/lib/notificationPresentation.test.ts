@@ -12,6 +12,11 @@ describe("resolveNotificationLink", () => {
     expect(resolveNotificationLink("session.session_no_show_tutor", { bookingId: "b4" })).toBe("/session/b4");
   });
 
+  it("TUTOR-PIPELINE1 — an admin alert links to the application, or to the board when it has none", () => {
+    expect(resolveNotificationLink("admin_alert.tutor_application_submitted", { tutorProfileId: "t1" })).toBe("/admin/tutors/t1");
+    expect(resolveNotificationLink("admin_alert.tutor_pipeline_digest", {})).toBe("/admin/tutors/pipeline");
+  });
+
   it("item 14 — a tutor_application.<event> notification links to the fixed /tutor/dashboard route, no id needed", () => {
     expect(resolveNotificationLink("tutor_application.application_approved", { tutorProfileId: "t1" })).toBe("/tutor/dashboard");
     expect(resolveNotificationLink("tutor_application.document_rejected", {})).toBe("/tutor/dashboard");

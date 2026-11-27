@@ -39,6 +39,14 @@ const mocks = vi.hoisted(() => ({
   tutorExamAttemptFindFirst: vi.fn(),
   tutorExamAttemptCreate: vi.fn(),
   auditLogFindFirstOrThrow: vi.fn(),
+  tutorDocumentFindUniqueOrThrow: vi.fn(),
+  emitAdminAlert: vi.fn(),
+  dispatchAdminAlertsAfterCommit: vi.fn(),
+}));
+
+vi.mock("@/services/adminAlerts", () => ({
+  emitAdminAlert: mocks.emitAdminAlert,
+  dispatchAdminAlertsAfterCommit: mocks.dispatchAdminAlertsAfterCommit,
 }));
 
 vi.mock("@/services/tutorApplicationNotifications", () => ({
@@ -60,7 +68,11 @@ function fakeTx() {
     },
     tutorSubject: { count: mocks.tutorSubjectCount },
     tutorLevel: { count: mocks.tutorLevelCount },
-    tutorDocument: { count: mocks.tutorDocumentCount, update: mocks.tutorDocumentUpdate },
+    tutorDocument: {
+      count: mocks.tutorDocumentCount,
+      update: mocks.tutorDocumentUpdate,
+      findUniqueOrThrow: mocks.tutorDocumentFindUniqueOrThrow,
+    },
     tutorInterview: {
       findFirst: mocks.tutorInterviewFindFirst,
       findFirstOrThrow: mocks.tutorInterviewFindFirstOrThrow,
@@ -101,19 +113,65 @@ import {
   scheduleInterview,
   recordInterviewEvaluation,
   recordExamAttempt,
+  recordTutorDocumentUploaded,
+  MissingEducationDocumentError,
 } from "./tutorApplicationWorkflow";
 
 const TUTOR = { id: "tutor-1", userId: "user-1" };
+// TUTOR-PIPELINE1 — admin alerts freeze the candidate's display name.
+const TUTOR_USER = { user: { name: "Ada Tutor", email: "ada@example.test" } };
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.dispatchTutorApplicationNotifications.mockResolvedValue(undefined);
   mocks.calculateInitialTutorScore.mockResolvedValue(undefined);
   mocks.auditLogFindFirstOrThrow.mockResolvedValue({ id: "audit-row-1" });
+  mocks.dispatchAdminAlertsAfterCommit.mockResolvedValue(undefined);
 });
 
 describe("item 1/2 — meaningful Admin/Super Admin transitions create notifications (actor role is not distinguished by this service — enforced upstream by requireAdminPermission; identical wiring either way)", () => {
-  it("submitApplication fires APPLICATION_SUBMITTED", async () => {
+  it("submitApplication fires APPLICATION_SUBMITTED, goes straight to UNDER_REVIEW and alerts the admin team", async () => {
+    mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({
+      ...TUTOR,
+      ...TUTOR_USER,
+      applicationStatus: "DRAFT",
+      headline: "h",
+      bio: "b",
+      tutorAgreementAcceptedAt: new Date(),
+    });
+    mocks.tutorSubjectCount.mockResolvedValue(1);
+    mocks.tutorLevelCount.mockResolvedValue(1);
+    mocks.tutorDocumentCount.mockResolvedValue(1);
+    mocks.tutorProfileUpdate.mockResolvedValue({ ...TUTOR, applicationStatus: "UNDER_REVIEW" });
+
+    await submitApplication("tutor-1", "student-actor");
+
+    expect(mocks.tutorProfileUpdate).toHaveBeenCalledWith({ where: { id: "tutor-1" }, data: { applicationStatus: "UNDER_REVIEW" } });
+    expect(mocks.emitTutorApplicationEvent).toHaveBeenCalledTimes(1);
+    expect(mocks.emitTutorApplicationEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tutorProfileId: "tutor-1",
+        recipientUserId: "user-1",
+        event: "APPLICATION_SUBMITTED",
+        dedupeKey: "tutorProfile:tutor-1:APPLICATION_SUBMITTED",
+        applicationStatus: "UNDER_REVIEW",
+      })
+    );
+    expect(mocks.emitAdminAlert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        event: "TUTOR_APPLICATION_SUBMITTED",
+        dedupeKey: "tutorProfile:tutor-1:APPLICATION_SUBMITTED",
+        tutorProfileId: "tutor-1",
+        detail: { tutorName: "Ada Tutor", applicationStatus: "UNDER_REVIEW" },
+      })
+    );
+    expect(mocks.dispatchTutorApplicationNotifications).toHaveBeenCalledWith("tutor-1");
+    expect(mocks.dispatchAdminAlertsAfterCommit).toHaveBeenCalled();
+  });
+
+  it("submitApplication refuses an application without any transcript, diploma or degree", async () => {
     mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({
       ...TUTOR,
       applicationStatus: "DRAFT",
@@ -123,21 +181,12 @@ describe("item 1/2 — meaningful Admin/Super Admin transitions create notificat
     });
     mocks.tutorSubjectCount.mockResolvedValue(1);
     mocks.tutorLevelCount.mockResolvedValue(1);
-    mocks.tutorProfileUpdate.mockResolvedValue({ ...TUTOR, applicationStatus: "SUBMITTED" });
+    mocks.tutorDocumentCount.mockResolvedValue(0);
 
-    await submitApplication("tutor-1", "student-actor");
-
-    expect(mocks.emitTutorApplicationEvent).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        tutorProfileId: "tutor-1",
-        recipientUserId: "user-1",
-        event: "APPLICATION_SUBMITTED",
-        dedupeKey: "tutorProfile:tutor-1:APPLICATION_SUBMITTED",
-        applicationStatus: "SUBMITTED",
-      })
-    );
-    expect(mocks.dispatchTutorApplicationNotifications).toHaveBeenCalledWith("tutor-1");
+    await expect(submitApplication("tutor-1", "student-actor")).rejects.toBeInstanceOf(MissingEducationDocumentError);
+    expect(mocks.tutorProfileUpdate).not.toHaveBeenCalled();
+    expect(mocks.emitTutorApplicationEvent).not.toHaveBeenCalled();
+    expect(mocks.emitAdminAlert).not.toHaveBeenCalled();
   });
 
   it("startDocumentReview (admin actor) fires APPLICATION_UNDER_REVIEW", async () => {
@@ -311,7 +360,7 @@ it("item 10 — requireTraining fires TRAINING_UNLOCKED", async () => {
 });
 
 it("item 11 — completeTraining fires TRAINING_COMPLETED", async () => {
-  mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR, applicationStatus: "TRAINING_REQUIRED" });
+  mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR, ...TUTOR_USER, applicationStatus: "TRAINING_REQUIRED" });
   mocks.trainingModuleFindMany.mockResolvedValue([{ id: "mod-1" }]);
   mocks.tutorTrainingProgressFindMany.mockResolvedValue([{ id: "progress-1" }]);
   mocks.tutorProfileUpdate.mockResolvedValue({ ...TUTOR, applicationStatus: "TRAINING_COMPLETED" });
@@ -319,6 +368,10 @@ it("item 11 — completeTraining fires TRAINING_COMPLETED", async () => {
   await completeTraining("tutor-1", "user-1");
 
   expect(mocks.emitTutorApplicationEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event: "TRAINING_COMPLETED" }));
+  expect(mocks.emitAdminAlert).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ event: "TUTOR_TRAINING_COMPLETED", dedupeKey: "tutorProfile:tutor-1:TRAINING_COMPLETED" })
+  );
 });
 
 it("item 12 — requireExam fires EXAM_UNLOCKED", async () => {
@@ -331,13 +384,45 @@ it("item 12 — requireExam fires EXAM_UNLOCKED", async () => {
 });
 
 it("item 13 — completeExam fires EXAM_PASSED", async () => {
-  mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR, applicationStatus: "EXAM_REQUIRED" });
+  mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR, ...TUTOR_USER, applicationStatus: "EXAM_REQUIRED" });
   mocks.tutorExamAttemptFindFirst.mockResolvedValue({ passed: true, attemptNumber: 1 });
   mocks.tutorProfileUpdate.mockResolvedValue({ ...TUTOR, applicationStatus: "EXAM_COMPLETED" });
 
   await completeExam("tutor-1", "user-1");
 
   expect(mocks.emitTutorApplicationEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ event: "EXAM_PASSED" }));
+  expect(mocks.emitAdminAlert).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ event: "TUTOR_EXAM_PASSED", dedupeKey: "tutorProfile:tutor-1:EXAM_PASSED" })
+  );
+});
+
+describe("TUTOR-PIPELINE1 — document upload alerts", () => {
+  it("alerts the team when an application under review receives a document", async () => {
+    mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR_USER, applicationStatus: "UNDER_REVIEW" });
+    mocks.tutorDocumentFindUniqueOrThrow.mockResolvedValue({ type: "DIPLOMA" });
+
+    await recordTutorDocumentUploaded("tutor-1", "doc-1", "initial");
+
+    expect(mocks.emitAdminAlert).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        event: "TUTOR_DOCUMENT_UPLOADED",
+        dedupeKey: "tutorDocument:doc-1:initial:UPLOADED",
+        detail: { tutorName: "Ada Tutor", documentType: "DIPLOMA", applicationStatus: "UNDER_REVIEW" },
+      })
+    );
+    expect(mocks.dispatchAdminAlertsAfterCommit).toHaveBeenCalled();
+  });
+
+  it("stays silent for a draft: the submission alert announces its documents", async () => {
+    mocks.tutorProfileFindUniqueOrThrow.mockResolvedValue({ ...TUTOR_USER, applicationStatus: "DRAFT" });
+
+    await recordTutorDocumentUploaded("tutor-1", "doc-1", "initial");
+
+    expect(mocks.emitAdminAlert).not.toHaveBeenCalled();
+    expect(mocks.dispatchAdminAlertsAfterCommit).not.toHaveBeenCalled();
+  });
 });
 
 it("item 14 — a failed exam attempt fires EXAM_FAILED (not tied to a status transition)", async () => {

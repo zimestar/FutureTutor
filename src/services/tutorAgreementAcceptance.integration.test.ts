@@ -82,6 +82,12 @@ afterAll(async () => {
 
 afterEach(async () => {
   if (createdTutorProfileIds.length > 0) {
+    // TUTOR-PIPELINE1 — a successful submission also records admin alerts.
+    await db.adminAlertNotification.deleteMany({ where: { tutorProfileId: { in: createdTutorProfileIds } } });
+    for (const tutorProfileId of createdTutorProfileIds) {
+      await db.notification.deleteMany({ where: { dedupeKey: { startsWith: `admin_alert:tutorProfile:${tutorProfileId}:` } } });
+    }
+    await db.tutorDocument.deleteMany({ where: { tutorProfileId: { in: createdTutorProfileIds } } });
     await db.tutorSubject.deleteMany({ where: { tutorProfileId: { in: createdTutorProfileIds } } });
     await db.tutorProfile.deleteMany({ where: { id: { in: createdTutorProfileIds } } });
   }
@@ -166,8 +172,21 @@ describe("FG-LEGAL2 — submitApplication requires Tutor Agreement acceptance", 
       where: { id: tutor.id },
       data: { tutorAgreementAcceptedAt: new Date(), tutorAgreementAcceptedVersion: "2026-08-30", tutorAgreementAcceptedLocale: "fr" },
     });
+    // TUTOR-PIPELINE1 — submission also requires proof of education.
+    await db.tutorDocument.create({
+      data: {
+        tutorProfileId: tutor.id,
+        type: "DIPLOMA",
+        storageKey: `${user.id}/${randomUUID()}.pdf`,
+        originalFileName: "diploma.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 1024,
+        status: "PENDING_REVIEW",
+      },
+    });
     const result = await submitApplication(tutor.id, user.id);
-    expect(result.applicationStatus).toBe("SUBMITTED");
+    // TUTOR-PIPELINE1 — submission goes straight into review.
+    expect(result.applicationStatus).toBe("UNDER_REVIEW");
     const reloaded = await db.tutorProfile.findUniqueOrThrow({ where: { id: tutor.id } });
     expect(reloaded.tutorAgreementAcceptedVersion).toBe("2026-08-30");
     expect(reloaded.tutorAgreementAcceptedLocale).toBe("fr");

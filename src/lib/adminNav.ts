@@ -7,6 +7,8 @@ type AdminNavUser = { id: string; role: string };
 const items: ReadonlyArray<{ key: string; href: string; group: "operationsGroup" | "financeGroup"; permission: AdminPermission }> = [
   { key: "overview", href: "/admin", group: "operationsGroup", permission: "ADMIN_DASHBOARD_VIEW" },
   { key: "tutors", href: "/admin/tutors", group: "operationsGroup", permission: "ADMIN_TUTORS_READ" },
+  // TUTOR-PIPELINE1 — the same applications, as a work queue by stage.
+  { key: "tutorPipeline", href: "/admin/tutors/pipeline", group: "operationsGroup", permission: "ADMIN_TUTORS_READ" },
   { key: "students", href: "/admin/students", group: "operationsGroup", permission: "ADMIN_STUDENTS_READ" },
   { key: "parents", href: "/admin/parents", group: "operationsGroup", permission: "ADMIN_GUARDIANS_READ" },
   { key: "bookings", href: "/admin/bookings", group: "operationsGroup", permission: "ADMIN_BOOKINGS_READ" },

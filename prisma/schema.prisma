@@ -106,6 +106,11 @@ model User {
   termsAcceptedVersion String?
   termsAcceptedLocale  String?
 
+  // TUTOR-PIPELINE1 — the language this person last used the app in ("en" |
+  // "fr"), recorded at signup and refreshed at every sign-in. Background
+  // emails (no request locale available) use it; null falls back to "en".
+  preferredLocale String?
+
   accounts                        Account[]
   sessions                        Session[]
   studentProfile                  StudentProfile?
@@ -2288,6 +2293,51 @@ model TutorApplicationNotification {
   @@unique([dedupeKey])
   @@index([status])
   @@index([tutorProfileId, createdAt])
+}
+
+// TUTOR-PIPELINE1 — alerts sent to the admin team (in-app rows go through
+// Notification; this is the email outbox). Same design as
+// TutorApplicationNotification: content-derived dedupeKey, post-commit
+// dispatch, failures recorded and retried, never rolled back into the
+// business transaction. One row per (event occurrence, recipient).
+enum AdminAlertEvent {
+  TUTOR_APPLICATION_SUBMITTED
+  TUTOR_DOCUMENT_UPLOADED
+  TUTOR_TRAINING_COMPLETED
+  TUTOR_EXAM_PASSED
+  TUTOR_PIPELINE_DIGEST
+}
+
+enum AdminAlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model AdminAlertNotification {
+  id                String           @id @default(cuid())
+  event             AdminAlertEvent
+  dedupeKey         String
+  // "user:<userId>" for an admin account, "team" for ADMIN_ALERTS_TEAM_EMAIL.
+  recipientKey      String
+  // Null for the team address. Plain id, not a relation: an alert must
+  // survive (and stay auditable) if the admin account is later removed.
+  recipientUserId   String?
+  tutorProfileId    String?
+  status            AdminAlertStatus @default(PENDING)
+  attemptCount      Int              @default(0)
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  // Sanitized failure reason only — never a raw exception or stack trace.
+  error             String?
+  providerMessageId String?
+  // Frozen display data (tutor name, document type, digest items...).
+  contextSnapshot   Json
+  createdAt         DateTime         @default(now())
+
+  @@unique([dedupeKey, recipientKey])
+  @@index([status])
+  @@index([tutorProfileId])
 }
 
 // PROD-SESSION-NOTIFICATIONS1 — durable outbox for session-lifecycle emails
