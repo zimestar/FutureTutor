@@ -41,7 +41,7 @@
   --color-surface-subtle: #f1f5f9;
   --color-surface-raised: #ffffff;
   --color-text-primary: #0d1b2a;
-  --color-text-secondary: #475569;
+  --color-text-secondary: #3e4a5c;
   --color-text-muted: #64748b;
   --color-border: #e2e8f0;
   --color-border-strong: #cbd5e1;
@@ -107,7 +107,7 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 

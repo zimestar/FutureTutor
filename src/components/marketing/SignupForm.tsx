@@ -10,14 +10,17 @@ import { cn } from "@/lib/utils";
 import { registerAction } from "@/lib/actions/auth";
 import { CANADIAN_PROVINCES_AND_TERRITORIES } from "@/lib/canadianProvinces";
 
-export function SignupForm() {
+/** DESIGN-SYSTEM3 — `initialRole` lets a page link preselect the account
+ * type (e.g. "Create a parent account" -> /signup?role=parent). The visitor
+ * can still change it; nothing is submitted without their action. */
+export function SignupForm({ initialRole = "STUDENT" }: { initialRole?: "STUDENT" | "TUTOR" | "PARENT" } = {}) {
   const t = useTranslations("auth.signup");
   // BETA-UX-PROVINCES1 — display-only full names for the canonical
   // AB/BC/... codes; the <option value> (submitted/stored) stays the
   // abbreviation, only the visible label changes.
   const tProvinces = useTranslations("provinces");
   const [state, formAction, pending] = useActionState(registerAction, undefined);
-  const [role, setRole] = useState<"STUDENT" | "TUTOR" | "PARENT">("STUDENT");
+  const [role, setRole] = useState<"STUDENT" | "TUTOR" | "PARENT">(initialRole);
 
   const roleLabels: Record<"STUDENT" | "TUTOR" | "PARENT", string> = {
     STUDENT: t("roleStudent"),

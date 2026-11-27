@@ -4,12 +4,11 @@ import { Header } from "@/components/marketing/Header";
 import { Hero } from "@/components/marketing/Hero";
 import { SubjectGrid } from "@/components/marketing/SubjectGrid";
 import { FeaturedTutors } from "@/components/marketing/FeaturedTutors";
-import { LearningModes } from "@/components/marketing/LearningModes";
 import { TutorCTA } from "@/components/marketing/TutorCTA";
 import { FAQ } from "@/components/marketing/FAQ";
 import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { Footer } from "@/components/marketing/Footer";
-import { HomeStory } from "@/components/marketing/HomeStory";
+import { HomeHowItWorks, HomeParents, HomePricing, HomeResources, HomeSafety, HomeTrustBar } from "@/components/marketing/HomeSections";
 import { Section } from "@/components/ui/Section";
 import { Link } from "@/i18n/navigation";
 import { site } from "@/content/site";
@@ -32,10 +31,11 @@ export default async function Home({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const [t, tFaq, tExplore] = await Promise.all([
+  const [t, tFaq, tExplore, tLinks] = await Promise.all([
     getTranslations({ locale, namespace: "site" }),
     getTranslations({ locale, namespace: "faq" }),
     getTranslations({ locale, namespace: "publicExperience.home.explore" }),
+    getTranslations({ locale, namespace: "footer.links" }),
   ]);
 
   const faqJsonLd = {
@@ -75,19 +75,28 @@ export default async function Home({
       <main id="main" className="flex-1">
         <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "homepage" }} />
         <Hero />
-        <HomeStory />
+        <HomeTrustBar />
+        <HomeHowItWorks />
         <SubjectGrid />
+        <HomeParents />
         <FeaturedTutors locale={locale} />
-        <LearningModes />
+        <HomeSafety />
+        <HomePricing />
         <TutorCTA />
-        <Section className="bg-white pt-0">
-          <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
-            <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-blue">{tExplore("heading")}</p>
+        <HomeResources />
+        {/* Internal links (SEO): local market, resources and the info pages. */}
+        <Section className="bg-white pt-0 md:pt-0">
+          <nav aria-label={tExplore("heading")} className="flex flex-col items-center gap-4 border-t border-border pt-10 text-center">
+            <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-text-muted">{tExplore("heading")}</p>
             <div className="flex flex-wrap justify-center gap-2 text-sm">
               <Link href="/tutoring/edmonton" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tExplore("edmonton")}</Link>
               <Link href="/resources" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tExplore("resources")}</Link>
+              <Link href="/parents" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tLinks("parents")}</Link>
+              <Link href="/pricing" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tLinks("pricing")}</Link>
+              <Link href="/safety" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tLinks("safety")}</Link>
+              <Link href="/online-classroom" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tLinks("classroom")}</Link>
             </div>
-          </div>
+          </nav>
         </Section>
         <FAQ />
         <FinalCTA />

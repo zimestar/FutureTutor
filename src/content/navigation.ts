@@ -21,6 +21,9 @@ export const footerNav = {
     { key: "findTutor", href: "/find-tutors" },
     { key: "subjects", href: "/subjects" },
     { key: "howItWorks", href: "/how-it-works" },
+    { key: "parents", href: "/parents" },
+    { key: "pricing", href: "/pricing" },
+    { key: "classroom", href: "/online-classroom" },
     { key: "resources", href: "/resources" },
     { key: "tutoringEdmonton", href: "/tutoring/edmonton" },
   ],
@@ -32,6 +35,7 @@ export const footerNav = {
     { key: "about", href: "/about" },
     { key: "contact", href: "/contact" },
     { key: "careers", href: "/careers" },
+    { key: "safety", href: "/safety" },
     { key: "reportConcern", href: "/report-concern" },
   ],
   legal: [

@@ -12,7 +12,7 @@ import { routing } from "@/i18n/routing";
 // distinct from the marketing paths below.
 const LEGAL_PATHS = ["/privacy", "/terms", "/cookies", "/tutor-agreement", "/careers"];
 
-const STATIC_PATHS = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact"];
+const STATIC_PATHS = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact", "/parents", "/pricing", "/safety", "/online-classroom"];
 const SUBJECT_PATHS = subjects.map((s) => `/subjects/${s.slug}`);
 // SEO-3 — local-market pages are gated by src/content/localMarkets.ts (the
 // expansion guardrail), never generated from live TutorProfile.city values.

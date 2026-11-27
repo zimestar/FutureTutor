@@ -18,7 +18,9 @@ const inter = Inter({
 const display = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  // DESIGN-SYSTEM3 — 700 is the heaviest display weight: 800 crushed the
+  // letterforms at hero sizes. font-extrabold resolves to 700.
+  weight: ["600", "700"],
   display: "swap",
 });
 

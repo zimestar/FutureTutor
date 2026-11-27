@@ -62,12 +62,13 @@
     "fr": "Français"
   },
   "hero": {
+    "parentsLink": "Vous êtes parent?",
     "eyebrow": "Tutorat partout au Canada · en ligne et en personne",
     "title": "La bonne personne peut changer votre façon d’apprendre.",
     "titleEmphasis": "La bonne personne",
     "titleRest": "peut changer votre façon d’apprendre.",
     "description": "Rencontrez un tuteur qui comprend où vous bloquez, explique autrement et vous aide à retrouver une voie pour avancer.",
-    "primaryCta": "Trouver un tuteur",
+    "primaryCta": "Parcourir tous les tuteurs",
     "secondaryCta": "Voir comment ça marche",
     "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",
     "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur",
@@ -114,10 +115,12 @@
     "YT": "Yukon"
   },
   "trustStrip": {
+    "bilingual": "En français et en anglais",
+    "pricing": "Prix affiché avant de payer",
     "personalized": "Tutorat individuel personnalisé",
     "onlineInPerson": "Séances en ligne ou en personne",
     "flexible": "Horaire flexible",
-    "verification": "Seuls les profils de tuteurs approuvés sont publics"
+    "verification": "Tuteurs vérifiés avant publication"
   },
   "subjects": {
     "heading": "Qu'aimeriez-vous apprendre?",
@@ -579,6 +582,10 @@
       "legal": "Mentions légales"
     },
     "links": {
+      "parents": "Pour les parents",
+      "pricing": "Tarifs",
+      "safety": "Sécurité et confiance",
+      "classroom": "Classe virtuelle",
       "findTutor": "Trouver un tuteur",
       "subjects": "Matières",
       "howItWorks": "Comment ça marche",
@@ -3815,6 +3822,500 @@
         "heading": "Candidatures en attente d'une action",
         "intro": "{count, plural, one {# candidature attend} other {# candidatures attendent}} l'équipe depuis 2 jours ou plus.",
         "cta": "Ouvrir le tableau des candidatures"
+      }
+    }
+  },
+  "homePremium": {
+    "trust": {
+      "label": "Nos garanties",
+      "verification": {
+        "title": "Tuteurs vérifiés",
+        "text": "Profil, documents, formation, examen et approbation par l’équipe avant toute publication."
+      },
+      "pricing": {
+        "title": "Prix clair",
+        "text": "Le prix exact s’affiche avant le paiement. Aucun abonnement."
+      },
+      "secure": {
+        "title": "Paiement sécurisé",
+        "text": "Les paiements passent par Stripe. FutureTutor ne conserve jamais vos données de carte."
+      },
+      "classroom": {
+        "title": "Classe virtuelle intégrée",
+        "text": "Vidéo, micro et partage d’écran dans le navigateur, sans rien installer."
+      }
+    },
+    "how": {
+      "eyebrow": "Comment ça marche",
+      "title": "Du premier clic à la première séance, en trois étapes",
+      "cta": "Voir le parcours complet",
+      "stepLabel": "Étape {number}",
+      "steps": {
+        "0": {
+          "title": "Trouvez le bon tuteur",
+          "text": "Filtrez par matière, niveau et format, puis comparez les profils, l’expérience et les disponibilités."
+        },
+        "1": {
+          "title": "Réservez en toute clarté",
+          "text": "Choisissez un créneau : le prix exact s’affiche avant le paiement, et la confirmation arrive par courriel."
+        },
+        "2": {
+          "title": "Apprenez, en ligne ou en personne",
+          "text": "Rejoignez la classe virtuelle depuis votre espace, ou retrouvez votre tuteur en personne lorsqu’il l’offre."
+        }
+      },
+      "visual": {
+        "subject": "Mathématiques",
+        "level": "2e cycle du secondaire",
+        "mode": "En ligne",
+        "search": "Rechercher",
+        "total": "Total"
+      },
+      "quickMatch": {
+        "title": "Pas le temps de chercher? Essayez le jumelage rapide.",
+        "text": "Décrivez votre besoin : la demande est proposée aux tuteurs disponibles, et vous confirmez le prix avant de payer.",
+        "cta": "Créer un compte gratuit"
+      }
+    },
+    "parents": {
+      "eyebrow": "Pour les parents",
+      "title": "Gardez la main sur le parcours de votre enfant",
+      "description": "Créez votre compte parent, ajoutez vos enfants et réservez pour eux. Vous payez, vous suivez, vous restez informé.",
+      "imageAlt": "Une élève qui comprend enfin une notion pendant que son tuteur lui explique",
+      "features": {
+        "children": {
+          "title": "Un compte, plusieurs enfants",
+          "text": "Ajoutez chaque enfant et réservez pour celui qui a besoin d’aide."
+        },
+        "payment": {
+          "title": "C’est vous qui payez",
+          "text": "Le paiement des séances de vos enfants se fait depuis votre compte."
+        },
+        "follow": {
+          "title": "Tout au même endroit",
+          "text": "Retrouvez les séances de vos enfants dans votre espace famille."
+        },
+        "safety": {
+          "title": "Un recours simple",
+          "text": "Un souci? Le formulaire de signalement est transmis directement à l’équipe."
+        }
+      },
+      "primaryCta": "Créer un compte parent",
+      "secondaryCta": "Découvrir l’espace parents"
+    },
+    "safety": {
+      "eyebrow": "Confiance et sécurité",
+      "title": "Aucun tuteur n’est visible avant d’être approuvé",
+      "description": "Chaque candidature suit le même parcours, examiné par l’équipe FutureTutor. Un profil ne devient public qu’une fois toutes les étapes franchies.",
+      "steps": {
+        "0": {
+          "title": "Profil et candidature",
+          "text": "Matières, niveaux, expérience et approche d’enseignement."
+        },
+        "1": {
+          "title": "Pièces justificatives",
+          "text": "Un document d’études est exigé pour soumettre la candidature."
+        },
+        "2": {
+          "title": "Révision par l’équipe",
+          "text": "Le dossier et les documents sont examinés par un administrateur."
+        },
+        "3": {
+          "title": "Formation FutureTutor",
+          "text": "Pratiques d’enseignement, sécurité et règles de la plateforme."
+        },
+        "4": {
+          "title": "Examen final",
+          "text": "Une évaluation valide la formation avant l’étape suivante."
+        },
+        "5": {
+          "title": "Entrevue et approbation",
+          "text": "L’équipe rencontre le candidat, puis approuve ou non le profil."
+        }
+      },
+      "note": "Seuls les profils approuvés apparaissent dans la recherche.",
+      "payment": "Les paiements sont traités par Stripe ; FutureTutor ne conserve jamais vos données de carte.",
+      "report": "Un comportement vous inquiète, pendant une séance ou dans un message?",
+      "reportLink": "Signalez-le en toute confidentialité.",
+      "cta": "En savoir plus sur la sécurité"
+    },
+    "pricing": {
+      "eyebrow": "Prix transparents",
+      "title": "Vous savez ce que vous payez, avant de payer",
+      "description": "Le prix d’une séance est calculé par FutureTutor à partir de critères clairs, et toujours affiché avant le paiement.",
+      "factorLabel": "Critère {number}",
+      "factors": {
+        "0": {
+          "title": "La matière",
+          "text": "Chaque matière a sa propre grille de prix."
+        },
+        "1": {
+          "title": "Le niveau scolaire",
+          "text": "Du primaire à l’université, le prix suit le niveau de l’élève."
+        },
+        "2": {
+          "title": "Le moment de la réservation",
+          "text": "Une séance réservée à très court délai peut comporter un supplément, toujours indiqué."
+        }
+      },
+      "promises": {
+        "0": "Paiement à la séance, sans abonnement",
+        "1": "Prix exact affiché avant de payer",
+        "2": "Reçus dans votre historique"
+      },
+      "cta": "Comprendre les tarifs"
+    },
+    "resources": {
+      "eyebrow": "Ressources",
+      "title": "Des guides pour faire les bons choix",
+      "cta": "Toutes les ressources",
+      "read": "Lire le guide"
+    }
+  },
+  "infoPages": {
+    "common": {
+      "faqTitle": "Questions fréquentes",
+      "breadcrumbHome": "Accueil"
+    },
+    "parents": {
+      "metaTitle": "Tutorat pour vos enfants : l’espace parents",
+      "metaDescription": "Créez un compte parent, ajoutez vos enfants, réservez et payez leurs séances de tutorat, et suivez tout au même endroit.",
+      "breadcrumb": "Parents",
+      "hero": {
+        "eyebrow": "Espace parents",
+        "title": "Le tutorat de vos enfants, simple et sous contrôle",
+        "description": "Un seul compte pour trouver le bon tuteur, réserver pour chacun de vos enfants, payer en toute clarté et suivre les séances.",
+        "primary": "Créer un compte parent",
+        "secondary": "Trouver un tuteur"
+      },
+      "steps": {
+        "eyebrow": "En quatre étapes",
+        "title": "Comment ça fonctionne pour les parents",
+        "items": [
+          {
+            "title": "Créez votre compte parent",
+            "text": "Inscrivez-vous en choisissant le rôle Parent. C’est gratuit, et rien n’est facturé avant une réservation."
+          },
+          {
+            "title": "Ajoutez vos enfants",
+            "text": "Créez le profil de chaque enfant, avec son niveau scolaire, pour des recherches et des prix adaptés."
+          },
+          {
+            "title": "Réservez pour le bon enfant",
+            "text": "Choisissez l’enfant, le tuteur et le créneau. Le prix exact s’affiche avant le paiement."
+          },
+          {
+            "title": "Suivez les séances",
+            "text": "Les séances de vos enfants se retrouvent dans votre espace famille, avec l’accès à la classe virtuelle."
+          }
+        ]
+      },
+      "features": {
+        "eyebrow": "Ce que vous gardez en main",
+        "title": "Pensé pour les familles",
+        "items": [
+          {
+            "title": "Plusieurs enfants, un seul compte",
+            "text": "Réservez pour l’enfant qui en a besoin, sans multiplier les comptes."
+          },
+          {
+            "title": "Le paiement reste chez vous",
+            "text": "Les séances de vos enfants sont payées depuis votre compte parent, par Stripe."
+          },
+          {
+            "title": "Des tuteurs approuvés",
+            "text": "Seuls les tuteurs qui ont terminé le parcours d’approbation apparaissent dans la recherche."
+          },
+          {
+            "title": "Un recours simple",
+            "text": "Un comportement vous inquiète? Le formulaire de signalement est transmis directement à l’équipe."
+          }
+        ]
+      },
+      "faq": [
+        {
+          "q": "Puis-je réserver pour plusieurs enfants?",
+          "a": "Oui. Ajoutez chaque enfant à votre compte parent, puis choisissez pour lequel vous réservez au moment de la réservation."
+        },
+        {
+          "q": "Qui paie les séances?",
+          "a": "Vous. Les séances réservées pour vos enfants sont payées depuis votre compte parent, et les reçus restent dans votre historique de paiements."
+        },
+        {
+          "q": "Comment mon enfant rejoint-il une séance en ligne?",
+          "a": "La séance apparaît dans Réservations. Au moment venu, on la rejoint depuis là : la classe virtuelle s’ouvre dans le navigateur, sans rien installer."
+        },
+        {
+          "q": "Que faire si quelque chose ne va pas?",
+          "a": "Utilisez le formulaire « Signaler une préoccupation », accessible depuis le pied de page. Il est transmis directement à l’équipe responsable de la sécurité."
+        }
+      ],
+      "cta": {
+        "title": "Prêt à trouver le bon tuteur pour votre enfant?",
+        "description": "Créez votre compte parent gratuitement et réservez quand vous êtes prêt.",
+        "primary": "Créer un compte parent",
+        "secondary": "Voir les tarifs"
+      }
+    },
+    "pricing": {
+      "metaTitle": "Tarifs du tutorat : comment le prix est calculé",
+      "metaDescription": "Comment FutureTutor calcule le prix d’une séance : matière, niveau et moment de la réservation. Prix affiché avant le paiement, sans abonnement.",
+      "breadcrumb": "Tarifs",
+      "hero": {
+        "eyebrow": "Tarifs",
+        "title": "Un prix clair, affiché avant de payer",
+        "description": "FutureTutor calcule le prix de chaque séance à partir de critères simples. Vous voyez le détail et le total avant de confirmer, et vous payez à la séance.",
+        "primary": "Trouver un tuteur",
+        "secondary": "Créer un compte gratuit"
+      },
+      "factors": {
+        "eyebrow": "Ce qui influence le prix",
+        "title": "Trois critères, toujours les mêmes",
+        "items": [
+          {
+            "title": "La matière",
+            "text": "Chaque matière a sa propre grille de prix."
+          },
+          {
+            "title": "Le niveau scolaire",
+            "text": "Du primaire à l’université, le prix suit le niveau de l’élève."
+          },
+          {
+            "title": "Le moment de la réservation",
+            "text": "Une séance réservée à très court délai peut comporter un supplément, toujours indiqué dans le détail."
+          }
+        ]
+      },
+      "steps": {
+        "eyebrow": "Au moment de réserver",
+        "title": "Ce que vous voyez avant de payer",
+        "items": [
+          {
+            "title": "Vous choisissez un créneau",
+            "text": "Jour, heure, matière, niveau et format de la séance."
+          },
+          {
+            "title": "Le détail s’affiche",
+            "text": "Prix de la séance, suppléments éventuels, taxes lorsqu’elles s’appliquent, puis le total."
+          },
+          {
+            "title": "Vous confirmez et payez",
+            "text": "Le paiement sécurisé par Stripe confirme la réservation, et un courriel de confirmation vous est envoyé."
+          }
+        ]
+      },
+      "promises": {
+        "title": "Nos engagements",
+        "items": [
+          "Paiement à la séance, sans abonnement",
+          "Prix exact affiché avant le paiement",
+          "Paiement sécurisé par Stripe",
+          "Reçus dans votre historique de paiements"
+        ]
+      },
+      "faq": [
+        {
+          "q": "Y a-t-il un abonnement ou des frais d’inscription?",
+          "a": "Non. La création d’un compte est gratuite et vous payez séance par séance, au moment de réserver."
+        },
+        {
+          "q": "Quand suis-je débité?",
+          "a": "Au moment où vous confirmez la réservation. Le montant débité est le total affiché juste avant."
+        },
+        {
+          "q": "Qui fixe le prix : le tuteur ou FutureTutor?",
+          "a": "FutureTutor. Le prix est calculé à partir de la matière, du niveau et du moment de la réservation, puis affiché avant le paiement."
+        },
+        {
+          "q": "Et si je dois annuler?",
+          "a": "Les règles d’annulation et de remboursement sont décrites dans les Conditions d’utilisation. Vous pouvez annuler une séance depuis vos réservations."
+        }
+      ],
+      "termsLink": "Lire les Conditions d’utilisation",
+      "guideLink": "Lire le guide : combien coûte le tutorat",
+      "cta": {
+        "title": "Voyez le prix exact pour votre besoin",
+        "description": "Choisissez un tuteur et un créneau : le détail s’affiche avant le paiement.",
+        "primary": "Trouver un tuteur",
+        "secondary": "Comment ça marche"
+      }
+    },
+    "safety": {
+      "metaTitle": "Sécurité et confiance sur FutureTutor",
+      "metaDescription": "Comment FutureTutor approuve ses tuteurs, sécurise les paiements et traite les signalements. Ce que la vérification confirme, et ce qu’elle ne confirme pas.",
+      "breadcrumb": "Sécurité",
+      "hero": {
+        "eyebrow": "Confiance et sécurité",
+        "title": "La confiance se construit étape par étape",
+        "description": "Approbation des tuteurs, paiements protégés, séances sur la plateforme et signalement confidentiel : voici concrètement comment FutureTutor protège les élèves et les familles.",
+        "primary": "Faire un signalement",
+        "secondary": "Trouver un tuteur"
+      },
+      "steps": {
+        "eyebrow": "Approbation des tuteurs",
+        "title": "Le parcours de chaque tuteur avant d’être visible",
+        "items": [
+          {
+            "title": "Profil et candidature",
+            "text": "Matières, niveaux, expérience et approche d’enseignement."
+          },
+          {
+            "title": "Pièces justificatives",
+            "text": "Un document d’études est exigé pour soumettre la candidature."
+          },
+          {
+            "title": "Révision par l’équipe",
+            "text": "Le dossier et les documents sont examinés par un administrateur."
+          },
+          {
+            "title": "Formation FutureTutor",
+            "text": "Pratiques d’enseignement, sécurité et règles de la plateforme."
+          },
+          {
+            "title": "Examen final",
+            "text": "Une évaluation valide la formation."
+          },
+          {
+            "title": "Entrevue et approbation",
+            "text": "L’équipe rencontre le candidat, puis approuve ou non le profil."
+          }
+        ]
+      },
+      "honesty": {
+        "title": "Ce que l’approbation confirme, et ce qu’elle ne confirme pas",
+        "text": "L’approbation confirme qu’un tuteur a complété son profil, fourni les documents requis, suivi la formation, réussi l’examen et été approuvé par l’équipe. FutureTutor ne prétend pas effectuer de vérification d’antécédents. La première séance reste le meilleur indicateur : le style d’explication convient-il à votre enfant?"
+      },
+      "features": {
+        "eyebrow": "Pendant et après la réservation",
+        "title": "D’autres protections, au quotidien",
+        "items": [
+          {
+            "title": "Séances sur la plateforme",
+            "text": "La classe virtuelle FutureTutor s’ouvre depuis vos réservations ; inutile de partager des liens externes."
+          },
+          {
+            "title": "Paiements protégés",
+            "text": "Les paiements passent par Stripe. FutureTutor ne conserve jamais vos données de carte."
+          },
+          {
+            "title": "Signalement confidentiel",
+            "text": "Un formulaire ouvert à tous, transmis directement à l’équipe responsable de la sécurité."
+          },
+          {
+            "title": "Vos données",
+            "text": "La Politique de confidentialité décrit les données recueillies et vos droits."
+          }
+        ]
+      },
+      "privacyLink": "Lire la Politique de confidentialité",
+      "faq": [
+        {
+          "q": "Comment signaler un problème?",
+          "a": "Utilisez le formulaire « Signaler une préoccupation ». En cas de danger immédiat, appelez d’abord le 911."
+        },
+        {
+          "q": "Les tuteurs font-ils l’objet d’une vérification d’antécédents?",
+          "a": "FutureTutor ne prétend pas en effectuer. Le parcours d’approbation porte sur le profil, les documents, la formation, l’examen et l’entrevue."
+        },
+        {
+          "q": "Où se déroulent les séances en ligne?",
+          "a": "Dans la classe virtuelle de FutureTutor, accessible depuis vos réservations au moment de la séance."
+        }
+      ],
+      "cta": {
+        "title": "Une préoccupation? Dites-le-nous.",
+        "description": "Le formulaire est confidentiel et transmis directement à l’équipe.",
+        "primary": "Faire un signalement",
+        "secondary": "Nous contacter"
+      }
+    },
+    "classroom": {
+      "metaTitle": "La classe virtuelle FutureTutor",
+      "metaDescription": "Des séances de tutorat en ligne dans le navigateur : vidéo, micro, partage d’écran et minuteur, sans rien installer.",
+      "breadcrumb": "Classe virtuelle",
+      "hero": {
+        "eyebrow": "Classe virtuelle",
+        "title": "Une séance en ligne, sans rien installer",
+        "description": "La classe virtuelle FutureTutor s’ouvre directement dans le navigateur, depuis vos réservations. Vidéo, micro et partage d’écran : l’essentiel pour apprendre, rien de plus.",
+        "primary": "Trouver un tuteur",
+        "secondary": "Comment ça marche"
+      },
+      "features": {
+        "eyebrow": "Ce qu’elle offre",
+        "title": "Tout ce qu’il faut pour une bonne séance",
+        "items": [
+          {
+            "title": "Dans le navigateur",
+            "text": "Aucune application à installer : la séance s’ouvre depuis votre espace."
+          },
+          {
+            "title": "Vérification avant d’entrer",
+            "text": "Testez votre caméra et votre micro, et choisissez vos appareils avant de rejoindre."
+          },
+          {
+            "title": "Partage d’écran",
+            "text": "Montrez un exercice, un document ou une solution, en direct."
+          },
+          {
+            "title": "Minuteur de séance",
+            "text": "Le temps de la séance reste visible pour bien gérer le rythme."
+          },
+          {
+            "title": "Plein écran",
+            "text": "Concentrez-vous sur la séance, sans distraction."
+          },
+          {
+            "title": "Accès au bon moment",
+            "text": "La classe est accessible depuis la réservation, au moment prévu."
+          }
+        ]
+      },
+      "steps": {
+        "eyebrow": "Le jour de la séance",
+        "title": "Rejoindre en trois gestes",
+        "items": [
+          {
+            "title": "Ouvrez vos réservations",
+            "text": "La séance confirmée y apparaît avec son heure."
+          },
+          {
+            "title": "Vérifiez caméra et micro",
+            "text": "Un écran d’accueil vous permet de tout tester avant d’entrer."
+          },
+          {
+            "title": "Rejoignez la séance",
+            "text": "Vous retrouvez votre tuteur dans la classe virtuelle."
+          }
+        ]
+      },
+      "requirements": {
+        "title": "Ce qu’il vous faut",
+        "items": [
+          "Un navigateur récent (Chrome, Edge, Firefox ou Safari)",
+          "Une connexion Internet stable",
+          "Une caméra et un micro, intégrés ou externes",
+          "Un endroit calme pour se concentrer"
+        ]
+      },
+      "faq": [
+        {
+          "q": "Faut-il installer une application?",
+          "a": "Non. La classe virtuelle fonctionne directement dans le navigateur."
+        },
+        {
+          "q": "Et si ma caméra ou mon micro ne fonctionne pas?",
+          "a": "L’écran d’accueil de la classe vérifie les autorisations et vous laisse choisir un autre appareil avant d’entrer."
+        },
+        {
+          "q": "Les séances en personne sont-elles possibles?",
+          "a": "Oui, lorsque le tuteur les offre. Le format se choisit au moment de la réservation."
+        }
+      ],
+      "cta": {
+        "title": "Prêt pour votre première séance en ligne?",
+        "description": "Trouvez un tuteur et réservez un créneau : la classe s’ouvre depuis vos réservations.",
+        "primary": "Trouver un tuteur",
+        "secondary": "Créer un compte gratuit"
       }
     }
   }

@@ -39,7 +39,7 @@ export function MarketingPageHero({ eyebrow, title, description, primary, second
             <Sparkles className="size-4" aria-hidden="true" />
             {eyebrow}
           </p>
-          <h1 className="mt-5 text-balance text-4xl font-extrabold leading-[1.05] tracking-[-0.035em] sm:text-5xl lg:text-6xl">{title}</h1>
+          <h1 className="mt-5 text-balance text-4xl font-extrabold leading-[1.05] tracking-[-0.025em] sm:text-5xl lg:text-6xl">{title}</h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-white/76 md:text-xl">{description}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             {primaryTracking ? (

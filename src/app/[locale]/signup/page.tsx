@@ -8,9 +8,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params; const t = await getTranslations({ locale, namespace: "metadata.signup" });
   return publicPageMetadata({ locale, path: "/signup", title: t("title"), description: t("description"), index: false });
 }
-export default async function SignupPage({ params }: { params: Promise<{ locale: string }> }) {
+const ROLE_PARAM = { student: "STUDENT", parent: "PARENT", tutor: "TUTOR" } as const;
+
+export default async function SignupPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ role?: string | string[] }> }) {
   const { locale } = await params; setRequestLocale(locale);
+  const { role } = await searchParams;
+  const roleKey = typeof role === "string" ? role.toLowerCase() : "";
+  const initialRole = roleKey in ROLE_PARAM ? ROLE_PARAM[roleKey as keyof typeof ROLE_PARAM] : undefined;
   const t = await getTranslations({ locale, namespace: "auth.signup" });
   const editorial = await getTranslations({ locale, namespace: "publicExperience.authEditorial" });
-  return <main id="main"><AuthExperienceShell title={t("title")} subtitle={t("subtitle")} statement={editorial("signup.statement")} statementSupport={editorial("signup.support")} imageAlt={editorial("imageAlt")}><SignupForm /></AuthExperienceShell></main>;
+  return <main id="main"><AuthExperienceShell title={t("title")} subtitle={t("subtitle")} statement={editorial("signup.statement")} statementSupport={editorial("signup.support")} imageAlt={editorial("imageAlt")}><SignupForm initialRole={initialRole} /></AuthExperienceShell></main>;
 }

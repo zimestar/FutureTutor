@@ -38,12 +38,14 @@ for (const locale of ["en", "fr"] as const) {
       const imageWidth = await page.locator('img[src*="parents-students-hero"]').evaluate((image) => image.getBoundingClientRect().width);
       expect(imageWidth).toBeGreaterThan(viewportWidth * 0.5);
 
-      const safeZone = await page.evaluate(() => {
+      // DESIGN-SYSTEM3 — centered hero: the copy and search sit above the
+      // wide visual, never on top of it.
+      const layout = await page.evaluate(() => {
         const copy = document.querySelector('[data-testid="hero-copy"]')!.getBoundingClientRect();
         const visual = document.querySelector('[data-testid="hero-visual"]')!.getBoundingClientRect();
-        return { copyRight: copy.right, imageSubjectSafeEdge: visual.left + visual.width * 0.35 };
+        return { copyBottom: copy.bottom, visualTop: visual.top };
       });
-      expect(safeZone.copyRight).toBeLessThanOrEqual(safeZone.imageSubjectSafeEdge);
+      expect(layout.copyBottom).toBeLessThanOrEqual(layout.visualTop);
     }
 
     const headingLines = await page.getByTestId("hero-heading").evaluate((heading) => {

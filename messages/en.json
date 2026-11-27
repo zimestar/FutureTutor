@@ -62,12 +62,13 @@
     "fr": "Français"
   },
   "hero": {
+    "parentsLink": "Are you a parent?",
     "eyebrow": "Tutoring across Canada · online and in person",
     "title": "The right person can change the way you learn.",
     "titleEmphasis": "The right person",
     "titleRest": "can change the way you learn.",
     "description": "Meet a tutor who sees where you are stuck, explains it differently and helps you find your way forward.",
-    "primaryCta": "Find a Tutor",
+    "primaryCta": "Browse all tutors",
     "secondaryCta": "See How It Works",
     "searchIntro": "Find the right tutor for what comes next.",
     "imageAlt": "A student smiling during an online tutoring video call with her tutor",
@@ -114,10 +115,12 @@
     "YT": "Yukon"
   },
   "trustStrip": {
+    "bilingual": "In English and French",
+    "pricing": "Price shown before you pay",
     "personalized": "Personalized one-on-one tutoring",
     "onlineInPerson": "Online or in-person sessions",
     "flexible": "Flexible scheduling",
-    "verification": "Only approved Tutor profiles are public"
+    "verification": "Tutors verified before going live"
   },
   "subjects": {
     "heading": "What do you want to learn?",
@@ -579,6 +582,10 @@
       "legal": "Legal"
     },
     "links": {
+      "parents": "For parents",
+      "pricing": "Pricing",
+      "safety": "Trust and safety",
+      "classroom": "Virtual classroom",
       "findTutor": "Find a Tutor",
       "subjects": "Subjects",
       "howItWorks": "How It Works",
@@ -3815,6 +3822,500 @@
         "heading": "Applications waiting for an action",
         "intro": "{count, plural, one {# application has} other {# applications have}} been waiting for the team for 2 days or more.",
         "cta": "Open the applications board"
+      }
+    }
+  },
+  "homePremium": {
+    "trust": {
+      "label": "Our guarantees",
+      "verification": {
+        "title": "Verified tutors",
+        "text": "Profile, documents, training, exam and team approval before anything is published."
+      },
+      "pricing": {
+        "title": "Clear pricing",
+        "text": "The exact price is shown before you pay. No subscription."
+      },
+      "secure": {
+        "title": "Secure payment",
+        "text": "Payments are processed by Stripe. FutureTutor never stores your card details."
+      },
+      "classroom": {
+        "title": "Built-in virtual classroom",
+        "text": "Video, microphone and screen sharing in the browser, nothing to install."
+      }
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "From the first click to the first session, in three steps",
+      "cta": "See the full journey",
+      "stepLabel": "Step {number}",
+      "steps": {
+        "0": {
+          "title": "Find the right tutor",
+          "text": "Filter by subject, level and format, then compare profiles, experience and availability."
+        },
+        "1": {
+          "title": "Book with full clarity",
+          "text": "Pick a time: the exact price is shown before you pay, and the confirmation arrives by email."
+        },
+        "2": {
+          "title": "Learn online or in person",
+          "text": "Join the virtual classroom from your dashboard, or meet your tutor in person when they offer it."
+        }
+      },
+      "visual": {
+        "subject": "Mathematics",
+        "level": "High school",
+        "mode": "Online",
+        "search": "Search",
+        "total": "Total"
+      },
+      "quickMatch": {
+        "title": "No time to search? Try Quick Match.",
+        "text": "Describe what you need: your request is offered to available tutors, and you confirm the price before paying.",
+        "cta": "Create a free account"
+      }
+    },
+    "parents": {
+      "eyebrow": "For parents",
+      "title": "Stay in charge of your child’s learning",
+      "description": "Create your parent account, add your children and book for them. You pay, you follow along, you stay informed.",
+      "imageAlt": "A student finally understanding a concept while her tutor explains",
+      "features": {
+        "children": {
+          "title": "One account, several children",
+          "text": "Add each child and book for the one who needs help."
+        },
+        "payment": {
+          "title": "You handle payment",
+          "text": "Your children’s sessions are paid from your own account."
+        },
+        "follow": {
+          "title": "Everything in one place",
+          "text": "Find your children’s sessions in your family space."
+        },
+        "safety": {
+          "title": "Simple recourse",
+          "text": "A concern? The report form goes straight to the team."
+        }
+      },
+      "primaryCta": "Create a parent account",
+      "secondaryCta": "Explore the parent space"
+    },
+    "safety": {
+      "eyebrow": "Trust and safety",
+      "title": "No tutor is visible before being approved",
+      "description": "Every application follows the same journey, reviewed by the FutureTutor team. A profile only goes public once every step is complete.",
+      "steps": {
+        "0": {
+          "title": "Profile and application",
+          "text": "Subjects, levels, experience and teaching approach."
+        },
+        "1": {
+          "title": "Supporting documents",
+          "text": "An education document is required to submit the application."
+        },
+        "2": {
+          "title": "Team review",
+          "text": "The file and documents are reviewed by an administrator."
+        },
+        "3": {
+          "title": "FutureTutor training",
+          "text": "Teaching practices, safety and platform rules."
+        },
+        "4": {
+          "title": "Final exam",
+          "text": "An assessment confirms the training before the next step."
+        },
+        "5": {
+          "title": "Interview and approval",
+          "text": "The team meets the applicant, then approves the profile or not."
+        }
+      },
+      "note": "Only approved profiles appear in search.",
+      "payment": "Payments are processed by Stripe; FutureTutor never stores your card details.",
+      "report": "Something worrying during a session or in a message?",
+      "reportLink": "Report it confidentially.",
+      "cta": "Learn more about safety"
+    },
+    "pricing": {
+      "eyebrow": "Transparent pricing",
+      "title": "Know what you pay, before you pay",
+      "description": "FutureTutor calculates each session’s price from clear criteria, and always shows it before payment.",
+      "factorLabel": "Criterion {number}",
+      "factors": {
+        "0": {
+          "title": "The subject",
+          "text": "Each subject has its own price grid."
+        },
+        "1": {
+          "title": "The grade level",
+          "text": "From elementary to university, the price follows the learner’s level."
+        },
+        "2": {
+          "title": "When you book",
+          "text": "A session booked at very short notice may include a surcharge, always shown."
+        }
+      },
+      "promises": {
+        "0": "Pay per session, no subscription",
+        "1": "Exact price shown before paying",
+        "2": "Receipts in your history"
+      },
+      "cta": "Understand pricing"
+    },
+    "resources": {
+      "eyebrow": "Resources",
+      "title": "Guides to help you make the right choices",
+      "cta": "All resources",
+      "read": "Read the guide"
+    }
+  },
+  "infoPages": {
+    "common": {
+      "faqTitle": "Frequently asked questions",
+      "breadcrumbHome": "Home"
+    },
+    "parents": {
+      "metaTitle": "Tutoring for your children: the parent space",
+      "metaDescription": "Create a parent account, add your children, book and pay for their tutoring sessions, and follow everything in one place.",
+      "breadcrumb": "Parents",
+      "hero": {
+        "eyebrow": "Parent space",
+        "title": "Your children’s tutoring, simple and in your hands",
+        "description": "One account to find the right tutor, book for each of your children, pay with full clarity and follow their sessions.",
+        "primary": "Create a parent account",
+        "secondary": "Find a tutor"
+      },
+      "steps": {
+        "eyebrow": "In four steps",
+        "title": "How it works for parents",
+        "items": [
+          {
+            "title": "Create your parent account",
+            "text": "Sign up with the Parent role. It’s free, and nothing is charged before a booking."
+          },
+          {
+            "title": "Add your children",
+            "text": "Create a profile for each child, with their grade level, for relevant searches and prices."
+          },
+          {
+            "title": "Book for the right child",
+            "text": "Pick the child, the tutor and the time. The exact price is shown before you pay."
+          },
+          {
+            "title": "Follow the sessions",
+            "text": "Your children’s sessions are in your family space, with access to the virtual classroom."
+          }
+        ]
+      },
+      "features": {
+        "eyebrow": "What stays in your hands",
+        "title": "Designed for families",
+        "items": [
+          {
+            "title": "Several children, one account",
+            "text": "Book for the child who needs help, without juggling accounts."
+          },
+          {
+            "title": "Payment stays with you",
+            "text": "Your children’s sessions are paid from your parent account, through Stripe."
+          },
+          {
+            "title": "Approved tutors",
+            "text": "Only tutors who completed the approval journey appear in search."
+          },
+          {
+            "title": "Simple recourse",
+            "text": "Something worrying? The report form goes straight to the team."
+          }
+        ]
+      },
+      "faq": [
+        {
+          "q": "Can I book for several children?",
+          "a": "Yes. Add each child to your parent account, then choose who the session is for when you book."
+        },
+        {
+          "q": "Who pays for the sessions?",
+          "a": "You do. Sessions booked for your children are paid from your parent account, and receipts stay in your payment history."
+        },
+        {
+          "q": "How does my child join an online session?",
+          "a": "The session appears in Bookings. When it is time, join from there: the virtual classroom opens in the browser, nothing to install."
+        },
+        {
+          "q": "What if something goes wrong?",
+          "a": "Use the “Report a concern” form, available from the footer. It goes straight to the team in charge of safety."
+        }
+      ],
+      "cta": {
+        "title": "Ready to find the right tutor for your child?",
+        "description": "Create your parent account for free and book when you are ready.",
+        "primary": "Create a parent account",
+        "secondary": "See pricing"
+      }
+    },
+    "pricing": {
+      "metaTitle": "Tutoring pricing: how the price is calculated",
+      "metaDescription": "How FutureTutor calculates a session’s price: subject, level and booking time. Price shown before payment, no subscription.",
+      "breadcrumb": "Pricing",
+      "hero": {
+        "eyebrow": "Pricing",
+        "title": "A clear price, shown before you pay",
+        "description": "FutureTutor calculates each session’s price from simple criteria. You see the breakdown and total before confirming, and you pay per session.",
+        "primary": "Find a tutor",
+        "secondary": "Create a free account"
+      },
+      "factors": {
+        "eyebrow": "What affects the price",
+        "title": "Three criteria, always the same",
+        "items": [
+          {
+            "title": "The subject",
+            "text": "Each subject has its own price grid."
+          },
+          {
+            "title": "The grade level",
+            "text": "From elementary to university, the price follows the learner’s level."
+          },
+          {
+            "title": "When you book",
+            "text": "A session booked at very short notice may include a surcharge, always shown in the breakdown."
+          }
+        ]
+      },
+      "steps": {
+        "eyebrow": "When you book",
+        "title": "What you see before paying",
+        "items": [
+          {
+            "title": "You pick a time",
+            "text": "Day, time, subject, level and session format."
+          },
+          {
+            "title": "The breakdown appears",
+            "text": "Session price, any surcharge, taxes where they apply, then the total."
+          },
+          {
+            "title": "You confirm and pay",
+            "text": "The secure Stripe payment confirms the booking, and a confirmation email is sent to you."
+          }
+        ]
+      },
+      "promises": {
+        "title": "Our commitments",
+        "items": [
+          "Pay per session, no subscription",
+          "Exact price shown before payment",
+          "Secure payment through Stripe",
+          "Receipts in your payment history"
+        ]
+      },
+      "faq": [
+        {
+          "q": "Is there a subscription or sign-up fee?",
+          "a": "No. Creating an account is free and you pay session by session, when you book."
+        },
+        {
+          "q": "When am I charged?",
+          "a": "When you confirm the booking. The amount charged is the total shown just before."
+        },
+        {
+          "q": "Who sets the price: the tutor or FutureTutor?",
+          "a": "FutureTutor. The price is calculated from the subject, the level and the booking time, then shown before payment."
+        },
+        {
+          "q": "What if I need to cancel?",
+          "a": "Cancellation and refund rules are described in the Terms of Use. You can cancel a session from your bookings."
+        }
+      ],
+      "termsLink": "Read the Terms of Use",
+      "guideLink": "Read the guide: how much tutoring costs",
+      "cta": {
+        "title": "See the exact price for your needs",
+        "description": "Pick a tutor and a time: the breakdown is shown before payment.",
+        "primary": "Find a tutor",
+        "secondary": "How it works"
+      }
+    },
+    "safety": {
+      "metaTitle": "Trust and safety at FutureTutor",
+      "metaDescription": "How FutureTutor approves tutors, protects payments and handles reports. What approval confirms, and what it does not.",
+      "breadcrumb": "Safety",
+      "hero": {
+        "eyebrow": "Trust and safety",
+        "title": "Trust is built step by step",
+        "description": "Tutor approval, protected payments, sessions on the platform and confidential reporting: here is concretely how FutureTutor protects learners and families.",
+        "primary": "Report a concern",
+        "secondary": "Find a tutor"
+      },
+      "steps": {
+        "eyebrow": "Tutor approval",
+        "title": "Every tutor’s journey before going live",
+        "items": [
+          {
+            "title": "Profile and application",
+            "text": "Subjects, levels, experience and teaching approach."
+          },
+          {
+            "title": "Supporting documents",
+            "text": "An education document is required to submit the application."
+          },
+          {
+            "title": "Team review",
+            "text": "The file and documents are reviewed by an administrator."
+          },
+          {
+            "title": "FutureTutor training",
+            "text": "Teaching practices, safety and platform rules."
+          },
+          {
+            "title": "Final exam",
+            "text": "An assessment confirms the training."
+          },
+          {
+            "title": "Interview and approval",
+            "text": "The team meets the applicant, then approves the profile or not."
+          }
+        ]
+      },
+      "honesty": {
+        "title": "What approval confirms, and what it does not",
+        "text": "Approval confirms that a tutor completed their profile, provided the required documents, took the training, passed the exam and was approved by the team. FutureTutor does not claim to run background checks. The first session remains the best signal: does the way they explain things work for your child?"
+      },
+      "features": {
+        "eyebrow": "During and after booking",
+        "title": "More protections, every day",
+        "items": [
+          {
+            "title": "Sessions on the platform",
+            "text": "The FutureTutor virtual classroom opens from your bookings; no need to share outside links."
+          },
+          {
+            "title": "Protected payments",
+            "text": "Payments are processed by Stripe. FutureTutor never stores your card details."
+          },
+          {
+            "title": "Confidential reporting",
+            "text": "A form open to everyone, sent straight to the team in charge of safety."
+          },
+          {
+            "title": "Your data",
+            "text": "The Privacy Policy describes the data collected and your rights."
+          }
+        ]
+      },
+      "privacyLink": "Read the Privacy Policy",
+      "faq": [
+        {
+          "q": "How do I report a problem?",
+          "a": "Use the “Report a concern” form. In an immediate emergency, call 911 first."
+        },
+        {
+          "q": "Do tutors go through a background check?",
+          "a": "FutureTutor does not claim to run one. The approval journey covers the profile, documents, training, exam and interview."
+        },
+        {
+          "q": "Where do online sessions take place?",
+          "a": "In the FutureTutor virtual classroom, available from your bookings at session time."
+        }
+      ],
+      "cta": {
+        "title": "A concern? Tell us.",
+        "description": "The form is confidential and goes straight to the team.",
+        "primary": "Report a concern",
+        "secondary": "Contact us"
+      }
+    },
+    "classroom": {
+      "metaTitle": "The FutureTutor virtual classroom",
+      "metaDescription": "Online tutoring sessions in the browser: video, microphone, screen sharing and a session timer, nothing to install.",
+      "breadcrumb": "Virtual classroom",
+      "hero": {
+        "eyebrow": "Virtual classroom",
+        "title": "An online session, nothing to install",
+        "description": "The FutureTutor virtual classroom opens right in the browser, from your bookings. Video, microphone and screen sharing: what you need to learn, nothing more.",
+        "primary": "Find a tutor",
+        "secondary": "How it works"
+      },
+      "features": {
+        "eyebrow": "What it offers",
+        "title": "Everything a good session needs",
+        "items": [
+          {
+            "title": "In the browser",
+            "text": "No app to install: the session opens from your dashboard."
+          },
+          {
+            "title": "Check before joining",
+            "text": "Test your camera and microphone, and pick your devices before you join."
+          },
+          {
+            "title": "Screen sharing",
+            "text": "Show an exercise, a document or a solution, live."
+          },
+          {
+            "title": "Session timer",
+            "text": "The session time stays visible to keep a good pace."
+          },
+          {
+            "title": "Full screen",
+            "text": "Focus on the session, without distractions."
+          },
+          {
+            "title": "Access at the right time",
+            "text": "The classroom is available from the booking, at the scheduled time."
+          }
+        ]
+      },
+      "steps": {
+        "eyebrow": "On session day",
+        "title": "Join in three moves",
+        "items": [
+          {
+            "title": "Open your bookings",
+            "text": "The confirmed session appears there with its time."
+          },
+          {
+            "title": "Check camera and microphone",
+            "text": "A welcome screen lets you test everything before entering."
+          },
+          {
+            "title": "Join the session",
+            "text": "You meet your tutor in the virtual classroom."
+          }
+        ]
+      },
+      "requirements": {
+        "title": "What you need",
+        "items": [
+          "A recent browser (Chrome, Edge, Firefox or Safari)",
+          "A stable Internet connection",
+          "A camera and microphone, built-in or external",
+          "A quiet place to focus"
+        ]
+      },
+      "faq": [
+        {
+          "q": "Do I need to install an app?",
+          "a": "No. The virtual classroom runs right in the browser."
+        },
+        {
+          "q": "What if my camera or microphone does not work?",
+          "a": "The classroom welcome screen checks permissions and lets you pick another device before entering."
+        },
+        {
+          "q": "Are in-person sessions possible?",
+          "a": "Yes, when the tutor offers them. You choose the format when you book."
+        }
+      ],
+      "cta": {
+        "title": "Ready for your first online session?",
+        "description": "Find a tutor and book a time: the classroom opens from your bookings.",
+        "primary": "Find a tutor",
+        "secondary": "Create a free account"
       }
     }
   }

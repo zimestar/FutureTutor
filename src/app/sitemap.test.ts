@@ -30,7 +30,7 @@ describe("sitemap()", () => {
   });
 
   it("includes only known, real public static/legal paths and real subject slugs — never invented pages — with one entry per locale", () => {
-    const knownStaticPaths = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact"];
+    const knownStaticPaths = ["", "/find-tutors", "/subjects", "/how-it-works", "/become-a-tutor", "/tutor-resources", "/resources", "/about", "/contact", "/parents", "/pricing", "/safety", "/online-classroom"];
     const knownLegalPaths = ["/privacy", "/terms", "/cookies", "/tutor-agreement", "/careers"];
     const knownSubjectPaths = subjects.map((s) => `/subjects/${s.slug}`);
     const knownLocalMarketPaths = localMarkets.map((m) => `/tutoring/${m.slug}`);
