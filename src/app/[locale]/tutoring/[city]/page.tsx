@@ -65,7 +65,7 @@ export default async function LocalMarketPage({ params }: { params: Promise<Para
   return (
     <MarketingShell>
       <TrackPageView event="local_landing_viewed" properties={{ locale: locale as Locale, city_slug: slug }} />
-      <Section className="bg-off-white pb-0">
+      <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs items={[{ label: t("breadcrumbHome"), href: "/" }, { label: tItem("breadcrumbLabel") }]} />
       </Section>
       <MarketingPageHero

@@ -191,7 +191,7 @@
         "howItWorksLink": "See how booking works",
         "becomeTutor": {
           "title": "Tutor in Edmonton? Join FutureTutor.",
-          "description": "Set your own subjects, availability, and rate. FutureTutor handles booking, messaging, and payment.",
+          "description": "Choose your subjects and availability. FutureTutor sets session prices and handles booking, messaging, and payment.",
           "cta": "Apply to become a tutor"
         }
       }
@@ -568,7 +568,7 @@
   },
   "footer": {
     "description": "A modern tutoring marketplace connecting students and parents with qualified tutors across Canada.",
-    "region": "🇨🇦 Canada",
+    "region": "Canada",
     "columns": {
       "students": "Students",
       "tutors": "Tutors",
@@ -589,6 +589,7 @@
       "about": "About",
       "contact": "Contact",
       "careers": "Careers",
+      "reportConcern": "Report a concern",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "cookies": "Cookie Policy",
@@ -3694,6 +3695,16 @@
       "future": { "title": "Build the bridge. Keep the relationship human.", "description": "As FutureTutor grows, its tools may become more capable. The purpose remains constant: bring the right knowledge closer to the person who needs it, in a way that genuinely helps them move forward.", "cta": "Start finding support" }
     },
     "contact": {
+      "direct": {
+        "title": "Write to us",
+        "description": "A question about an account, a booking or the platform, a problem or a suggestion: the FutureTutor team reads every message.",
+        "cta": "Send an email"
+      },
+      "safety": {
+        "title": "Report a safety concern",
+        "description": "Something worrying happened during a session or in a message? Use the confidential form: it goes straight to the team in charge of safety.",
+        "cta": "Report a concern"
+      },
       "metaTitle": "Contact and Support",
       "metaDescription": "Find the right FutureTutor support route for account access, tutoring questions and tutor guidance.",
       "hero": { "eyebrow": "Contact and support", "title": "Start with the path that fits your question.", "description": "FutureTutor is building clear support around the moments that matter. These routes can help you move forward quickly.", "primary": "Understand the experience", "secondary": "Log in" },

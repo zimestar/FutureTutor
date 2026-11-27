@@ -32,6 +32,7 @@ export const footerNav = {
     { key: "about", href: "/about" },
     { key: "contact", href: "/contact" },
     { key: "careers", href: "/careers" },
+    { key: "reportConcern", href: "/report-concern" },
   ],
   legal: [
     { key: "privacy", href: "/privacy" },

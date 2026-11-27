@@ -48,7 +48,7 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
   return (
     <MarketingShell>
       <TrackPageView event="resource_article_viewed" properties={{ locale: locale as Locale, resource_slug: slug }} />
-      <Section className="bg-off-white pb-0">
+      <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs
           items={[
             { label: tHub("breadcrumbHome"), href: "/" },

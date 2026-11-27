@@ -25,7 +25,7 @@ export default async function ResourcesIndexPage({ params }: { params: Promise<{
 
   return (
     <MarketingShell>
-      <Section className="bg-off-white pb-0">
+      <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs items={[{ label: t("breadcrumbHome"), href: "/" }, { label: t("breadcrumbLabel") }]} />
       </Section>
       <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/find-tutors" }} secondary={{ label: t("hero.secondary"), href: "/become-a-tutor" }} />

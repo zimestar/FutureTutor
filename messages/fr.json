@@ -191,7 +191,7 @@
         "howItWorksLink": "Voir comment fonctionne la réservation",
         "becomeTutor": {
           "title": "Vous êtes tuteur à Edmonton? Joignez FutureTutor.",
-          "description": "Définissez vos propres matières, disponibilités et tarif. FutureTutor s'occupe de la réservation, de la messagerie et du paiement.",
+          "description": "Choisissez vos matières et vos disponibilités. FutureTutor fixe le prix des séances et s'occupe de la réservation, de la messagerie et du paiement.",
           "cta": "Poser sa candidature comme tuteur"
         }
       }
@@ -568,7 +568,7 @@
   },
   "footer": {
     "description": "Une plateforme moderne qui met en relation élèves et parents avec des tuteurs qualifiés partout au Canada.",
-    "region": "🇨🇦 Canada",
+    "region": "Canada",
     "columns": {
       "students": "Élèves",
       "tutors": "Tuteurs",
@@ -589,6 +589,7 @@
       "about": "À propos",
       "contact": "Contact",
       "careers": "Carrières",
+      "reportConcern": "Signaler une préoccupation",
       "privacy": "Politique de confidentialité",
       "terms": "Conditions d'utilisation",
       "cookies": "Politique de cookies",
@@ -3694,6 +3695,16 @@
       "future": { "title": "Construire le pont. Garder la relation humaine.", "description": "Les outils de FutureTutor pourront évoluer. La raison d’être demeure : rapprocher la bonne connaissance de la personne qui en a besoin, d’une manière qui l’aide réellement à avancer.", "cta": "Commencer à chercher du soutien" }
     },
     "contact": {
+      "direct": {
+        "title": "Écrivez-nous",
+        "description": "Une question sur un compte, une réservation ou la plateforme, un problème ou une suggestion : l’équipe FutureTutor lit chaque message.",
+        "cta": "Envoyer un courriel"
+      },
+      "safety": {
+        "title": "Signaler une préoccupation de sécurité",
+        "description": "Quelque chose d’inquiétant s’est produit pendant une séance ou dans un message? Utilisez le formulaire confidentiel : il est transmis directement à l’équipe responsable de la sécurité.",
+        "cta": "Faire un signalement"
+      },
       "metaTitle": "Contact et soutien",
       "metaDescription": "Trouvez le bon parcours FutureTutor pour l’accès au compte, les questions de tutorat et l’accompagnement des tuteurs.",
       "hero": { "eyebrow": "Contact et soutien", "title": "Commencez par le parcours qui correspond à votre question.", "description": "FutureTutor construit un soutien clair autour des moments importants. Ces parcours vous aident à avancer rapidement.", "primary": "Comprendre l’expérience", "secondary": "Se connecter" },

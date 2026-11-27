@@ -12,7 +12,7 @@ export interface BreadcrumbItem {
 
 export function Breadcrumbs({ items, label = "Breadcrumb" }: { items: BreadcrumbItem[]; label?: string }) {
   return (
-    <nav aria-label={label} className="mb-3">
+    <nav aria-label={label}>
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-text-muted">
         {items.map((item, index) => (
           <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">

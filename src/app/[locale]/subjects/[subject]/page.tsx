@@ -79,7 +79,7 @@ export default async function SubjectPage({ params }: { params: Promise<Params> 
   return (
     <MarketingShell>
       <TrackPageView event="subject_page_viewed" properties={{ locale: locale as Locale, subject_slug: slug }} />
-      <Section className="bg-off-white pb-0">
+      <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs
           items={[
             { label: t("page.breadcrumbHome"), href: "/" },
