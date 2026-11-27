@@ -69,6 +69,28 @@ describe("buildAdminAlertEmailContent", () => {
     expect(content.html).toContain(`${BASE_URL}/en/admin/tutors/pipeline`);
   });
 
+  it("SAFETY-REPORTS1 — a safety alert shows category and urgency, links to the report, never the description", () => {
+    const urgent = buildAdminAlertEmailContent(
+      context({
+        locale: "fr",
+        event: "SAFETY_CONCERN_REPORTED",
+        tutorProfileId: null,
+        detail: { category: "CHILD_SAFETY", immediateDanger: true, adminPath: "/admin/safety-reports/rep-1", description: "SECRET TEXT" },
+      })
+    );
+    expect(urgent.subject).toBe("URGENT — danger immédiat signalé");
+    expect(urgent.text).toContain(frMessages.safetyReport.categories.CHILD_SAFETY);
+    expect(urgent.html).toContain(`${BASE_URL}/fr/admin/safety-reports/rep-1`);
+    expect(urgent.html).toContain(frMessages.adminAlertEmail.footerSafety);
+    expect(urgent.text).not.toContain("SECRET TEXT");
+
+    const normal = buildAdminAlertEmailContent(
+      context({ event: "SAFETY_CONCERN_REPORTED", tutorProfileId: null, detail: { category: "OTHER", immediateDanger: false, adminPath: "https://evil.test/x" } })
+    );
+    expect(normal.subject).toBe("Safety concern reported");
+    expect(normal.html).not.toContain("evil.test");
+  });
+
   it("ignores a malformed digest snapshot instead of failing", () => {
     const content = buildAdminAlertEmailContent(context({ event: "TUTOR_PIPELINE_DIGEST", tutorProfileId: null, detail: { items: "bad" } }));
     expect(content.text).toContain("0 applications have been waiting");

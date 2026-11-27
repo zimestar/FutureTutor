@@ -80,6 +80,18 @@ export function buildAdminAlertEmailContent(context: AdminAlertEmailContext): Ad
         }),
       });
     }
+  } else if (context.event === "SAFETY_CONCERN_REPORTED") {
+    // Never the reporter's description: only what tells the team how fast to act.
+    const urgent = context.detail.immediateDanger === true;
+    intro = tEvent(urgent ? "introUrgent" : "intro");
+    const tCategory = createEmailTranslator(locale, "safetyReport.categories");
+    const category = asString(context.detail.category);
+    if (category) rows.push({ label: t("categoryLabel"), value: tCategory(category) });
+    rows.push({ label: t("immediateDangerLabel"), value: urgent ? t("yes") : t("no") });
+    const adminPath = asString(context.detail.adminPath);
+    if (adminPath.startsWith("/admin/")) buttonUrl = `${context.baseUrl}/${locale}${adminPath}`;
+    const subject = urgent ? tEvent("subjectUrgent") : tEvent("subject");
+    return finish(subject);
   } else {
     const documentType = asString(context.detail.documentType);
     intro = tEvent("intro", {
@@ -92,18 +104,25 @@ export function buildAdminAlertEmailContent(context: AdminAlertEmailContext): Ad
     if (context.tutorProfileId) buttonUrl = `${context.baseUrl}/${locale}/admin/tutors/${context.tutorProfileId}`;
   }
 
-  const subject = tEvent("subject", { tutorName });
-  const heading = tEvent("heading");
-  const html = renderEmailShell({
-    locale,
-    title: subject,
-    heading,
-    bodyRows: [intro],
-    rows,
-    buttonLabel: tEvent("cta"),
-    buttonUrl,
-    footer: t("footer"),
-  });
-  const text = [heading, "", intro, "", ...rows.map((row) => `${row.label}: ${row.value}`), "", `${tEvent("cta")}: ${buttonUrl}`, "", t("footer")].join("\n");
-  return { subject, html, text };
+  return finish(tEvent("subject", { tutorName }));
+
+  function footer(): string {
+    return context.event === "SAFETY_CONCERN_REPORTED" ? t("footerSafety") : t("footer");
+  }
+
+  function finish(subject: string): AdminAlertEmailContent {
+    const heading = tEvent("heading");
+    const html = renderEmailShell({
+      locale,
+      title: subject,
+      heading,
+      bodyRows: [intro],
+      rows,
+      buttonLabel: tEvent("cta"),
+      buttonUrl,
+      footer: footer(),
+    });
+    const text = [heading, "", intro, "", ...rows.map((row) => `${row.label}: ${row.value}`), "", `${tEvent("cta")}: ${buttonUrl}`, "", footer()].join("\n");
+    return { subject, html, text };
+  }
 }

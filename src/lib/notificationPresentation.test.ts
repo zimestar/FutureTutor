@@ -12,6 +12,12 @@ describe("resolveNotificationLink", () => {
     expect(resolveNotificationLink("session.session_no_show_tutor", { bookingId: "b4" })).toBe("/session/b4");
   });
 
+  it("SAFETY-REPORTS1 — an admin alert with an admin page links there; anything else is ignored", () => {
+    expect(resolveNotificationLink("admin_alert.safety_concern_reported", { adminPath: "/admin/safety-reports/r1" })).toBe("/admin/safety-reports/r1");
+    expect(resolveNotificationLink("admin_alert.safety_concern_reported", { adminPath: "https://evil.test" })).toBe("/admin/tutors/pipeline");
+    expect(resolveNotificationLink("admin_alert.safety_concern_reported", { adminPath: "/admin/../x?y" })).toBe("/admin/tutors/pipeline");
+  });
+
   it("TUTOR-PIPELINE1 — an admin alert links to the application, or to the board when it has none", () => {
     expect(resolveNotificationLink("admin_alert.tutor_application_submitted", { tutorProfileId: "t1" })).toBe("/admin/tutors/t1");
     expect(resolveNotificationLink("admin_alert.tutor_pipeline_digest", {})).toBe("/admin/tutors/pipeline");

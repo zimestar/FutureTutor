@@ -32,6 +32,8 @@ export function resolveNotificationLink(type: string, metadata: unknown): string
   if (type.startsWith("tutor_application.")) return "/tutor/dashboard";
   // TUTOR-PIPELINE1 — admin alerts open the application, or the board for the digest.
   if (type.startsWith("admin_alert.")) {
+    // SAFETY-REPORTS1 — an explicit admin page wins (safety concerns).
+    if (typeof meta.adminPath === "string" && /^\/admin\/[A-Za-z0-9/_-]+$/.test(meta.adminPath)) return meta.adminPath;
     return typeof meta.tutorProfileId === "string" && meta.tutorProfileId.length > 0
       ? `/admin/tutors/${meta.tutorProfileId}`
       : "/admin/tutors/pipeline";

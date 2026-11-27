@@ -1,4 +1,40 @@
 {
+  "safetyReport": {
+    "linkLabel": "Report a concern",
+    "title": "Report a safety concern",
+    "intro": "Tell us about anything that worries you: a remark, a behaviour, a risk to a student or to anyone on FutureTutor. Our team is alerted immediately.",
+    "emergencyTitle": "Someone in immediate danger?",
+    "emergencyBody": "Call 911 (or your local emergency number) first. Then tell us here.",
+    "categoryLabel": "What is it about?",
+    "categoryPlaceholder": "Choose a category",
+    "categories": {
+      "CHILD_SAFETY": "A child's or teen's safety",
+      "INAPPROPRIATE_BEHAVIOUR": "Inappropriate behaviour",
+      "HARASSMENT_OR_THREAT": "Harassment or threats",
+      "OFF_PLATFORM_CONTACT": "Pressure to communicate or pay outside FutureTutor",
+      "PRIVACY_OR_SECURITY": "Privacy or account security",
+      "OTHER": "Other concern"
+    },
+    "immediateDangerLabel": "Someone may be in immediate danger",
+    "immediateDangerHelp": "Check this so our team treats your report as urgent.",
+    "concerningLabel": "Who or which session is it about? (optional)",
+    "concerningPlaceholder": "e.g. a name, a date, a booked session",
+    "descriptionLabel": "What happened?",
+    "descriptionPlaceholder": "Describe the facts as precisely as you can: what was said or done, when, and by whom.",
+    "descriptionHelp": "At least 20 characters. Stick to the facts; don't investigate on your own.",
+    "submit": "Send my report",
+    "sending": "Sending…",
+    "sentTitle": "Report received — thank you",
+    "sentBody": "Our team has been alerted and will follow up. If someone is in immediate danger, call 911.",
+    "reference": "Reference:",
+    "privacyNote": "Your report is only seen by the FutureTutor team members in charge of safety. Reporting to FutureTutor does not replace any reporting duty you may have under the law of your province.",
+    "errors": {
+      "signedOut": "Please sign in again to send your report.",
+      "tooManyReports": "You've sent several reports in a short time. Please try again later, or call 911 in an emergency.",
+      "invalidInput": "Please choose a category and describe what happened (at least 20 characters).",
+      "accountInactive": "Your account can't send reports right now. In an emergency, call 911."
+    }
+  },
   "site": {
     "tagline": "Find the right tutor. Learn with confidence.",
     "description": "FutureTutor connects students and parents with qualified tutors for personalized one-on-one learning, online or in person, across Canada."
@@ -1310,6 +1346,7 @@
     },
     "nav": {
       "overview": "Overview",
+      "safetyReports": "Safety reports",
       "applicationOverview": "Application Overview",
       "profile": "Profile",
       "favorites": "Favorites",
@@ -1780,6 +1817,34 @@
     "revoke": "Revoke"
   },
   "admin": {
+    "safetyReports": {
+      "title": "Safety reports",
+      "description": "Safety concerns reported by tutors, students and parents. Urgent reports come first.",
+      "filters": {
+        "OPEN": "Open",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Resolved",
+        "ALL": "All"
+      },
+      "statuses": {
+        "OPEN": "Open",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Resolved"
+      },
+      "urgent": "Immediate danger",
+      "empty": "No report here.",
+      "back": "Back to safety reports",
+      "reporter": "Reported by",
+      "receivedAt": "Received",
+      "concerning": "About",
+      "descriptionLabel": "Report",
+      "resolvedBy": "Resolved by",
+      "handling": "Handling",
+      "statusLabel": "Status",
+      "noteLabel": "Internal note",
+      "noteHelp": "Visible to the safety team only. Record what was done and who was contacted.",
+      "save": "Save"
+    },
     "tutorPipeline": {
       "title": "Applications board",
       "description": "Every open tutor application, grouped by stage. Items waiting on the team come first.",
@@ -3625,6 +3690,11 @@
     }
   },
   "adminAlertEmail": {
+    "categoryLabel": "Category",
+    "immediateDangerLabel": "Immediate danger reported",
+    "yes": "Yes",
+    "no": "No",
+    "footerSafety": "You receive this email because you handle safety reports on FutureTutor.",
     "candidateLabel": "Candidate",
     "stageLabel": "Current stage",
     "unnamedCandidate": "Unnamed candidate",
@@ -3671,6 +3741,14 @@
         "heading": "Exam passed",
         "intro": "{tutorName} passed the platform exam. The application is ready for final review.",
         "cta": "Open the application"
+      },
+      "SAFETY_CONCERN_REPORTED": {
+        "subject": "Safety concern reported",
+        "subjectUrgent": "URGENT — immediate danger reported",
+        "heading": "A safety concern needs your attention",
+        "intro": "A user filed a safety concern report. Please review it promptly.",
+        "introUrgent": "A user reports that someone may be in immediate danger. Please review it now.",
+        "cta": "Open the report"
       },
       "TUTOR_PIPELINE_DIGEST": {
         "subject": "Tutor applications waiting for the team",

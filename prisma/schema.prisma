@@ -80,6 +80,11 @@ enum AdminPermission {
   // adminNavItems' existing "SUPER_ADMIN -> all permissions" rule) — normal
   // admin access must be explicitly assigned.
   ADMIN_AUDIT_LOG_READ
+  // SAFETY-REPORTS1 — safety concern reports may describe abuse, threats or
+  // a child at risk: their own permission, never implied by another one.
+  // Like the other sensitive permissions, only SUPER_ADMIN has it
+  // automatically; any other admin must be granted it explicitly.
+  ADMIN_SAFETY_REPORTS
 }
 
 model User {
@@ -137,6 +142,8 @@ model User {
   adminInvitationsSent            AdminInvitation[]           @relation("AdminInvitationInvitedBy")
   adminInvitationAccepted         AdminInvitation?            @relation("AdminInvitationAcceptedUser")
   adminPermissions                AdminPermissionAssignment[] @relation("AdminPermissionUser")
+  safetyConcernReportsFiled       SafetyConcernReport[]       @relation("SafetyConcernReporter")
+  safetyConcernReportsResolved    SafetyConcernReport[]       @relation("SafetyConcernResolvedBy")
   adminPermissionsGranted         AdminPermissionAssignment[] @relation("AdminPermissionGrantedBy")
   lifecycleReminders              LifecycleReminder[]
 
@@ -2295,6 +2302,51 @@ model TutorApplicationNotification {
   @@index([tutorProfileId, createdAt])
 }
 
+// SAFETY-REPORTS1 — the official channel for reporting a safety concern
+// (Tutor Agreement §49, tutor training module 2). Open to every signed-in
+// role. The description is free text written by the reporter: it is shown
+// only to admins holding ADMIN_SAFETY_REPORTS and is never copied into
+// emails, notifications or audit metadata.
+enum SafetyConcernCategory {
+  CHILD_SAFETY
+  INAPPROPRIATE_BEHAVIOUR
+  HARASSMENT_OR_THREAT
+  OFF_PLATFORM_CONTACT
+  PRIVACY_OR_SECURITY
+  OTHER
+}
+
+enum SafetyConcernStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+}
+
+model SafetyConcernReport {
+  id               String                @id @default(cuid())
+  reporterUserId   String
+  // The reporter's role when the report was filed (Role value), frozen.
+  reporterRole     String
+  category         SafetyConcernCategory
+  immediateDanger  Boolean               @default(false)
+  // Optional: who or which session the concern is about, in the reporter's words.
+  concerning       String?
+  description      String                @db.Text
+  status           SafetyConcernStatus   @default(OPEN)
+  // Internal note written by the admin who handles the report.
+  resolutionNote   String?               @db.Text
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  reporter       User  @relation("SafetyConcernReporter", fields: [reporterUserId], references: [id])
+  resolvedByUser User? @relation("SafetyConcernResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reporterUserId])
+}
+
 // TUTOR-PIPELINE1 — alerts sent to the admin team (in-app rows go through
 // Notification; this is the email outbox). Same design as
 // TutorApplicationNotification: content-derived dedupeKey, post-commit
@@ -2306,6 +2358,7 @@ enum AdminAlertEvent {
   TUTOR_TRAINING_COMPLETED
   TUTOR_EXAM_PASSED
   TUTOR_PIPELINE_DIGEST
+  SAFETY_CONCERN_REPORTED
 }
 
 enum AdminAlertStatus {

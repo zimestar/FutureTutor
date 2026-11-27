@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import type { AdminAlertEvent } from "@/generated/prisma/enums";
+import type { AdminAlertEvent, AdminPermission } from "@/generated/prisma/enums";
 import { notifyUser } from "@/lib/notify";
 import { resolveBookingEmailBaseUrl } from "@/lib/email/resolveBookingEmailBaseUrl";
 import type { SendTutorApplicationEmail } from "@/lib/email/resendSendTutorApplicationEmail";
@@ -23,9 +23,10 @@ import type { SendTutorApplicationEmail } from "@/lib/email/resendSendTutorAppli
  *     daily digest cron; it never rolls back or blocks the candidate's
  *     action.
  *
- * Recipients: every active SUPER_ADMIN, plus every active ADMIN holding
- * ADMIN_TUTORS_REVIEW (the permission that lets them act on the alert),
- * plus the optional shared team mailbox ADMIN_ALERTS_TEAM_EMAIL.
+ * Recipients: every active SUPER_ADMIN, plus every active ADMIN holding the
+ * permission needed to act on the alert (ADMIN_TUTORS_REVIEW for tutor
+ * applications, ADMIN_SAFETY_REPORTS for safety concerns), plus the
+ * optional shared team mailbox ADMIN_ALERTS_TEAM_EMAIL.
  */
 
 const MAX_SEND_ATTEMPTS = 5;
@@ -46,14 +47,14 @@ export function getAdminAlertTeamLocale(env: Record<string, string | undefined> 
   return env.ADMIN_ALERTS_TEAM_LOCALE === "en" ? "en" : "fr";
 }
 
-export async function resolveTutorReviewAlertRecipients(tx: Prisma.TransactionClient): Promise<AdminAlertRecipient[]> {
+export async function resolveAlertRecipients(
+  tx: Prisma.TransactionClient,
+  permission: AdminPermission
+): Promise<AdminAlertRecipient[]> {
   const admins = await tx.user.findMany({
     where: {
       deactivatedAt: null,
-      OR: [
-        { role: "SUPER_ADMIN" },
-        { role: "ADMIN", adminPermissions: { some: { permission: "ADMIN_TUTORS_REVIEW" } } },
-      ],
+      OR: [{ role: "SUPER_ADMIN" }, { role: "ADMIN", adminPermissions: { some: { permission } } }],
     },
     select: { id: true },
     orderBy: { createdAt: "asc" },
@@ -63,11 +64,19 @@ export async function resolveTutorReviewAlertRecipients(tx: Prisma.TransactionCl
   return recipients;
 }
 
+export function resolveTutorReviewAlertRecipients(tx: Prisma.TransactionClient): Promise<AdminAlertRecipient[]> {
+  return resolveAlertRecipients(tx, "ADMIN_TUTORS_REVIEW");
+}
+
 export interface EmitAdminAlertParams {
   event: AdminAlertEvent;
   /** Identifies the real occurrence; identical across retries of it. */
   dedupeKey: string;
   tutorProfileId: string | null;
+  /** Who may act on it. Defaults to ADMIN_TUTORS_REVIEW (tutor applications). */
+  recipientPermission?: AdminPermission;
+  /** Admin page the alert links to, when it isn't a tutor application. */
+  adminPath?: string;
   /** Frozen display data for the email (names, document type, digest items). */
   detail: Prisma.InputJsonObject;
   inAppTitle: string;
@@ -75,8 +84,12 @@ export interface EmitAdminAlertParams {
 }
 
 export async function emitAdminAlert(tx: Prisma.TransactionClient, params: EmitAdminAlertParams): Promise<void> {
-  const recipients = await resolveTutorReviewAlertRecipients(tx);
+  const recipients = await resolveAlertRecipients(tx, params.recipientPermission ?? "ADMIN_TUTORS_REVIEW");
   if (recipients.length === 0) return;
+  const metadata = {
+    ...(params.tutorProfileId ? { tutorProfileId: params.tutorProfileId } : {}),
+    ...(params.adminPath ? { adminPath: params.adminPath } : {}),
+  };
 
   for (const recipient of recipients) {
     if (!recipient.userId) continue;
@@ -85,7 +98,7 @@ export async function emitAdminAlert(tx: Prisma.TransactionClient, params: EmitA
       type: `admin_alert.${params.event.toLowerCase()}`,
       title: params.inAppTitle,
       body: params.inAppBody,
-      metadata: params.tutorProfileId ? { tutorProfileId: params.tutorProfileId } : {},
+      metadata,
       dedupeKey: `admin_alert:${params.dedupeKey}:${recipient.recipientKey}`,
     });
   }
@@ -97,7 +110,7 @@ export async function emitAdminAlert(tx: Prisma.TransactionClient, params: EmitA
       recipientKey: recipient.recipientKey,
       recipientUserId: recipient.userId,
       tutorProfileId: params.tutorProfileId,
-      contextSnapshot: params.detail,
+      contextSnapshot: params.adminPath ? { ...params.detail, adminPath: params.adminPath } : params.detail,
     })),
     skipDuplicates: true,
   });

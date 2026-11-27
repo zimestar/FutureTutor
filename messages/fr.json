@@ -1,4 +1,40 @@
 {
+  "safetyReport": {
+    "linkLabel": "Signaler une préoccupation",
+    "title": "Signaler une préoccupation de sécurité",
+    "intro": "Parlez-nous de tout ce qui vous inquiète : un propos, un comportement, un risque pour un élève ou pour toute personne sur FutureTutor. Notre équipe est alertée immédiatement.",
+    "emergencyTitle": "Quelqu'un est en danger immédiat ?",
+    "emergencyBody": "Appelez d'abord le 911 (ou le numéro d'urgence local). Ensuite, prévenez-nous ici.",
+    "categoryLabel": "De quoi s'agit-il ?",
+    "categoryPlaceholder": "Choisissez une catégorie",
+    "categories": {
+      "CHILD_SAFETY": "Sécurité d'un enfant ou d'un adolescent",
+      "INAPPROPRIATE_BEHAVIOUR": "Comportement inapproprié",
+      "HARASSMENT_OR_THREAT": "Harcèlement ou menaces",
+      "OFF_PLATFORM_CONTACT": "Pression pour communiquer ou payer en dehors de FutureTutor",
+      "PRIVACY_OR_SECURITY": "Vie privée ou sécurité d'un compte",
+      "OTHER": "Autre préoccupation"
+    },
+    "immediateDangerLabel": "Quelqu'un est peut-être en danger immédiat",
+    "immediateDangerHelp": "Cochez cette case pour que notre équipe traite votre signalement en urgence.",
+    "concerningLabel": "Qui ou quelle séance est concerné ? (facultatif)",
+    "concerningPlaceholder": "ex. un nom, une date, une séance réservée",
+    "descriptionLabel": "Que s'est-il passé ?",
+    "descriptionPlaceholder": "Décrivez les faits le plus précisément possible : ce qui a été dit ou fait, quand, et par qui.",
+    "descriptionHelp": "Au moins 20 caractères. Tenez-vous-en aux faits ; ne menez pas d'enquête vous-même.",
+    "submit": "Envoyer mon signalement",
+    "sending": "Envoi…",
+    "sentTitle": "Signalement reçu — merci",
+    "sentBody": "Notre équipe a été alertée et assurera le suivi. Si quelqu'un est en danger immédiat, appelez le 911.",
+    "reference": "Référence :",
+    "privacyNote": "Votre signalement n'est vu que par les membres de l'équipe FutureTutor responsables de la sécurité. Signaler à FutureTutor ne remplace pas l'obligation de signalement que la loi de votre province peut vous imposer.",
+    "errors": {
+      "signedOut": "Veuillez vous reconnecter pour envoyer votre signalement.",
+      "tooManyReports": "Vous avez envoyé plusieurs signalements en peu de temps. Réessayez plus tard, ou appelez le 911 en cas d'urgence.",
+      "invalidInput": "Choisissez une catégorie et décrivez ce qui s'est passé (au moins 20 caractères).",
+      "accountInactive": "Votre compte ne peut pas envoyer de signalement pour le moment. En cas d'urgence, appelez le 911."
+    }
+  },
   "site": {
     "tagline": "Trouvez le bon tuteur. Apprenez en toute confiance.",
     "description": "FutureTutor met en relation les élèves et les parents avec des tuteurs qualifiés pour un accompagnement personnalisé, en ligne ou en personne, partout au Canada."
@@ -1310,6 +1346,7 @@
     },
     "nav": {
       "overview": "Aperçu",
+      "safetyReports": "Signalements de sécurité",
       "applicationOverview": "Aperçu de la candidature",
       "profile": "Profil",
       "favorites": "Favoris",
@@ -1780,6 +1817,34 @@
     "revoke": "Révoquer"
   },
   "admin": {
+    "safetyReports": {
+      "title": "Signalements de sécurité",
+      "description": "Préoccupations de sécurité signalées par les tuteurs, élèves et parents. Les signalements urgents apparaissent en premier.",
+      "filters": {
+        "OPEN": "Ouverts",
+        "UNDER_REVIEW": "En cours",
+        "RESOLVED": "Résolus",
+        "ALL": "Tous"
+      },
+      "statuses": {
+        "OPEN": "Ouvert",
+        "UNDER_REVIEW": "En cours",
+        "RESOLVED": "Résolu"
+      },
+      "urgent": "Danger immédiat",
+      "empty": "Aucun signalement ici.",
+      "back": "Retour aux signalements",
+      "reporter": "Signalé par",
+      "receivedAt": "Reçu le",
+      "concerning": "Concerne",
+      "descriptionLabel": "Signalement",
+      "resolvedBy": "Résolu par",
+      "handling": "Traitement",
+      "statusLabel": "Statut",
+      "noteLabel": "Note interne",
+      "noteHelp": "Visible par l'équipe de sécurité seulement. Indiquez ce qui a été fait et qui a été contacté.",
+      "save": "Enregistrer"
+    },
     "tutorPipeline": {
       "title": "Tableau des candidatures",
       "description": "Toutes les candidatures de tuteurs en cours, par étape. Ce qui attend l'équipe apparaît en premier.",
@@ -3625,6 +3690,11 @@
     }
   },
   "adminAlertEmail": {
+    "categoryLabel": "Catégorie",
+    "immediateDangerLabel": "Danger immédiat signalé",
+    "yes": "Oui",
+    "no": "Non",
+    "footerSafety": "Vous recevez ce courriel parce que vous traitez les signalements de sécurité sur FutureTutor.",
     "candidateLabel": "Candidat",
     "stageLabel": "Étape actuelle",
     "unnamedCandidate": "Candidat sans nom",
@@ -3671,6 +3741,14 @@
         "heading": "Examen réussi",
         "intro": "{tutorName} a réussi l'examen de la plateforme. La candidature est prête pour la révision finale.",
         "cta": "Ouvrir la candidature"
+      },
+      "SAFETY_CONCERN_REPORTED": {
+        "subject": "Préoccupation de sécurité signalée",
+        "subjectUrgent": "URGENT — danger immédiat signalé",
+        "heading": "Une préoccupation de sécurité demande votre attention",
+        "intro": "Un utilisateur a signalé une préoccupation de sécurité. Merci de l'examiner rapidement.",
+        "introUrgent": "Un utilisateur signale qu'une personne est peut-être en danger immédiat. Merci de l'examiner maintenant.",
+        "cta": "Ouvrir le signalement"
       },
       "TUTOR_PIPELINE_DIGEST": {
         "subject": "Candidatures de tuteurs en attente de l'équipe",

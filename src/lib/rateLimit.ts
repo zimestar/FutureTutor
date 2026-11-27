@@ -105,6 +105,10 @@ export const RATE_LIMITS = {
   // account identifier to key an identifier-scoped bucket on; this guards
   // against automated scanning across many guessed tokens.
   verifyEmailByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
+  // SAFETY-REPORTS1 — generous enough never to block a genuine reporter,
+  // tight enough that the safety queue cannot be flooded.
+  safetyConcernByUser: { windowMs: 60 * 60_000, max: 5 } satisfies RateLimitConfig,
+  safetyConcernByIp: { windowMs: 60 * 60_000, max: 20 } satisfies RateLimitConfig,
 } as const;
 
 /** Checks both an identifier-scoped bucket (the primary, non-spoofable gate)

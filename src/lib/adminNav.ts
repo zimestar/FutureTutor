@@ -26,6 +26,8 @@ const items: ReadonlyArray<{ key: string; href: string; group: "operationsGroup"
   // existing domain-scoped permission is a safe fit. Not auto-granted to
   // any existing ADMIN, only SUPER_ADMIN.
   { key: "auditLog", href: "/admin/audit-log", group: "operationsGroup", permission: "ADMIN_AUDIT_LOG_READ" },
+  // SAFETY-REPORTS1 — own permission, see the AdminPermission enum comment.
+  { key: "safetyReports", href: "/admin/safety-reports", group: "operationsGroup", permission: "ADMIN_SAFETY_REPORTS" },
   { key: "pricing", href: "/admin/pricing", group: "financeGroup", permission: "ADMIN_PRICING_READ" },
   { key: "payments", href: "/admin/payments", group: "financeGroup", permission: "ADMIN_PAYMENTS_READ" },
   // ADMIN-FINANCIAL-OPS1A — reuses ADMIN_PAYMENTS_READ rather than adding a
