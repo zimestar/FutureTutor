@@ -32,7 +32,8 @@ export default async function OnlineClassroomPage({ params }: { params: Promise<
         description={t("hero.description")}
         primary={{ label: t("hero.primary"), href: "/find-tutors" }}
         secondary={{ label: t("hero.secondary"), href: "/how-it-works" }}
-        image="/images/online-classroom-call.webp"
+        image="/images/online-classroom-session.webp"
+        imagePosition="62% center"
         imageAlt={t("hero.imageAlt")}
       />
       <InfoFeatures eyebrow={t("features.eyebrow")} title={t("features.title")} items={t.raw("features.items") as InfoItem[]} icons={[Globe, MicVocal, MonitorUp, Timer, Maximize, CalendarClock]} tone="white" />

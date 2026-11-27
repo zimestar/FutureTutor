@@ -124,7 +124,7 @@ export function MegaMenu() {
             onClick={() => setOpen(false)}
             className="relative my-6 block w-80 shrink-0 overflow-hidden rounded-3xl text-white"
           >
-            <Image src="/images/online-classroom-call.webp" alt={t("card.imageAlt")} fill sizes="320px" className="object-cover" />
+            <Image src="/images/online-classroom-session.webp" alt={t("card.imageAlt")} fill sizes="320px" className="object-cover object-[70%_50%]" />
             <span className="absolute inset-0 bg-gradient-to-t from-navy/95 via-navy/30 to-transparent" />
             <span className="absolute inset-x-6 bottom-6">
               <span className="block text-xs font-bold uppercase tracking-[0.1em] text-emerald-300">{t("card.eyebrow")}</span>

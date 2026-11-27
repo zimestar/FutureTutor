@@ -70,7 +70,7 @@ describe("public experience regression boundary", () => {
     const files = [
       "home-tutoring-session-v2.webp",
       "parent-homework-help-v2.webp",
-      "online-classroom-call.webp",
+      "online-classroom-session.webp",
       "tutor-desk-session.webp",
       "tutor-teaching-online.webp",
       "student-learning-home.webp",
