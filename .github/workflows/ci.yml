@@ -1,0 +1,76 @@
+name: CI
+
+# RW-10 — verification only: no secrets, no deployment, no external services.
+on:
+  push:
+    branches: [frontend-ui, production-release, Dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  checks:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      # Nothing here may reach a database: port 1 is never listening.
+      DATABASE_URL: postgresql://none:none@127.0.0.1:1/none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma validate
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm run test:unit
+      - run: npm run build
+
+  integration:
+    name: Integration tests (PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: futuretutor
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_DB: futuretutor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U futuretutor -d futuretutor_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # resolveVerifiedTestDatabase() requires the two names to differ; only
+      # futuretutor_test exists, so a stray write to DATABASE_URL fails.
+      DATABASE_URL: postgresql://futuretutor:ci_only@localhost:5432/futuretutor
+      DATABASE_URL_TEST: postgresql://futuretutor:ci_only@localhost:5432/futuretutor_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Apply every migration to an empty database
+        run: DATABASE_URL="$DATABASE_URL_TEST" npx prisma migrate deploy
+      - run: npm run test:integration

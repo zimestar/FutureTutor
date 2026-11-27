@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import "@/test-support/useVerifiedTestDatabase"; // must precede @/lib/db
 import { db } from "@/lib/db";
 import { acceptAdminInvitation, createAdminInvitation, previewAdminInvitation, resendAdminInvitation } from "./adminInvitation";
 import { replaceAdminPermissions, requireAdminPermission, requireActiveAdmin, requireSuperAdmin } from "./adminPermissions";

@@ -75,9 +75,21 @@ beforeAll(async () => {
   subjectId = subject.id;
   const level = await db.academicLevel.create({ data: { slug: `snd-it-level-${randomUUID()}`, sortOrder: 999 } });
   academicLevelId = level.id;
+
+  // RW-10: own pricing. A freshly migrated database has neither settings nor rules.
+  const existingSettings = await db.marketplacePricingSettings.findFirst();
+  if (!existingSettings) await db.marketplacePricingSettings.create({ data: {} });
+  await db.customerBasePriceRule.create({
+    data: { subjectId, academicLevelId: null, baseDurationMinutes: 60, basePriceCents: 8000, pricingVersion: "CUSTOMER_PRICING_V1" },
+  });
+  await db.tutorBasePayoutRule.create({
+    data: { tutorTier: "NEW", subjectId, academicLevelId: null, baseDurationMinutes: 60, payoutCents: 5000, payoutVersion: "TUTOR_PAYOUT_V1" },
+  });
 });
 
 afterAll(async () => {
+  await db.tutorBasePayoutRule.deleteMany({ where: { subjectId } });
+  await db.customerBasePriceRule.deleteMany({ where: { subjectId } });
   await db.academicLevel.delete({ where: { id: academicLevelId } });
   await db.subject.delete({ where: { id: subjectId } });
   await db?.$disconnect();
