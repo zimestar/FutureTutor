@@ -89,8 +89,8 @@ export async function TutorDirectory({ locale, searchParams, authenticated = fal
           <h1 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">{t("heading")}</h1>
           <p className="mt-4 text-lg text-white/70">{t("subheading")}</p>
         </div>
-        <div className="mx-auto mt-8 max-w-3xl">
-          <TutorSearch resultsPath={authenticated ? "/dashboard/find-tutors" : "/find-tutors"} />
+        <div className="mx-auto mt-8 max-w-6xl">
+          <TutorSearch presentation="hero" resultsPath={authenticated ? "/dashboard/find-tutors" : "/find-tutors"} />
         </div>
       </Section>
       <Section className="bg-off-white">

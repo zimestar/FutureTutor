@@ -100,7 +100,7 @@ export function TutorSearch({
       onSubmit={handleSubmit}
       className={`${isHero ? "rounded-[28px] border border-neutral-200/70 bg-white p-5 shadow-(--shadow-pop) md:p-6" : "rounded-xl border border-neutral-200 bg-white p-3 shadow-pop md:p-4"} ${className ?? ""}`}
     >
-      <div className={`grid grid-cols-1 gap-3 ${isHero ? "md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end" : "md:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
+      <div className={`grid grid-cols-1 gap-3 ${isHero ? "md:grid-cols-2 lg:grid-cols-[1.35fr_1.15fr_1fr_auto] lg:items-end" : "md:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
         <div ref={subjectRoot} className="relative">
           <label htmlFor="search-subject" className={isHero ? "mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-navy/70" : "sr-only"}>
             {t("subjectLabel")}
