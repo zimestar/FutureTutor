@@ -1,5 +1,6 @@
 "use client";
 
+import { Info } from "lucide-react";
 import { useActionState, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { confirmTutoringRequestAction, cancelTutoringRequestAction, preparePaymentForRequestAction, type PreparePaymentState } from "@/lib/actions/tutoringRequests";
@@ -62,6 +63,7 @@ export function QuickMatchPriceReview({
     });
   };
 
+  const isBetaGate = prepareResult?.success === false && prepareResult.reason === "beta_gate";
   return (
     <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-6" data-testid="quick-match-price-review">
       <h2 className="text-lg font-bold text-navy">{t("review.title")}</h2>
@@ -102,13 +104,19 @@ export function QuickMatchPriceReview({
       )}
       {needsPaymentSetup ? (
         <div className="mt-5" aria-live="polite">
-          {(preparationView.state === "failed-retryable" || preparationView.state === "failed-terminal") && (
+          {/* DESIGN-SYSTEM2 — the Closed Beta gate is information, not an error. */}
+          {preparationView.state === "failed-terminal" && isBetaGate && (
+            <div className="mb-3 flex items-start gap-3 rounded-xl border border-blue/20 bg-blue/5 p-4" data-testid="beta-gate-notice">
+              <Info className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
+              <p className="text-sm leading-6 text-navy">{preparationView.error}</p>
+            </div>
+          )}
+          {(preparationView.state === "failed-retryable" || (preparationView.state === "failed-terminal" && !isBetaGate)) && (
             <div className="mb-3 rounded-md bg-error-light p-3">
               <p role="alert" className="text-sm font-semibold text-error">{preparationView.error}</p>
-              {preparationView.state === "failed-terminal" &&
-                !(prepareResult?.success === false && prepareResult.reason === "beta_gate") && (
-                  <p className="mt-2 text-sm text-text-secondary">{t("review.restartPaymentFlow")}</p>
-                )}
+              {preparationView.state === "failed-terminal" && (
+                <p className="mt-2 text-sm text-text-secondary">{t("review.restartPaymentFlow")}</p>
+              )}
             </div>
           )}
           {preparationView.state !== "failed-terminal" && (

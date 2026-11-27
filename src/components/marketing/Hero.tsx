@@ -16,7 +16,7 @@ export function Hero() {
   const trust = useTranslations("trustStrip");
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-white via-white to-blue-50">
+    <section className="relative overflow-x-clip bg-gradient-to-b from-white via-white to-blue-50">
       <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 size-[640px] rounded-full bg-blue/[0.06] blur-3xl" />
       <div aria-hidden="true" className="pointer-events-none absolute -left-32 bottom-0 size-[420px] rounded-full bg-mint/[0.07] blur-3xl" />
 

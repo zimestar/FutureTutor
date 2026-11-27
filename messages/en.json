@@ -2621,6 +2621,9 @@
     }
   },
   "booking": {
+    "summaryTitle": "Your session",
+    "durationMinutes": "{count} min",
+    "securePayment": "Secure payment by Stripe. FutureTutor never stores your card details.",
     "widgetTitle": "Book a session",
     "noAvailability": "This tutor hasn't set their availability yet.",
     "selectDay": "Choose a day",

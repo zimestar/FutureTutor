@@ -62,13 +62,34 @@ function InnerForm({
         type="submit"
         data-testid="stripe-payment-submit"
         disabled={!stripe || submitting}
-        className="h-12 w-full rounded-md bg-blue text-[15px] font-bold text-white transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="h-12 w-full rounded-xl bg-blue text-[15px] font-bold text-white shadow-sm transition-colors hover:bg-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? pendingLabel : submitLabel}
       </button>
     </form>
   );
 }
+
+/** DESIGN-SYSTEM2 — Payment Element styled with the FutureTutor tokens
+ * (globals.css) so the card form reads as part of the product. */
+const STRIPE_APPEARANCE = {
+  theme: "stripe" as const,
+  variables: {
+    colorPrimary: "#2563eb",
+    colorText: "#0d1b2a",
+    colorTextSecondary: "#475569",
+    colorDanger: "#ef4444",
+    colorBackground: "#ffffff",
+    fontFamily: "Inter, system-ui, sans-serif",
+    borderRadius: "12px",
+    spacingUnit: "4px",
+  },
+  rules: {
+    ".Input": { borderColor: "#e2e8f0", boxShadow: "none", padding: "12px 14px" },
+    ".Input:focus": { borderColor: "#2563eb", boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)" },
+    ".Label": { fontWeight: "600", color: "#0d1b2a" },
+  },
+};
 
 export function StripePaymentForm({
   clientSecret,
@@ -86,7 +107,7 @@ export function StripePaymentForm({
   errorMessage: string;
 }) {
   return (
-    <Elements stripe={getStripePromise(publishableKey)} options={{ clientSecret }}>
+    <Elements stripe={getStripePromise(publishableKey)} options={{ clientSecret, appearance: STRIPE_APPEARANCE }}>
       <InnerForm onAuthorized={onAuthorized} submitLabel={submitLabel} pendingLabel={pendingLabel} errorMessage={errorMessage} />
     </Elements>
   );

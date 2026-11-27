@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { CalendarClock, Info, LockKeyhole } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Select } from "@/components/ui/Input";
 import { createBookingAction } from "@/lib/actions/bookings";
@@ -147,11 +148,11 @@ export function BookingWidget({
   }, []);
 
   const dayFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }),
+    () => new Intl.DateTimeFormat(`${locale === "fr" ? "fr" : "en"}-CA`, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }),
     [locale]
   );
   const timeFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit", timeZone: timezone }),
+    () => new Intl.DateTimeFormat(`${locale === "fr" ? "fr" : "en"}-CA`, { hour: "numeric", minute: "2-digit", timeZone: timezone }),
     [locale, timezone]
   );
   const currencyFormatter = useMemo(
@@ -161,6 +162,10 @@ export function BookingWidget({
   const formatCents = (cents: number) => currencyFormatter.format(cents / 100);
 
   const selectedDay = days.find((day) => day.date === selectedDate);
+  const selectedSlotData = selectedDay?.slots.find((slot) => slot.startAt === selectedSlot) ?? null;
+  const selectedSlotMinutes = selectedSlotData
+    ? Math.round((new Date(selectedSlotData.endAt).getTime() - new Date(selectedSlotData.startAt).getTime()) / 60000)
+    : null;
 
   // Fetch a fresh, authoritative price quote whenever the selection changes
   // — the UI never computes a price itself, it only displays what the
@@ -382,6 +387,20 @@ export function BookingWidget({
 
       {selectedSlot && (
         <div className="rounded-xl border border-border bg-canvas p-4" data-testid="price-summary">
+          {selectedSlotData && (
+            <div className="mb-3 flex items-start gap-3 border-b border-border pb-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue/10 text-blue">
+                <CalendarClock className="size-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 text-sm">
+                <p className="font-bold text-navy">{t("summaryTitle")}</p>
+                <p className="text-text-secondary">
+                  {dayFormatter.format(new Date(`${selectedDate}T12:00:00Z`))} · {timeFormatter.format(new Date(selectedSlotData.startAt))}
+                  {selectedSlotMinutes ? ` · ${t("durationMinutes", { count: selectedSlotMinutes })}` : ""}
+                </p>
+              </div>
+            </div>
+          )}
           {!academicLevelId && (
             <p className="text-sm text-slate" data-testid="level-required-hint">
               {t("selectLevelToSeePricing")}
@@ -423,7 +442,14 @@ export function BookingWidget({
       {useStripe && quote?.success && !authorizedPiId && (
         <div aria-live="polite">
           {paymentView.state === "preparing" && <p className="text-sm text-slate">{t("preparingPayment")}</p>}
-          {(paymentView.state === "failed-retryable" || paymentView.state === "failed-terminal") && (
+          {paymentView.state === "failed-terminal" && payment?.success === false && payment.reason === "beta_gate" && (
+            <div className="flex items-start gap-3 rounded-xl border border-blue/20 bg-blue/5 p-4" data-testid="beta-gate-notice">
+              <Info className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
+              <p className="text-sm leading-6 text-navy">{paymentView.error}</p>
+            </div>
+          )}
+          {(paymentView.state === "failed-retryable" ||
+            (paymentView.state === "failed-terminal" && !(payment?.success === false && payment.reason === "beta_gate"))) && (
             <div className="rounded-md bg-error-light p-3">
               <p role="alert" className="text-sm font-semibold text-error">{paymentView.error}</p>
               {paymentView.state === "failed-retryable" ? (
@@ -452,6 +478,12 @@ export function BookingWidget({
               pendingLabel={t("confirming")}
               errorMessage={t("paymentErrorFallback")}
             />
+          )}
+          {!preparingPayment && payment?.success && payment.clientSecret && stripePublishableKey && (
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-text-secondary">
+              <LockKeyhole className="size-3.5" aria-hidden="true" />
+              {t("securePayment")}
+            </p>
           )}
         </div>
       )}

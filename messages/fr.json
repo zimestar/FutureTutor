@@ -2621,6 +2621,9 @@
     }
   },
   "booking": {
+    "summaryTitle": "Votre séance",
+    "durationMinutes": "{count} min",
+    "securePayment": "Paiement sécurisé par Stripe. FutureTutor ne conserve jamais vos données de carte.",
     "widgetTitle": "Réserver une séance",
     "noAvailability": "Ce tuteur n'a pas encore défini ses disponibilités.",
     "selectDay": "Choisissez un jour",
