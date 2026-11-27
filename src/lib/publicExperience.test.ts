@@ -73,7 +73,7 @@ describe("public experience regression boundary", () => {
       "online-classroom-session.webp",
       "tutor-desk-session.webp",
       "tutor-online-board.webp",
-      "student-learning-home.webp",
+      "student-desk-confident.webp",
       "student-whiteboard-math.webp",
       "online-tutoring.png",
       "learning-breakthrough.png",
