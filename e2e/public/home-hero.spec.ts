@@ -12,7 +12,7 @@ for (const locale of ["en", "fr"] as const) {
     const emphasis = page.getByRole("heading", { level: 1 }).locator("span").first();
     await expect(emphasis).toHaveText(locale === "en" ? "The right person" : "La bonne personne");
     await expect(emphasis).toHaveClass(/text-blue/);
-    await expect(page.locator('img[src*="parents-students-hero"]')).toBeVisible();
+    await expect(page.locator('img[src*="home-tutoring-session"]')).toBeVisible();
     await expect(page.locator('label[for="search-subject"]')).toBeVisible();
     await expect(page.locator('label[for="search-level"]')).toBeVisible();
     await expect(page.locator('label[for="search-mode"]')).toBeVisible();
@@ -35,7 +35,7 @@ for (const locale of ["en", "fr"] as const) {
     }
 
     if (viewportWidth >= 1280) {
-      const imageWidth = await page.locator('img[src*="parents-students-hero"]').evaluate((image) => image.getBoundingClientRect().width);
+      const imageWidth = await page.locator('img[src*="home-tutoring-session"]').evaluate((image) => image.getBoundingClientRect().width);
       expect(imageWidth).toBeGreaterThan(viewportWidth * 0.5);
 
       // DESIGN-SYSTEM3 — centered hero: the copy and search sit above the

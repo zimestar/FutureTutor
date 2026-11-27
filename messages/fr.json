@@ -71,7 +71,7 @@
     "primaryCta": "Parcourir tous les tuteurs",
     "secondaryCta": "Voir comment ça marche",
     "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",
-    "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur",
+    "imageAlt": "Une tutrice aide un jeune élève à faire ses exercices, installés dans un salon",
     "floatingApproved": "Tuteurs vérifiés et approuvés",
     "floatingModes": "En ligne ou en personne"
   },
@@ -3696,7 +3696,7 @@
     "about": {
       "metaTitle": "Pourquoi FutureTutor existe",
       "metaDescription": "Découvrez la conviction derrière FutureTutor : la connaissance devient puissante lorsqu’elle est comprise et transmise d’une personne à une autre.",
-      "hero": { "eyebrow": "Notre conviction", "title": "La connaissance prend toute sa valeur lorsqu’elle atteint la personne qui en a besoin.", "description": "FutureTutor existe pour raccourcir la distance entre le besoin de comprendre et la rencontre avec une personne capable d’aider.", "primary": "Voir comment ça marche", "secondary": "Trouver un tuteur", "imageAlt": "Une apprenante et un tuteur concentrés ensemble pendant une séance en ligne" },
+      "hero": { "eyebrow": "Notre conviction", "title": "La connaissance prend toute sa valeur lorsqu’elle atteint la personne qui en a besoin.", "description": "FutureTutor existe pour raccourcir la distance entre le besoin de comprendre et la rencontre avec une personne capable d’aider.", "primary": "Voir comment ça marche", "secondary": "Trouver un tuteur", "imageAlt": "Une tutrice et une élève travaillent ensemble à un bureau lumineux" },
       "why": { "eyebrow": "Pourquoi nous existons", "title": "Le monde ne manque pas de connaissances. Il manque souvent de ponts.", "description": "Le potentiel ne devrait pas dépendre du lieu où l’on vit, du réseau familial ou du hasard de recevoir la bonne explication.", "statement": "Nous croyons que la connaissance devient véritablement puissante lorsqu’elle passe d’une personne à une autre et ouvre une possibilité qui n’existait pas auparavant." },
       "belief": { "eyebrow": "Ce qui nous guide", "title": "La transmission avant la transaction", "description": "La plateforme est le mécanisme. La relation humaine d’apprentissage est ce qui lui donne son sens.", "items": { "0": { "title": "L’humain avant la technologie", "description": "La technologie doit réduire les frictions et améliorer la pertinence sans devenir la vedette." }, "1": { "title": "Le potentiel avant les étiquettes", "description": "Une difficulté actuelle ne définit ni l’intelligence ni l’avenir d’un apprenant." }, "2": { "title": "Le progrès avant la perfection", "description": "Nous valorisons les déclics répétés qui transforment la compréhension en mouvement." } } },
       "future": { "title": "Construire le pont. Garder la relation humaine.", "description": "Les outils de FutureTutor pourront évoluer. La raison d’être demeure : rapprocher la bonne connaissance de la personne qui en a besoin, d’une manière qui l’aide réellement à avancer.", "cta": "Commencer à chercher du soutien" }
@@ -3881,7 +3881,7 @@
       "eyebrow": "Pour les parents",
       "title": "Gardez la main sur le parcours de votre enfant",
       "description": "Créez votre compte parent, ajoutez vos enfants et réservez pour eux. Vous payez, vous suivez, vous restez informé.",
-      "imageAlt": "Une élève qui comprend enfin une notion pendant que son tuteur lui explique",
+      "imageAlt": "Un père aide sa fille à faire ses devoirs à la table de la cuisine",
       "features": {
         "children": {
           "title": "Un compte, plusieurs enfants",
@@ -3982,6 +3982,7 @@
       "metaDescription": "Créez un compte parent, ajoutez vos enfants, réservez et payez leurs séances de tutorat, et suivez tout au même endroit.",
       "breadcrumb": "Parents",
       "hero": {
+        "imageAlt": "Un père aide sa fille à faire ses devoirs à la table de la cuisine",
         "eyebrow": "Espace parents",
         "title": "Le tutorat de vos enfants, simple et sous contrôle",
         "description": "Un seul compte pour trouver le bon tuteur, réserver pour chacun de vos enfants, payer en toute clarté et suivre les séances.",
@@ -4234,6 +4235,7 @@
       "metaDescription": "Des séances de tutorat en ligne dans le navigateur : vidéo, micro, partage d’écran et minuteur, sans rien installer.",
       "breadcrumb": "Classe virtuelle",
       "hero": {
+        "imageAlt": "Une élève suit une séance en ligne avec sa tutrice sur son ordinateur portable",
         "eyebrow": "Classe virtuelle",
         "title": "Une séance en ligne, sans rien installer",
         "description": "La classe virtuelle FutureTutor s’ouvre directement dans le navigateur, depuis vos réservations. Vidéo, micro et partage d’écran : l’essentiel pour apprendre, rien de plus.",

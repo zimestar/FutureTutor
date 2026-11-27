@@ -181,7 +181,7 @@ export function HomeParents() {
       <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
         <div className="relative order-last lg:order-first">
           <div className="relative aspect-[4/3] overflow-hidden rounded-[28px] shadow-(--shadow-pop)">
-            <Image src="/images/learning-breakthrough.png" alt={t("imageAlt")} fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
+            <Image src="/images/parent-homework-help.webp" alt={t("imageAlt")} fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
           </div>
         </div>
         <div>

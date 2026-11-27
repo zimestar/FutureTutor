@@ -68,11 +68,13 @@ describe("public experience regression boundary", () => {
 
   it("references every approved editorial image through the public presentation layer", () => {
     const files = [
-      "parents-students-hero.png",
+      "home-tutoring-session.webp",
+      "parent-homework-help.webp",
+      "online-classroom-call.webp",
+      "tutor-desk-session.webp",
       "tutor-hero.png",
       "online-tutoring.png",
       "learning-breakthrough.png",
-      "about-mission.png",
       ...Array.from({ length: 5 }, (_, index) => `auth-editorial-${index + 1}.png`),
     ];
     for (const file of files) expect(existsSync(`public/images/${file}`)).toBe(true);
@@ -80,6 +82,9 @@ describe("public experience regression boundary", () => {
     const presentation = [
       "src/components/marketing/Hero.tsx",
       "src/components/marketing/HomeStory.tsx",
+      "src/components/marketing/HomeSections.tsx",
+      "src/app/[locale]/parents/page.tsx",
+      "src/app/[locale]/online-classroom/page.tsx",
       "src/components/marketing/LearningModes.tsx",
       "src/components/marketing/AuthEditorialPortrait.tsx",
       "src/components/marketing/authEditorialPortraits.ts",
@@ -97,7 +102,7 @@ describe("public experience regression boundary", () => {
     expect(hero).toContain("bg-gradient-to-b from-white");
     expect(hero).not.toContain("font-serif");
     expect(hero).toContain('<TutorSearch presentation="hero"');
-    expect(hero).toContain("parents-students-hero.png");
+    expect(hero).toContain("home-tutoring-session.webp");
     expect(hero).not.toContain("bg-navy pb-16");
     expect(search).toContain('presentation?: "default" | "hero"');
     expect(search).toContain('router.push(`${resultsPath}?${params.toString()}`)');

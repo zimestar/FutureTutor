@@ -71,7 +71,7 @@
     "primaryCta": "Browse all tutors",
     "secondaryCta": "See How It Works",
     "searchIntro": "Find the right tutor for what comes next.",
-    "imageAlt": "A student smiling during an online tutoring video call with her tutor",
+    "imageAlt": "A tutor helps a young student with his exercises in a living room",
     "floatingApproved": "Verified, approved tutors",
     "floatingModes": "Online or in person"
   },
@@ -3696,7 +3696,7 @@
     "about": {
       "metaTitle": "Why FutureTutor Exists",
       "metaDescription": "Discover the belief behind FutureTutor: knowledge becomes powerful when it is understood and transmitted from one person to another.",
-      "hero": { "eyebrow": "Our belief", "title": "Knowledge matters when it can reach the person who needs it.", "description": "FutureTutor exists to shorten the distance between needing to understand and meeting someone capable of helping you understand.", "primary": "See how it works", "secondary": "Find a Tutor", "imageAlt": "A learner and tutor focused together during an online tutoring session" },
+      "hero": { "eyebrow": "Our belief", "title": "Knowledge matters when it can reach the person who needs it.", "description": "FutureTutor exists to shorten the distance between needing to understand and meeting someone capable of helping you understand.", "primary": "See how it works", "secondary": "Find a Tutor", "imageAlt": "A tutor and a student working together at a bright desk" },
       "why": { "eyebrow": "Why we exist", "title": "The world does not lack knowledge. It often lacks bridges.", "description": "Potential should not depend on where someone lives, who their family knows or whether the right explanation happens by chance.", "statement": "We believe knowledge becomes truly powerful when it passes from one person to another and opens a possibility that did not exist before." },
       "belief": { "eyebrow": "What guides us", "title": "Transmission before transaction", "description": "The marketplace is the mechanism. The human learning relationship is the reason it matters.", "items": { "0": { "title": "Human before technology", "description": "Technology should remove friction and improve relevance without becoming the hero." }, "1": { "title": "Potential before labels", "description": "A current difficulty does not define a learner’s intelligence or future." }, "2": { "title": "Progress before perfection", "description": "We value the repeated breakthroughs that turn understanding into movement." } } },
       "future": { "title": "Build the bridge. Keep the relationship human.", "description": "As FutureTutor grows, its tools may become more capable. The purpose remains constant: bring the right knowledge closer to the person who needs it, in a way that genuinely helps them move forward.", "cta": "Start finding support" }
@@ -3881,7 +3881,7 @@
       "eyebrow": "For parents",
       "title": "Stay in charge of your child’s learning",
       "description": "Create your parent account, add your children and book for them. You pay, you follow along, you stay informed.",
-      "imageAlt": "A student finally understanding a concept while her tutor explains",
+      "imageAlt": "A father helps his daughter with homework at the kitchen table",
       "features": {
         "children": {
           "title": "One account, several children",
@@ -3982,6 +3982,7 @@
       "metaDescription": "Create a parent account, add your children, book and pay for their tutoring sessions, and follow everything in one place.",
       "breadcrumb": "Parents",
       "hero": {
+        "imageAlt": "A father helps his daughter with homework at the kitchen table",
         "eyebrow": "Parent space",
         "title": "Your children’s tutoring, simple and in your hands",
         "description": "One account to find the right tutor, book for each of your children, pay with full clarity and follow their sessions.",
@@ -4234,6 +4235,7 @@
       "metaDescription": "Online tutoring sessions in the browser: video, microphone, screen sharing and a session timer, nothing to install.",
       "breadcrumb": "Virtual classroom",
       "hero": {
+        "imageAlt": "A student in an online session with her tutor on a laptop",
         "eyebrow": "Virtual classroom",
         "title": "An online session, nothing to install",
         "description": "The FutureTutor virtual classroom opens right in the browser, from your bookings. Video, microphone and screen sharing: what you need to learn, nothing more.",

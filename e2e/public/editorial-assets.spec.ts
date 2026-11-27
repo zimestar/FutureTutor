@@ -16,7 +16,7 @@ async function expectImageReady(page: import("@playwright/test").Page, pattern: 
 for (const locale of ["en", "fr"] as const) {
   test(`${locale} approved editorial assets render without broken images`, async ({ page }) => {
     await page.goto(`/${locale}`);
-    for (const asset of ["parents-students-hero", "learning-breakthrough", "online-tutoring"]) {
+    for (const asset of ["home-tutoring-session", "parent-homework-help"]) {
       await expectImageReady(page, asset);
     }
 
@@ -24,7 +24,7 @@ for (const locale of ["en", "fr"] as const) {
     await expectImageReady(page, "tutor-hero");
 
     await page.goto(`/${locale}/about`);
-    await expectImageReady(page, "about-mission");
+    await expectImageReady(page, "tutor-desk-session");
 
     await page.goto(`/${locale}/login`);
     const portrait = page.locator('img[src*="auth-editorial-"]');
