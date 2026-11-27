@@ -41,7 +41,7 @@ export default async function ResourceArticlePage({ params }: { params: Promise<
   const t = await getTranslations({ locale, namespace: `resourceArticles.items.${slug}` });
   const tArticles = await getTranslations({ locale, namespace: "resourceArticles.items" });
 
-  const formattedUpdatedAt = new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric" }).format(new Date(article.updatedAt));
+  const formattedUpdatedAt = new Intl.DateTimeFormat(locale, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(article.updatedAt));
   const publishedSlugs = new Set(listPublishedResourceArticles().map((a) => a.slug));
   const relatedArticles = (article.relatedSlugs ?? []).filter((relatedSlug) => publishedSlugs.has(relatedSlug));
 

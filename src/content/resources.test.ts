@@ -13,8 +13,8 @@ describe("resourceArticles registry", () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it("contains exactly the six certified Tier-1 topics (SEO-4B)", () => {
-    expect(resourceArticles).toHaveLength(6);
+  it("contains the six certified Tier-1 topics (SEO-4B) plus the four GUIDES-2 articles", () => {
+    expect(resourceArticles).toHaveLength(10);
   });
 
   it("getResourceArticle resolves a known slug and returns undefined for an unknown one", () => {

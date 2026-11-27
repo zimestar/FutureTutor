@@ -217,6 +217,7 @@
       "title": "Commencez par ce qui compte le plus pour vous"
     },
     "categories": {
+      "forTutors": "Pour les tuteurs",
       "choosingATutor": "Choisir un tuteur",
       "parentGuides": "Guides pour parents",
       "tutoringBasics": "Bases du tutorat"
@@ -228,6 +229,122 @@
   },
   "resourceArticles": {
     "items": {
+      "help-child-with-high-school-math": {
+        "metaTitle": "Aider son enfant en maths au secondaire",
+        "metaDescription": "Des gestes concrets pour aider un adolescent en mathématiques au secondaire : repérer la vraie difficulté, installer une routine et savoir quand demander de l’aide.",
+        "title": "Comment aider son enfant en maths au secondaire",
+        "intro": "Au secondaire, les mathématiques deviennent plus abstraites et chaque notion s’appuie sur la précédente. Un retard sur un chapitre peut vite se propager. La bonne nouvelle : il n’est pas nécessaire d’être fort en maths soi-même pour aider efficacement son enfant.",
+        "sections": {
+          "0": {
+            "heading": "Repérer où se situe vraiment la difficulté",
+            "body": "« Je suis nul en maths » cache presque toujours un point précis : les fractions mal maîtrisées, la manipulation des équations, la lecture d’un problème écrit ou simplement le stress des évaluations. Demandez à votre enfant de vous expliquer, à voix haute, un exercice qu’il a raté. L’endroit où l’explication s’arrête montre souvent la notion à reprendre. Les commentaires de l’enseignant sur les évaluations sont aussi une source précieuse."
+          },
+          "1": {
+            "heading": "Installer une routine courte et régulière",
+            "body": "Vingt à trente minutes plusieurs fois par semaine valent mieux qu’une longue séance la veille d’un examen. Un même moment, un endroit calme, le téléphone hors de portée : la régularité réduit l’anxiété et permet de consolider chaque notion avant de passer à la suivante. Encouragez votre enfant à refaire les exercices corrigés en classe sans regarder la solution, c’est l’un des meilleurs entraînements."
+          },
+          "2": {
+            "heading": "Valoriser l’effort plutôt que la note",
+            "body": "En mathématiques, se tromper fait partie de l’apprentissage. Félicitez la démarche, la persévérance et les questions posées, pas seulement le résultat. Évitez les phrases comme « moi non plus je n’étais pas bon en maths » : elles donnent l’impression que la réussite est une affaire de talent. Rappelez plutôt que chaque notion s’apprend avec de la pratique et de bonnes explications."
+          },
+          "3": {
+            "heading": "Savoir quand faire appel à un tuteur",
+            "body": "Si les difficultés persistent malgré une routine, si l’écart se creuse d’un chapitre à l’autre ou si les devoirs deviennent une source de conflit à la maison, un tuteur peut faire la différence. Une personne extérieure explique autrement, adapte le rythme et redonne confiance. Choisissez un tuteur qui enseigne le bon niveau, et observez après les premières séances si votre enfant comprend mieux et ose davantage poser des questions."
+          }
+        },
+        "cta": {
+          "title": "Trouvez un tuteur de mathématiques adapté à son niveau",
+          "description": "Filtrez par matière et par niveau, comparez les profils et voyez le prix avant de réserver.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "alberta-provincial-exams": {
+        "metaTitle": "Préparer les examens provinciaux en Alberta",
+        "metaDescription": "Comment préparer les examens provinciaux de l’Alberta, dont les examens de diplôme de 12e année : planification, examens antérieurs, gestion du stress et rôle d’un tuteur.",
+        "title": "Préparer les examens provinciaux en Alberta",
+        "intro": "En Alberta, certaines évaluations sont conçues et administrées à l’échelle de la province, notamment les examens de diplôme (Diploma Exams) en 12e année, qui comptent dans la note finale de plusieurs cours. Bien les préparer demande de la méthode plus que du bourrage de dernière minute.",
+        "sections": {
+          "0": {
+            "heading": "Comprendre ce qui est évalué",
+            "body": "Les examens de diplôme portent sur des cours de 12e année précis, comme les mathématiques, l’anglais ou les sciences, et suivent les programmes d’études provinciaux. Leur pondération dans la note finale et le calendrier des séances sont publiés par Alberta Education et peuvent évoluer : vérifiez chaque année les informations officielles et parlez-en avec l’enseignant de votre enfant. Savoir exactement ce qui compte permet de concentrer les efforts."
+          },
+          "1": {
+            "heading": "Planifier la révision sur plusieurs semaines",
+            "body": "Commencez à réviser plusieurs semaines avant l’examen. Découpez le programme en blocs, prévoyez des révisions courtes et fréquentes, puis gardez les derniers jours pour des examens d’entraînement complets. Revenir régulièrement sur les notions déjà vues aide à les retenir à long terme, bien mieux qu’une seule révision intensive la veille."
+          },
+          "2": {
+            "heading": "S’entraîner dans les conditions réelles",
+            "body": "Alberta Education met à disposition du matériel de préparation, comme des exemples de questions et des examens antérieurs publiés. Faites-en au moins un en temps limité, sans notes, puis analysez les erreurs : s’agit-il d’une notion mal comprise, d’une erreur d’inattention ou d’un manque de temps? Ce diagnostic oriente la suite des révisions bien mieux qu’une relecture du cours."
+          },
+          "3": {
+            "heading": "Gérer le stress et savoir se faire aider",
+            "body": "Le sommeil, des pauses régulières et une routine stable comptent autant que les heures de révision. Si une matière bloque, un tuteur qui connaît le programme de l’Alberta peut cibler les notions les plus importantes, proposer des exercices du bon niveau et aider à gérer le temps pendant l’examen. Quelques séances bien placées avant la période d’examens suffisent souvent à redonner de l’assurance."
+          }
+        },
+        "cta": {
+          "title": "Préparez les examens avec un tuteur",
+          "description": "Trouvez un tuteur pour le cours et le niveau de votre enfant, en ligne ou en personne.",
+          "primary": "Trouver un tuteur"
+        }
+      },
+      "become-a-tutor-as-a-student": {
+        "metaTitle": "Devenir tuteur pendant ses études",
+        "metaDescription": "Donner des cours en parallèle de ses études : ce qu’il faut pour commencer, comment s’organiser et comment fonctionne la candidature sur FutureTutor.",
+        "title": "Devenir tuteur pendant ses études : le guide",
+        "intro": "Être tuteur pendant ses études permet de mettre ses connaissances au service des autres, de développer sa pédagogie et de gagner un revenu avec un horaire que l’on choisit. Voici ce qu’il faut savoir avant de se lancer.",
+        "sections": {
+          "0": {
+            "heading": "Choisir les matières et les niveaux où l’on est solide",
+            "body": "Le meilleur point de départ, ce sont les matières que vous maîtrisez vraiment et que vous aimez expliquer. Enseigner un niveau légèrement inférieur au vôtre est souvent idéal : vous dominez la matière et vous vous souvenez des difficultés que vous avez vous-même rencontrées. Sur votre profil, soyez précis sur les matières, les niveaux et votre façon d’expliquer : c’est ce que les familles regardent en premier."
+          },
+          "1": {
+            "heading": "Concilier tutorat et études",
+            "body": "Le tutorat s’adapte bien à un horaire étudiant si l’on reste réaliste. Bloquez quelques plages fixes par semaine, en tenant compte de vos examens et de vos périodes chargées, et ne publiez que les disponibilités que vous pouvez réellement tenir. Sur FutureTutor, vous définissez vous-même vos disponibilités et vous choisissez de proposer des séances en ligne, en personne ou les deux."
+          },
+          "2": {
+            "heading": "Comment fonctionne la candidature sur FutureTutor",
+            "body": "Vous créez un compte tuteur, complétez votre profil et ajoutez un document d’études, comme un relevé de notes ou un diplôme, exigé pour soumettre la candidature. L’équipe examine ensuite votre dossier, puis vous suivez la formation FutureTutor, passez un examen et une entrevue avant l’approbation finale. Votre profil ne devient visible qu’une fois toutes ces étapes franchies."
+          },
+          "3": {
+            "heading": "Prix, rémunération et versements",
+            "body": "Vous n’avez pas à fixer vous-même un tarif : FutureTutor calcule le prix des séances, et vous voyez votre gain exact avant d’accepter une réservation. Les versements sont effectués par Stripe, sur le compte que vous configurez depuis votre espace tuteur. Vous vous concentrez sur l’essentiel : préparer vos séances et aider vos élèves à progresser."
+          }
+        },
+        "cta": {
+          "title": "Prêt à transmettre ce que vous savez?",
+          "description": "Créez votre compte tuteur et commencez le parcours d’approbation à votre rythme.",
+          "primary": "Devenir tuteur"
+        }
+      },
+      "first-online-tutoring-session": {
+        "metaTitle": "Réussir sa première séance de tutorat en ligne",
+        "metaDescription": "Préparer sa première séance de tutorat en ligne : matériel, environnement, vérification de la caméra et du micro, et façon d’en tirer le meilleur parti.",
+        "title": "Réussir sa première séance de tutorat en ligne",
+        "intro": "Une séance en ligne peut être aussi efficace qu’une séance en personne, à condition d’être bien préparée. Quelques minutes d’anticipation suffisent pour que le temps de la séance serve vraiment à apprendre.",
+        "sections": {
+          "0": {
+            "heading": "Préparer son espace et son matériel",
+            "body": "Installez-vous dans un endroit calme et bien éclairé, avec le visage face à la lumière plutôt que dos à une fenêtre. Gardez à portée de main un cahier, un crayon, le manuel ou les exercices à travailler, et chargez votre ordinateur. Des écouteurs avec micro améliorent beaucoup le son, surtout si la maison est animée."
+          },
+          "1": {
+            "heading": "Vérifier la technique avant l’heure",
+            "body": "Sur FutureTutor, la classe virtuelle s’ouvre dans le navigateur depuis vos réservations, sans application à installer. Un écran d’accueil permet de vérifier la caméra et le micro et de choisir ses appareils avant d’entrer. Faites cette vérification dès que l’accès est disponible, pour régler un éventuel souci sans entamer le temps de la séance."
+          },
+          "2": {
+            "heading": "Arriver avec des questions précises",
+            "body": "Le tuteur sera plus utile si vous savez ce que vous voulez travailler : un chapitre, un exercice raté, un examen à venir. Notez vos questions à l’avance et préparez les documents à montrer. Pendant la séance, le partage d’écran permet de regarder ensemble un exercice ou une solution ; n’hésitez pas à demander une autre explication si la première ne fonctionne pas."
+          },
+          "3": {
+            "heading": "Faire le point après la séance",
+            "body": "Prenez deux minutes à la fin pour noter ce que vous avez compris et ce qui reste à revoir. Refaites seul un exercice du même type dans les jours qui suivent : c’est le meilleur moyen de vérifier que la notion est acquise. Si la façon d’expliquer du tuteur vous convient, réservez la séance suivante pendant que la motivation est là."
+          }
+        },
+        "cta": {
+          "title": "Découvrez la classe virtuelle FutureTutor",
+          "description": "Vidéo, micro et partage d’écran dans le navigateur, sans rien installer.",
+          "primary": "Voir la classe virtuelle"
+        }
+      },
       "how-to-choose-a-tutor": {
         "metaTitle": "Comment choisir le bon tuteur",
         "metaDescription": "Un guide pratique pour choisir un tuteur pour votre enfant — quoi vérifier, quoi demander, et comment savoir si ça fonctionne.",

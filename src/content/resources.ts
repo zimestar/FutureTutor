@@ -1,6 +1,6 @@
 export interface ResourceArticle {
   slug: string;
-  category: "choosingATutor" | "parentGuides" | "tutoringBasics";
+  category: "choosingATutor" | "parentGuides" | "tutoringBasics" | "forTutors";
   publishedAt: string;
   updatedAt: string;
   /** The article's one primary commercial next-step — usually /find-tutors,
@@ -77,6 +77,38 @@ export const resourceArticles: ResourceArticle[] = [
     updatedAt: "2026-09-14",
     primaryLinkHref: "/find-tutors",
     relatedSlugs: ["homework-help", "how-to-choose-a-tutor"],
+  },
+  {
+    slug: "help-child-with-high-school-math",
+    category: "parentGuides",
+    publishedAt: "2026-11-27",
+    updatedAt: "2026-11-27",
+    primaryLinkHref: "/find-tutors",
+    relatedSlugs: ["homework-help", "when-to-get-a-tutor"],
+  },
+  {
+    slug: "alberta-provincial-exams",
+    category: "parentGuides",
+    publishedAt: "2026-11-27",
+    updatedAt: "2026-11-27",
+    primaryLinkHref: "/find-tutors",
+    relatedSlugs: ["help-child-with-high-school-math", "how-to-choose-a-tutor"],
+  },
+  {
+    slug: "become-a-tutor-as-a-student",
+    category: "forTutors",
+    publishedAt: "2026-11-27",
+    updatedAt: "2026-11-27",
+    primaryLinkHref: "/become-a-tutor",
+    relatedSlugs: ["how-tutors-are-vetted", "first-online-tutoring-session"],
+  },
+  {
+    slug: "first-online-tutoring-session",
+    category: "tutoringBasics",
+    publishedAt: "2026-11-27",
+    updatedAt: "2026-11-27",
+    primaryLinkHref: "/online-classroom",
+    relatedSlugs: ["online-vs-in-person-tutoring", "how-to-choose-a-tutor"],
   },
 ];
 

@@ -21,9 +21,9 @@ const TIER1_SLUGS = [
 ] as const;
 
 describe("Tier-1 resource cluster — registry completeness", () => {
-  it("all six certified topics exist in the registry, no more, no fewer", () => {
-    const slugs = resourceArticles.map((a) => a.slug).sort();
-    expect(slugs).toEqual([...TIER1_SLUGS].sort());
+  it("all six certified topics exist in the registry (later guides may be added alongside them)", () => {
+    const slugs = resourceArticles.map((a) => a.slug);
+    for (const slug of TIER1_SLUGS) expect(slugs).toContain(slug);
   });
 
   it("none of the six are drafts — all six are live and published", () => {

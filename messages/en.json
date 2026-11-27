@@ -217,6 +217,7 @@
       "title": "Start with what matters most to you"
     },
     "categories": {
+      "forTutors": "For tutors",
       "choosingATutor": "Choosing a tutor",
       "parentGuides": "Parent guides",
       "tutoringBasics": "Tutoring basics"
@@ -228,6 +229,122 @@
   },
   "resourceArticles": {
     "items": {
+      "help-child-with-high-school-math": {
+        "metaTitle": "How to help your child with high school math",
+        "metaDescription": "Practical ways to help a teenager with high school math: find the real difficulty, build a routine and know when to ask for help.",
+        "title": "How to help your child with high school math",
+        "intro": "In high school, math becomes more abstract and every topic builds on the previous one. Falling behind on one chapter can quickly spread to the next. The good news: you don’t need to be strong in math yourself to help your child effectively.",
+        "sections": {
+          "0": {
+            "heading": "Find where the difficulty really is",
+            "body": "“I’m bad at math” almost always hides something specific: shaky fractions, manipulating equations, reading a word problem, or simply test anxiety. Ask your child to explain, out loud, an exercise they got wrong. Where the explanation stops usually shows the concept to revisit. The teacher’s comments on tests are also a valuable source."
+          },
+          "1": {
+            "heading": "Build a short, regular routine",
+            "body": "Twenty to thirty minutes several times a week beats one long session the night before a test. Same time, a quiet place, the phone out of reach: regularity lowers anxiety and lets each concept settle before moving on. Encourage your child to redo exercises corrected in class without looking at the solution; it is one of the best ways to practise."
+          },
+          "2": {
+            "heading": "Praise effort, not just grades",
+            "body": "In math, making mistakes is part of learning. Praise the method, the persistence and the questions asked, not only the result. Avoid phrases like “I wasn’t good at math either”: they suggest success is a matter of talent. Remind them instead that every topic can be learned with practice and good explanations."
+          },
+          "3": {
+            "heading": "Know when to bring in a tutor",
+            "body": "If difficulties persist despite a routine, if the gap widens from one chapter to the next, or if homework becomes a source of conflict at home, a tutor can make the difference. Someone outside the family explains things differently, adapts the pace and rebuilds confidence. Choose a tutor who teaches the right level, and watch after the first sessions whether your child understands better and asks more questions."
+          }
+        },
+        "cta": {
+          "title": "Find a math tutor for their level",
+          "description": "Filter by subject and level, compare profiles and see the price before you book.",
+          "primary": "Find a tutor"
+        }
+      },
+      "alberta-provincial-exams": {
+        "metaTitle": "Preparing for provincial exams in Alberta",
+        "metaDescription": "How to prepare for Alberta’s provincial exams, including Grade 12 diploma exams: planning, past exams, managing stress and the role of a tutor.",
+        "title": "Preparing for provincial exams in Alberta",
+        "intro": "In Alberta, some assessments are designed and administered province-wide, including the Grade 12 diploma exams, which count toward the final mark in several courses. Preparing well takes method more than last-minute cramming.",
+        "sections": {
+          "0": {
+            "heading": "Understand what is assessed",
+            "body": "Diploma exams cover specific Grade 12 courses, such as math, English or the sciences, and follow the provincial programs of study. Their weight in the final mark and the exam schedule are published by Alberta Education and can change: check the official information every year and talk with your child’s teacher. Knowing exactly what counts helps focus the effort."
+          },
+          "1": {
+            "heading": "Plan review over several weeks",
+            "body": "Start reviewing several weeks before the exam. Split the course into blocks, plan short and frequent reviews, then keep the last days for full practice exams. Coming back regularly to topics already covered helps retain them long term, far better than one intensive review the night before."
+          },
+          "2": {
+            "heading": "Practise in real conditions",
+            "body": "Alberta Education provides preparation material, such as sample questions and released past exams. Do at least one under time limits, without notes, then analyse the mistakes: a misunderstood concept, a careless error or a lack of time? That diagnosis guides the rest of the review far better than rereading the course."
+          },
+          "3": {
+            "heading": "Manage stress and get help when needed",
+            "body": "Sleep, regular breaks and a stable routine matter as much as hours of review. If a subject is blocking, a tutor familiar with the Alberta curriculum can target the most important concepts, offer exercises at the right level and help manage time during the exam. A few well-timed sessions before exam season are often enough to restore confidence."
+          }
+        },
+        "cta": {
+          "title": "Prepare for exams with a tutor",
+          "description": "Find a tutor for your child’s course and level, online or in person.",
+          "primary": "Find a tutor"
+        }
+      },
+      "become-a-tutor-as-a-student": {
+        "metaTitle": "Becoming a tutor while you study",
+        "metaDescription": "Tutoring alongside your studies: what you need to start, how to stay organised and how the FutureTutor application works.",
+        "title": "Becoming a tutor while you study: the guide",
+        "intro": "Tutoring while you study lets you put your knowledge to work for others, build your teaching skills and earn income on a schedule you choose. Here is what to know before you start.",
+        "sections": {
+          "0": {
+            "heading": "Choose the subjects and levels you are strong in",
+            "body": "The best starting point is the subjects you truly master and enjoy explaining. Teaching a level slightly below your own is often ideal: you know the material well and still remember the difficulties you faced. On your profile, be precise about subjects, levels and the way you explain: that is what families look at first."
+          },
+          "1": {
+            "heading": "Balance tutoring and studies",
+            "body": "Tutoring fits a student schedule well if you stay realistic. Block a few fixed time slots each week, taking your exams and busy periods into account, and only publish availability you can actually keep. On FutureTutor you set your own availability and choose to offer sessions online, in person or both."
+          },
+          "2": {
+            "heading": "How the FutureTutor application works",
+            "body": "You create a tutor account, complete your profile and add an education document, such as a transcript or a diploma, which is required to submit the application. The team then reviews your file, and you complete the FutureTutor training, pass an exam and an interview before final approval. Your profile only becomes visible once every step is complete."
+          },
+          "3": {
+            "heading": "Pricing, earnings and payouts",
+            "body": "You don’t have to set a rate yourself: FutureTutor calculates session prices, and you see your exact earnings before accepting a booking. Payouts are made through Stripe, to the account you set up from your tutor dashboard. You focus on what matters: preparing your sessions and helping your learners progress."
+          }
+        },
+        "cta": {
+          "title": "Ready to share what you know?",
+          "description": "Create your tutor account and start the approval journey at your own pace.",
+          "primary": "Become a tutor"
+        }
+      },
+      "first-online-tutoring-session": {
+        "metaTitle": "Making the most of your first online tutoring session",
+        "metaDescription": "Preparing for your first online tutoring session: equipment, environment, camera and microphone check, and how to get the most out of it.",
+        "title": "Making the most of your first online tutoring session",
+        "intro": "An online session can be as effective as an in-person one, as long as it is well prepared. A few minutes of preparation make sure the session time is really spent learning.",
+        "sections": {
+          "0": {
+            "heading": "Prepare your space and materials",
+            "body": "Settle in a quiet, well-lit place, facing the light rather than sitting with your back to a window. Keep a notebook, a pencil, the textbook or the exercises to work on within reach, and charge your computer. Headphones with a microphone greatly improve the sound, especially in a busy home."
+          },
+          "1": {
+            "heading": "Check the tech before it starts",
+            "body": "On FutureTutor, the virtual classroom opens in the browser from your bookings, with no app to install. A welcome screen lets you check your camera and microphone and choose your devices before entering. Run that check as soon as access is available, so any issue is fixed without eating into session time."
+          },
+          "2": {
+            "heading": "Come with specific questions",
+            "body": "Your tutor will be more helpful if you know what you want to work on: a chapter, an exercise you missed, an upcoming test. Write your questions in advance and get the documents you want to show ready. During the session, screen sharing lets you look at an exercise or a solution together; don’t hesitate to ask for another explanation if the first one doesn’t click."
+          },
+          "3": {
+            "heading": "Take stock after the session",
+            "body": "Take two minutes at the end to note what you understood and what still needs work. Redo a similar exercise on your own in the following days: it is the best way to check the concept has stuck. If the tutor’s way of explaining works for you, book the next session while motivation is high."
+          }
+        },
+        "cta": {
+          "title": "Discover the FutureTutor virtual classroom",
+          "description": "Video, microphone and screen sharing in the browser, nothing to install.",
+          "primary": "See the virtual classroom"
+        }
+      },
       "how-to-choose-a-tutor": {
         "metaTitle": "How to Choose the Right Tutor",
         "metaDescription": "A practical guide to choosing a tutor for your child — what to check, what to ask, and how to know it's working.",

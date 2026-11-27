@@ -305,7 +305,11 @@ export function HomeResources() {
   const t = useTranslations("homePremium.resources");
   const tItems = useTranslations("resourceArticles.items");
   const tCategories = useTranslations("resourceHub.categories");
-  const articles = resourceArticles.filter((article) => !article.draft).slice(0, 3);
+  // Newest first, so recently published guides surface on the homepage.
+  const articles = resourceArticles
+    .filter((article) => !article.draft)
+    .toSorted((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, 3);
   return (
     <Section className="bg-white" ariaLabelledby="home-resources-title">
       <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
