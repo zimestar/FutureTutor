@@ -2,7 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarClock, Info, LockKeyhole } from "lucide-react";
+import { CalendarClock, CheckCircle2, Info, LockKeyhole, Mail, Video } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Select } from "@/components/ui/Input";
 import { createBookingAction } from "@/lib/actions/bookings";
@@ -45,6 +45,7 @@ export function BookingWidget({
   bookableStudents,
   actorIsParent,
   tutorLearningMode,
+  tutorName,
 }: {
   tutorProfileId: string;
   timezone: string;
@@ -65,6 +66,8 @@ export function BookingWidget({
   // ONLINE/IN_PERSON tutors resolve to that one mode deterministically, no
   // selector shown; BOTH-capable tutors require an explicit choice below.
   tutorLearningMode: "ONLINE" | "IN_PERSON" | "BOTH";
+  /** Tutor first name, shown on the confirmation card only. */
+  tutorName?: string;
 }) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -161,11 +164,6 @@ export function BookingWidget({
   );
   const formatCents = (cents: number) => currencyFormatter.format(cents / 100);
 
-  const selectedDay = days.find((day) => day.date === selectedDate);
-  const selectedSlotData = selectedDay?.slots.find((slot) => slot.startAt === selectedSlot) ?? null;
-  const selectedSlotMinutes = selectedSlotData
-    ? Math.round((new Date(selectedSlotData.endAt).getTime() - new Date(selectedSlotData.startAt).getTime()) / 60000)
-    : null;
 
   // Fetch a fresh, authoritative price quote whenever the selection changes
   // — the UI never computes a price itself, it only displays what the
@@ -196,13 +194,79 @@ export function BookingWidget({
     preparePayment(quoteKey, quote.customerPriceQuoteId, paymentPreparationError);
   }, [useStripe, quoteKey, quote, preparePayment, paymentPreparationError]);
 
+  const selectedDay = days.find((day) => day.date === selectedDate);
+  const selectedSlotData = selectedDay?.slots.find((slot) => slot.startAt === selectedSlot) ?? null;
+  const selectedSlotMinutes = selectedSlotData
+    ? Math.round((new Date(selectedSlotData.endAt).getTime() - new Date(selectedSlotData.startAt).getTime()) / 60000)
+    : null;
+
   if (state?.success) {
+    // DESIGN-SYSTEM2 — a real confirmation: what was booked, what it cost,
+    // and only the next steps the platform actually performs (the
+    // confirmation email is sent when the payment is captured; the session
+    // is joined from Bookings).
+    const subjectLabel = subjects.find((subject) => subject.id === subjectId)?.label;
+    const recap: Array<{ label: string; value: string }> = [];
+    if (tutorName) recap.push({ label: t("confirmation.tutor"), value: tutorName });
+    if (selectedSlotData) {
+      recap.push({
+        label: t("confirmation.when"),
+        value: `${dayFormatter.format(new Date(`${selectedDate}T12:00:00Z`))} · ${timeFormatter.format(new Date(selectedSlotData.startAt))}${
+          selectedSlotMinutes ? ` · ${t("durationMinutes", { count: selectedSlotMinutes })}` : ""
+        }`,
+      });
+    }
+    if (subjectLabel) recap.push({ label: t("confirmation.subject"), value: subjectLabel });
+    if (requestedMode) recap.push({ label: t("confirmation.format"), value: requestedMode === "ONLINE" ? t("modeOnline") : t("modeInPerson") });
+    if (quote?.success) recap.push({ label: t("confirmation.paid"), value: formatCents(quote.totalCents) });
+
     return (
-      <div className="mt-6 rounded-md bg-success-light px-4 py-3 text-sm font-semibold text-success">
-        {t("success")}{" "}
-        <Link href="/dashboard/bookings" className="underline">
-          {t("viewBookings")}
-        </Link>
+      <div className="mt-5" data-testid="booking-confirmation" role="status">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex size-14 items-center justify-center rounded-full bg-success-light text-success">
+            <CheckCircle2 className="size-7" aria-hidden="true" />
+          </span>
+          <p className="mt-4 text-xl font-extrabold tracking-tight text-navy">{t("success")}</p>
+          <p className="mt-1 text-sm text-text-secondary">{t("confirmation.subtitle")}</p>
+        </div>
+
+        {recap.length > 0 && (
+          <dl className="mt-5 divide-y divide-border rounded-xl border border-border bg-canvas px-4">
+            {recap.map((row) => (
+              <div key={row.label} className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
+                <dt className="text-text-secondary">{row.label}</dt>
+                <dd className="text-right font-semibold text-navy">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <p className="mt-5 text-sm font-bold text-navy">{t("confirmation.nextTitle")}</p>
+        <ul className="mt-2 flex flex-col gap-2.5 text-sm text-text-secondary">
+          <li className="flex items-start gap-2.5">
+            <Mail className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
+            {t("confirmation.nextEmail")}
+          </li>
+          <li className="flex items-start gap-2.5">
+            <Video className="mt-0.5 size-4 shrink-0 text-blue" aria-hidden="true" />
+            {t("confirmation.nextJoin")}
+          </li>
+        </ul>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <Link
+            href="/dashboard/bookings"
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-blue text-[15px] font-bold text-white shadow-sm transition-colors hover:bg-blue/90"
+          >
+            {t("viewBookings")}
+          </Link>
+          <Link
+            href="/dashboard"
+            className="flex h-11 w-full items-center justify-center rounded-xl border border-border text-sm font-semibold text-navy transition-colors hover:border-blue/50"
+          >
+            {t("confirmation.backToDashboard")}
+          </Link>
+        </div>
       </div>
     );
   }

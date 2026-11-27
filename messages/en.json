@@ -2621,6 +2621,18 @@
     }
   },
   "booking": {
+    "confirmation": {
+      "subtitle": "Your payment went through and your session is confirmed.",
+      "tutor": "Tutor",
+      "when": "When",
+      "subject": "Subject",
+      "format": "Format",
+      "paid": "Paid",
+      "nextTitle": "What happens next",
+      "nextEmail": "A confirmation email is on its way to you.",
+      "nextJoin": "Find the session in Bookings and join it from there when it is time.",
+      "backToDashboard": "Back to dashboard"
+    },
     "summaryTitle": "Your session",
     "durationMinutes": "{count} min",
     "securePayment": "Secure payment by Stripe. FutureTutor never stores your card details.",

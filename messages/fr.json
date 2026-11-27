@@ -2621,6 +2621,18 @@
     }
   },
   "booking": {
+    "confirmation": {
+      "subtitle": "Votre paiement est accepté et votre séance est confirmée.",
+      "tutor": "Tuteur",
+      "when": "Quand",
+      "subject": "Matière",
+      "format": "Format",
+      "paid": "Payé",
+      "nextTitle": "Et maintenant?",
+      "nextEmail": "Un courriel de confirmation vous a été envoyé.",
+      "nextJoin": "Votre séance se trouve dans Réservations : c’est de là que vous la rejoindrez le moment venu.",
+      "backToDashboard": "Retour au tableau de bord"
+    },
     "summaryTitle": "Votre séance",
     "durationMinutes": "{count} min",
     "securePayment": "Paiement sécurisé par Stripe. FutureTutor ne conserve jamais vos données de carte.",

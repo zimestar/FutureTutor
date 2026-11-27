@@ -214,6 +214,7 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                   }))}
                   actorIsParent={session?.user?.role === "PARENT"}
                   tutorLearningMode={tutor.learningMode ?? "BOTH"}
+                  tutorName={firstName}
                 />
               ) : (
                 <p className="mt-6 text-sm text-slate">{tBooking("noAvailability")}</p>
