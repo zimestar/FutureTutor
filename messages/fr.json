@@ -2591,6 +2591,7 @@
     "pageTitle": "Historique des paiements",
     "pageDescription": "Détails de paiement pour vos séances.",
     "empty": "Vous n'avez encore aucun paiement.",
+    "emptyDescription": "Les reçus de vos séances apparaîtront ici après chaque paiement. Vous ne payez qu'au moment de réserver.",
     "loadMore": "Afficher plus",
     "withTutor": "avec {name}",
     "genericPaymentTitle": "Détails du paiement",

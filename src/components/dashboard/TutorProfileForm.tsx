@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ProvinceSelect } from "@/components/dashboard/ProvinceSelect";
 import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -202,7 +203,7 @@ export function TutorProfileForm({
           <label htmlFor="province" className="mb-1.5 block text-sm font-semibold text-navy">
             {t("provinceLabel")}
           </label>
-          <Input id="province" name="province" defaultValue={values.province} required />
+          <ProvinceSelect defaultValue={values.province} required />
         </div>
       </div>
 

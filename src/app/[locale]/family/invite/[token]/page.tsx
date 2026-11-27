@@ -48,7 +48,7 @@ export default async function ClaimFamilyInvitationPage({
     <MarketingShell>
       <Section className="bg-off-white">
         <div className="mx-auto w-full max-w-md">
-          <h1 className="text-2xl font-bold text-navy">{pageT("title")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{pageT("title")}</h1>
           <p className="mt-1 text-sm text-slate">{pageT("description")}</p>
 
           <div className="mt-6">

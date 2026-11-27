@@ -62,7 +62,7 @@ export default async function AdminPaymentsPage({
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
 
       <div className="mt-8 flex flex-col gap-2">

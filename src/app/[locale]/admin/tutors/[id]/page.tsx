@@ -94,7 +94,7 @@ export default async function AdminTutorDetailPage({
       <div className="flex flex-wrap items-center gap-4">
         <Avatar name={tutor.user.name ?? tutor.user.email} src={tutor.user.image ?? undefined} size={72} />
         <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-navy">{tutor.user.name}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{tutor.user.name}</h1>
         <Badge variant={status === "APPROVED" ? "mint" : "outline"}>{tStatus(status)}</Badge>
         {tutor.validationVersion && (
           <span className="text-xs text-slate">{t("validationVersion", { version: tutor.validationVersion })}</span>

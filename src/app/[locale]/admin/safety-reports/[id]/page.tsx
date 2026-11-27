@@ -40,7 +40,7 @@ export default async function AdminSafetyReportDetailPage({ params }: { params: 
       </Button>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold text-navy">{tCategory(report.category)}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{tCategory(report.category)}</h1>
         {report.immediateDanger && <Badge variant="navy">{t("urgent")}</Badge>}
         <Badge variant={report.status === "RESOLVED" ? "mint" : "outline"}>{t(`statuses.${report.status}`)}</Badge>
       </div>

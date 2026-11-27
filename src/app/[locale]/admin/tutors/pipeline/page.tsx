@@ -77,7 +77,7 @@ export default async function AdminTutorPipelinePage({ params }: { params: Promi
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <AdminTutorsTabs locale={locale} active="applications" />
       <div>
-        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
       </div>
 

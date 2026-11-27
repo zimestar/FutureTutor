@@ -77,13 +77,13 @@ export default async function StudentQuickMatchPage({
 
   if (bookableStudents.length === 0) {
     if (user.role === "STUDENT" && ownManagementMode === "GUARDIAN_MANAGED") {
-      return <DashboardShell navItems={navItems} userName={user.name ?? ""}><h1 className="text-2xl font-bold text-navy">{t("title")}</h1><div className="mt-6"><GuardianManagedLocationNotice /></div></DashboardShell>;
+      return <DashboardShell navItems={navItems} userName={user.name ?? ""}><h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1><div className="mt-6"><GuardianManagedLocationNotice /></div></DashboardShell>;
     }
     // Only reachable for a PARENT with no (yet) bookable child — the
     // STUDENT case is already excluded by the activation-state gate above.
     return (
       <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
         <p className="mt-6 text-sm text-slate" data-testid="no-bookable-children">
           {t("noBookableChildren")}
         </p>
@@ -108,7 +108,7 @@ export default async function StudentQuickMatchPage({
   if (!selectedStudentProfileId) {
     return (
       <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-xl text-slate">{t("chooseChildPrompt")}</p>
         <div className="mt-6 flex flex-col gap-2" data-testid="quick-match-child-selector">
           {bookableStudents.map((student) => (
@@ -150,7 +150,7 @@ export default async function StudentQuickMatchPage({
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 
       {/* Phase H.7 (§11/§35) — the selected learner's identity stays

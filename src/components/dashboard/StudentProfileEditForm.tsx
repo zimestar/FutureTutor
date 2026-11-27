@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ProvinceSelect, useProvinceLabel } from "@/components/dashboard/ProvinceSelect";
 import { updateStudentProfileAction } from "@/lib/actions/profile";
 import type { StudentProfileGuardianField } from "@/services/profileManagement";
 
@@ -52,6 +53,7 @@ export function StudentProfileEditForm({
   betaOnlineOnly?: boolean;
 }) {
   const t = useTranslations("profile.studentForm");
+  const provinceLabel = useProvinceLabel();
   const [state, formAction, pending] = useActionState(updateStudentProfileAction, undefined);
 
   const canEdit = (field: StudentProfileGuardianField) => editableFields.includes(field);
@@ -97,9 +99,9 @@ export function StudentProfileEditForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ProfileField label={t("provinceLabel")} editable={canEdit("province")} testId="field-province">
           {canEdit("province") ? (
-            <Input name="province" defaultValue={initialValues.province ?? ""} maxLength={100} />
+            <ProvinceSelect defaultValue={initialValues.province} />
           ) : (
-            <ReadOnlyValue>{initialValues.province ?? t("notSet")}</ReadOnlyValue>
+            <ReadOnlyValue>{initialValues.province ? provinceLabel(initialValues.province) : t("notSet")}</ReadOnlyValue>
           )}
         </ProfileField>
 

@@ -62,7 +62,7 @@ export default async function AdminTutorsPage({
       <AdminTutorsTabs locale={locale} active="all" />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
           <p className="mt-2 text-slate">{t("description")}</p>
         </div>
         <div className="flex gap-2">

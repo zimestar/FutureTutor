@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { CreditCard } from "lucide-react";
+import { EmptyState } from "@/components/ui/Feedback";
 import { PaymentHistoryCard } from "@/components/dashboard/PaymentHistoryCard";
 import { getPaymentHistoryPageAction } from "@/lib/actions/paymentHistory";
 import type { PaymentHistoryDto } from "@/lib/paymentHistoryPresentation";
@@ -34,9 +36,7 @@ export function PaymentHistoryList({
 
   if (items.length === 0) {
     return (
-      <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
-        <p className="text-slate">{t("empty")}</p>
-      </div>
+      <EmptyState icon={CreditCard} title={t("empty")} description={t("emptyDescription")} className="mt-8" />
     );
   }
 

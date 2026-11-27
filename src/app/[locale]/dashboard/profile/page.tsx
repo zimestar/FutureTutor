@@ -42,7 +42,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
       // page must never assume it without checking.
       return (
         <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-          <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
           <p className="mt-4 text-slate">{t("parentProfileMissing")}</p>
         </DashboardShell>
       );
@@ -50,7 +50,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
 
     return (
       <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-xl text-slate">{t("parentSubtitle")}</p>
         <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6">
           <ParentProfileEditForm
@@ -94,7 +94,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">
         {view.capabilities.canManageStudentAccount ? t("studentSubtitleFull") : t("studentSubtitleLowStakes")}
       </p>

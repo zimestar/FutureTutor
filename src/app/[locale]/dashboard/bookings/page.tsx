@@ -104,7 +104,7 @@ export default async function StudentBookingsPage({
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
 
       {bookings.length === 0 ? (

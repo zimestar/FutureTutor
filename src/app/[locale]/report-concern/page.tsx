@@ -26,7 +26,7 @@ export default async function ReportConcernPage({ params }: { params: Promise<{ 
   return (
     <DashboardShell navItems={await navItemsForUser(tNav, user)} userName={user.name ?? ""}>
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 text-slate">{t("intro")}</p>
         <Alert tone="warning" title={t("emergencyTitle")} className="mt-6">
           {t("emergencyBody")}

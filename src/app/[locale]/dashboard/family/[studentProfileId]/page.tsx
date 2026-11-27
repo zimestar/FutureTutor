@@ -77,7 +77,7 @@ export default async function FamilyStudentDetailPage({
         &larr; {t("backToFamily")}
       </Link>
 
-      <h1 className="mt-3 text-2xl font-bold text-navy">
+      <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
         {studentProfile.firstName} {studentProfile.lastName}
       </h1>
       <p className="mt-1 text-slate">

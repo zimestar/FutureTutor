@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ProvinceSelect } from "@/components/dashboard/ProvinceSelect";
 import { updateParentProfileAction } from "@/lib/actions/profile";
 
 export function ParentProfileEditForm({
@@ -47,7 +48,7 @@ export function ParentProfileEditForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-navy">{t("provinceLabel")}</label>
-          <Input name="province" defaultValue={initialValues.province ?? ""} maxLength={100} />
+          <ProvinceSelect defaultValue={initialValues.province} />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-navy">{t("cityLabel")}</label>

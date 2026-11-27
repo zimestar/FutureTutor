@@ -2591,6 +2591,7 @@
     "pageTitle": "Payment history",
     "pageDescription": "Payment details for your sessions.",
     "empty": "You don't have any payments yet.",
+    "emptyDescription": "Receipts for your sessions will appear here after each payment. You only pay when you book.",
     "loadMore": "Load more",
     "withTutor": "with {name}",
     "genericPaymentTitle": "Payment details",
