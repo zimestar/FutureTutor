@@ -62,12 +62,12 @@
     "fr": "Français"
   },
   "hero": {
-    "parentsLink": "Vous êtes parent?",
+    "parentsLink": "Vous êtes parent? Créez un compte famille",
     "eyebrow": "Tutorat partout au Canada · en ligne et en personne",
-    "title": "La bonne personne peut changer votre façon d’apprendre.",
+    "title": "La bonne personne change tout.",
     "titleEmphasis": "La bonne personne",
-    "titleRest": "peut changer votre façon d’apprendre.",
-    "description": "Rencontrez un tuteur qui comprend où vous bloquez, explique autrement et vous aide à retrouver une voie pour avancer.",
+    "titleRest": "change tout.",
+    "description": "Des tuteurs vérifiés qui comprennent où vous bloquez et expliquent autrement. Réservez en quelques minutes, au prix affiché avant de payer.",
     "primaryCta": "Parcourir tous les tuteurs",
     "secondaryCta": "Voir comment ça marche",
     "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",
@@ -4435,6 +4435,167 @@
         "description": "Trouvez un tuteur et réservez un créneau : la classe s’ouvre depuis vos réservations.",
         "primary": "Trouver un tuteur",
         "secondary": "Créer un compte gratuit"
+      }
+    }
+  },
+  "homeV2": {
+    "hero": {
+      "confirmedTitle": "Séance confirmée",
+      "confirmedMeta": "Confirmation envoyée par courriel",
+      "verified": "Tuteurs vérifiés et approuvés",
+      "tutorLink": "Je veux devenir tuteur"
+    },
+    "founders": {
+      "eyebrow": "Rencontrez nos tuteurs",
+      "title": "Les premiers visages de FutureTutor",
+      "description": "Chaque tuteur a passé le même parcours de vérification avant d’être approuvé par notre équipe.",
+      "founderBadge": "Tuteur fondateur",
+      "verified": "Vérifié",
+      "soon": "Bientôt disponible",
+      "viewProfile": "Voir le profil",
+      "browseAll": "Voir tous les tuteurs",
+      "photoAlt": "Photo de profil de {name}"
+    },
+    "platform": {
+      "eyebrow": "Une seule plateforme",
+      "title": "Tout votre parcours, au même endroit.",
+      "description": "De la recherche à la séance, puis au suivi : chaque étape se passe dans FutureTutor, sans application à installer.",
+      "booking": {
+        "title": "Réservez en toute clarté",
+        "text": "Choisissez un créneau : le total exact s’affiche avant le paiement. Aucun abonnement.",
+        "day": "Mardi",
+        "total": "Total · 60 min",
+        "price": "Affiché avant de payer"
+      },
+      "classroom": {
+        "title": "Une classe virtuelle intégrée",
+        "text": "Vidéo, micro et partage d’écran dans le navigateur. On rejoint la séance depuis son espace, en un clic.",
+        "cta": "Découvrir la classe",
+        "tutor": "Tuteur",
+        "student": "Élève",
+        "tutorAlt": "Une tutrice explique une notion en ligne",
+        "studentAlt": "Une élève suit la séance en ligne"
+      },
+      "family": {
+        "title": "Un espace famille",
+        "text": "Ajoutez vos enfants, réservez pour eux et suivez leurs séances depuis un seul compte.",
+        "childOne": "Emma",
+        "childOneNext": "Prochaine séance : mardi",
+        "childTwo": "Léo",
+        "childTwoNext": "Prochaine séance : jeudi",
+        "status": "Confirmée"
+      },
+      "quickMatch": {
+        "title": "Pas le temps de chercher?",
+        "text": "Le jumelage rapide propose votre demande aux tuteurs disponibles. Vous confirmez le prix avant de payer.",
+        "request": "Besoin d’aide en Math 20-1 avant l’examen, en ligne, mardi soir.",
+        "accepted": "Un tuteur a accepté votre demande"
+      },
+      "reminders": {
+        "title": "Rappels et suivi",
+        "text": "Confirmation par courriel, rappels avant la séance et historique des paiements toujours à jour.",
+        "notifTitle": "Votre séance commence demain",
+        "notifMeta": "Rejoignez-la depuis Mes réservations"
+      }
+    },
+    "classroom": {
+      "eyebrow": "La classe virtuelle FutureTutor",
+      "title": "Comme à côté de son tuteur, depuis chez soi.",
+      "description": "Vérifiez votre caméra et votre micro, partagez votre écran et travaillez ensemble, sans rien installer.",
+      "live": "En direct",
+      "screenLabel": "Écran partagé par le tuteur",
+      "problem": "Résoudre 2x² − 5x − 3 = 0",
+      "videoAlt": "Un élève en séance de tutorat en ligne",
+      "studentAlt": "Une élève suit la séance en ligne",
+      "cta": "Découvrir la classe virtuelle",
+      "features": [
+        {
+          "title": "Aucune installation",
+          "text": "Tout se passe dans le navigateur, sur ordinateur."
+        },
+        {
+          "title": "Test caméra et micro",
+          "text": "Une vérification avant d’entrer, pour commencer sans surprise."
+        },
+        {
+          "title": "Partage d’écran",
+          "text": "Le tuteur montre la démarche, l’élève suit pas à pas."
+        },
+        {
+          "title": "Depuis votre espace",
+          "text": "Le bouton Rejoindre apparaît dans Mes réservations."
+        }
+      ]
+    },
+    "voices": {
+      "founderEyebrow": "Le mot du fondateur",
+      "founderRole": "Fondateur de FutureTutor",
+      "eyebrow": "Ils attendent FutureTutor",
+      "title": "Ce que nous ont dit les familles",
+      "description": "Des parents, des élèves et des enseignants rencontrés pendant notre étude de marché."
+    },
+    "roles": {
+      "title": "Par où voulez-vous commencer?",
+      "student": {
+        "kicker": "Élève",
+        "title": "Je veux progresser",
+        "text": "Trouvez un tuteur pour la matière qui vous bloque, en ligne ou en personne.",
+        "cta": "Trouver un tuteur"
+      },
+      "parent": {
+        "kicker": "Parent",
+        "title": "J’accompagne mon enfant",
+        "text": "Créez un compte famille, ajoutez vos enfants et réservez pour eux.",
+        "cta": "Créer un compte parent"
+      },
+      "tutor": {
+        "kicker": "Tuteur",
+        "title": "Je veux enseigner",
+        "text": "Partagez ce que vous savez et recevez vos versements par Stripe.",
+        "cta": "Devenir tuteur"
+      }
+    },
+    "sticky": {
+      "find": "Trouver un tuteur",
+      "signup": "S’inscrire",
+      "label": "Actions rapides"
+    },
+    "megaMenu": {
+      "trigger": "Trouver de l’aide",
+      "heading": "Trouver de l’aide",
+      "subjectsHeading": "Matières populaires",
+      "allSubjects": "Toutes les matières",
+      "items": {
+        "browse": {
+          "title": "Parcourir les tuteurs",
+          "text": "Filtrez par matière, niveau et format."
+        },
+        "howItWorks": {
+          "title": "Comment ça marche",
+          "text": "De la recherche à la séance, en trois étapes."
+        },
+        "online": {
+          "title": "Classe virtuelle",
+          "text": "Le tutorat en ligne, sans installation."
+        },
+        "parents": {
+          "title": "Pour les parents",
+          "text": "Un compte famille pour tous vos enfants."
+        },
+        "pricing": {
+          "title": "Tarifs",
+          "text": "Le prix exact, affiché avant de payer."
+        },
+        "safety": {
+          "title": "Sécurité",
+          "text": "Comment nous vérifions chaque tuteur."
+        }
+      },
+      "card": {
+        "eyebrow": "Classe virtuelle",
+        "title": "Découvrez la classe virtuelle",
+        "cta": "Voir la visite",
+        "imageAlt": "Une séance de tutorat en ligne"
       }
     }
   }

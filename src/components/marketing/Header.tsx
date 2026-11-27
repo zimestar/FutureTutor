@@ -8,7 +8,8 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Logo } from "@/components/marketing/Logo";
 import { Button } from "@/components/ui/Button";
 import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
-import { mainNav } from "@/content/navigation";
+import { mainNav, mobileExtraNav } from "@/content/navigation";
+import { MegaMenu } from "@/components/marketing/MegaMenu";
 import { cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
 import { signOutAction } from "@/lib/actions/auth";
@@ -26,6 +27,7 @@ export function Header() {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const tHeader = useTranslations("header");
+  const tMega = useTranslations("homeV2.megaMenu.items");
   // Session is fetched client-side (rather than via a server-fetched prop)
   // so pages using <Header> keep their static prerendering — see
   // SessionProvider in the root layout.
@@ -46,11 +48,14 @@ export function Header() {
         scrolled ? "border-neutral-200 shadow-[0_8px_24px_-18px_rgba(13,27,42,0.35)]" : "border-transparent"
       )}
     >
-      <div className="mx-auto flex h-[72px] w-full max-w-(--container-page) items-center gap-8 px-5 md:px-10">
+      <div className="mx-auto flex h-[72px] w-full max-w-(--container-page) items-center gap-5 px-5 md:px-10 2xl:gap-8">
         <Logo className="h-8" />
 
         <nav data-testid="desktop-navigation" aria-label="Primary" className="hidden xl:block">
           <ul className="flex items-center gap-1">
+            <li>
+              <MegaMenu />
+            </li>
             {mainNav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
@@ -59,7 +64,7 @@ export function Header() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-navy",
+                      "whitespace-nowrap rounded-lg px-2.5 py-2 text-[15px] font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-navy",
                       active && "text-navy"
                     )}
                   >
@@ -136,6 +141,17 @@ export function Header() {
                   className="flex h-14 items-center border-b border-neutral-100 text-lg font-semibold text-navy"
                 >
                   {t(item.key)}
+                </Link>
+              </li>
+            ))}
+            {mobileExtraNav.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="flex h-14 items-center border-b border-neutral-100 text-lg font-semibold text-navy"
+                >
+                  {tMega(`${item.key}.title`)}
                 </Link>
               </li>
             ))}

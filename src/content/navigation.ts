@@ -9,7 +9,15 @@ export const mainNav = [
   { key: "subjects", href: "/subjects" },
   { key: "howItWorks", href: "/how-it-works" },
   { key: "resources", href: "/resources" },
-  { key: "about", href: "/about" },
+] as const;
+
+/** HOME-V2 — extra destinations listed in the mobile menu (the desktop
+ * header reaches them through the "Find help" mega menu). */
+export const mobileExtraNav = [
+  { key: "parents", href: "/parents" },
+  { key: "online", href: "/online-classroom" },
+  { key: "pricing", href: "/pricing" },
+  { key: "safety", href: "/safety" },
 ] as const;
 
 // Edmonton (and any future city added to src/content/localMarkets.ts) is

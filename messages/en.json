@@ -62,12 +62,12 @@
     "fr": "Français"
   },
   "hero": {
-    "parentsLink": "Are you a parent?",
+    "parentsLink": "Are you a parent? Create a family account",
     "eyebrow": "Tutoring across Canada · online and in person",
-    "title": "The right person can change the way you learn.",
+    "title": "The right person changes everything.",
     "titleEmphasis": "The right person",
-    "titleRest": "can change the way you learn.",
-    "description": "Meet a tutor who sees where you are stuck, explains it differently and helps you find your way forward.",
+    "titleRest": "changes everything.",
+    "description": "Verified tutors who understand where you’re stuck and explain it differently. Book in minutes, at a price shown before you pay.",
     "primaryCta": "Browse all tutors",
     "secondaryCta": "See How It Works",
     "searchIntro": "Find the right tutor for what comes next.",
@@ -4435,6 +4435,167 @@
         "description": "Find a tutor and book a time: the classroom opens from your bookings.",
         "primary": "Find a tutor",
         "secondary": "Create a free account"
+      }
+    }
+  },
+  "homeV2": {
+    "hero": {
+      "confirmedTitle": "Session confirmed",
+      "confirmedMeta": "Confirmation sent by email",
+      "verified": "Verified, approved tutors",
+      "tutorLink": "I want to become a tutor"
+    },
+    "founders": {
+      "eyebrow": "Meet our tutors",
+      "title": "The first faces of FutureTutor",
+      "description": "Every tutor went through the same verification process before being approved by our team.",
+      "founderBadge": "Founding tutor",
+      "verified": "Verified",
+      "soon": "Available soon",
+      "viewProfile": "View profile",
+      "browseAll": "See all tutors",
+      "photoAlt": "Profile photo of {name}"
+    },
+    "platform": {
+      "eyebrow": "One platform",
+      "title": "Your whole journey, in one place.",
+      "description": "From search to session to follow-up: every step happens in FutureTutor, with nothing to install.",
+      "booking": {
+        "title": "Book with total clarity",
+        "text": "Pick a time: the exact total is shown before you pay. No subscription.",
+        "day": "Tuesday",
+        "total": "Total · 60 min",
+        "price": "Shown before you pay"
+      },
+      "classroom": {
+        "title": "A built-in virtual classroom",
+        "text": "Video, mic and screen sharing in the browser. Join the session from your dashboard in one click.",
+        "cta": "Explore the classroom",
+        "tutor": "Tutor",
+        "student": "Student",
+        "tutorAlt": "A tutor explaining a concept online",
+        "studentAlt": "A student following the session online"
+      },
+      "family": {
+        "title": "A family space",
+        "text": "Add your children, book for them and follow their sessions from one account.",
+        "childOne": "Emma",
+        "childOneNext": "Next session: Tuesday",
+        "childTwo": "Leo",
+        "childTwoNext": "Next session: Thursday",
+        "status": "Confirmed"
+      },
+      "quickMatch": {
+        "title": "No time to search?",
+        "text": "Quick Match sends your request to available tutors. You confirm the price before you pay.",
+        "request": "Need help with Math 20-1 before the exam, online, Tuesday evening.",
+        "accepted": "A tutor accepted your request"
+      },
+      "reminders": {
+        "title": "Reminders and follow-up",
+        "text": "Email confirmation, reminders before the session and an always up-to-date payment history.",
+        "notifTitle": "Your session starts tomorrow",
+        "notifMeta": "Join it from My bookings"
+      }
+    },
+    "classroom": {
+      "eyebrow": "The FutureTutor virtual classroom",
+      "title": "Like sitting next to your tutor, from home.",
+      "description": "Check your camera and mic, share your screen and work together, with nothing to install.",
+      "live": "Live",
+      "screenLabel": "Screen shared by the tutor",
+      "problem": "Solve 2x² − 5x − 3 = 0",
+      "videoAlt": "A student in an online tutoring session",
+      "studentAlt": "A student following the session online",
+      "cta": "Explore the virtual classroom",
+      "features": [
+        {
+          "title": "Nothing to install",
+          "text": "Everything runs in the browser, on a computer."
+        },
+        {
+          "title": "Camera and mic check",
+          "text": "A quick check before you join, so you start without surprises."
+        },
+        {
+          "title": "Screen sharing",
+          "text": "The tutor shows the method, the student follows step by step."
+        },
+        {
+          "title": "From your dashboard",
+          "text": "The Join button appears in My bookings."
+        }
+      ]
+    },
+    "voices": {
+      "founderEyebrow": "A word from our founder",
+      "founderRole": "Founder of FutureTutor",
+      "eyebrow": "They’re waiting for FutureTutor",
+      "title": "What families told us",
+      "description": "Parents, students and teachers we met during our market research."
+    },
+    "roles": {
+      "title": "Where would you like to start?",
+      "student": {
+        "kicker": "Student",
+        "title": "I want to improve",
+        "text": "Find a tutor for the subject that’s holding you back, online or in person.",
+        "cta": "Find a tutor"
+      },
+      "parent": {
+        "kicker": "Parent",
+        "title": "I’m supporting my child",
+        "text": "Create a family account, add your children and book for them.",
+        "cta": "Create a parent account"
+      },
+      "tutor": {
+        "kicker": "Tutor",
+        "title": "I want to teach",
+        "text": "Share what you know and receive your payouts through Stripe.",
+        "cta": "Become a tutor"
+      }
+    },
+    "sticky": {
+      "find": "Find a tutor",
+      "signup": "Sign up",
+      "label": "Quick actions"
+    },
+    "megaMenu": {
+      "trigger": "Find help",
+      "heading": "Find help",
+      "subjectsHeading": "Popular subjects",
+      "allSubjects": "All subjects",
+      "items": {
+        "browse": {
+          "title": "Browse tutors",
+          "text": "Filter by subject, level and format."
+        },
+        "howItWorks": {
+          "title": "How it works",
+          "text": "From search to session, in three steps."
+        },
+        "online": {
+          "title": "Virtual classroom",
+          "text": "Online tutoring, nothing to install."
+        },
+        "parents": {
+          "title": "For parents",
+          "text": "One family account for all your children."
+        },
+        "pricing": {
+          "title": "Pricing",
+          "text": "The exact price, shown before you pay."
+        },
+        "safety": {
+          "title": "Safety",
+          "text": "How we verify every tutor."
+        }
+      },
+      "card": {
+        "eyebrow": "Virtual classroom",
+        "title": "Explore the virtual classroom",
+        "cta": "Take the tour",
+        "imageAlt": "An online tutoring session"
       }
     }
   }

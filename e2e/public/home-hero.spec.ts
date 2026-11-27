@@ -6,8 +6,8 @@ for (const locale of ["en", "fr"] as const) {
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       locale === "en"
-        ? "The right person can change the way you learn."
-        : "La bonne personne peut changer votre façon d’apprendre.",
+        ? "The right person changes everything."
+        : "La bonne personne change tout.",
     );
     const emphasis = page.getByRole("heading", { level: 1 }).locator("span").first();
     await expect(emphasis).toHaveText(locale === "en" ? "The right person" : "La bonne personne");
@@ -25,7 +25,8 @@ for (const locale of ["en", "fr"] as const) {
       name: locale === "en" ? "Open menu" : "Ouvrir le menu",
     });
     const desktopNavigation = page.getByTestId("desktop-navigation");
-    const expectsDesktopNavigation = locale === "fr" ? viewportWidth >= 1440 : viewportWidth >= 1280;
+    // The header shows the full navigation from 1280px (xl) in both languages.
+    const expectsDesktopNavigation = viewportWidth >= 1280;
     if (expectsDesktopNavigation) {
       await expect(desktopNavigation).toBeVisible();
       await expect(compactMenu).toBeHidden();
@@ -36,16 +37,17 @@ for (const locale of ["en", "fr"] as const) {
 
     if (viewportWidth >= 1280) {
       const imageWidth = await page.locator('img[src*="home-tutoring-session"]').evaluate((image) => image.getBoundingClientRect().width);
-      expect(imageWidth).toBeGreaterThan(viewportWidth * 0.5);
+      // The page container caps the width on very wide screens.
+      expect(imageWidth).toBeGreaterThan(440);
 
-      // DESIGN-SYSTEM3 — centered hero: the copy and search sit above the
-      // wide visual, never on top of it.
+      // HOME-V2 — split hero: the copy and search sit beside the visual,
+      // never on top of it.
       const layout = await page.evaluate(() => {
         const copy = document.querySelector('[data-testid="hero-copy"]')!.getBoundingClientRect();
         const visual = document.querySelector('[data-testid="hero-visual"]')!.getBoundingClientRect();
-        return { copyBottom: copy.bottom, visualTop: visual.top };
+        return { copyRight: copy.right, visualLeft: visual.left };
       });
-      expect(layout.copyBottom).toBeLessThanOrEqual(layout.visualTop);
+      expect(layout.copyRight).toBeLessThanOrEqual(layout.visualLeft);
     }
 
     const headingLines = await page.getByTestId("hero-heading").evaluate((heading) => {

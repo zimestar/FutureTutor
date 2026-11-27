@@ -102,17 +102,17 @@ describe("public experience regression boundary", () => {
     const hero = readFileSync("src/components/marketing/Hero.tsx", "utf8");
     const search = readFileSync("src/components/marketing/TutorSearch.tsx", "utf8");
 
-    // DESIGN-SYSTEM2 — bright white-to-blue backdrop, display face from the theme (no serif).
-    expect(hero).toContain("bg-gradient-to-b from-white");
+    // HOME-V2 — bright white backdrop with a soft blue glow, display face from the theme (no serif).
+    expect(hero).toContain("bg-white bg-[radial-gradient(");
     expect(hero).not.toContain("font-serif");
-    expect(hero).toContain('<TutorSearch presentation="hero"');
+    expect(hero).toContain('<TutorSearch presentation="panel"');
     expect(hero).toContain("home-tutoring-session.webp");
     expect(hero).not.toContain("bg-navy pb-16");
-    expect(search).toContain('presentation?: "default" | "hero"');
+    expect(search).toContain('presentation?: "default" | "hero" | "panel"');
     expect(search).toContain('router.push(`${resultsPath}?${params.toString()}`)');
-    expect(en.hero.title).toBe("The right person can change the way you learn.");
+    expect(en.hero.title).toBe("The right person changes everything.");
     expect(en.hero.titleEmphasis).toBe("The right person");
-    expect(fr.hero.title).toBe("La bonne personne peut changer votre façon d’apprendre.");
+    expect(fr.hero.title).toBe("La bonne personne change tout.");
     expect(fr.hero.titleEmphasis).toBe("La bonne personne");
     expect(search).toContain('role="combobox"');
     expect(search).toContain('role="listbox"');

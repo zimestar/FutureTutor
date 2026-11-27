@@ -26,7 +26,7 @@ export function TutorSearch({
 }: {
   className?: string;
   resultsPath?: string;
-  presentation?: "default" | "hero";
+  presentation?: "default" | "hero" | "panel";
 }) {
   const router = useRouter();
   const t = useTranslations("search");
@@ -93,15 +93,17 @@ export function TutorSearch({
     router.push(`${resultsPath}?${params.toString()}`);
   }
 
-  const isHero = presentation === "hero";
+  // "panel" = the hero styling in a narrower column (two-column grid).
+  const isHero = presentation !== "default";
+  const isPanel = presentation === "panel";
 
   return (
     <form
       onSubmit={handleSubmit}
       className={`${isHero ? "rounded-[28px] border border-neutral-200/70 bg-white p-5 shadow-(--shadow-pop) md:p-6" : "rounded-xl border border-neutral-200 bg-white p-3 shadow-pop md:p-4"} ${className ?? ""}`}
     >
-      <div className={`grid grid-cols-1 gap-3 ${isHero ? "md:grid-cols-2 lg:grid-cols-[1.35fr_1.15fr_1fr_auto] lg:items-end" : "md:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
-        <div ref={subjectRoot} className="relative">
+      <div className={`grid grid-cols-1 gap-3 ${isPanel ? "sm:grid-cols-2 sm:items-end" : isHero ? "md:grid-cols-2 lg:grid-cols-[1.35fr_1.15fr_1fr_auto] lg:items-end" : "md:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
+        <div ref={subjectRoot} className={isPanel ? "relative sm:col-span-2" : "relative"}>
           <label htmlFor="search-subject" className={isHero ? "mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-navy/70" : "sr-only"}>
             {t("subjectLabel")}
           </label>
@@ -173,7 +175,7 @@ export function TutorSearch({
           </Select>
         </div>
 
-        <Button type="submit" size="md" className={isHero ? "h-12 w-full md:col-span-2 lg:col-span-1 lg:w-auto" : "w-full md:w-auto"}>
+        <Button type="submit" size="md" className={isPanel ? "h-12 w-full sm:col-span-2" : isHero ? "h-12 w-full md:col-span-2 lg:col-span-1 lg:w-auto" : "w-full md:w-auto"}>
           <Search size={18} aria-hidden="true" />
           <span>{t(isHero ? "heroSubmit" : "submit")}</span>
         </Button>

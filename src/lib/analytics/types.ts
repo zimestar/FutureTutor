@@ -22,7 +22,7 @@ export type PageType =
   | "other_public";
 
 /** Semantic CTA placement — never a component name, colour, or DOM detail. */
-export type CtaLocation = "hero" | "content" | "header" | "header_mobile" | "footer_section" | "nav";
+export type CtaLocation = "hero" | "content" | "header" | "header_mobile" | "footer_section" | "nav" | "sticky_mobile";
 
 export type UserIntent = "find_tutor" | "become_tutor" | "learn_more";
 

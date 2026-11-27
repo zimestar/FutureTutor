@@ -3,12 +3,11 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Header } from "@/components/marketing/Header";
 import { Hero } from "@/components/marketing/Hero";
 import { SubjectGrid } from "@/components/marketing/SubjectGrid";
-import { FeaturedTutors } from "@/components/marketing/FeaturedTutors";
-import { TutorCTA } from "@/components/marketing/TutorCTA";
 import { FAQ } from "@/components/marketing/FAQ";
-import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { Footer } from "@/components/marketing/Footer";
-import { HomeHowItWorks, HomeParents, HomePricing, HomeResources, HomeSafety, HomeTrustBar } from "@/components/marketing/HomeSections";
+import { HomeHowItWorks, HomeParents, HomePricing, HomeResources, HomeSafety } from "@/components/marketing/HomeSections";
+import { HomeClassroom, HomeFounders, HomePlatform, HomeRoles, HomeVoices } from "@/components/marketing/HomeShowcase";
+import { MobileStickyCta } from "@/components/marketing/MobileStickyCta";
 import { Section } from "@/components/ui/Section";
 import { Link } from "@/i18n/navigation";
 import { site } from "@/content/site";
@@ -75,14 +74,15 @@ export default async function Home({
       <main id="main" className="flex-1">
         <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "homepage" }} />
         <Hero />
-        <HomeTrustBar />
-        <HomeHowItWorks />
+        <HomeFounders locale={locale} />
+        <HomePlatform locale={locale} />
         <SubjectGrid />
+        <HomeClassroom locale={locale} />
+        <HomeHowItWorks />
         <HomeParents />
-        <FeaturedTutors locale={locale} />
         <HomeSafety />
+        <HomeVoices locale={locale} />
         <HomePricing />
-        <TutorCTA />
         <HomeResources />
         {/* Internal links (SEO): local market, resources and the info pages. */}
         <Section className="bg-white pt-0 md:pt-0">
@@ -99,7 +99,8 @@ export default async function Home({
           </nav>
         </Section>
         <FAQ />
-        <FinalCTA />
+        <HomeRoles locale={locale} />
+        <MobileStickyCta />
       </main>
       <Footer />
     </>
