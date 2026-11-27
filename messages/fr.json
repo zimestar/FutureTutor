@@ -1842,6 +1842,7 @@
     "revoke": "Révoquer"
   },
   "admin": {
+    "roles": {"STUDENT": "Élève", "PARENT": "Parent", "TUTOR": "Tuteur", "ADMIN": "Administrateur", "SUPER_ADMIN": "Super-administrateur"},
     "safetyReports": {
       "title": "Signalements de sécurité",
       "description": "Préoccupations de sécurité signalées par les tuteurs, élèves et parents. Les signalements urgents apparaissent en premier.",

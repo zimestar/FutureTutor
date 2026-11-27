@@ -1842,6 +1842,7 @@
     "revoke": "Revoke"
   },
   "admin": {
+    "roles": {"STUDENT": "Student", "PARENT": "Parent", "TUTOR": "Tutor", "ADMIN": "Admin", "SUPER_ADMIN": "Super admin"},
     "safetyReports": {
       "title": "Safety reports",
       "description": "Safety concerns reported by tutors, students and parents. Urgent reports come first.",
