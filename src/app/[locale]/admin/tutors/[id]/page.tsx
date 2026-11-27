@@ -24,7 +24,7 @@ import {
   suspendTutorAction,
   reactivateTutorAction,
 } from "@/lib/actions/adminTutorReview";
-import { approveDocumentAction, rejectDocumentAction } from "@/lib/actions/tutorDocuments";
+import { approveDocumentAction, rejectDocumentAction, requestDocumentReplacementAction } from "@/lib/actions/tutorDocuments";
 import { verifyEducationAction, verifyCertificationAction } from "@/lib/actions/tutorEducation";
 import { requireTrainingAction } from "@/lib/actions/tutorTraining";
 import { requireExamAction } from "@/lib/actions/tutorExam";
@@ -341,14 +341,27 @@ export default async function AdminTutorDetailPage({
                         {t("approveDocument")}
                       </Button>
                     </form>
-                    <form action={rejectDocumentAction.bind(null, doc.id)} className="flex gap-2">
+                    {/* TUTOR-PIPELINE1 — one reason, two outcomes: "request a replacement"
+                        (the document is the wrong kind or unreadable: please resubmit) or
+                        "reject". Both email the reason to the candidate, who can then upload
+                        a replacement from their Documents page. */}
+                    <form action={rejectDocumentAction.bind(null, doc.id)} className="flex flex-wrap gap-2">
                       <input
                         type="text"
                         name="reason"
                         required
+                        aria-label={t("reasonPlaceholder")}
                         placeholder={t("reasonPlaceholder")}
-                        className="h-9 rounded-md border border-neutral-300 px-2 text-sm"
+                        className="h-9 min-w-56 flex-1 rounded-md border border-neutral-300 px-2 text-sm"
                       />
+                      <Button
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        formAction={requestDocumentReplacementAction.bind(null, doc.id)}
+                      >
+                        {t("requestReplacement")}
+                      </Button>
                       <Button type="submit" variant="outline" size="sm">
                         {t("rejectDocument")}
                       </Button>
