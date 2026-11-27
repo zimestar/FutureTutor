@@ -21,16 +21,16 @@ for (const locale of ["en", "fr"] as const) {
     }
 
     await page.goto(`/${locale}/become-a-tutor`);
-    await expectImageReady(page, "tutor-hero");
+    await expectImageReady(page, "tutor-teaching-online");
 
     await page.goto(`/${locale}/about`);
     await expectImageReady(page, "tutor-desk-session");
 
     await page.goto(`/${locale}/login`);
-    const portrait = page.locator('img[src*="auth-editorial-"]');
+    const portrait = page.locator('img[src*="auth-portrait-"]');
     if ((page.viewportSize()?.width ?? 0) >= 1024) await expect(portrait).toBeVisible();
     else await expect(portrait).toBeHidden();
-    expect(await portrait.getAttribute("src")).toMatch(/auth-editorial-[1-5]\.png/);
+    expect(await portrait.getAttribute("src")).toMatch(/auth-portrait-[1-5]\.webp/);
     await expectNoRawKeys(page);
     await expectNoDocumentOverflow(page);
   });
@@ -38,8 +38,8 @@ for (const locale of ["en", "fr"] as const) {
 
 test("all five auth portrait sources are reachable", async ({ request, baseURL }) => {
   for (let index = 1; index <= 5; index += 1) {
-    const response = await request.get(`${baseURL}/images/auth-editorial-${index}.png`);
+    const response = await request.get(`${baseURL}/images/auth-portrait-${index}.webp`);
     expect(response.ok()).toBe(true);
-    expect(response.headers()["content-type"]).toBe("image/png");
+    expect(response.headers()["content-type"]).toBe("image/webp");
   }
 });

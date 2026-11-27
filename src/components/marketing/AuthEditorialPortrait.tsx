@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { selectAuthPortrait } from "@/components/marketing/authEditorialPortraits";
+import { authPortraitFocus, selectAuthPortrait } from "@/components/marketing/authEditorialPortraits";
 
 export function AuthEditorialPortrait({ alt }: { alt: string }) {
   const [portrait, setPortrait] = useState<string | null>(null);
@@ -25,7 +25,8 @@ export function AuthEditorialPortrait({ alt }: { alt: string }) {
       alt={alt}
       fill
       sizes="54vw"
-      className="object-contain object-bottom"
+      className="object-cover"
+      style={{ objectPosition: authPortraitFocus(portrait) }}
       onError={() => setFailed(true)}
     />
   );

@@ -72,10 +72,12 @@ describe("public experience regression boundary", () => {
       "parent-homework-help.webp",
       "online-classroom-call.webp",
       "tutor-desk-session.webp",
-      "tutor-hero.png",
+      "tutor-teaching-online.webp",
+      "student-learning-home.webp",
+      "student-math-confidence.webp",
       "online-tutoring.png",
       "learning-breakthrough.png",
-      ...Array.from({ length: 5 }, (_, index) => `auth-editorial-${index + 1}.png`),
+      ...Array.from({ length: 5 }, (_, index) => `auth-portrait-${index + 1}.webp`),
     ];
     for (const file of files) expect(existsSync(`public/images/${file}`)).toBe(true);
 
@@ -89,6 +91,8 @@ describe("public experience regression boundary", () => {
       "src/components/marketing/AuthEditorialPortrait.tsx",
       "src/components/marketing/authEditorialPortraits.ts",
       "src/app/[locale]/become-a-tutor/page.tsx",
+      "src/app/[locale]/how-it-works/page.tsx",
+      "src/app/[locale]/subjects/page.tsx",
       "src/app/[locale]/about/page.tsx",
     ].map((file) => readFileSync(file, "utf8")).join("\n");
     for (const file of files) expect(presentation).toContain(file);

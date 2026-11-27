@@ -20,7 +20,7 @@ export default async function SubjectsPage({ params }: { params: Promise<{ local
   const t = await getTranslations({ locale, namespace: "publicExperience.subjects" });
   return (
     <MarketingShell>
-      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/find-tutors" }} secondary={{ label: t("hero.secondary"), href: "/how-it-works" }} image="/images/online-tutoring.png" imageAlt={t("hero.imageAlt")} />
+      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/find-tutors" }} secondary={{ label: t("hero.secondary"), href: "/how-it-works" }} image="/images/student-math-confidence.webp" imageAlt={t("hero.imageAlt")} />
       <SubjectGrid showHeader={false} />
       <Section className="bg-white">
         <SectionIntro title={t("guidance.heading")} description={t("guidance.description")} align="left" />

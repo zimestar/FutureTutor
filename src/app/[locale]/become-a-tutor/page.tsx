@@ -27,7 +27,7 @@ export default async function BecomeATutorPage({ params }: { params: Promise<{ l
   return (
     <MarketingShell>
       <TrackPageView event="futuretutor_page_view" properties={{ locale: locale as Locale, page_type: "become_tutor" }} />
-      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/signup" }} secondary={{ label: t("hero.secondary"), href: "/tutor-resources" }} image="/images/tutor-hero.png" imageAlt={t("hero.imageAlt")} imagePosition="center" />
+      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/signup" }} secondary={{ label: t("hero.secondary"), href: "/tutor-resources" }} image="/images/tutor-teaching-online.webp" imageAlt={t("hero.imageAlt")} imagePosition="center" />
       <Section className="bg-white">
         <SectionIntro eyebrow={t("value.eyebrow")} title={t("value.title")} description={t("value.description")} />
         <div className="mt-12 grid gap-5 md:grid-cols-3">{valueIcons.map((Icon, index) => <article key={index} className="rounded-2xl border border-border p-7"><Icon className="size-7 text-blue" aria-hidden="true" /><h3 className="mt-6 text-xl font-extrabold text-navy">{t(`value.items.${index}.title`)}</h3><p className="mt-3 leading-7 text-text-secondary">{t(`value.items.${index}.description`)}</p></article>)}</div>
