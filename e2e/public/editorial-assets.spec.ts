@@ -24,7 +24,7 @@ for (const locale of ["en", "fr"] as const) {
     await expectImageReady(page, "tutor-online-board");
 
     await page.goto(`/${locale}/about`);
-    await expectImageReady(page, "tutor-desk-session");
+    await expectImageReady(page, "library-tutoring");
 
     await page.goto(`/${locale}/login`);
     const portrait = page.locator('img[src*="auth-portrait-"]');

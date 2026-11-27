@@ -22,7 +22,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   const t = await getTranslations({ locale, namespace: "publicExperience.about" });
   return (
     <MarketingShell>
-      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/how-it-works" }} secondary={{ label: t("hero.secondary"), href: "/find-tutors" }} image="/images/tutor-desk-session.webp" imageAlt={t("hero.imageAlt")} imagePosition="center" />
+      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/how-it-works" }} secondary={{ label: t("hero.secondary"), href: "/find-tutors" }} image="/images/library-tutoring.webp" imageAlt={t("hero.imageAlt")} imagePosition="58% center" />
       <Section className="bg-white">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
           <SectionIntro eyebrow={t("why.eyebrow")} title={t("why.title")} description={t("why.description")} align="left" />
