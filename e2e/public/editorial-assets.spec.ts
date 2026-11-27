@@ -27,18 +27,18 @@ for (const locale of ["en", "fr"] as const) {
     await expectImageReady(page, "library-tutoring");
 
     await page.goto(`/${locale}/login`);
-    const portrait = page.locator('img[src*="auth-portrait-"]');
+    const portrait = page.locator('img[src*="auth-student-"]');
     if ((page.viewportSize()?.width ?? 0) >= 1024) await expect(portrait).toBeVisible();
     else await expect(portrait).toBeHidden();
-    expect(await portrait.getAttribute("src")).toMatch(/auth-portrait-[1-5]\.webp/);
+    expect(await portrait.getAttribute("src")).toMatch(/auth-student-[1-5]\.webp/);
     await expectNoRawKeys(page);
     await expectNoDocumentOverflow(page);
   });
 }
 
-test("all five auth portrait sources are reachable", async ({ request, baseURL }) => {
+test("all five auth student portrait sources are reachable", async ({ request, baseURL }) => {
   for (let index = 1; index <= 5; index += 1) {
-    const response = await request.get(`${baseURL}/images/auth-portrait-${index}.webp`);
+    const response = await request.get(`${baseURL}/images/auth-student-${index}.webp`);
     expect(response.ok()).toBe(true);
     expect(response.headers()["content-type"]).toBe("image/webp");
   }

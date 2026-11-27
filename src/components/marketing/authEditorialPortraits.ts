@@ -1,9 +1,9 @@
 export const authEditorialPortraits = [
-  "/images/auth-portrait-1.webp",
-  "/images/auth-portrait-2.webp",
-  "/images/auth-portrait-3.webp",
-  "/images/auth-portrait-4.webp",
-  "/images/auth-portrait-5.webp",
+  "/images/auth-student-1.webp",
+  "/images/auth-student-2.webp",
+  "/images/auth-student-3.webp",
+  "/images/auth-student-4.webp",
+  "/images/auth-student-5.webp",
 ] as const;
 
 export function selectAuthPortrait(value: number) {
@@ -11,13 +11,14 @@ export function selectAuthPortrait(value: number) {
 }
 
 /** DESIGN-SYSTEM3 — per-photo focal point so the face stays above the
- * statement overlaid on the lower part of the auth panel. */
+ * statement overlaid on the lower part of the auth panel. The photos are
+ * landscape, so only the horizontal position matters in the tall panel. */
 const PORTRAIT_FOCUS: Record<string, string> = {
-  "/images/auth-portrait-1.webp": "50% 100%",
-  "/images/auth-portrait-2.webp": "50% 55%",
-  "/images/auth-portrait-3.webp": "50% 40%",
-  "/images/auth-portrait-4.webp": "50% 45%",
-  "/images/auth-portrait-5.webp": "50% 50%",
+  "/images/auth-student-1.webp": "34% 50%",
+  "/images/auth-student-2.webp": "80% 50%",
+  "/images/auth-student-3.webp": "49% 50%",
+  "/images/auth-student-4.webp": "67% 50%",
+  "/images/auth-student-5.webp": "48% 50%",
 };
 
 export function authPortraitFocus(src: string): string {

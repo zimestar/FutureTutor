@@ -77,7 +77,7 @@ describe("public experience regression boundary", () => {
       "student-whiteboard-math.webp",
       "online-tutoring.png",
       "learning-breakthrough.png",
-      ...Array.from({ length: 5 }, (_, index) => `auth-portrait-${index + 1}.webp`),
+      ...Array.from({ length: 5 }, (_, index) => `auth-student-${index + 1}.webp`),
     ];
     for (const file of files) expect(existsSync(`public/images/${file}`)).toBe(true);
 
