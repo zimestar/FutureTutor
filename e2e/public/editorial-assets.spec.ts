@@ -21,7 +21,7 @@ for (const locale of ["en", "fr"] as const) {
     }
 
     await page.goto(`/${locale}/become-a-tutor`);
-    await expectImageReady(page, "tutor-teaching-online");
+    await expectImageReady(page, "tutor-online-board");
 
     await page.goto(`/${locale}/about`);
     await expectImageReady(page, "tutor-desk-session");

@@ -3868,7 +3868,7 @@
     "subjects": {
       "metaTitle": "Tutoring Subjects",
       "metaDescription": "Explore the subjects supported on FutureTutor and move directly into approved Tutor discovery.",
-      "hero": { "imageAlt": "A confident student holding a pencil in front of a math board", "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" },
+      "hero": { "imageAlt": "A confident student holding a marker at a math whiteboard", "eyebrow": "Start with the question", "title": "What would you like to understand more clearly?", "description": "Choose a subject to see approved Tutors who teach it, or search the full directory by subject, level and learning mode.", "primary": "Search all Tutors", "secondary": "See how it works" },
       "guidance": { "heading": "Not sure where to start?", "description": "If your child is behind in one specific class, start with that subject. For general academic support without one subject in mind, Elementary Support or Exam Preparation may fit better. Either way, you can search the full directory by subject, level and mode at any time." },
       "explore": { "heading": "Keep exploring", "howItWorks": "See how booking works", "chooseATutor": "How to choose a tutor", "whenToGetATutor": "When to get a tutor", "edmonton": "Tutoring in Edmonton" }
     }

@@ -3868,7 +3868,7 @@
     "subjects": {
       "metaTitle": "Matières de tutorat",
       "metaDescription": "Explorez les matières offertes sur FutureTutor et passez directement à la découverte de tuteurs approuvés.",
-      "hero": { "imageAlt": "Un élève confiant, crayon en main, devant un tableau de mathématiques", "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" },
+      "hero": { "imageAlt": "Un élève confiant, marqueur en main, devant un tableau de mathématiques", "eyebrow": "Commencer par la question", "title": "Qu’aimeriez-vous comprendre plus clairement?", "description": "Choisissez une matière pour voir les tuteurs approuvés qui l’enseignent, ou cherchez dans le répertoire complet par matière, niveau et mode.", "primary": "Rechercher tous les tuteurs", "secondary": "Voir comment ça marche" },
       "guidance": { "heading": "Vous ne savez pas par où commencer?", "description": "Si votre enfant prend du retard dans un cours précis, commencez par cette matière. Pour un soutien scolaire général sans matière précise en tête, le Soutien au primaire ou la Préparation aux examens peut mieux convenir. Vous pouvez de toute façon chercher dans le répertoire complet par matière, niveau et mode en tout temps." },
       "explore": { "heading": "Poursuivre votre recherche", "howItWorks": "Voir comment fonctionne la réservation", "chooseATutor": "Comment choisir un tuteur", "whenToGetATutor": "Quand faire appel à un tuteur", "edmonton": "Tutorat à Edmonton" }
     }
