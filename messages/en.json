@@ -1955,7 +1955,7 @@
         "MISSING_STATE_EVIDENCE": "Not enough evidence to determine state"
       }
     },
-    "statuses": {
+    "statuses": { "DECLINED": "Declined", "RESCHEDULED": "Rescheduled", "BOTH": "Online or in person", 
       "PENDING": "Pending",
       "REQUIRES_ACTION": "Action required",
       "AUTHORIZED": "Authorized",

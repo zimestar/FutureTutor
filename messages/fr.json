@@ -1955,7 +1955,7 @@
         "MISSING_STATE_EVIDENCE": "Preuves insuffisantes pour déterminer l’état"
       }
     },
-    "statuses": {
+    "statuses": { "DECLINED": "Refusée", "RESCHEDULED": "Reportée", "BOTH": "En ligne ou en personne", 
       "PENDING": "En attente",
       "REQUIRES_ACTION": "Action requise",
       "AUTHORIZED": "Autorisé",
