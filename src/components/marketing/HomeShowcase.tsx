@@ -186,7 +186,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
           <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-white/10 bg-[#13263d] p-3">
             <div className="grid flex-1 grid-cols-2 gap-3">
               <div className="relative min-h-40 overflow-hidden rounded-xl">
-                <Image src="/images/tutor-teaching-online.webp" alt={t("classroom.tutorAlt")} fill sizes="(min-width: 1024px) 260px, 45vw" className="object-cover" />
+                <Image src="/images/classroom-tutor-video.webp" alt={t("classroom.tutorAlt")} fill sizes="(min-width: 1024px) 260px, 45vw" className="object-cover object-[55%_30%]" />
                 <span className="absolute bottom-2 left-2 rounded-md bg-navy/75 px-2 py-0.5 text-xs">{t("classroom.tutor")}</span>
               </div>
               <div className="relative min-h-40 overflow-hidden rounded-xl">
@@ -293,7 +293,7 @@ export async function HomeClassroom({ locale }: { locale: string }) {
             </div>
             <div className="grid flex-[1.2] grid-cols-2 gap-3.5 md:grid-cols-1">
               <div className="relative min-h-36 overflow-hidden rounded-2xl">
-                <Image src="/images/online-classroom-call.webp" alt={t("videoAlt")} fill sizes="(min-width: 768px) 300px, 45vw" className="object-cover" />
+                <Image src="/images/classroom-tutor-video.webp" alt={t("videoAlt")} fill sizes="(min-width: 768px) 300px, 45vw" className="object-cover object-[55%_30%]" />
               </div>
               <div className="relative min-h-36 overflow-hidden rounded-2xl">
                 <Image src="/images/auth-portrait-5.webp" alt={t("studentAlt")} fill sizes="(min-width: 768px) 300px, 45vw" className="object-cover object-[50%_35%]" />

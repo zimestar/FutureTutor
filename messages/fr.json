@@ -4473,7 +4473,7 @@
         "cta": "Découvrir la classe",
         "tutor": "Tuteur",
         "student": "Élève",
-        "tutorAlt": "Une tutrice explique une notion en ligne",
+        "tutorAlt": "Un tuteur explique une notion en ligne",
         "studentAlt": "Une élève suit la séance en ligne"
       },
       "family": {
@@ -4505,7 +4505,7 @@
       "live": "En direct",
       "screenLabel": "Écran partagé par le tuteur",
       "problem": "Résoudre 2x² − 5x − 3 = 0",
-      "videoAlt": "Un élève en séance de tutorat en ligne",
+      "videoAlt": "Un tuteur explique une notion en classe virtuelle",
       "studentAlt": "Une élève suit la séance en ligne",
       "cta": "Découvrir la classe virtuelle",
       "features": [
