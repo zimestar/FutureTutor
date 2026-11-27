@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import Image from "next/image";
-import { Manrope } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Container } from "@/components/ui/Container";
 import { NotFoundContent } from "@/components/marketing/NotFoundContent";
 import { routing, type Locale } from "@/i18n/routing";
@@ -8,9 +8,16 @@ import en from "../../messages/en.json";
 import fr from "../../messages/fr.json";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+// DESIGN-SYSTEM2 — Inter for reading, Plus Jakarta Sans for display headings.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+const display = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -59,7 +66,7 @@ export default async function GlobalNotFound() {
   const backHome = messagesByLocale[locale].comingSoon.backHome;
 
   return (
-    <html lang={locale} className={`${manrope.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} ${display.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-off-white text-navy font-sans">
         <header className="border-b border-neutral-200 bg-white py-4">
           <Container className="flex items-center">

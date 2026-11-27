@@ -72,26 +72,28 @@ export function ConsentBanner() {
     setDismissed(true);
   }
 
+  // DESIGN-SYSTEM2 — a compact card in the corner rather than a full-width bar.
   return (
-    <div role="dialog" aria-live="polite" aria-label={t("heading")} className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white p-5 shadow-pop">
-      <div className="mx-auto flex max-w-4xl flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-bold text-navy">{t("heading")}</p>
-          <p className="mt-1 text-sm leading-6 text-text-secondary">
-            {t("description")}{" "}
-            <Link href="/cookies" className="font-semibold text-blue hover:text-blue-hover">
-              {t("learnMore")}
-            </Link>
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-3">
-          <Button variant="outline" size="sm" onClick={handleReject}>
-            {t("reject")}
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleAccept}>
-            {t("accept")}
-          </Button>
-        </div>
+    <div
+      role="dialog"
+      aria-live="polite"
+      aria-label={t("heading")}
+      className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-neutral-200 bg-white p-5 shadow-(--shadow-pop) sm:inset-x-auto sm:bottom-5 sm:left-5 sm:max-w-[420px]"
+    >
+      <p className="font-semibold text-navy">{t("heading")}</p>
+      <p className="mt-1.5 text-sm leading-6 text-text-secondary">
+        {t("description")}{" "}
+        <Link href="/cookies" className="font-semibold text-blue hover:text-blue-hover">
+          {t("learnMore")}
+        </Link>
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="primary" size="sm" onClick={handleAccept}>
+          {t("accept")}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleReject}>
+          {t("reject")}
+        </Button>
       </div>
     </div>
   );

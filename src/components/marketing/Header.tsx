@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -14,9 +14,15 @@ import { trackEvent } from "@/lib/analytics";
 import { signOutAction } from "@/lib/actions/auth";
 import { homePathForRole } from "@/lib/authorization";
 
+/**
+ * DESIGN-SYSTEM2 — public site header. One line on desktop (≥1280px) in both
+ * languages: logo, four links, then language, sign-in and the two calls to
+ * action. Below that, a full-width menu. Gains a border and shadow once the
+ * page scrolls.
+ */
 export function Header() {
   const [open, setOpen] = useState(false);
-  const locale = useLocale();
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const t = useTranslations("nav");
   const tHeader = useTranslations("header");
@@ -25,27 +31,36 @@ export function Header() {
   // SessionProvider in the root layout.
   const { data: session } = useSession();
   const user = session?.user;
-  const desktopOnly = locale === "fr" ? "hidden min-[1440px]:block" : "hidden xl:block";
-  const desktopActions = locale === "fr" ? "hidden min-[1440px]:flex" : "hidden xl:flex";
-  const compactOnly = locale === "fr" ? "min-[1440px]:hidden" : "xl:hidden";
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-off-white/90 backdrop-blur-sm">
-      <div className="mx-auto flex h-20 w-full max-w-(--container-page) items-center justify-between px-5 md:px-10">
-        <Logo className="h-9" />
+    <header
+      className={cn(
+        "sticky top-0 z-50 border-b bg-white/85 backdrop-blur-md transition-[border-color,box-shadow] duration-300",
+        scrolled ? "border-neutral-200 shadow-[0_8px_24px_-18px_rgba(13,27,42,0.35)]" : "border-transparent"
+      )}
+    >
+      <div className="mx-auto flex h-[72px] w-full max-w-(--container-page) items-center gap-8 px-5 md:px-10">
+        <Logo className="h-8" />
 
-        <nav data-testid="desktop-navigation" aria-label="Primary" className={desktopOnly}>
-          <ul className="flex items-center gap-5 2xl:gap-8">
+        <nav data-testid="desktop-navigation" aria-label="Primary" className="hidden xl:block">
+          <ul className="flex items-center gap-1">
             {mainNav.map((item) => {
-              const active = pathname === item.href;
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "text-sm font-semibold text-neutral-600 transition-colors hover:text-navy",
-                      active && "text-blue"
+                      "whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-navy",
+                      active && "text-navy"
                     )}
                   >
                     {t(item.key)}
@@ -56,15 +71,15 @@ export function Header() {
           </ul>
         </nav>
 
-        <div data-testid="desktop-actions" className={`${desktopActions} items-center gap-2 2xl:gap-3`}>
-          <LanguageSwitcher className="mr-1" />
+        <div data-testid="desktop-actions" className="ml-auto hidden items-center gap-2 xl:flex">
+          <LanguageSwitcher className="mr-2" />
           {user ? (
             <>
               <Button href={homePathForRole(user.role)} variant="outline" size="sm">
                 {t("dashboard")}
               </Button>
               <form action={signOutAction}>
-                <Button type="submit" variant="primary" size="sm">
+                <Button type="submit" variant="ghost" size="sm">
                   {t("logOut")}
                 </Button>
               </form>
@@ -73,7 +88,7 @@ export function Header() {
             <>
               <Link
                 href="/login"
-                className="text-sm font-semibold text-neutral-600 transition-colors hover:text-navy"
+                className="whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-navy"
                 onClick={() => trackEvent("login_started", {})}
               >
                 {t("login")}
@@ -100,29 +115,25 @@ export function Header() {
 
         <button
           type="button"
-          className={`flex h-11 w-11 items-center justify-center rounded-md text-navy ${compactOnly}`}
+          className="ml-auto flex size-11 items-center justify-center rounded-xl text-navy transition-colors hover:bg-neutral-100 xl:hidden"
           aria-label={open ? tHeader("closeMenu") : tHeader("openMenu")}
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? <X size={24} /> : <Menu size={24} />}
+          {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {open && (
-        <nav
-          id="mobile-nav"
-          aria-label="Mobile"
-          className={`border-t border-neutral-200 bg-white px-5 py-6 ${compactOnly}`}
-        >
-          <ul className="flex flex-col gap-1">
+        <nav id="mobile-nav" aria-label="Mobile" className="border-t border-neutral-200 bg-white px-5 pb-8 pt-4 shadow-pop xl:hidden">
+          <ul className="flex flex-col">
             {mainNav.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex h-12 items-center text-base font-semibold text-navy"
+                  className="flex h-14 items-center border-b border-neutral-100 text-lg font-semibold text-navy"
                 >
                   {t(item.key)}
                 </Link>
@@ -136,38 +147,27 @@ export function Header() {
                     setOpen(false);
                     trackEvent("login_started", {});
                   }}
-                  className="flex h-12 items-center text-base font-semibold text-navy"
+                  className="flex h-14 items-center text-lg font-semibold text-navy"
                 >
                   {t("login")}
                 </Link>
               </li>
             )}
           </ul>
-          <div className="mt-4 flex flex-col gap-3">
-            <LanguageSwitcher className="self-start" />
+          <div className="mt-6 flex flex-col gap-3">
             {user ? (
               <>
-                <Button href={homePathForRole(user.role)} variant="outline" onClick={() => setOpen(false)}>
+                <Button href={homePathForRole(user.role)} variant="primary" onClick={() => setOpen(false)}>
                   {t("dashboard")}
                 </Button>
                 <form action={signOutAction}>
-                  <Button type="submit" variant="primary" className="w-full">
+                  <Button type="submit" variant="outline" className="w-full">
                     {t("logOut")}
                   </Button>
                 </form>
               </>
             ) : (
               <>
-                <Button
-                  href="/become-a-tutor"
-                  variant="outline"
-                  onClick={() => {
-                    setOpen(false);
-                    trackEvent("become_tutor_cta_clicked", { cta_location: "header_mobile" });
-                  }}
-                >
-                  {t("becomeATutor")}
-                </Button>
                 <Button
                   href="/find-tutors"
                   variant="primary"
@@ -178,8 +178,19 @@ export function Header() {
                 >
                   {t("findTutor")}
                 </Button>
+                <Button
+                  href="/become-a-tutor"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    trackEvent("become_tutor_cta_clicked", { cta_location: "header_mobile" });
+                  }}
+                >
+                  {t("becomeATutor")}
+                </Button>
               </>
             )}
+            <LanguageSwitcher className="mt-2 self-start" />
           </div>
         </nav>
       )}

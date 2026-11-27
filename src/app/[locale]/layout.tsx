@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
-import { Manrope } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
@@ -9,9 +9,16 @@ import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ConsentBanner } from "@/components/marketing/ConsentBanner";
 import "../globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
+// DESIGN-SYSTEM2 — Inter for reading, Plus Jakarta Sans for display headings.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+const display = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -111,7 +118,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${manrope.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} ${display.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-off-white text-navy font-sans">
         <NextIntlClientProvider>
           <SessionProvider>{children}</SessionProvider>

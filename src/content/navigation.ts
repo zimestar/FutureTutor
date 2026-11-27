@@ -1,11 +1,15 @@
 /** Labels live in messages/*.json under `nav.<key>` / `footer.links.<key>`. */
+
+/**
+ * DESIGN-SYSTEM2 — primary header links. "Find a tutor" and "Become a tutor"
+ * are the header's two buttons, so they are not repeated here; four short
+ * links keep the header on one line in both languages.
+ */
 export const mainNav = [
-  { key: "findTutor", href: "/find-tutors" },
   { key: "subjects", href: "/subjects" },
   { key: "howItWorks", href: "/how-it-works" },
   { key: "resources", href: "/resources" },
   { key: "about", href: "/about" },
-  { key: "forTutors", href: "/become-a-tutor" },
 ] as const;
 
 // Edmonton (and any future city added to src/content/localMarkets.ts) is

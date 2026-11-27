@@ -62,7 +62,7 @@
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "The right connection can change the way you learn.",
+    "eyebrow": "Tutoring across Canada · online and in person",
     "title": "The right person can change the way you learn.",
     "titleEmphasis": "The right person",
     "titleRest": "can change the way you learn.",
@@ -70,7 +70,9 @@
     "primaryCta": "Find a Tutor",
     "secondaryCta": "See How It Works",
     "searchIntro": "Find the right tutor for what comes next.",
-    "imageAlt": "A student smiling during an online tutoring video call with her tutor"
+    "imageAlt": "A student smiling during an online tutoring video call with her tutor",
+    "floatingApproved": "Verified, approved tutors",
+    "floatingModes": "Online or in person"
   },
   "search": {
     "subjectLabel": "What do you need help with?",

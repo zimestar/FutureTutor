@@ -62,7 +62,7 @@
     "fr": "Français"
   },
   "hero": {
-    "eyebrow": "La bonne rencontre peut changer votre façon d’apprendre.",
+    "eyebrow": "Tutorat partout au Canada · en ligne et en personne",
     "title": "La bonne personne peut changer votre façon d’apprendre.",
     "titleEmphasis": "La bonne personne",
     "titleRest": "peut changer votre façon d’apprendre.",
@@ -70,7 +70,9 @@
     "primaryCta": "Trouver un tuteur",
     "secondaryCta": "Voir comment ça marche",
     "searchIntro": "Trouvez le bon tuteur pour la prochaine étape.",
-    "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur"
+    "imageAlt": "Une élève souriante pendant une séance de tutorat en ligne par appel vidéo avec son tuteur",
+    "floatingApproved": "Tuteurs vérifiés et approuvés",
+    "floatingModes": "En ligne ou en personne"
   },
   "search": {
     "subjectLabel": "Avec quoi avez-vous besoin d'aide?",
