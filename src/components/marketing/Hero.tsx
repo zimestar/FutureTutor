@@ -59,12 +59,12 @@ export function Hero() {
           <div data-testid="hero-visual" className="relative mx-auto w-full max-w-xl lg:max-w-none">
             <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-(--shadow-pop) lg:aspect-[4/4.3]">
               <Image
-                src="/images/home-tutoring-session.webp"
+                src="/images/home-tutoring-session-v2.webp"
                 alt={t("imageAlt")}
                 fill
                 priority
                 sizes="(min-width: 1024px) 560px, 100vw"
-                className="object-cover object-[50%_42%]"
+                className="object-cover object-[62%_50%]"
               />
             </div>
             <div className="absolute -right-3 top-6 hidden items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-(--shadow-pop) sm:flex lg:-right-5 lg:top-10">

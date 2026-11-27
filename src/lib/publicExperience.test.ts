@@ -68,7 +68,7 @@ describe("public experience regression boundary", () => {
 
   it("references every approved editorial image through the public presentation layer", () => {
     const files = [
-      "home-tutoring-session.webp",
+      "home-tutoring-session-v2.webp",
       "parent-homework-help.webp",
       "online-classroom-call.webp",
       "tutor-desk-session.webp",
@@ -106,7 +106,7 @@ describe("public experience regression boundary", () => {
     expect(hero).toContain("bg-white bg-[radial-gradient(");
     expect(hero).not.toContain("font-serif");
     expect(hero).toContain('<TutorSearch presentation="panel"');
-    expect(hero).toContain("home-tutoring-session.webp");
+    expect(hero).toContain("home-tutoring-session-v2.webp");
     expect(hero).not.toContain("bg-navy pb-16");
     expect(search).toContain('presentation?: "default" | "hero" | "panel"');
     expect(search).toContain('router.push(`${resultsPath}?${params.toString()}`)');
