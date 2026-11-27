@@ -69,7 +69,7 @@ describe("public experience regression boundary", () => {
   it("references every approved editorial image through the public presentation layer", () => {
     const files = [
       "home-tutoring-session-v2.webp",
-      "parent-homework-help.webp",
+      "parent-homework-help-v2.webp",
       "online-classroom-call.webp",
       "tutor-desk-session.webp",
       "tutor-teaching-online.webp",

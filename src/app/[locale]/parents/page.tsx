@@ -32,7 +32,7 @@ export default async function ParentsPage({ params }: { params: Promise<{ locale
         description={t("hero.description")}
         primary={{ label: t("hero.primary"), href: "/signup?role=parent" }}
         secondary={{ label: t("hero.secondary"), href: "/find-tutors" }}
-        image="/images/parent-homework-help.webp"
+        image="/images/parent-homework-help-v2.webp"
         imageAlt={t("hero.imageAlt")}
       />
       <InfoSteps eyebrow={t("steps.eyebrow")} title={t("steps.title")} items={t.raw("steps.items") as InfoItem[]} />
