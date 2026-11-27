@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import type { TutorApplicationStatus } from "@/generated/prisma/enums";
 import { adminNavItems } from "@/lib/adminNav";
 import { Avatar } from "@/components/ui/Avatar";
+import { AdminTutorsTabs } from "@/components/admin/AdminTutorsTabs";
 
 const PENDING_STATUSES: TutorApplicationStatus[] = [
   "SUBMITTED",
@@ -58,6 +59,7 @@ export default async function AdminTutorsPage({
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
+      <AdminTutorsTabs locale={locale} active="all" />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>

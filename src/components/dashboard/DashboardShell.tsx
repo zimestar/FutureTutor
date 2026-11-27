@@ -2,21 +2,19 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import {
-  BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText,
-  GraduationCap, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search,
-  ShieldAlert, SlidersHorizontal, Sparkles, UserRound, UsersRound, WalletCards,
+  BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText, FileSearch,
+  GraduationCap, Heart, LayoutDashboard, Mail, Menu, MessageCircle, MessageSquareWarning,
+  Search, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, UserRound,
+  UsersRound, Video, WalletCards, Receipt, ScrollText, Baby,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Logo } from "@/components/marketing/Logo";
 import { Drawer } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
-import { signOutAction } from "@/lib/actions/auth";
 import { Avatar } from "@/components/ui/Avatar";
-import { InstallFutureTutor } from "@/components/pwa/InstallFutureTutor";
-import { FeedbackLink } from "@/components/dashboard/FeedbackLink";
-import { ReportConcernLink } from "@/components/dashboard/ReportConcernLink";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
+import { AccountMenu } from "@/components/dashboard/AccountMenu";
 
 export interface DashboardNavItem {
   label: string;
@@ -33,6 +31,9 @@ export interface DashboardNavItem {
    * navigating the tutor away from their own navigation entirely.
    */
   openInNewTab?: boolean;
+  /** DESIGN-SYSTEM2 — the item is also active anywhere under this path (e.g. a
+   * section whose entry page is one of several tabs). */
+  activePrefix?: string;
 }
 
 const navIcons: Record<string, typeof LayoutDashboard> = {
@@ -57,15 +58,23 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/tutor/payouts": WalletCards,
   "/admin": LayoutDashboard,
   "/admin/tutors": UsersRound,
+  "/admin/tutors/pipeline": UsersRound,
   "/admin/students": GraduationCap,
+  "/admin/parents": Baby,
+  "/admin/family": Mail,
   "/admin/bookings": CalendarDays,
-  "/admin/sessions": BookOpenCheck,
+  "/admin/sessions": Video,
   "/admin/users": UserRound,
+  "/admin/admins": UserCog,
   "/admin/pricing": SlidersHorizontal,
   "/admin/quick-match": Sparkles,
   "/admin/payments": CreditCard,
-  "/admin/financial-ops": WalletCards,
-  "/admin/message-reports": ShieldAlert,
+  "/admin/financial-ops": Receipt,
+  "/admin/message-reports": MessageSquareWarning,
+  "/admin/safety-reports": ShieldAlert,
+  "/admin/audit-log": ScrollText,
+  "/tutor-agreement": ShieldCheck,
+  "/report-concern": FileSearch,
 };
 
 function isActiveRoute(pathname: string, href: string) {
@@ -89,7 +98,7 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
           {group.label && <p className="mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-400">{group.label}</p>}
           <ul className="flex flex-col gap-1">
             {group.items.map((item) => {
-              const active = isActiveRoute(pathname, item.href);
+              const active = isActiveRoute(pathname, item.href) || (item.activePrefix !== undefined && isActiveRoute(pathname, item.activePrefix));
               const Icon = navIcons[item.href] ?? LayoutDashboard;
               return (
                 <li key={item.href}>
@@ -99,7 +108,7 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
                     onClick={onNavigate}
                     {...(item.openInNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={cn(
-                      "group flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+                      "group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                       active ? "bg-blue/10 text-blue" : "text-neutral-600 hover:bg-neutral-100 hover:text-navy"
                     )}
                   >
@@ -137,21 +146,13 @@ export function DashboardShell({ navItems, userName, userImage, children }: { na
   return (
     <div className="min-h-screen bg-canvas lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)]">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[17.5rem] flex-col border-r border-border bg-surface lg:flex">
-        <div className="flex min-h-20 items-center justify-between border-b border-border px-6">
-          <Logo className="h-9" />
+        <div className="flex min-h-[72px] items-center justify-between border-b border-border px-5">
+          <Logo className="h-8" />
           <NotificationBell />
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} /></div>
-        <div className="border-t border-border p-4">
-          <AccountArea userName={userName} userImage={userImage} />
-          <InstallFutureTutor className="mt-2" />
-          <FeedbackLink className="mt-2" />
-          <ReportConcernLink className="mt-2" />
-          <form action={signOutAction} className="mt-2">
-            <button type="submit" className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary">
-              <LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}
-            </button>
-          </form>
+        <div className="flex-1 overflow-y-auto px-3 py-5"><DashboardNavigation navItems={navItems} /></div>
+        <div className="border-t border-border p-3">
+          <AccountMenu userName={userName} userImage={userImage} />
         </div>
       </aside>
 
@@ -172,14 +173,8 @@ export function DashboardShell({ navItems, userName, userImage, children }: { na
 
       <Drawer open={navigationOpen} onClose={closeNavigation} id="dashboard-mobile-navigation" title={<Logo className="h-8" />} closeLabel={t("closeNavigation")}>
         <div className="flex-1 overflow-y-auto px-4 py-6"><DashboardNavigation navItems={navItems} onNavigate={closeNavigation} /></div>
-        <div className="border-t border-border p-4">
-          <AccountArea userName={userName} userImage={userImage} />
-          <InstallFutureTutor className="mt-2" />
-          <FeedbackLink className="mt-2" />
-          <ReportConcernLink className="mt-2" onNavigate={closeNavigation} />
-          <form action={signOutAction} className="mt-2">
-            <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-semibold text-text-secondary hover:bg-neutral-100 hover:text-text-primary"><LogOut className="size-[18px]" aria-hidden="true" /> {t("logOut")}</button>
-          </form>
+        <div className="border-t border-border p-3">
+          <AccountMenu userName={userName} userImage={userImage} onNavigate={closeNavigation} />
         </div>
       </Drawer>
     </div>

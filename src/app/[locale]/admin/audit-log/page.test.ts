@@ -135,6 +135,6 @@ describe("admin/audit-log/page.tsx — EN/FR (items 19/20)", () => {
 describe("admin nav wiring", () => {
   it("the audit-log nav entry is gated on ADMIN_AUDIT_LOG_READ, a dedicated permission not reused from an unrelated domain", () => {
     const navSource = readFileSync(join(__dirname, "../../../../lib/adminNav.ts"), "utf8");
-    expect(navSource).toMatch(/key: "auditLog", href: "\/admin\/audit-log", group: "operationsGroup", permission: "ADMIN_AUDIT_LOG_READ"/);
+    expect(navSource).toMatch(/key: "auditLog", href: "\/admin\/audit-log", group: "trustGroup", permission: "ADMIN_AUDIT_LOG_READ"/);
   });
 });

@@ -1349,6 +1349,12 @@
     "nav": {
       "overview": "Overview",
       "safetyReports": "Safety reports",
+      "peopleGroup": "Tutors & families",
+      "activityGroup": "Activity",
+      "trustGroup": "Trust & safety",
+      "settingsGroup": "Administration",
+      "tutorsTabApplications": "Applications",
+      "tutorsTabAll": "All tutors",
       "applicationOverview": "Application Overview",
       "profile": "Profile",
       "favorites": "Favorites",
@@ -1668,10 +1674,23 @@
     },
     "admin": {
       "title": "Admin Overview",
-      "description": "Marketplace-wide numbers, pulled live from the database.",
+      "description": "What needs the team today, then the key figures.",
+      "todo": {
+        "title": "Needs the team",
+        "applications": "Applications waiting for the team",
+        "safetyReports": "Open safety reports",
+        "messageReports": "Open message reports",
+        "documents": "Documents to review",
+        "overdue": "{count, plural, one {# waiting 2+ days} other {# waiting 2+ days}}",
+        "urgent": "{count, plural, one {# immediate danger} other {# immediate danger}}",
+        "allClear": "All clear — nothing is waiting."
+      },
+      "figuresTitle": "Platform",
+      "totalUsers": "{count, plural, one {# account} other {# accounts}}",
       "stats": {
         "totalUsers": "Total Users",
         "totalTutors": "Tutor Profiles",
+        "approvedTutors": "Approved tutors",
         "pendingApplications": "Pending Applications",
         "totalStudents": "Student profiles",
         "upcomingBookings": "Upcoming bookings",

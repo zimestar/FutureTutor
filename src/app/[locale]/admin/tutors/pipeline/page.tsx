@@ -3,10 +3,10 @@ import { auth } from "@/lib/auth";
 import { redirect, Link } from "@/i18n/navigation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { adminNavItems } from "@/lib/adminNav";
 import { cn } from "@/lib/utils";
 import { loadTutorPipeline, type PipelineEntry } from "@/services/tutorPipelineQueue";
+import { AdminTutorsTabs } from "@/components/admin/AdminTutorsTabs";
 import { DIGEST_THRESHOLD_DAYS, PIPELINE_STAGES, type PipelineOwner } from "@/lib/tutorPipeline/pipelineQueue";
 
 /**
@@ -75,14 +75,10 @@ export default async function AdminTutorPipelinePage({ params }: { params: Promi
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
-          <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
-        </div>
-        <Button href="/admin/tutors" variant="outline" size="sm">
-          {t("backToList")}
-        </Button>
+      <AdminTutorsTabs locale={locale} active="applications" />
+      <div>
+        <h1 className="text-2xl font-bold text-navy">{t("title")}</h1>
+        <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">

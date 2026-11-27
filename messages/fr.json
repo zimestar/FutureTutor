@@ -1349,6 +1349,12 @@
     "nav": {
       "overview": "Aperçu",
       "safetyReports": "Signalements de sécurité",
+      "peopleGroup": "Tuteurs et familles",
+      "activityGroup": "Activité",
+      "trustGroup": "Confiance et sécurité",
+      "settingsGroup": "Administration",
+      "tutorsTabApplications": "Candidatures",
+      "tutorsTabAll": "Tous les tuteurs",
       "applicationOverview": "Aperçu de la candidature",
       "profile": "Profil",
       "favorites": "Favoris",
@@ -1668,10 +1674,23 @@
     },
     "admin": {
       "title": "Aperçu administrateur",
-      "description": "Chiffres de la plateforme, en direct depuis la base de données.",
+      "description": "Ce qui attend l’équipe aujourd’hui, puis les chiffres clés.",
+      "todo": {
+        "title": "À traiter par l’équipe",
+        "applications": "Candidatures en attente de l’équipe",
+        "safetyReports": "Signalements de sécurité ouverts",
+        "messageReports": "Signalements de messages ouverts",
+        "documents": "Documents à examiner",
+        "overdue": "{count, plural, one {# en attente depuis 2 jours ou plus} other {# en attente depuis 2 jours ou plus}}",
+        "urgent": "{count, plural, one {# danger immédiat} other {# dangers immédiats}}",
+        "allClear": "Tout est à jour — rien n’attend."
+      },
+      "figuresTitle": "La plateforme",
+      "totalUsers": "{count, plural, one {# compte} other {# comptes}}",
       "stats": {
         "totalUsers": "Utilisateurs au total",
         "totalTutors": "Profils de tuteurs",
+        "approvedTutors": "Tuteurs approuvés",
         "pendingApplications": "Demandes en attente",
         "totalStudents": "Profils d’élèves",
         "upcomingBookings": "Réservations à venir",

@@ -45,6 +45,6 @@ describe("item 51/52 — messaging.report and admin.messageReports translations"
 describe("item 33 — the message-reports nav entry uses a dedicated, not-auto-granted permission", () => {
   it("adminNav.ts gates /admin/message-reports on ADMIN_MESSAGE_REPORTS_READ, not an existing/reused permission", () => {
     const source = readFileSync(join(__dirname, "adminNav.ts"), "utf8");
-    expect(source).toMatch(/href: "\/admin\/message-reports", group: "operationsGroup", permission: "ADMIN_MESSAGE_REPORTS_READ"/);
+    expect(source).toMatch(/href: "\/admin\/message-reports", group: "trustGroup", permission: "ADMIN_MESSAGE_REPORTS_READ"/);
   });
 });
