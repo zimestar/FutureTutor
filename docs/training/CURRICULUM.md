@@ -115,9 +115,11 @@ Durée totale visée : environ 2 h 30, découpable en plusieurs sessions.
   3. « Communiquer avec un mineur » — onglets : canaux approuvés, jamais de
      secret, jamais d'informations personnelles inutiles, jamais de rencontre
      hors cadre (§47).
-  4. « Cadeaux et argent » — cartes (§48).
+  4. « Cadeaux et argent » — cartes (§48) : jamais solliciter ; cadeau
+     spontané accepté seulement s'il vaut moins de 25 $ CA.
   5. « Signaler une préoccupation » — étapes cliquables : à FutureTutor sans
-     délai ; aux autorités en cas de danger immédiat ; l'obligation légale de
+     délai, par le formulaire de signalement ; aux autorités en cas de danger
+     immédiat ; l'obligation légale de
      signalement s'applique en plus (§49).
   6. « Vie privée des élèves » — onglets : confidentialité, minimisation, pas de
      base de données personnelle, incidents de sécurité (§73–77).
@@ -181,7 +183,9 @@ Durée totale visée : environ 2 h 30, découpable en plusieurs sessions.
 - **Capsule** : la fiabilité, base de la confiance.
 - **Pages interactives** :
   1. Ponctualité et enregistrement de présence — ne jamais falsifier (§62–63).
-  2. Absence (no-show) et ses conséquences (§64).
+  2. Absence (no-show) et ses conséquences (§64) : plus de 15 minutes de
+     retard sans aucune communication = absence ; prévenir l'élève par la
+     messagerie dès qu'un retard est prévisible.
   3. Annuler : seulement si nécessaire, le plus tôt possible ; urgences (§65–67).
   4. Annulation par le client : barème de remboursement de la plateforme
      (100 % à 48 h ou plus, 50 % entre 24 et 48 h, 0 % à moins de 24 h) ; la
@@ -204,11 +208,17 @@ Durée totale visée : environ 2 h 30, découpable en plusieurs sessions.
 2. Le nouvel ordre du parcours (formation et examen avant l'entretien).
 3. Le coach **Alex** et les personnages secondaires.
 4. Le seuil de 100 % pour la vérification du module 2.
-5. Règles à confirmer avant rédaction finale :
-   - cadeaux : acceptez-vous de « petits cadeaux symboliques » offerts par une
-     famille (§48 le permet selon la politique de FutureTutor) ?
-   - délai de retard toléré avant qu'un retard soit considéré comme une absence ;
-   - canal officiel pour signaler une préoccupation de sécurité (adresse ou
-     formulaire) ;
-   - existence d'une politique de remboursement des tuteurs en cas
-     d'annulation tardive par le client.
+5. Règles confirmées par la direction le 2026-11-27 :
+   - **cadeaux** : un cadeau offert spontanément par une famille peut être
+     accepté s'il vaut moins de 25 $ CA ; au-delà, il doit être refusé (conflit
+     d'intérêts). Ne jamais solliciter de cadeau (Entente §48) ;
+   - **retard** : au-delà de 15 minutes après le début, sans aucune
+     communication entre le tuteur et l'élève, la séance est considérée comme
+     une absence. La plateforme applique déjà l'échéance de 15 minutes
+     (enregistrement de présence) ; l'exception « communication par la
+     messagerie » est à implanter (voir la note de réalisation) ;
+   - **signalement** : un formulaire dédié, accessible aux tuteurs, élèves et
+     parents, sera le canal officiel (fonction à construire avant le lancement
+     de la formation) ;
+   - **annulation tardive par le client** : proposition en attente de
+     validation (voir la réponse du 2026-11-27).
