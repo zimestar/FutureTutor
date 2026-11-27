@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "test-results/**",
     ".playwright/**",
     "blob-report/**",
+    // Training-video package (its own dependencies and tooling, see video/README.md):
+    "video/**",
   ]),
 ]);
 
