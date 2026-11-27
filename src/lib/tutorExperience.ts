@@ -35,7 +35,9 @@ export const TUTOR_EXPERIENCE: Record<TutorApplicationStatus, TutorExperiencePre
     tone: "info",
     responsibleParty: "tutor",
     nextActionHref: "/tutor/profile",
-    journey: journey([], { step: "profile", state: "needsAction" }),
+    // TUTOR-PIPELINE1 — a transcript, diploma or degree is required before
+    // submitting, so documents are an action of the draft stage too.
+    journey: { ...journey([], { step: "profile", state: "needsAction" }), documents: "needsAction" },
   },
   SUBMITTED: {
     tone: "pending",

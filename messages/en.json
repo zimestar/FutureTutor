@@ -1355,6 +1355,7 @@
       "settingsGroup": "Administration",
       "tutorsTabApplications": "Applications",
       "tutorsTabAll": "All tutors",
+      "myPayments": "My payments",
       "applicationOverview": "Application Overview",
       "profile": "Profile",
       "favorites": "Favorites",
@@ -1509,6 +1510,7 @@
         }
       },
       "experience": {
+        "documentsCta": "Upload a document",
         "modeApproval": "Get approved",
         "modeTutoring": "My tutoring",
         "journeyTitle": "Your approval journey",
@@ -3162,19 +3164,19 @@
     },
     "studentRejectedActivation": {
       "title": "Your account wasn't approved",
-      "description": "Your parent or guardian did not approve this student login. If you think this is a mistake, contact them directly — you can't request a new invitation yourself. You can sign out from the menu above.",
+      "description": "Your parent or guardian did not approve this student login. If you think this is a mistake, contact them directly — you can't request a new invitation yourself. You can sign out from your account menu.",
       "statusTitle": "Your next step",
       "statusDescription": "Contact your parent or guardian directly. For your safety, this account cannot request or approve its own access."
     },
     "studentExpiredActivation": {
       "title": "Your invitation has expired",
-      "description": "The invitation you accepted expired before a parent or guardian could approve it. Ask them to send you a new invitation — invitations can't be reactivated. You can sign out from the menu above.",
+      "description": "The invitation you accepted expired before a parent or guardian could approve it. Ask them to send you a new invitation — invitations can't be reactivated. You can sign out from your account menu.",
       "statusTitle": "Your next step",
       "statusDescription": "Ask your parent or guardian for a new invitation. This account cannot reactivate an expired invitation."
     },
     "studentUnlinkedActivation": {
       "title": "Your account setup isn't complete",
-      "description": "Your account isn't linked to a student profile yet. Ask your parent or guardian to send you a student login invitation. You can sign out from the menu above.",
+      "description": "Your account isn't linked to a student profile yet. Ask your parent or guardian to send you a student login invitation. You can sign out from your account menu.",
       "statusTitle": "Your next step",
       "statusDescription": "Ask your parent or guardian to connect this login to your learner profile. Tutoring tools stay unavailable until that link is approved."
     },

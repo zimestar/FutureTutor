@@ -1355,6 +1355,7 @@
       "settingsGroup": "Administration",
       "tutorsTabApplications": "Candidatures",
       "tutorsTabAll": "Tous les tuteurs",
+      "myPayments": "Mes paiements",
       "applicationOverview": "Aperçu de la candidature",
       "profile": "Profil",
       "favorites": "Favoris",
@@ -1509,6 +1510,7 @@
         }
       },
       "experience": {
+        "documentsCta": "Déposer un document",
         "modeApproval": "Obtenir l'approbation",
         "modeTutoring": "Mon tutorat",
         "journeyTitle": "Votre parcours d'approbation",
@@ -3162,19 +3164,19 @@
     },
     "studentRejectedActivation": {
       "title": "Votre compte n'a pas été approuvé",
-      "description": "Votre parent ou tuteur légal n'a pas approuvé cet accès élève. Si vous pensez qu'il s'agit d'une erreur, contactez-le directement — vous ne pouvez pas demander une nouvelle invitation vous-même. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "description": "Votre parent ou tuteur légal n'a pas approuvé cet accès élève. Si vous pensez qu'il s'agit d'une erreur, contactez-le directement — vous ne pouvez pas demander une nouvelle invitation vous-même. Vous pouvez vous déconnecter à partir du menu de votre compte.",
       "statusTitle": "Votre prochaine étape",
       "statusDescription": "Communiquez directement avec votre parent ou tuteur légal. Pour votre sécurité, ce compte ne peut pas demander ni approuver son propre accès."
     },
     "studentExpiredActivation": {
       "title": "Votre invitation a expiré",
-      "description": "L'invitation que vous avez acceptée a expiré avant qu'un parent ou tuteur légal puisse l'approuver. Demandez-lui de vous envoyer une nouvelle invitation — les invitations ne peuvent pas être réactivées. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "description": "L'invitation que vous avez acceptée a expiré avant qu'un parent ou tuteur légal puisse l'approuver. Demandez-lui de vous envoyer une nouvelle invitation — les invitations ne peuvent pas être réactivées. Vous pouvez vous déconnecter à partir du menu de votre compte.",
       "statusTitle": "Votre prochaine étape",
       "statusDescription": "Demandez une nouvelle invitation à votre parent ou tuteur légal. Ce compte ne peut pas réactiver une invitation expirée."
     },
     "studentUnlinkedActivation": {
       "title": "La configuration de votre compte n'est pas terminée",
-      "description": "Votre compte n'est pas encore lié à un profil élève. Demandez à votre parent ou tuteur légal de vous envoyer une invitation d'accès élève. Vous pouvez vous déconnecter à partir du menu ci-dessus.",
+      "description": "Votre compte n'est pas encore lié à un profil élève. Demandez à votre parent ou tuteur légal de vous envoyer une invitation d'accès élève. Vous pouvez vous déconnecter à partir du menu de votre compte.",
       "statusTitle": "Votre prochaine étape",
       "statusDescription": "Demandez à votre parent ou tuteur légal de lier cette connexion à votre profil d'élève. Les outils de tutorat restent indisponibles jusqu'à l'approbation du lien."
     },

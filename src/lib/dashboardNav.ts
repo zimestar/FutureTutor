@@ -24,7 +24,8 @@ export function getStudentDashboardNavItems(
   if (role === "PARENT") {
     items.push({ label: tNav("family"), href: "/dashboard/family", group: tNav("accountGroup") });
   }
-  items.push({ label: tNav("payments"), href: "/dashboard/payments", group: tNav("accountGroup") });
+  // DESIGN-SYSTEM2 — "payments" is the admin label (customer payments); learners see their own.
+  items.push({ label: tNav("myPayments"), href: "/dashboard/payments", group: tNav("accountGroup") });
   items.push({ label: tNav("profile"), href: "/dashboard/profile", group: tNav("accountGroup") });
   return items;
 }

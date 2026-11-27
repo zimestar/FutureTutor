@@ -107,7 +107,9 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
                     stateLabel: t(`experience.journeyStates.${journeyState}`),
                     action: isAction
                       ? { href: experience.nextActionHref!, label: t(`${stateKey}.actionCta`) }
-                      : undefined,
+                      : journeyState === "needsAction" && step === "documents"
+                        ? { href: "/tutor/documents", label: t("experience.documentsCta") }
+                        : undefined,
                   };
                 })}
               />
