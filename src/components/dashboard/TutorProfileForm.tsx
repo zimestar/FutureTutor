@@ -212,7 +212,7 @@ export function TutorProfileForm({
         <label className="flex items-start gap-3 rounded-md border border-neutral-200 bg-surface-subtle px-4 py-3 text-sm text-slate">
           <input type="checkbox" name="tutorAgreementAccepted" value="true" required className="mt-0.5" />
           <span>
-            {t("tutorAgreementPrefix")}{" "}
+            {t("tutorAgreementPrefix")}{/['’]$/.test(t("tutorAgreementPrefix")) ? "" : " "}
             <Link href="/tutor-agreement" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
               {t("tutorAgreementLink")}
             </Link>

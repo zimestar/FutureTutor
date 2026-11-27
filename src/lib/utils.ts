@@ -17,13 +17,15 @@ export function formatHourlyRate(amount: number, locale: string) {
  * it's never ambiguous whose timezone is being displayed.
  */
 export function formatBookingTime(startAt: Date, timezone: string, locale: string) {
-  const formatted = new Intl.DateTimeFormat(locale, {
+  // DESIGN-SYSTEM2 — the zone is labelled the way people read it ("HAE",
+  // "EDT", "HNR"...), using Canadian conventions, instead of the raw IANA id.
+  return new Intl.DateTimeFormat(`${locale === "fr" ? "fr" : "en"}-CA`, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
     timeZone: timezone,
+    timeZoneName: "short",
   }).format(startAt);
-  return `${formatted} (${timezone.replace("_", " ")})`;
 }

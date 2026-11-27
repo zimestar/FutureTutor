@@ -94,9 +94,9 @@ export default async function StudentDashboardPage({ params }: { params: Promise
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)]">
           <section aria-labelledby="student-schedule-heading">
-            <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
               <div><h2 id="student-schedule-heading" className="text-xl font-bold text-text-primary">{t("schedule.title")}</h2><p className="mt-1 text-sm text-text-secondary">{t("schedule.description")}</p></div>
-              <Button href="/dashboard/bookings" variant="ghost" size="sm" className="shrink-0">{t("schedule.viewCta")}<ArrowRight className="size-4" aria-hidden="true" /></Button>
+              <Button href="/dashboard/bookings" variant="ghost" size="sm" className="-ml-3 shrink-0 self-start sm:ml-0 sm:self-auto">{t("schedule.viewCta")}<ArrowRight className="size-4" aria-hidden="true" /></Button>
             </div>
             {upcomingBookings.length > 0 ? (
               <div className="flex flex-col gap-4" data-testid="upcoming-sessions-list">

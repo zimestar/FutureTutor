@@ -33,7 +33,7 @@ export function TutorAgreementBanner() {
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" name="tutorAgreementAccepted" value="true" required className="mt-0.5" />
           <span>
-            {t("checkboxPrefix")}{" "}
+            {t("checkboxPrefix")}{/['’]$/.test(t("checkboxPrefix")) ? "" : " "}
             <Link href="/tutor-agreement" target="_blank" className="font-semibold text-blue hover:text-blue-hover">
               {t("checkboxLink")}
             </Link>
