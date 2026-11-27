@@ -522,6 +522,8 @@
     }
   },
   "faq": {
+    "subheading": "Can't find your answer?",
+    "contactLink": "Contact us",
     "heading": "Frequently asked questions",
     "items": {
       "howItWorks": {

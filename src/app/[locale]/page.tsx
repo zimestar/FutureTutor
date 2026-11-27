@@ -82,10 +82,10 @@ export default async function Home({
         <TutorCTA />
         <Section className="bg-white pt-0">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.14em] text-blue">{tExplore("heading")}</p>
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
-              <Link href="/tutoring/edmonton" className="font-semibold text-navy hover:text-blue">{tExplore("edmonton")}</Link>
-              <Link href="/resources" className="font-semibold text-navy hover:text-blue">{tExplore("resources")}</Link>
+            <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-blue">{tExplore("heading")}</p>
+            <div className="flex flex-wrap justify-center gap-2 text-sm">
+              <Link href="/tutoring/edmonton" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tExplore("edmonton")}</Link>
+              <Link href="/resources" className="rounded-full border border-border bg-white px-4 py-2 font-semibold text-navy transition-colors hover:border-blue/30 hover:text-blue">{tExplore("resources")}</Link>
             </div>
           </div>
         </Section>

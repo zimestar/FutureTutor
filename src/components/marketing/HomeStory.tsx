@@ -27,26 +27,32 @@ export function HomeStory() {
         <SectionIntro eyebrow={t("path.eyebrow")} title={t("path.title")} description={t("path.description")} />
         <ol className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {pathIcons.map((Icon, index) => (
-            <li key={index} className="relative rounded-2xl border border-border bg-white p-6 shadow-card">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-blue/10 text-blue"><Icon className="size-5" aria-hidden="true" /></span>
-              <p className="mt-5 text-sm font-bold uppercase tracking-wider text-blue">{t("path.step", { number: index + 1 })}</p>
-              <h3 className="mt-2 text-xl font-extrabold text-navy">{t(`path.items.${index}.title`)}</h3>
-              <p className="mt-3 leading-7 text-text-secondary">{t(`path.items.${index}.description`)}</p>
+            <li key={index} className="relative overflow-hidden rounded-3xl border border-border bg-white p-7 shadow-(--shadow-card) transition-shadow hover:shadow-(--shadow-card-hover)">
+              <span aria-hidden="true" className="absolute -right-2 -top-6 font-[family-name:var(--font-display)] text-[7rem] font-extrabold leading-none text-blue/[0.06]">
+                {index + 1}
+              </span>
+              <span className="relative flex size-12 items-center justify-center rounded-2xl bg-blue/10 text-blue"><Icon className="size-5" aria-hidden="true" /></span>
+              <p className="relative mt-6 text-[13px] font-bold uppercase tracking-[0.12em] text-blue">{t("path.step", { number: index + 1 })}</p>
+              <h3 className="relative mt-2 text-xl font-bold text-navy">{t(`path.items.${index}.title`)}</h3>
+              <p className="relative mt-3 leading-7 text-neutral-600">{t(`path.items.${index}.description`)}</p>
             </li>
           ))}
         </ol>
         <div className="mt-8 flex justify-center"><TrackedCtaButton href="/how-it-works" event="how_it_works_cta_clicked" properties={{ cta_location: "content" }} variant="outline">{t("path.cta")}<ArrowRight className="size-4" aria-hidden="true" /></TrackedCtaButton></div>
       </Section>
 
-      <Section className="bg-navy text-white">
+      {/* DESIGN-SYSTEM2 — light band: the page keeps a single dark moment (learning modes). */}
+      <Section className="bg-gradient-to-b from-white to-blue-50">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <SectionIntro eyebrow={t("trust.eyebrow")} title={t("trust.title")} description={t("trust.description")} align="left" inverse />
+          <SectionIntro eyebrow={t("trust.eyebrow")} title={t("trust.title")} description={t("trust.description")} align="left" />
           <div className="grid gap-4 sm:grid-cols-3">
             {trustIcons.map((Icon, index) => (
-              <div key={index} className="rounded-2xl border border-white/12 bg-white/6 p-5">
-                <Icon className="size-6 text-mint" aria-hidden="true" />
-                <h3 className="mt-5 font-bold text-white">{t(`trust.items.${index}.title`)}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/68">{t(`trust.items.${index}.description`)}</p>
+              <div key={index} className="rounded-3xl border border-border bg-white p-6 shadow-(--shadow-card)">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-mint/12 text-emerald-700">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-5 font-bold text-navy">{t(`trust.items.${index}.title`)}</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-600">{t(`trust.items.${index}.description`)}</p>
               </div>
             ))}
           </div>

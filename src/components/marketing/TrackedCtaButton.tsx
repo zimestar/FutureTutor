@@ -26,7 +26,7 @@ export function TrackedCtaButton<E extends AnalyticsEventName>({
   event: E;
   properties: AnalyticsEventPropertiesMap[E];
   size?: "sm" | "md" | "lg";
-  variant?: "primary" | "dark" | "outline" | "ghost" | "ghost-inverse" | "destructive";
+  variant?: "primary" | "dark" | "outline" | "ghost" | "ghost-inverse" | "inverse" | "destructive";
   className?: string;
   children: React.ReactNode;
 }) {
