@@ -46,6 +46,8 @@ export function BookingWidget({
   actorIsParent,
   tutorLearningMode,
   tutorName,
+  heading,
+  intro,
 }: {
   tutorProfileId: string;
   timezone: string;
@@ -68,6 +70,9 @@ export function BookingWidget({
   tutorLearningMode: "ONLINE" | "IN_PERSON" | "BOTH";
   /** Tutor first name, shown on the confirmation card only. */
   tutorName?: string;
+  /** Card heading + pricing note, hidden once the booking is confirmed. */
+  heading?: string;
+  intro?: string;
 }) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -221,7 +226,7 @@ export function BookingWidget({
     if (quote?.success) recap.push({ label: t("confirmation.paid"), value: formatCents(quote.totalCents) });
 
     return (
-      <div className="mt-5" data-testid="booking-confirmation" role="status">
+      <div data-testid="booking-confirmation" role="status">
         <div className="flex flex-col items-center text-center">
           <span className="flex size-14 items-center justify-center rounded-full bg-success-light text-success">
             <CheckCircle2 className="size-7" aria-hidden="true" />
@@ -271,8 +276,21 @@ export function BookingWidget({
     );
   }
 
+  const header =
+    heading || intro ? (
+      <div>
+        {heading && <h2 className="text-lg font-bold text-navy">{heading}</h2>}
+        {intro && <p className="mt-1 text-sm leading-6 text-text-secondary">{intro}</p>}
+      </div>
+    ) : null;
+
   if (days.length === 0) {
-    return <p className="mt-6 text-sm text-slate">{t("noAvailability")}</p>;
+    return (
+      <>
+        {header}
+        <p className="mt-6 text-sm text-slate">{t("noAvailability")}</p>
+      </>
+    );
   }
 
   const readyToSubmit = quote?.success && (!useStripe || authorizedPiId);
@@ -287,7 +305,8 @@ export function BookingWidget({
     // not an ancestor — mirroring the pattern QuickMatchPriceReview.tsx
     // already uses correctly. All the fields that form needs are tracked in
     // React state already and passed via hidden inputs on that form alone.
-    <div className="mt-5 flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
+      {header}
       {state?.error && (
         <p role="alert" className="rounded-md bg-error-light px-3 py-2 text-sm font-semibold text-error">
           {state.error}

@@ -195,8 +195,14 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
           </div>
 
           <aside className="h-fit rounded-2xl border border-border bg-surface p-6 shadow-(--shadow-card) lg:sticky lg:top-24">
-            <h2 className="text-lg font-bold text-navy">{tProfile("bookTitle", { name: firstName })}</h2>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">{tProfile("pricingNote")}</p>
+            {/* The bookable path renders its own heading inside BookingWidget so
+                it can step aside once the booking is confirmed. */}
+            {!(canBook && timezone) && (
+              <>
+                <h2 className="text-lg font-bold text-navy">{tProfile("bookTitle", { name: firstName })}</h2>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">{tProfile("pricingNote")}</p>
+              </>
+            )}
             {canBook ? (
               timezone ? (
                 <BookingWidget
@@ -215,6 +221,8 @@ export default async function TutorProfilePage({ params }: { params: Promise<Par
                   actorIsParent={session?.user?.role === "PARENT"}
                   tutorLearningMode={tutor.learningMode ?? "BOTH"}
                   tutorName={firstName}
+                  heading={tProfile("bookTitle", { name: firstName })}
+                  intro={tProfile("pricingNote")}
                 />
               ) : (
                 <p className="mt-6 text-sm text-slate">{tBooking("noAvailability")}</p>
