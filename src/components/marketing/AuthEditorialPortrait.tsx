@@ -24,7 +24,7 @@ export function AuthEditorialPortrait({ alt }: { alt: string }) {
       src={portrait}
       alt={alt}
       fill
-      sizes="54vw"
+      sizes="46vw"
       className="object-cover"
       style={{ objectPosition: authPortraitFocus(portrait) }}
       onError={() => setFailed(true)}
