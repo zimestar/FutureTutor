@@ -6,6 +6,7 @@ import { redirect } from "@/i18n/navigation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { AssistantChat } from "@/components/dashboard/AssistantChat";
+import { IkaAvatar } from "@/components/assistant/IkaAvatar";
 import { Button } from "@/components/ui/Button";
 import { getStudentDashboardNavItems } from "@/lib/dashboardNav";
 import { isAssistantConfigured } from "@/lib/assistant/config";
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: t("metaTitle") };
 }
 
-/** ASSISTANT-1 — the parent AI assistant (parents only). */
+/** ASSISTANT-1 — Ika, the parent AI assistant (parents only). */
 export default async function AssistantPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -47,7 +48,7 @@ export default async function AssistantPage({ params }: { params: Promise<{ loca
         headingId="assistant-heading"
         title={t("title")}
         description={t("description")}
-        badge={<span className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-navy">{t("badge")}</span>}
+        badge={<span className="inline-flex items-center gap-1.5 rounded-full bg-white py-0.5 pl-1 pr-3 text-xs font-bold text-navy"><IkaAvatar className="size-6" />{t("badge")}</span>}
       />
       <div className="mx-auto mt-6 max-w-4xl">
         {configured ? (

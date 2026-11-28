@@ -2708,15 +2708,19 @@ model RateLimitBucket {
 // enforce the monthly free quota and to follow token costs. The question and
 // the answer themselves are never stored.
 model AssistantUsage {
-  id              String               @id @default(cuid())
-  userId          String
-  status          AssistantUsageStatus @default(PENDING)
-  model           String
-  inputTokens     Int                  @default(0)
-  outputTokens    Int                  @default(0)
-  cacheReadTokens Int                  @default(0)
-  createdAt       DateTime             @default(now())
-  completedAt     DateTime?
+  id               String               @id @default(cuid())
+  userId           String
+  status           AssistantUsageStatus @default(PENDING)
+  model            String
+  inputTokens      Int                  @default(0)
+  outputTokens     Int                  @default(0)
+  cacheReadTokens  Int                  @default(0)
+  /// Tokens written to the prompt cache (billed 1.25x input).
+  cacheWriteTokens Int                  @default(0)
+  /// A photo was attached (the photo itself is never stored).
+  hasImage         Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  completedAt      DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

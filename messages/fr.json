@@ -1482,7 +1482,7 @@
     },
     "nav": {
       "overview": "Aperçu",
-      "assistant": "Assistant IA",
+      "assistant": "Ika · Assistant IA",
       "safetyReports": "Signalements de sécurité",
       "peopleGroup": "Tuteurs et familles",
       "activityGroup": "Activité",
@@ -1586,7 +1586,7 @@
         "upcoming": "Séances à venir",
         "quickMatch": "Demander de l'aide rapidement",
         "resources": "Guides pour les parents",
-        "assistant": "Poser une question à l'assistant"
+        "assistant": "Poser une question à Ika"
       },
       "welcome": "Bienvenue, {name}",
       "description": "Un aperçu clair de vos élèves et des prochaines étapes de leur tutorat.",
@@ -4695,38 +4695,50 @@
       "cta": "Ouvrir la bibliothèque"
     }
   },
-  "assistant": {
-    "metaTitle": "Assistant FutureTutor",
-    "title": "Assistant FutureTutor",
-    "description": "Posez vos questions sur les devoirs et le programme : l'assistant explique pas à pas pour que vous puissiez accompagner votre enfant.",
-    "badge": "IA · Bêta",
-    "remaining": "{count, plural, =0 {Plus de question gratuite ce mois-ci} one {# question gratuite restante ce mois-ci} other {# questions gratuites restantes ce mois-ci}}",
-    "placeholder": "Ex. : Comment expliquer à mon enfant la soustraction des entiers relatifs?",
-    "inputLabel": "Votre question",
-    "send": "Envoyer",
-    "sending": "Réponse en cours…",
-    "newChat": "Nouvelle conversation",
-    "you": "Vous",
-    "assistant": "Assistant",
-    "disclaimer": "Réponses générées par une IA à partir de la bibliothèque FutureTutor : elles peuvent contenir des erreurs. Ne partagez pas d'informations personnelles sur votre enfant. La conversation n'est pas enregistrée.",
-    "examplesTitle": "Pour commencer",
-    "examples": [
-      "Comment aider mon enfant de 7e année avec les fractions?",
-      "Explique-moi comment résoudre 3x + 2 = 14, étape par étape.",
-      "Mon ado prépare un examen de Mathématiques 10C : par quoi commencer?"
-    ],
-    "quotaTitle": "Vous avez utilisé vos questions gratuites de ce mois-ci",
-    "quotaText": "Elles se renouvellent le 1er du mois. Pour un accompagnement personnalisé dès maintenant, un tuteur peut aider votre enfant.",
-    "quotaCta": "Trouver un tuteur",
-    "errors": {
-      "BUSY": "L'assistant est très sollicité. Réessayez dans un instant : votre question n'a pas été comptée.",
-      "FAILED": "Une erreur est survenue. Votre question n'a pas été comptée.",
-      "REFUSED": "L'assistant ne peut pas répondre à cette question. Elle n'a pas été comptée.",
-      "QUOTA": "Vous avez utilisé vos questions gratuites de ce mois-ci.",
-      "TOO_LONG": "Votre question est trop longue (2 000 caractères au maximum)."
-    },
-    "notConfiguredTitle": "L'assistant arrive bientôt",
-    "notConfiguredText": "Nous finalisons sa mise en service. En attendant, la bibliothèque FutureTutor explique chaque chapitre du programme.",
-    "libraryCta": "Ouvrir la bibliothèque"
-  }
+    "assistant": {
+      "metaTitle": "Ika, l'assistant FutureTutor",
+      "title": "Ika, votre assistant devoirs",
+      "description": "Posez une question ou prenez en photo un exercice : Ika explique pas à pas, avec des figures au besoin, pour que vous puissiez accompagner votre enfant.",
+      "badge": "IA · Bêta",
+      "hello": "Bonjour, je suis Ika!",
+      "helloText": "Tapez votre question ou prenez en photo la page de devoirs. Je vous explique la notion, je résous l'exercice étape par étape et je dessine une figure quand ça aide.",
+      "remaining": "{count, plural, =0 {Plus de question gratuite ce mois-ci} one {# question gratuite restante ce mois-ci} other {# questions gratuites restantes ce mois-ci}}",
+      "placeholder": "Ex. : Comment expliquer à mon enfant la soustraction des entiers relatifs?",
+      "photoPlaceholder": "Ajoutez une précision (facultatif) : quel exercice, ce qui bloque…",
+      "inputLabel": "Votre question",
+      "send": "Envoyer",
+      "sending": "Réponse en cours…",
+      "thinking": "Ika réfléchit…",
+      "drawing": "Ika dessine la figure…",
+      "newChat": "Nouvelle conversation",
+      "you": "Vous",
+      "assistant": "Ika",
+      "photoButton": "Photo",
+      "photoPreparing": "Préparation…",
+      "photoReady": "Photo prête à envoyer",
+      "photoRemove": "Retirer la photo",
+      "photoAlt": "Photo de l'exercice",
+      "photoSent": "(photo d'un exercice)",
+      "disclaimer": "Réponses générées par une IA à partir de la bibliothèque FutureTutor : elles peuvent contenir des erreurs. Ne partagez pas d'informations personnelles sur votre enfant. Ni la conversation ni les photos ne sont enregistrées.",
+      "examplesTitle": "Pour commencer",
+      "examples": [
+        "Comment aider mon enfant de 7e année avec les fractions?",
+        "Explique-moi le théorème de Pythagore avec un dessin.",
+        "Mon ado prépare un examen de Mathématiques 10C : par quoi commencer?"
+      ],
+      "quotaTitle": "Vous avez utilisé vos questions gratuites de ce mois-ci",
+      "quotaText": "Elles se renouvellent le 1er du mois. Pour un accompagnement personnalisé dès maintenant, un tuteur peut aider votre enfant.",
+      "quotaCta": "Trouver un tuteur",
+      "errors": {
+        "BUSY": "Ika est très sollicité. Réessayez dans un instant : votre question n'a pas été comptée.",
+        "FAILED": "Une erreur est survenue. Votre question n'a pas été comptée.",
+        "REFUSED": "Ika ne peut pas répondre à cette question. Elle n'a pas été comptée.",
+        "QUOTA": "Vous avez utilisé vos questions gratuites de ce mois-ci.",
+        "TOO_LONG": "Votre question est trop longue (2 000 caractères au maximum).",
+        "PHOTO": "Cette photo n'a pas pu être lue. Essayez une autre photo (JPEG ou PNG)."
+      },
+      "notConfiguredTitle": "Ika arrive bientôt",
+      "notConfiguredText": "Nous finalisons sa mise en service. En attendant, la bibliothèque FutureTutor explique chaque chapitre du programme.",
+      "libraryCta": "Ouvrir la bibliothèque"
+    }
 }

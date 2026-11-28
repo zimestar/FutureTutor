@@ -1,5 +1,5 @@
 /**
- * ASSISTANT-1 — parent AI assistant settings. Owner decisions (2026-11-28):
+ * ASSISTANT-1 — Ika, the FutureTutor AI assistant. Settings. Owner decisions (2026-11-28):
  * Claude Sonnet 5.5, 10 free questions per parent per calendar month (UTC).
  */
 export const ASSISTANT_MODEL = "claude-sonnet-5-5";
@@ -9,6 +9,8 @@ export const ASSISTANT_MAX_QUESTION_CHARS = 2000;
 export const ASSISTANT_MAX_HISTORY_MESSAGES = 12;
 export const ASSISTANT_MAX_HISTORY_MESSAGE_CHARS = 6000;
 export const ASSISTANT_MAX_OUTPUT_TOKENS = 4000;
+/** Photos are resized in the browser (longest side 1568 px, JPEG); ~4 MB of base64 is a generous ceiling. */
+export const ASSISTANT_MAX_IMAGE_BASE64_CHARS = 4_000_000;
 
 /** The assistant is offered only when the server holds an API key. */
 export function isAssistantConfigured(): boolean {

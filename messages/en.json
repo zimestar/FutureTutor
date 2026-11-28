@@ -1482,7 +1482,7 @@
     },
     "nav": {
       "overview": "Overview",
-      "assistant": "AI assistant",
+      "assistant": "Ika · AI assistant",
       "safetyReports": "Safety reports",
       "peopleGroup": "Tutors & families",
       "activityGroup": "Activity",
@@ -1586,7 +1586,7 @@
         "upcoming": "Upcoming sessions",
         "quickMatch": "Get help quickly",
         "resources": "Guides for parents",
-        "assistant": "Ask the assistant"
+        "assistant": "Ask Ika"
       },
       "welcome": "Welcome, {name}",
       "description": "A clear view of your learners and the next steps for their tutoring.",
@@ -4695,38 +4695,50 @@
       "cta": "Open the library"
     }
   },
-  "assistant": {
-    "metaTitle": "FutureTutor assistant",
-    "title": "FutureTutor assistant",
-    "description": "Ask about homework and the curriculum: the assistant explains step by step so you can support your child.",
-    "badge": "AI · Beta",
-    "remaining": "{count, plural, =0 {No free questions left this month} one {# free question left this month} other {# free questions left this month}}",
-    "placeholder": "E.g. How do I explain subtracting integers to my child?",
-    "inputLabel": "Your question",
-    "send": "Send",
-    "sending": "Answering…",
-    "newChat": "New conversation",
-    "you": "You",
-    "assistant": "Assistant",
-    "disclaimer": "AI-generated answers based on the FutureTutor library: they may contain mistakes. Don't share personal information about your child. The conversation is not saved.",
-    "examplesTitle": "Get started",
-    "examples": [
-      "How can I help my Grade 7 child with fractions?",
-      "Explain how to solve 3x + 2 = 14, step by step.",
-      "My teen has a Math 10C exam coming up: where should we start?"
-    ],
-    "quotaTitle": "You've used this month's free questions",
-    "quotaText": "They renew on the 1st of the month. For personal support right now, a tutor can help your child.",
-    "quotaCta": "Find a tutor",
-    "errors": {
-      "BUSY": "The assistant is very busy. Try again in a moment: your question wasn't counted.",
-      "FAILED": "Something went wrong. Your question wasn't counted.",
-      "REFUSED": "The assistant can't answer this question. It wasn't counted.",
-      "QUOTA": "You've used this month's free questions.",
-      "TOO_LONG": "Your question is too long (2,000 characters maximum)."
-    },
-    "notConfiguredTitle": "The assistant is coming soon",
-    "notConfiguredText": "We're finishing setting it up. Meanwhile, the FutureTutor library explains every chapter of the curriculum.",
-    "libraryCta": "Open the library"
-  }
+    "assistant": {
+      "metaTitle": "Ika, the FutureTutor assistant",
+      "title": "Ika, your homework assistant",
+      "description": "Ask a question or snap a photo of an exercise: Ika explains step by step, with figures when needed, so you can support your child.",
+      "badge": "AI · Beta",
+      "hello": "Hi, I'm Ika!",
+      "helloText": "Type your question or take a photo of the homework page. I'll explain the idea, solve the exercise step by step and draw a figure when it helps.",
+      "remaining": "{count, plural, =0 {No free questions left this month} one {# free question left this month} other {# free questions left this month}}",
+      "placeholder": "E.g. How do I explain subtracting integers to my child?",
+      "photoPlaceholder": "Add a note (optional): which exercise, what's tricky…",
+      "inputLabel": "Your question",
+      "send": "Send",
+      "sending": "Answering…",
+      "thinking": "Ika is thinking…",
+      "drawing": "Ika is drawing the figure…",
+      "newChat": "New conversation",
+      "you": "You",
+      "assistant": "Ika",
+      "photoButton": "Photo",
+      "photoPreparing": "Preparing…",
+      "photoReady": "Photo ready to send",
+      "photoRemove": "Remove the photo",
+      "photoAlt": "Photo of the exercise",
+      "photoSent": "(photo of an exercise)",
+      "disclaimer": "AI-generated answers based on the FutureTutor library: they may contain mistakes. Don't share personal information about your child. Neither the conversation nor the photos are saved.",
+      "examplesTitle": "Get started",
+      "examples": [
+        "How can I help my Grade 7 child with fractions?",
+        "Explain the Pythagorean theorem with a drawing.",
+        "My teen has a Math 10C exam coming up: where should we start?"
+      ],
+      "quotaTitle": "You've used this month's free questions",
+      "quotaText": "They renew on the 1st of the month. For personal support right now, a tutor can help your child.",
+      "quotaCta": "Find a tutor",
+      "errors": {
+        "BUSY": "Ika is very busy. Try again in a moment: your question wasn't counted.",
+        "FAILED": "Something went wrong. Your question wasn't counted.",
+        "REFUSED": "Ika can't answer this question. It wasn't counted.",
+        "QUOTA": "You've used this month's free questions.",
+        "TOO_LONG": "Your question is too long (2,000 characters maximum).",
+        "PHOTO": "This photo couldn't be read. Try another photo (JPEG or PNG)."
+      },
+      "notConfiguredTitle": "Ika is coming soon",
+      "notConfiguredText": "We're finishing setting it up. Meanwhile, the FutureTutor library explains every chapter of the curriculum.",
+      "libraryCta": "Open the library"
+    }
 }

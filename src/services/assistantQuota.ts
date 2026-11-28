@@ -22,14 +22,14 @@ export async function questionsRemainingThisMonth(userId: string, now = new Date
 
 export type Reservation = { ok: true; usageId: string; remainingAfter: number } | { ok: false; reason: "QUOTA_EXHAUSTED" };
 
-export async function reserveQuestion(userId: string, model: string, now = new Date()): Promise<Reservation> {
+export async function reserveQuestion(userId: string, model: string, now = new Date(), options: { hasImage?: boolean } = {}): Promise<Reservation> {
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`assistant:${userId}`}))`;
     const used = await tx.assistantUsage.count({
       where: { userId, status: { in: [...COUNTED] }, createdAt: { gte: currentMonthStart(now) } },
     });
     if (used >= ASSISTANT_FREE_MONTHLY_QUESTIONS) return { ok: false, reason: "QUOTA_EXHAUSTED" } as const;
-    const usage = await tx.assistantUsage.create({ data: { userId, model }, select: { id: true } });
+    const usage = await tx.assistantUsage.create({ data: { userId, model, hasImage: options.hasImage ?? false }, select: { id: true } });
     return { ok: true, usageId: usage.id, remainingAfter: ASSISTANT_FREE_MONTHLY_QUESTIONS - used - 1 } as const;
   });
 }
@@ -37,7 +37,7 @@ export async function reserveQuestion(userId: string, model: string, now = new D
 export async function completeQuestion(
   usageId: string,
   status: "COMPLETED" | "FAILED" | "REFUSED",
-  usage?: { inputTokens: number; outputTokens: number; cacheReadTokens: number }
+  usage?: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number }
 ) {
   await db.assistantUsage.update({
     where: { id: usageId },

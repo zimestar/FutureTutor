@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import {
   ASSISTANT_MAX_HISTORY_MESSAGES,
   ASSISTANT_MAX_HISTORY_MESSAGE_CHARS,
+  ASSISTANT_MAX_IMAGE_BASE64_CHARS,
   ASSISTANT_MAX_OUTPUT_TOKENS,
   ASSISTANT_MAX_QUESTION_CHARS,
   ASSISTANT_MODEL,
@@ -27,12 +28,19 @@ export const dynamic = "force-dynamic";
 
 const Body = z.object({
   locale: z.enum(["fr", "en"]),
-  question: z.string().trim().min(1).max(ASSISTANT_MAX_QUESTION_CHARS),
+  question: z.string().trim().max(ASSISTANT_MAX_QUESTION_CHARS).default(""),
+  /** A photo of the homework, resized in the browser; sent to the model, never stored. */
+  image: z
+    .object({
+      mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+      data: z.string().min(100).max(ASSISTANT_MAX_IMAGE_BASE64_CHARS).regex(/^[A-Za-z0-9+/]+=*$/),
+    })
+    .optional(),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(ASSISTANT_MAX_HISTORY_MESSAGE_CHARS) }))
     .max(ASSISTANT_MAX_HISTORY_MESSAGES * 2)
     .default([]),
-});
+}).refine((body) => body.question.length > 0 || body.image, { message: "EMPTY" });
 
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -60,6 +68,20 @@ function trimHistory(history: { role: "user" | "assistant"; text: string }[]) {
   return out;
 }
 
+/** The new question: the photo first (when there is one), then the text. */
+function userContent(
+  locale: "fr" | "en",
+  question: string,
+  image?: { mediaType: "image/jpeg" | "image/png" | "image/webp"; data: string }
+): Anthropic.Beta.BetaMessageContentParam {
+  if (!image) return question;
+  const text = question || (locale === "fr" ? "Voici une photo de l'exercice. Aide-moi à l'expliquer à mon enfant." : "Here is a photo of the exercise. Help me explain it to my child.");
+  return [
+    { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } },
+    { type: "text", text },
+  ];
+}
+
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return json({ error: "FORBIDDEN" }, 403);
   const session = await auth();
@@ -70,9 +92,9 @@ export async function POST(request: Request) {
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ error: "INVALID_REQUEST" }, 400);
-  const { locale, question, history } = parsed.data;
+  const { locale, question, history, image } = parsed.data;
 
-  const reservation = await reserveQuestion(user.id, ASSISTANT_MODEL);
+  const reservation = await reserveQuestion(user.id, ASSISTANT_MODEL, new Date(), { hasImage: Boolean(image) });
   if (!reservation.ok) return json({ error: "QUOTA_EXHAUSTED" }, 429);
 
   const client = new Anthropic();
@@ -92,7 +114,7 @@ export async function POST(request: Request) {
             fallbacks: "default",
             output_config: { effort: "medium" },
             system: [{ type: "text", text: assistantSystemPrompt(locale), cache_control: { type: "ephemeral" } }],
-            messages: [...trimHistory(history), { role: "user", content: question }],
+            messages: [...trimHistory(history), { role: "user", content: userContent(locale, question, image) }],
           },
           { signal: request.signal }
         );
@@ -107,6 +129,7 @@ export async function POST(request: Request) {
           inputTokens: message.usage.input_tokens ?? 0,
           outputTokens: message.usage.output_tokens ?? 0,
           cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+          cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
         };
         if (message.stop_reason === "refusal") {
           await completeQuestion(reservation.usageId, "REFUSED", usage);
