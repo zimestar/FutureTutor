@@ -24,23 +24,24 @@ export function Hero() {
       <Container className="relative pb-10 pt-10 sm:pt-14 lg:pb-12 lg:pt-20">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
           <div data-testid="hero-copy" className="relative z-20 min-w-0">
-            <p className="inline-flex items-center gap-2 rounded-full bg-mint-50 px-3.5 py-1.5 text-[13px] font-semibold text-emerald-700">
+            <p className="motion-intro inline-flex items-center gap-2 rounded-full bg-mint-50 px-3.5 py-1.5 text-[13px] font-semibold text-emerald-700">
               <span className="size-2 rounded-full bg-mint" aria-hidden="true" />
               {t("eyebrow")}
             </p>
             <h1
               data-testid="hero-heading"
-              className="mt-6 text-[clamp(2.6rem,5vw,3.75rem)] font-extrabold leading-[1.02] tracking-[-0.035em] text-navy"
+              style={{ "--motion-delay": "80ms" } as React.CSSProperties}
+              className="motion-intro mt-6 text-[clamp(2.6rem,5vw,3.75rem)] font-extrabold leading-[1.02] tracking-[-0.035em] text-navy"
             >
               <span className="text-blue">{t("titleEmphasis")}</span> <span>{t("titleRest")}</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">{t("description")}</p>
+            <p style={{ "--motion-delay": "160ms" } as React.CSSProperties} className="motion-intro mt-6 max-w-xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">{t("description")}</p>
 
-            <div className="mt-8">
+            <div style={{ "--motion-delay": "240ms" } as React.CSSProperties} className="motion-intro mt-8">
               <TutorSearch presentation="panel" />
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-1 text-navy">
+            <div style={{ "--motion-delay": "320ms" } as React.CSSProperties} className="motion-intro mt-5 flex flex-wrap items-center gap-x-6 gap-y-1 text-navy">
               <TrackedLink href="/find-tutors" event="find_tutor_cta_clicked" properties={{ cta_location: "hero" }} className={linkClass}>
                 {t("primaryCta")}
                 <MoveRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
@@ -50,7 +51,7 @@ export function Hero() {
                 <MoveRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </TrackedLink>
             </div>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-blue">
+            <div style={{ "--motion-delay": "360ms" } as React.CSSProperties} className="motion-intro flex flex-wrap items-center gap-x-6 gap-y-1 text-blue">
               <Link href="/signup?role=parent" className={linkClass}>{t("parentsLink")}</Link>
               <Link href="/become-a-tutor" className={linkClass}>{tv("tutorLink")}</Link>
             </div>
@@ -64,14 +65,14 @@ export function Hero() {
                 fill
                 priority
                 sizes="(min-width: 1024px) 560px, 100vw"
-                className="object-cover object-[62%_50%]"
+                className="motion-settle object-cover object-[62%_50%]"
               />
             </div>
-            <div className="absolute -right-3 top-6 hidden items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-(--shadow-pop) sm:flex lg:-right-5 lg:top-10">
+            <div style={{ "--motion-delay": "500ms" } as React.CSSProperties} className="motion-pop absolute -right-3 top-6 hidden items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-(--shadow-pop) sm:flex lg:-right-5 lg:top-10">
               <ShieldCheck className="size-4 text-emerald-300" aria-hidden="true" />
               {tv("verified")}
             </div>
-            <div className="absolute -left-3 bottom-8 hidden w-72 items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-(--shadow-pop) sm:flex lg:-left-8 lg:bottom-14">
+            <div style={{ "--motion-delay": "750ms" } as React.CSSProperties} className="motion-pop absolute -left-3 bottom-8 hidden w-72 items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-(--shadow-pop) sm:flex lg:-left-8 lg:bottom-14">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mint-50 text-emerald-600">
                 <CircleCheck className="size-5" aria-hidden="true" />
               </span>
@@ -83,7 +84,7 @@ export function Hero() {
           </div>
         </div>
 
-        <ul data-testid="hero-trust-row" className="mt-14 grid grid-cols-1 gap-4 border-t border-border pt-7 sm:grid-cols-2 lg:grid-cols-4">
+        <ul data-testid="hero-trust-row" className="reveal-stagger mt-14 grid grid-cols-1 gap-4 border-t border-border pt-7 sm:grid-cols-2 lg:grid-cols-4">
           {[trust("verification"), trust("pricing"), trust("onlineInPerson"), trust("bilingual")].map((item) => (
             <li key={item} className="flex items-center gap-3 text-[15px] font-semibold text-neutral-800">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue">

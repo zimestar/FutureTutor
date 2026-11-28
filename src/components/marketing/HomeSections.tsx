@@ -136,7 +136,7 @@ export function HomeHowItWorks() {
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>
       </div>
-      <ol className="mt-12 grid gap-6 lg:grid-cols-3">
+      <ol className="reveal-stagger mt-12 grid gap-6 lg:grid-cols-3">
         {steps.map((step) => (
           <li key={step} className="flex flex-col rounded-3xl border border-border bg-canvas p-6 sm:p-7">
             <div className="flex min-h-[236px] flex-col justify-center rounded-2xl bg-neutral-100/80 p-4">
@@ -178,7 +178,7 @@ export function HomeParents() {
   ] as const;
   return (
     <Section className="bg-canvas" ariaLabelledby="home-parents-title">
-      <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
+      <div className="reveal grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
         <div className="relative order-last lg:order-first">
           <div className="relative aspect-[4/3] overflow-hidden rounded-[28px] shadow-(--shadow-pop)">
             <Image src="/images/parent-homework-help-v2.webp" alt={t("imageAlt")} fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
@@ -221,7 +221,7 @@ export function HomeSafety() {
   const steps = [0, 1, 2, 3, 4, 5] as const;
   return (
     <Section className="bg-white" ariaLabelledby="home-safety-title">
-      <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+      <div className="reveal grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <div>
           <p className="text-[13px] font-bold uppercase tracking-[0.14em] text-blue">{t("eyebrow")}</p>
           <h2 id="home-safety-title" className="mt-4 text-[2rem] font-bold leading-[1.1] text-navy md:text-[2.75rem]">{t("title")}</h2>
@@ -273,7 +273,7 @@ export function HomePricing() {
   return (
     <Section className="bg-canvas" ariaLabelledby="home-pricing-title">
       <SectionIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
+      <div className="reveal-stagger mt-12 grid gap-5 md:grid-cols-3">
         {factors.map((factor) => (
           <div key={factor} className="rounded-3xl border border-border bg-white p-7 shadow-(--shadow-card)">
             <p className="text-sm font-bold text-blue">{t("factorLabel", { number: factor + 1 })}</p>
@@ -322,7 +322,7 @@ export function HomeResources() {
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>
       </div>
-      <ul className="mt-10 grid gap-5 md:grid-cols-3">
+      <ul className="reveal-stagger mt-10 grid gap-5 md:grid-cols-3">
         {articles.map((article) => (
           <li key={article.slug}>
             <Link

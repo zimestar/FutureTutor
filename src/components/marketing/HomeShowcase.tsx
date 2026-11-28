@@ -65,7 +65,7 @@ export async function HomeFounders({ locale }: { locale: string }) {
 
   return (
     <Section id="featured-tutors" ariaLabelledby="home-tutors-heading" className="border-y border-border bg-canvas">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
+      <div className="reveal flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div className="max-w-2xl">
           <p className={eyebrowClass}>{t("eyebrow")}</p>
           <h2 id="home-tutors-heading" className={h2Class}>{t("title")}</h2>
@@ -75,13 +75,13 @@ export async function HomeFounders({ locale }: { locale: string }) {
           {t("browseAll")}
         </TrackedCtaButton>
       </div>
-      <ul className="-mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+      <ul className="reveal -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
         {cards.map((tutor) => {
           const name = tutor.user.name?.trim() || "";
           const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
           const subjects = tutor.subjects.slice(0, 3).map((s) => tSubjects(s.subject.slug));
           return (
-            <li key={tutor.id} className="flex w-[78%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl sm:w-auto border border-border bg-white transition-shadow hover:shadow-(--shadow-pop)">
+            <li key={tutor.id} className="flex w-[78%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl sm:w-auto border border-border bg-white motion-lift hover:shadow-(--shadow-pop)">
               <div className="relative h-56 bg-gradient-to-br from-blue-100 to-blue-50">
                 {tutor.user.image ? (
                   <Image src={tutor.user.image} alt={t("photoAlt", { name })} fill sizes="(min-width: 1024px) 280px, (min-width: 640px) 45vw, 100vw" className="object-cover object-[50%_30%]" />
@@ -147,13 +147,13 @@ export async function HomePlatform({ locale }: { locale: string }) {
 
   return (
     <Section ariaLabelledby="home-platform-heading" className="bg-white">
-      <div className="max-w-3xl">
+      <div className="reveal max-w-3xl">
         <p className={eyebrowClass}>{t("eyebrow")}</p>
         <h2 id="home-platform-heading" className={h2Class}>{t("title")}</h2>
         <p className="mt-4 text-lg leading-8 text-text-secondary md:text-xl md:leading-9">{t("description")}</p>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="reveal-stagger mt-12 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Booking */}
         <article className={`${tile} border-border bg-canvas`}>
           <div>
@@ -164,7 +164,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-text-muted">{t("booking.day")}</p>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-semibold">
               <span className="rounded-lg border border-border py-2.5">15:00</span>
-              <span className="rounded-lg bg-blue py-2.5 text-white">16:00</span>
+              <span className="motion-ring rounded-lg bg-blue py-2.5 text-white">16:00</span>
               <span className="rounded-lg border border-border py-2.5">17:30</span>
             </div>
             <div className="mt-4 flex justify-between border-t border-dashed border-neutral-300 pt-3.5 text-sm">
@@ -186,6 +186,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
           <div className="flex min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-white/10 bg-[#13263d] p-3">
             <div className="grid flex-1 grid-cols-2 gap-3">
               <div className="relative min-h-40 overflow-hidden rounded-xl">
+                <span aria-hidden="true" className="motion-speaking pointer-events-none absolute inset-0 z-10 rounded-xl" />
                 <Image src="/images/classroom-tutor-video.webp" alt={t("classroom.tutorAlt")} fill sizes="(min-width: 1024px) 260px, 45vw" className="object-cover object-[55%_30%]" />
                 <span className="absolute bottom-2 left-2 rounded-md bg-navy/75 px-2 py-0.5 text-xs">{t("classroom.tutor")}</span>
               </div>
@@ -233,7 +234,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
           </div>
           <div aria-hidden="true" className="mt-auto flex flex-col gap-2.5">
             <p className="max-w-[88%] self-start rounded-2xl rounded-bl-sm border border-border bg-white px-4 py-3 text-sm leading-6 text-navy">{t("quickMatch.request")}</p>
-            <p className="self-end rounded-2xl rounded-br-sm bg-blue px-4 py-2.5 text-sm font-semibold text-white">{t("quickMatch.accepted")}</p>
+            <p className="reveal self-end rounded-2xl rounded-br-sm bg-blue px-4 py-2.5 text-sm font-semibold text-white">{t("quickMatch.accepted")}</p>
           </div>
         </article>
 
@@ -244,7 +245,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
             <p className="mt-2 leading-7 text-text-secondary">{t("reminders.text")}</p>
           </div>
           <div aria-hidden="true" className={`${mock} flex items-start gap-3`}>
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-navy text-white"><BellRing className="size-[18px]" /></span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-navy text-white"><BellRing className="motion-bell size-[18px]" /></span>
             <span>
               <span className="block text-sm font-bold text-navy">{t("reminders.notifTitle")}</span>
               <span className="mt-0.5 block text-xs text-text-muted">{t("reminders.notifMeta")}</span>
@@ -267,25 +268,25 @@ export async function HomeClassroom({ locale }: { locale: string }) {
   return (
     <section aria-labelledby="home-classroom-heading" className="bg-navy bg-[radial-gradient(900px_500px_at_15%_0%,rgba(37,99,235,0.35)_0%,transparent_60%)] py-20 text-white md:py-28">
       <div className="mx-auto w-full max-w-(--container-page) px-5 md:px-10">
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="reveal mx-auto max-w-3xl text-center">
           <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-emerald-300">{t("eyebrow")}</p>
           <h2 id="home-classroom-heading" className="mt-3 text-[clamp(2.1rem,4vw,3.4rem)] font-extrabold leading-[1.05] tracking-[-0.03em]">{t("title")}</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-white/75">{t("description")}</p>
         </div>
 
-        <div className="mx-auto mt-14 max-w-5xl overflow-hidden rounded-3xl border border-white/12 bg-[#13263d] shadow-[0_60px_120px_-40px_rgba(0,0,0,0.7)]">
+        <div className="reveal mx-auto mt-14 max-w-5xl overflow-hidden rounded-3xl border border-white/12 bg-[#13263d] shadow-[0_60px_120px_-40px_rgba(0,0,0,0.7)]">
           <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3">
             <span className="size-2.5 rounded-full bg-red-500" aria-hidden="true" />
             <span className="size-2.5 rounded-full bg-amber-400" aria-hidden="true" />
             <span className="size-2.5 rounded-full bg-mint" aria-hidden="true" />
             <span className="mx-auto hidden rounded-lg bg-white/7 px-4 py-1 text-xs text-white/70 sm:block">futuretutor.ca</span>
-            <span className="ml-auto rounded-full bg-mint/20 px-2.5 py-1 text-xs font-bold text-emerald-300 sm:ml-0">● {t("live")}</span>
+            <span className="ml-auto rounded-full bg-mint/20 px-2.5 py-1 text-xs font-bold text-emerald-300 sm:ml-0"><span className="motion-live inline-block" aria-hidden="true">●</span> {t("live")}</span>
           </div>
           <div className="flex flex-col gap-3.5 p-4 md:flex-row">
             <div aria-hidden="true" className="flex min-h-72 flex-[3] flex-col gap-3.5 rounded-2xl bg-canvas p-6 text-navy">
               <p className="text-xs font-bold uppercase tracking-[0.08em] text-text-muted">{t("screenLabel")}</p>
               <p className="text-2xl font-extrabold">{t("problem")}</p>
-              <div className="font-mono text-lg leading-9 text-neutral-800">
+              <div className="reveal-stagger font-mono text-lg leading-9 text-neutral-800">
                 <p>Δ = b² − 4ac = 25 + 24 = 49</p>
                 <p>x = (5 ± 7) / 4</p>
                 <p><span className="rounded-md bg-blue-100 px-2 py-0.5">x = 3 · x = −1/2</span></p>
@@ -293,6 +294,7 @@ export async function HomeClassroom({ locale }: { locale: string }) {
             </div>
             <div className="grid flex-[1.2] grid-cols-2 gap-3.5 md:grid-cols-1">
               <div className="relative min-h-36 overflow-hidden rounded-2xl">
+                <span aria-hidden="true" className="motion-speaking pointer-events-none absolute inset-0 z-10 rounded-2xl" />
                 <Image src="/images/classroom-tutor-video.webp" alt={t("videoAlt")} fill sizes="(min-width: 768px) 300px, 45vw" className="object-cover object-[55%_30%]" />
               </div>
               <div className="relative min-h-36 overflow-hidden rounded-2xl">
@@ -307,7 +309,7 @@ export async function HomeClassroom({ locale }: { locale: string }) {
           </div>
         </div>
 
-        <ul className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="reveal-stagger mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => (
             <li key={feature.title}>
               <p className="text-[17px] font-bold">{feature.title}</p>
@@ -399,11 +401,11 @@ export async function HomeRoles({ locale }: { locale: string }) {
   return (
     <section aria-labelledby="home-roles-heading" className="bg-navy py-20 text-white md:py-28">
       <div className="mx-auto w-full max-w-(--container-page) px-5 md:px-10">
-        <h2 id="home-roles-heading" className="text-center text-[clamp(2.1rem,4vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.03em]">{t("title")}</h2>
-        <ul className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+        <h2 id="home-roles-heading" className="reveal text-center text-[clamp(2.1rem,4vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.03em]">{t("title")}</h2>
+        <ul className="reveal-stagger mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           {roles.map((role) => (
             <li key={role.key}>
-              <Link href={role.href} className={`flex h-full min-h-52 flex-col gap-2.5 rounded-3xl border border-white/12 p-8 transition-colors ${role.className}`}>
+              <Link href={role.href} className={`flex h-full min-h-52 flex-col gap-2.5 rounded-3xl border border-white/12 p-8 motion-lift ${role.className}`}>
                 <span className="text-sm font-bold text-white/70">{t(`${role.key}.kicker`)}</span>
                 <span className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{t(`${role.key}.title`)}</span>
                 <span className="leading-7 text-white/75">{t(`${role.key}.text`)}</span>
