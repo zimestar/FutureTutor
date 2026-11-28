@@ -1525,6 +1525,12 @@
       "financeGroup": "Finance"
     },
     "student": {
+      "tiles": {
+        "upcoming": "Upcoming sessions",
+        "quickMatch": "Get help quickly",
+        "favorites": "My favourite tutors",
+        "resources": "Guides and tips"
+      },
       "welcome": "Welcome, {name}",
       "description": "Find the right support and keep your tutoring plans close at hand.",
       "noBookingsTitle": "No bookings yet",
@@ -1574,6 +1580,12 @@
       }
     },
     "parent": {
+      "tiles": {
+        "learners": "Learners",
+        "upcoming": "Upcoming sessions",
+        "quickMatch": "Get help quickly",
+        "resources": "Guides for parents"
+      },
       "welcome": "Welcome, {name}",
       "description": "A clear view of your learners and the next steps for their tutoring.",
       "learnerCount": "{count, plural, one {# learner} other {# learners}}",

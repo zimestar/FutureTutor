@@ -77,6 +77,17 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/report-concern": FileSearch,
 };
 
+/** APP-COLOR — every navigation entry carries its own accent chip, cycling
+ * through the brand palette; the active entry becomes a solid blue pill. */
+const NAV_CHIP_TONES = [
+  "bg-blue-50 text-blue",
+  "bg-coral-50 text-[#c2410c]",
+  "bg-mint-50 text-emerald-700",
+  "bg-sun-50 text-amber-700",
+  "bg-lilac-50 text-[#6d5bd0]",
+  "bg-sky-50 text-sky-700",
+];
+
 function isActiveRoute(pathname: string, href: string) {
   if (href === "/dashboard" || href === "/tutor/dashboard" || href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -97,7 +108,8 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
         <div key={`${group.label ?? "navigation"}-${index}`}>
           {group.label && <p className="mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-neutral-400">{group.label}</p>}
           <ul className="flex flex-col gap-1">
-            {group.items.map((item) => {
+            {group.items.map((item, itemIndex) => {
+              const chipTone = NAV_CHIP_TONES[(index * 3 + itemIndex) % NAV_CHIP_TONES.length];
               const active = isActiveRoute(pathname, item.href) || (item.activePrefix !== undefined && isActiveRoute(pathname, item.activePrefix));
               const Icon = navIcons[item.href] ?? LayoutDashboard;
               return (
@@ -108,11 +120,13 @@ function DashboardNavigation({ navItems, onNavigate }: { navItems: DashboardNavI
                     onClick={onNavigate}
                     {...(item.openInNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={cn(
-                      "group flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-                      active ? "bg-blue/10 text-blue" : "text-neutral-600 hover:bg-neutral-100 hover:text-navy"
+                      "group flex min-h-11 items-center gap-3 rounded-2xl px-2.5 py-1.5 text-sm font-semibold transition-colors",
+                      active ? "bg-blue text-white shadow-(--shadow-action)" : "text-neutral-700 hover:bg-neutral-100 hover:text-navy"
                     )}
                   >
-                    <Icon className={cn("size-[18px] shrink-0", active ? "text-blue" : "text-neutral-400 group-hover:text-neutral-600")} aria-hidden="true" />
+                    <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-xl transition-colors", active ? "bg-white/20 text-white" : chipTone)}>
+                      <Icon className="size-[17px]" aria-hidden="true" />
+                    </span>
                     <span>{item.label}</span>
                   </Link>
                 </li>
@@ -168,7 +182,7 @@ export function DashboardShell({ navItems, userName, userImage, children }: { na
           </div>
         </header>
 
-        <main id="dashboard-main" className="min-h-screen px-(--spacing-page-x) py-(--spacing-page-y)">{children}</main>
+        <main id="dashboard-main" className="relative min-h-screen bg-[radial-gradient(700px_380px_at_100%_0%,var(--color-sun-50)_0%,transparent_70%),radial-gradient(600px_400px_at_0%_100%,var(--color-blue-50)_0%,transparent_70%)] px-(--spacing-page-x) py-(--spacing-page-y)">{children}</main>
       </div>
 
       <Drawer open={navigationOpen} onClose={closeNavigation} id="dashboard-mobile-navigation" title={<Logo className="h-8" />} closeLabel={t("closeNavigation")}>

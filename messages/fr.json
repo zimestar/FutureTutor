@@ -1525,6 +1525,12 @@
       "financeGroup": "Finances"
     },
     "student": {
+      "tiles": {
+        "upcoming": "Séances à venir",
+        "quickMatch": "Demander de l'aide rapidement",
+        "favorites": "Mes tuteurs favoris",
+        "resources": "Guides et conseils"
+      },
       "welcome": "Bienvenue, {name}",
       "description": "Trouvez le bon soutien et gardez vos activités de tutorat à portée de main.",
       "noBookingsTitle": "Aucune réservation pour l'instant",
@@ -1574,6 +1580,12 @@
       }
     },
     "parent": {
+      "tiles": {
+        "learners": "Élèves suivis",
+        "upcoming": "Séances à venir",
+        "quickMatch": "Demander de l'aide rapidement",
+        "resources": "Guides pour les parents"
+      },
       "welcome": "Bienvenue, {name}",
       "description": "Un aperçu clair de vos élèves et des prochaines étapes de leur tutorat.",
       "learnerCount": "{count, plural, one {# élève} other {# élèves}}",

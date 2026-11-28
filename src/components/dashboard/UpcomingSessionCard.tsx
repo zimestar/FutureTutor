@@ -60,11 +60,11 @@ export function UpcomingSessionCard({
   messageTutorLabel,
 }: UpcomingSessionCardData) {
   return (
-    <Surface aria-labelledby={`upcoming-session-subject-${bookingId}`} data-testid="upcoming-session-card">
+    <Surface aria-labelledby={`upcoming-session-subject-${bookingId}`} data-testid="upcoming-session-card" className={isNext ? "border-blue-100 bg-blue-50" : "border-border"}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           {isNext && (
-            <p className="text-xs font-extrabold uppercase tracking-wide text-blue" data-testid="next-session-label">
+            <p className="inline-flex rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide text-navy" data-testid="next-session-label">
               {nextSessionLabel}
             </p>
           )}
