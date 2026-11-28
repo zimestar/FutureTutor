@@ -145,6 +145,8 @@ model User {
   safetyConcernReportsFiled       SafetyConcernReport[]       @relation("SafetyConcernReporter")
   safetyConcernReportsResolved    SafetyConcernReport[]       @relation("SafetyConcernResolvedBy")
   assistantUsages                 AssistantUsage[]
+  assistantCreditPurchases        AssistantCreditPurchase[]
+  assistantSubscription           AssistantSubscription?
   adminPermissionsGranted         AdminPermissionAssignment[] @relation("AdminPermissionGrantedBy")
   lifecycleReminders              LifecycleReminder[]
 
@@ -2719,6 +2721,8 @@ model AssistantUsage {
   cacheWriteTokens Int                  @default(0)
   /// A photo was attached (the photo itself is never stored).
   hasImage         Boolean              @default(false)
+  /// Which allowance paid for this use: the monthly free allowance, the Ika+ plan, or credits (session bonuses and packs).
+  source           AssistantQuotaSource @default(FREE)
   createdAt        DateTime             @default(now())
   completedAt      DateTime?
 
@@ -2732,4 +2736,42 @@ enum AssistantUsageStatus {
   COMPLETED
   FAILED
   REFUSED
+}
+
+enum AssistantQuotaSource {
+  FREE
+  PLAN
+  CREDIT
+}
+
+/// IKA-BILLING — a paid pack of Ika questions (Stripe Checkout, one-time). Credits never expire.
+model AssistantCreditPurchase {
+  id                      String   @id @default(cuid())
+  userId                  String
+  questions               Int
+  amountCents             Int
+  currency                String   @default("CAD")
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?
+  createdAt               DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// IKA-BILLING — the Ika+ monthly plan (Stripe subscription), mirrored from Stripe.
+model AssistantSubscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  stripeCustomerId     String
+  stripeSubscriptionId String   @unique
+  /// Stripe's own status (active, trialing, past_due, canceled, ...).
+  status               String
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

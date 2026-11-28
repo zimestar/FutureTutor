@@ -102,8 +102,18 @@ function renderAnswer(text: string, locale: string, drawingLabel: string): React
   return out;
 }
 
-export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en"; initialRemaining: number }) {
+export function AssistantChat({
+  locale,
+  audience = "PARENT",
+  initialRemaining,
+}: {
+  locale: "fr" | "en";
+  audience?: "PARENT" | "TUTOR";
+  initialRemaining: number;
+}) {
   const t = useTranslations("assistant");
+  /** Tutor wording where it differs (hello, examples, placeholder, quota). */
+  const tx = (key: string) => (audience === "TUTOR" && t.has(`tutor.${key}`) ? t(`tutor.${key}`) : t(key));
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [photo, setPhoto] = useState<PreparedImage | null>(null);
@@ -113,7 +123,7 @@ export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en
   const [error, setError] = useState<ErrorKey | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const examples = t.raw("examples") as string[];
+  const examples = (audience === "TUTOR" ? t.raw("tutor.examples") : t.raw("examples")) as string[];
 
   // Free the photo previews when the chat goes away.
   const urls = useRef<string[]>([]);
@@ -234,8 +244,8 @@ export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en
           <div className="flex items-start gap-3">
             <IkaAvatar className="size-12 shrink-0 motion-float" />
             <div>
-              <p className="text-lg font-extrabold text-navy">{t("hello")}</p>
-              <p className="mt-1 text-sm leading-6 text-text-secondary">{t("helloText")}</p>
+              <p className="text-lg font-extrabold text-navy">{tx("hello")}</p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">{tx("helloText")}</p>
             </div>
           </div>
           <p className="mt-5 text-sm font-extrabold uppercase tracking-[0.12em] text-[#6d5bd0]">{t("examplesTitle")}</p>
@@ -295,8 +305,13 @@ export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en
       {outOfQuestions ? (
         <div className="rounded-3xl bg-blue p-6 text-white">
           <p className="text-lg font-extrabold">{t("quotaTitle")}</p>
-          <p className="mt-1 text-white/85">{t("quotaText")}</p>
-          <Button href="/dashboard/find-tutors" variant="inverse" className="mt-4">{t("quotaCta")}</Button>
+          <p className="mt-1 text-white/85">{tx("quotaText")}</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button type="button" variant="inverse" onClick={() => document.getElementById("ika-plans")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{t("quotaRecharge")}</Button>
+            {audience === "PARENT" && (
+              <Button href="/dashboard/find-tutors" variant="outline" className="border-white/60 bg-transparent text-white hover:bg-white/10">{t("quotaCta")}</Button>
+            )}
+          </div>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="rounded-3xl border border-border bg-white p-3 shadow-(--shadow-card) focus-within:border-blue">
@@ -323,7 +338,7 @@ export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en
             }}
             maxLength={MAX_CHARS}
             rows={3}
-            placeholder={photo ? t("photoPlaceholder") : t("placeholder")}
+            placeholder={photo ? t("photoPlaceholder") : tx("placeholder")}
             className="block w-full resize-none rounded-2xl px-3 py-2 text-[15px] leading-7 text-navy outline-none placeholder:text-text-muted"
           />
           <div className="flex items-center justify-between gap-3 px-1 pb-1">
@@ -344,7 +359,7 @@ export function AssistantChat({ locale, initialRemaining }: { locale: "fr" | "en
         </form>
       )}
 
-      <p className="text-xs leading-5 text-text-muted">{t("disclaimer")}</p>
+      <p className="text-xs leading-5 text-text-muted">{tx("disclaimer")}</p>
     </div>
   );
 }

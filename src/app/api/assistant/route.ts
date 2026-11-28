@@ -11,17 +11,20 @@ import {
   isAssistantConfigured,
 } from "@/lib/assistant/config";
 import { assistantSystemPrompt } from "@/lib/assistant/systemPrompt";
+import { resolveAssistantAudience } from "@/lib/assistant/access";
 import { completeQuestion, reserveQuestion } from "@/services/assistantQuota";
+import { refreshIkaPlanIfStale } from "@/services/ikaBilling";
 
 /**
- * ASSISTANT-1 — parent AI assistant. POST { locale, question, history }.
+ * Ika — FutureTutor's AI assistant. POST { locale, question, history, image? }.
  * Response: newline-delimited JSON events —
  *   {"type":"text","text":"…"}            streamed answer text
- *   {"type":"done","remaining":7}         answer complete
+ *   {"type":"done","remaining":7}         answer complete (questions left, all allowances)
  *   {"type":"refused"} / {"type":"error","code":"…"}
- * Only PARENT accounts may use it; each question is reserved against the
- * monthly quota before the model is called and released if no answer was
- * delivered. Neither the question nor the answer is stored.
+ * Parents and approved tutors only; each question is reserved against the
+ * allowance (free, Ika+, credits) before the model is called and released if
+ * no answer was delivered. Neither the question, the photo nor the answer is
+ * stored.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,7 +78,7 @@ function userContent(
   image?: { mediaType: "image/jpeg" | "image/png" | "image/webp"; data: string }
 ): Anthropic.Beta.BetaMessageContentParam {
   if (!image) return question;
-  const text = question || (locale === "fr" ? "Voici une photo de l'exercice. Aide-moi à l'expliquer à mon enfant." : "Here is a photo of the exercise. Help me explain it to my child.");
+  const text = question || (locale === "fr" ? "Voici une photo de l'exercice. Explique-le étape par étape." : "Here is a photo of the exercise. Explain it step by step.");
   return [
     { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } },
     { type: "text", text },
@@ -87,14 +90,16 @@ export async function POST(request: Request) {
   const session = await auth();
   const user = session?.user;
   if (!user) return json({ error: "UNAUTHORIZED" }, 401);
-  if (user.role !== "PARENT") return json({ error: "FORBIDDEN" }, 403);
+  const audience = await resolveAssistantAudience(user);
+  if (!audience) return json({ error: "FORBIDDEN" }, 403);
   if (!isAssistantConfigured()) return json({ error: "NOT_CONFIGURED" }, 503);
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return json({ error: "INVALID_REQUEST" }, 400);
   const { locale, question, history, image } = parsed.data;
 
-  const reservation = await reserveQuestion(user.id, ASSISTANT_MODEL, new Date(), { hasImage: Boolean(image) });
+  await refreshIkaPlanIfStale(user.id);
+  const reservation = await reserveQuestion(user.id, ASSISTANT_MODEL, audience, new Date(), { hasImage: Boolean(image) });
   if (!reservation.ok) return json({ error: "QUOTA_EXHAUSTED" }, 429);
 
   const client = new Anthropic();
@@ -113,7 +118,7 @@ export async function POST(request: Request) {
             betas: ["server-side-fallback-2026-07-01"],
             fallbacks: "default",
             output_config: { effort: "medium" },
-            system: [{ type: "text", text: assistantSystemPrompt(locale), cache_control: { type: "ephemeral" } }],
+            system: [{ type: "text", text: assistantSystemPrompt(locale, audience), cache_control: { type: "ephemeral" } }],
             messages: [...trimHistory(history), { role: "user", content: userContent(locale, question, image) }],
           },
           { signal: request.signal }
@@ -133,10 +138,10 @@ export async function POST(request: Request) {
         };
         if (message.stop_reason === "refusal") {
           await completeQuestion(reservation.usageId, "REFUSED", usage);
-          send(controller, { type: "refused", remaining: reservation.remainingAfter + 1 });
+          send(controller, { type: "refused", remaining: reservation.allowanceAfter.total + 1 });
         } else {
           await completeQuestion(reservation.usageId, delivered ? "COMPLETED" : "FAILED", usage);
-          send(controller, { type: "done", remaining: delivered ? reservation.remainingAfter : reservation.remainingAfter + 1 });
+          send(controller, { type: "done", remaining: delivered ? reservation.allowanceAfter.total : reservation.allowanceAfter.total + 1 });
         }
       } catch (error) {
         // Nothing useful was delivered: give the question back.

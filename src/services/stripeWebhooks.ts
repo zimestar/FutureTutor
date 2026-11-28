@@ -12,6 +12,7 @@ import {
   resolveRefundOutcomeAndConverge,
 } from "@/services/payments";
 import { syncTutorConnectStatusFromAccount } from "@/services/stripeConnect";
+import { fulfillFromSession, syncIkaSubscription } from "@/services/ikaBilling";
 
 const STALE_PROCESSING_THRESHOLD_MS = 5 * 60 * 1000;
 
@@ -301,6 +302,20 @@ async function runStripeEventBusinessLogic(event: Stripe.Event): Promise<void> {
         entityId: payment.id,
         metadata: { outcome: dispute.status },
       });
+      return;
+    }
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      // IKA-BILLING — Ika packs and the Ika+ plan are the only Checkout
+      // sessions FutureTutor creates; anything else is ignored.
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.ikaKind) await fulfillFromSession(session);
+      return;
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      await syncIkaSubscription(event.data.object as Stripe.Subscription);
       return;
     }
     default:

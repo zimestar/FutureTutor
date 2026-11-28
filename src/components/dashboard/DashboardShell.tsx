@@ -43,6 +43,7 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/dashboard/favorites": Heart,
   "/dashboard/quick-match": Sparkles,
   "/dashboard/assistant": Bot,
+  "/tutor/assistant": Bot,
   "/dashboard/bookings": CalendarDays,
   "/messages": MessageCircle,
   "/dashboard/payments": CreditCard,

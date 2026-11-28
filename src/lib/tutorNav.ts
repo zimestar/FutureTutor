@@ -8,6 +8,7 @@ export function tutorNavItems(
   if (applicationStatus === "APPROVED") {
     return [
       { label: tNav("overview"), href: "/tutor/dashboard", group: tNav("tutoringGroup") },
+      { label: tNav("assistant"), href: "/tutor/assistant", group: tNav("tutoringGroup") },
       { label: tNav("quickMatch"), href: "/tutor/quick-match", group: tNav("tutoringGroup") },
       { label: tNav("bookings"), href: "/tutor/bookings", group: tNav("tutoringGroup") },
       { label: tNav("messages"), href: "/messages", group: tNav("tutoringGroup") },
