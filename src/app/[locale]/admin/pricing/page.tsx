@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { RuleActiveToggle } from "@/components/dashboard/RuleActiveToggle";
 import { CustomerBasePriceRuleForm } from "@/components/dashboard/CustomerBasePriceRuleForm";
@@ -50,10 +51,7 @@ export default async function AdminPricingPage({
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-      <p className="mt-2 max-w-2xl text-slate">
-        {t("description")}
-      </p>
+      <PageHeader title={t("title")} description={t("description")} />
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold text-navy">{t("customerRules")}</h2>

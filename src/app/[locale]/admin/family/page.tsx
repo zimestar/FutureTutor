@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { adminNavItems } from "@/lib/adminNav";
@@ -49,8 +50,7 @@ export default async function AdminFamilyInvitationsPage({
 
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-      <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="mt-6 flex flex-wrap gap-3" data-testid="admin-family-summary">
         <div className="rounded-xl border border-neutral-200 bg-white px-5 py-4">

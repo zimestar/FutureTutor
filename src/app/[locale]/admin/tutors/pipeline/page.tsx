@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect, Link } from "@/i18n/navigation";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { adminNavItems } from "@/lib/adminNav";
@@ -76,10 +77,7 @@ export default async function AdminTutorPipelinePage({ params }: { params: Promi
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <AdminTutorsTabs locale={locale} active="applications" />
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-        <p className="mt-2 max-w-2xl text-slate">{t("description")}</p>
-      </div>
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Badge variant="navy">{t("summaryAdmin", { count: teamQueue.length })}</Badge>

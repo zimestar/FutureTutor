@@ -33,7 +33,7 @@ export function MotionObserver() {
       window.setTimeout(() => finish(el), 1500);
     };
 
-    const targets = Array.from(document.querySelectorAll<HTMLElement>(".reveal, .reveal-stagger > *"));
+    const seen = new WeakSet<Element>();
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -45,18 +45,39 @@ export function MotionObserver() {
       },
       { rootMargin: "0px 0px -10% 0px", threshold: 0.1 }
     );
-    // Anything already on screen is shown immediately, without a flash.
-    for (const el of targets) {
-      const box = el.getBoundingClientRect();
-      if (box.top < window.innerHeight && box.bottom > 0) {
-        el.classList.add("is-in");
-        finish(el);
-      } else {
-        observer.observe(el);
+
+    const track = (root: ParentNode) => {
+      for (const el of Array.from(root.querySelectorAll<HTMLElement>(".reveal, .reveal-stagger > *"))) {
+        if (seen.has(el)) continue;
+        seen.add(el);
+        // Anything already on screen is shown immediately, without a flash.
+        const box = el.getBoundingClientRect();
+        if (box.top < window.innerHeight && box.bottom > 0) {
+          el.classList.add("is-in");
+          finish(el);
+        } else {
+          observer.observe(el);
+        }
       }
-    }
+    };
+
+    track(document);
+    // Content streamed in later (Suspense, client navigation) is picked up too,
+    // so a `.reveal` block can never be left hidden.
+    const mutations = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          if (node instanceof HTMLElement) track(node.parentElement ?? node);
+        }
+      }
+    });
+    mutations.observe(document.body, { childList: true, subtree: true });
+
     document.documentElement.classList.add("motion-ready");
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
   }, [pathname]);
 
   return null;

@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -60,20 +61,20 @@ export default async function AdminTutorsPage({
   return (
     <DashboardShell navItems={await adminNavItems(tNav, user)} userName={user.name ?? ""}>
       <AdminTutorsTabs locale={locale} active="all" />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-          <p className="mt-2 text-slate">{t("description")}</p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        actions={
+          <>
           <Button href="/admin/tutors" variant={showAll ? "outline" : "primary"} size="sm">
             {t("filterPending")}
           </Button>
           <Button href="/admin/tutors?status=all" variant={showAll ? "primary" : "outline"} size="sm">
             {t("filterAll")}
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {tutors.length === 0 ? (
         <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-slate">
