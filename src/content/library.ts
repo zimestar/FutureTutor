@@ -12,6 +12,9 @@
  * are not indexed by search engines.
  */
 
+import { divisibilitySheet, decimalOperationsSheet, percentsSheet, fractionsDecimalsSheet, fractionsAddSubtractSheet, compareOrderSheet, linearRelationsSheet, expressionsSheet, circlesSheet, areaSheet, constructionsSheet, cartesianPlaneSheet, transformationsSheet, centralTendencySheet, circleGraphsSheet, probabilitySheet } from "@/content/librarySheetsMath7";
+import { measurementUnitsSheet, surfaceAreaVolumeSheet, trigonometrySheet, factorsRootsSheet, irrationalNumbersSheet, exponentsSheet, polynomialMultiplicationSheet, factoringSheet, relationsFunctionsSheet, slopeSheet, linearRelations10cSheet } from "@/content/librarySheetsMath10c";
+
 export interface L {
   fr: string;
   en: string;
@@ -294,39 +297,39 @@ const albertaMath7: LibraryCourse = {
     {
       title: { fr: "Le nombre", en: "Number" },
       chapters: [
-        ch("divisibility", "Règles de divisibilité", "Divisibility rules", "Expliquer pourquoi un nombre est divisible par 2, 3, 4, 5, 6, 8, 9 ou 10.", "Explain why a number is divisible by 2, 3, 4, 5, 6, 8, 9 or 10."),
-        ch("decimal-operations", "Opérations sur les nombres décimaux", "Operations with decimals", "Additionner, soustraire, multiplier et diviser des nombres décimaux pour résoudre des problèmes.", "Add, subtract, multiply and divide decimals to solve problems."),
-        ch("percents", "Les pourcentages", "Percents", "Résoudre des problèmes avec des pourcentages de 1 % à 100 %.", "Solve problems with percents from 1% to 100%."),
-        ch("fractions-decimals", "Fractions et nombres décimaux", "Fractions and decimals", "Faire le lien entre les fractions et les nombres décimaux qui se terminent ou se répètent.", "Relate fractions to terminating and repeating decimals."),
-        ch("fractions-add-subtract", "Additionner et soustraire des fractions", "Adding and subtracting fractions", "Additionner et soustraire des fractions et des nombres fractionnaires, avec des dénominateurs pareils ou différents.", "Add and subtract fractions and mixed numbers, with like and unlike denominators."),
+        ch("divisibility", "Règles de divisibilité", "Divisibility rules", "Expliquer pourquoi un nombre est divisible par 2, 3, 4, 5, 6, 8, 9 ou 10.", "Explain why a number is divisible by 2, 3, 4, 5, 6, 8, 9 or 10.", divisibilitySheet),
+        ch("decimal-operations", "Opérations sur les nombres décimaux", "Operations with decimals", "Additionner, soustraire, multiplier et diviser des nombres décimaux pour résoudre des problèmes.", "Add, subtract, multiply and divide decimals to solve problems.", decimalOperationsSheet),
+        ch("percents", "Les pourcentages", "Percents", "Résoudre des problèmes avec des pourcentages de 1 % à 100 %.", "Solve problems with percents from 1% to 100%.", percentsSheet),
+        ch("fractions-decimals", "Fractions et nombres décimaux", "Fractions and decimals", "Faire le lien entre les fractions et les nombres décimaux qui se terminent ou se répètent.", "Relate fractions to terminating and repeating decimals.", fractionsDecimalsSheet),
+        ch("fractions-add-subtract", "Additionner et soustraire des fractions", "Adding and subtracting fractions", "Additionner et soustraire des fractions et des nombres fractionnaires, avec des dénominateurs pareils ou différents.", "Add and subtract fractions and mixed numbers, with like and unlike denominators.", fractionsAddSubtractSheet),
         ch("integers", "Additionner et soustraire des entiers relatifs", "Adding and subtracting integers", "Additionner et soustraire des entiers relatifs avec du matériel, des dessins puis des symboles.", "Add and subtract integers concretely, pictorially and symbolically.", integersSheet),
-        ch("compare-order", "Comparer et ordonner des nombres", "Comparing and ordering numbers", "Comparer et ordonner des fractions, des nombres décimaux et des nombres entiers.", "Compare and order fractions, decimals and whole numbers."),
+        ch("compare-order", "Comparer et ordonner des nombres", "Comparing and ordering numbers", "Comparer et ordonner des fractions, des nombres décimaux et des nombres entiers.", "Compare and order fractions, decimals and whole numbers.", compareOrderSheet),
       ],
     },
     {
       title: { fr: "Régularités et relations", en: "Patterns and relations" },
       chapters: [
-        ch("linear-relations", "Régularités et relations linéaires", "Patterns and linear relations", "Passer d'une régularité à une relation linéaire, à une table de valeurs et à un graphique.", "Move from a pattern to a linear relation, a table of values and a graph."),
-        ch("expressions", "Expressions et équations", "Expressions and equations", "Distinguer une expression d'une équation et évaluer une expression.", "Tell an expression from an equation and evaluate an expression."),
+        ch("linear-relations", "Régularités et relations linéaires", "Patterns and linear relations", "Passer d'une régularité à une relation linéaire, à une table de valeurs et à un graphique.", "Move from a pattern to a linear relation, a table of values and a graph.", linearRelationsSheet),
+        ch("expressions", "Expressions et équations", "Expressions and equations", "Distinguer une expression d'une équation et évaluer une expression.", "Tell an expression from an equation and evaluate an expression.", expressionsSheet),
         ch("linear-equations", "Résoudre des équations linéaires", "Solving linear equations", "Modéliser et résoudre des problèmes avec des équations linéaires simples.", "Model and solve problems with simple linear equations.", equationsSheet),
       ],
     },
     {
       title: { fr: "La forme et l'espace", en: "Shape and space" },
       chapters: [
-        ch("circles", "Le cercle", "Circles", "Comprendre le rayon, le diamètre, la circonférence et le nombre π.", "Understand radius, diameter, circumference and π."),
-        ch("area", "Aire des parallélogrammes, triangles et cercles", "Area of parallelograms, triangles and circles", "Trouver et utiliser les formules d'aire.", "Develop and use area formulas."),
-        ch("constructions", "Constructions géométriques", "Geometric constructions", "Tracer des droites perpendiculaires, parallèles et des bissectrices.", "Construct perpendicular and parallel lines and bisectors."),
-        ch("cartesian-plane", "Le plan cartésien", "The Cartesian plane", "Situer des points dans les quatre quadrants.", "Plot points in all four quadrants."),
-        ch("transformations", "Les transformations", "Transformations", "Effectuer et décrire des translations, rotations et réflexions.", "Perform and describe translations, rotations and reflections."),
+        ch("circles", "Le cercle", "Circles", "Comprendre le rayon, le diamètre, la circonférence et le nombre π.", "Understand radius, diameter, circumference and π.", circlesSheet),
+        ch("area", "Aire des parallélogrammes, triangles et cercles", "Area of parallelograms, triangles and circles", "Trouver et utiliser les formules d'aire.", "Develop and use area formulas.", areaSheet),
+        ch("constructions", "Constructions géométriques", "Geometric constructions", "Tracer des droites perpendiculaires, parallèles et des bissectrices.", "Construct perpendicular and parallel lines and bisectors.", constructionsSheet),
+        ch("cartesian-plane", "Le plan cartésien", "The Cartesian plane", "Situer des points dans les quatre quadrants.", "Plot points in all four quadrants.", cartesianPlaneSheet),
+        ch("transformations", "Les transformations", "Transformations", "Effectuer et décrire des translations, rotations et réflexions.", "Perform and describe translations, rotations and reflections.", transformationsSheet),
       ],
     },
     {
       title: { fr: "La statistique et la probabilité", en: "Statistics and probability" },
       chapters: [
-        ch("central-tendency", "Moyenne, médiane, mode et étendue", "Mean, median, mode and range", "Calculer ces mesures et voir l'effet d'une valeur aberrante.", "Calculate these measures and see the effect of an outlier."),
-        ch("circle-graphs", "Les diagrammes circulaires", "Circle graphs", "Construire et interpréter des diagrammes circulaires.", "Construct and interpret circle graphs."),
-        ch("probability", "Les probabilités", "Probability", "Utiliser des probabilités expérimentales et théoriques, en fraction, en décimal et en pourcentage.", "Use experimental and theoretical probability as fractions, decimals and percents."),
+        ch("central-tendency", "Moyenne, médiane, mode et étendue", "Mean, median, mode and range", "Calculer ces mesures et voir l'effet d'une valeur aberrante.", "Calculate these measures and see the effect of an outlier.", centralTendencySheet),
+        ch("circle-graphs", "Les diagrammes circulaires", "Circle graphs", "Construire et interpréter des diagrammes circulaires.", "Construct and interpret circle graphs.", circleGraphsSheet),
+        ch("probability", "Les probabilités", "Probability", "Utiliser des probabilités expérimentales et théoriques, en fraction, en décimal et en pourcentage.", "Use experimental and theoretical probability as fractions, decimals and percents.", probabilitySheet),
       ],
     },
   ],
@@ -347,27 +350,27 @@ const albertaMath10C: LibraryCourse = {
     {
       title: { fr: "La mesure", en: "Measurement" },
       chapters: [
-        ch("measurement-units", "Mesure linéaire, unités SI et impériales", "Linear measurement, SI and imperial units", "Mesurer, estimer et convertir entre unités SI et impériales.", "Measure, estimate and convert between SI and imperial units."),
-        ch("surface-area-volume", "Aire de surface et volume", "Surface area and volume", "Calculer l'aire de surface et le volume de cônes, cylindres, prismes, pyramides et sphères.", "Find surface area and volume of cones, cylinders, prisms, pyramids and spheres."),
-        ch("trigonometry", "Rapports trigonométriques", "Trigonometric ratios", "Utiliser sinus, cosinus et tangente dans les triangles rectangles.", "Use sine, cosine and tangent in right triangles."),
+        ch("measurement-units", "Mesure linéaire, unités SI et impériales", "Linear measurement, SI and imperial units", "Mesurer, estimer et convertir entre unités SI et impériales.", "Measure, estimate and convert between SI and imperial units.", measurementUnitsSheet),
+        ch("surface-area-volume", "Aire de surface et volume", "Surface area and volume", "Calculer l'aire de surface et le volume de cônes, cylindres, prismes, pyramides et sphères.", "Find surface area and volume of cones, cylinders, prisms, pyramids and spheres.", surfaceAreaVolumeSheet),
+        ch("trigonometry", "Rapports trigonométriques", "Trigonometric ratios", "Utiliser sinus, cosinus et tangente dans les triangles rectangles.", "Use sine, cosine and tangent in right triangles.", trigonometrySheet),
       ],
     },
     {
       title: { fr: "L'algèbre et le nombre", en: "Algebra and number" },
       chapters: [
-        ch("factors-roots", "Facteurs, racines carrées et cubiques", "Factors, square and cube roots", "Trouver facteurs premiers, PGCD, PPCM, racines carrées et cubiques.", "Find prime factors, GCF, LCM, square roots and cube roots."),
-        ch("irrational-numbers", "Les nombres irrationnels", "Irrational numbers", "Reconnaître, simplifier et ordonner des nombres irrationnels.", "Identify, simplify and order irrational numbers."),
-        ch("exponents", "Les puissances et les exposants", "Powers and exponents", "Travailler avec des exposants entiers et rationnels.", "Work with integral and rational exponents."),
-        ch("polynomial-multiplication", "Multiplier des polynômes", "Multiplying polynomials", "Multiplier des monômes, binômes et trinômes.", "Multiply monomials, binomials and trinomials."),
-        ch("factoring", "La factorisation", "Factoring", "Mettre en évidence un facteur commun et factoriser des trinômes.", "Factor out common factors and factor trinomials."),
+        ch("factors-roots", "Facteurs, racines carrées et cubiques", "Factors, square and cube roots", "Trouver facteurs premiers, PGCD, PPCM, racines carrées et cubiques.", "Find prime factors, GCF, LCM, square roots and cube roots.", factorsRootsSheet),
+        ch("irrational-numbers", "Les nombres irrationnels", "Irrational numbers", "Reconnaître, simplifier et ordonner des nombres irrationnels.", "Identify, simplify and order irrational numbers.", irrationalNumbersSheet),
+        ch("exponents", "Les puissances et les exposants", "Powers and exponents", "Travailler avec des exposants entiers et rationnels.", "Work with integral and rational exponents.", exponentsSheet),
+        ch("polynomial-multiplication", "Multiplier des polynômes", "Multiplying polynomials", "Multiplier des monômes, binômes et trinômes.", "Multiply monomials, binomials and trinomials.", polynomialMultiplicationSheet),
+        ch("factoring", "La factorisation", "Factoring", "Mettre en évidence un facteur commun et factoriser des trinômes.", "Factor out common factors and factor trinomials.", factoringSheet),
       ],
     },
     {
       title: { fr: "Les relations et les fonctions", en: "Relations and functions" },
       chapters: [
-        ch("relations-functions", "Relations et fonctions", "Relations and functions", "Interpréter des graphiques et distinguer une relation d'une fonction; notation fonctionnelle.", "Interpret graphs, tell relations from functions; function notation."),
-        ch("slope", "La pente", "Slope", "Comprendre et calculer la pente d'une droite, y compris des droites parallèles et perpendiculaires.", "Understand and find slope, including parallel and perpendicular lines."),
-        ch("linear-relations-10c", "Les relations linéaires", "Linear relations", "Décrire une relation linéaire et en trouver l'équation sous différentes formes.", "Describe a linear relation and find its equation in different forms."),
+        ch("relations-functions", "Relations et fonctions", "Relations and functions", "Interpréter des graphiques et distinguer une relation d'une fonction; notation fonctionnelle.", "Interpret graphs, tell relations from functions; function notation.", relationsFunctionsSheet),
+        ch("slope", "La pente", "Slope", "Comprendre et calculer la pente d'une droite, y compris des droites parallèles et perpendiculaires.", "Understand and find slope, including parallel and perpendicular lines.", slopeSheet),
+        ch("linear-relations-10c", "Les relations linéaires", "Linear relations", "Décrire une relation linéaire et en trouver l'équation sous différentes formes.", "Describe a linear relation and find its equation in different forms.", linearRelations10cSheet),
         ch("systems-of-equations", "Systèmes d'équations linéaires", "Systems of linear equations", "Résoudre des systèmes à deux variables, graphiquement et algébriquement.", "Solve two-variable systems graphically and algebraically.", systemsSheet),
       ],
     },

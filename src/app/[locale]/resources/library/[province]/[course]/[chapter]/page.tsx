@@ -130,12 +130,12 @@ export default async function LibraryChapterPage({ params }: { params: Promise<P
                     {sheet.examples.map((example, index) => (
                       <article key={example.problem.en} className="flex flex-col rounded-2xl border border-coral-100 bg-coral-50 p-5">
                         <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#c2410c]">{t("sheet.example", { number: index + 1 })}</p>
-                        <p className="mt-2 font-mono text-lg font-bold text-navy">{p(example.problem)}</p>
+                        <p className="mt-2 text-lg font-bold leading-snug text-navy">{p(example.problem)}</p>
                         <ol className="mt-3 flex flex-col gap-1.5 text-sm leading-6 text-text-secondary">
                           {example.steps.map((step) => <li key={step.en}>{p(step)}</li>)}
                         </ol>
                         <p className="mt-auto pt-4 text-sm font-bold text-navy">
-                          {t("sheet.answer")} : <span className="rounded-md bg-white px-2 py-0.5 font-mono">{p(example.answer)}</span>
+                          {t("sheet.answer")} : <span className="rounded-md bg-white px-2 py-0.5">{p(example.answer)}</span>
                         </p>
                       </article>
                     ))}
@@ -159,7 +159,7 @@ export default async function LibraryChapterPage({ params }: { params: Promise<P
                           <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-bold text-emerald-700 [&::-webkit-details-marker]:hidden">
                             {t("sheet.showAnswer")}
                           </summary>
-                          <p className="mt-2 font-mono text-navy">{p(item.answer)}</p>
+                          <p className="mt-2 font-semibold text-navy">{p(item.answer)}</p>
                         </details>
                       </li>
                     ))}
