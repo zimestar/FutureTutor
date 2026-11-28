@@ -152,7 +152,7 @@ export function MessageThread({
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
-      <PageHeader title={title} />
+      <PageHeader title={title} variant="plain" />
 
       {sessionContext && sessionContext.kind !== "none" && sessionContext.startAt && (
         <div data-testid={sessionContext.kind === "upcoming" ? "upcoming-session-banner" : "recent-session-banner"}>

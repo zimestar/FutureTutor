@@ -55,9 +55,9 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-dashed border-border-strong bg-surface px-6 py-10 text-center", className)}>
-      <span className="mx-auto flex size-11 items-center justify-center rounded-full bg-blue/10 text-blue">
-        <Icon className="size-5" aria-hidden="true" />
+    <div className={cn("rounded-3xl border-2 border-dashed border-blue-100 bg-gradient-to-br from-white to-blue-50 px-6 py-10 text-center", className)}>
+      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-sun text-navy shadow-(--shadow-card)">
+        <Icon className="size-6" aria-hidden="true" />
       </span>
       <p className="mt-4 text-lg font-bold text-text-primary">{title}</p>
       {description && <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">{description}</p>}

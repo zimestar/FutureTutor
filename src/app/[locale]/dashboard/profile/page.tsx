@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
 import { closedBetaOnlineOnlyActive } from "@/lib/closedBetaConfig";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { StudentProfileEditForm } from "@/components/dashboard/StudentProfileEditForm";
@@ -42,7 +43,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
       // page must never assume it without checking.
       return (
         <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-          <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
+          <PageHeader title={t("title")} />
           <p className="mt-4 text-slate">{t("parentProfileMissing")}</p>
         </DashboardShell>
       );
@@ -50,8 +51,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
 
     return (
       <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-        <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-        <p className="mt-2 max-w-xl text-slate">{t("parentSubtitle")}</p>
+        <PageHeader title={t("title")} description={t("parentSubtitle")} />
         <div className="mt-8 max-w-2xl rounded-xl border border-neutral-200 bg-white p-6">
           <ParentProfileEditForm
             initialValues={{
@@ -94,7 +94,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
+      <PageHeader title={t("title")} />
       <p className="mt-2 max-w-xl text-slate">
         {view.capabilities.canManageStudentAccount ? t("studentSubtitleFull") : t("studentSubtitleLowStakes")}
       </p>

@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { StudentActivationNotice } from "@/components/dashboard/StudentActivationNotice";
 import { CancelBookingButton } from "@/components/dashboard/CancelBookingButton";
@@ -104,8 +105,7 @@ export default async function StudentBookingsPage({
 
   return (
     <DashboardShell navItems={navItems} userName={user.name ?? ""}>
-      <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">{t("title")}</h1>
-      <p className="mt-2 max-w-xl text-slate">{t("description")}</p>
+      <PageHeader title={t("title")} description={t("description")} />
 
       {bookings.length === 0 ? (
         <div className="mt-8 rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center">
