@@ -26,6 +26,23 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { SectionIntro } from "@/components/marketing/SectionIntro";
 import { resourceArticles } from "@/content/resources";
+import { DotCluster, Sparkle } from "@/components/marketing/Decor";
+
+/** HOME-COLOR — rotating accent tones for chips and numbered steps. */
+const chipTones = [
+  "bg-blue text-white",
+  "bg-coral text-navy",
+  "bg-mint text-navy",
+  "bg-sun text-navy",
+  "bg-lilac text-white",
+  "bg-sky text-navy",
+];
+const softTones = ["bg-blue-50 text-blue", "bg-coral-50 text-[#c2410c]", "bg-mint-50 text-emerald-700", "bg-sun-50 text-amber-700"];
+const stepCards = [
+  { card: "border-blue-100 bg-blue-50", label: "text-blue" },
+  { card: "border-sun-100 bg-sun-50", label: "text-amber-700" },
+  { card: "border-mint-100 bg-mint-50", label: "text-emerald-700" },
+];
 
 /**
  * DESIGN-SYSTEM3 — homepage sections. Every statement here describes how the
@@ -138,19 +155,19 @@ export function HomeHowItWorks() {
       </div>
       <ol className="reveal-stagger mt-12 grid gap-6 lg:grid-cols-3">
         {steps.map((step) => (
-          <li key={step} className="flex flex-col rounded-3xl border border-border bg-canvas p-6 sm:p-7">
-            <div className="flex min-h-[236px] flex-col justify-center rounded-2xl bg-neutral-100/80 p-4">
+          <li key={step} className={`flex flex-col rounded-3xl border p-6 sm:p-7 ${stepCards[step].card}`}>
+            <div className="flex min-h-[236px] flex-col justify-center rounded-2xl bg-white/70 p-4">
               <StepVisual step={step} />
             </div>
-            <p className="mt-6 text-sm font-bold text-blue">{t("stepLabel", { number: step + 1 })}</p>
+            <p className={`mt-6 text-sm font-bold ${stepCards[step].label}`}>{t("stepLabel", { number: step + 1 })}</p>
             <h3 className="mt-1.5 text-xl font-bold text-navy">{t(`steps.${step}.title`)}</h3>
             <p className="mt-2 leading-7 text-text-secondary">{t(`steps.${step}.text`)}</p>
           </li>
         ))}
       </ol>
-      <div className="mt-6 flex flex-col items-start gap-4 rounded-3xl border border-blue/15 bg-blue/5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+      <div className="mt-6 flex flex-col items-start gap-4 rounded-3xl border border-coral-100 bg-coral-50 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div className="flex items-start gap-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue text-white">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-coral text-navy">
             <Zap className="size-5" aria-hidden="true" />
           </span>
           <div>
@@ -177,10 +194,15 @@ export function HomeParents() {
     { key: "safety", icon: ShieldCheck },
   ] as const;
   return (
-    <Section className="bg-canvas" ariaLabelledby="home-parents-title">
+    <Section className="bg-sun-50" ariaLabelledby="home-parents-title">
       <div className="reveal grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
         <div className="relative order-last lg:order-first">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[28px] shadow-(--shadow-pop)">
+          <span aria-hidden="true" className="pointer-events-none absolute -left-6 -top-6 size-40 rounded-full bg-sun" />
+          <DotCluster delay={300} className="-bottom-8 right-0 z-20 w-24 text-coral sm:-right-6" />
+          <Sparkle delay={900} className="-left-3 bottom-10 z-20 w-9 text-lilac" />
+          <span aria-hidden="true" className="motion-float absolute -right-5 top-8 z-20 hidden size-14 items-center justify-center rounded-2xl bg-mint text-navy shadow-(--shadow-pop) sm:flex"><ShieldCheck className="size-7" /></span>
+          <span aria-hidden="true" className="motion-float [--motion-delay:1200ms] absolute left-8 -bottom-6 z-20 hidden size-14 items-center justify-center rounded-2xl bg-white text-blue shadow-(--shadow-pop) sm:flex"><CalendarCheck className="size-7" /></span>
+          <div className="relative z-10 aspect-[4/3] overflow-hidden rounded-[28px] border-[6px] border-white shadow-(--shadow-pop)">
             <Image src="/images/parent-homework-help-v2.webp" alt={t("imageAlt")} fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
           </div>
         </div>
@@ -189,9 +211,9 @@ export function HomeParents() {
           <h2 id="home-parents-title" className="mt-4 text-[2rem] font-bold leading-[1.1] text-navy md:text-[2.75rem]">{t("title")}</h2>
           <p className="mt-5 text-lg leading-8 text-text-secondary">{t("description")}</p>
           <ul className="mt-8 grid gap-5 sm:grid-cols-2">
-            {features.map(({ key, icon: Icon }) => (
+            {features.map(({ key, icon: Icon }, index) => (
               <li key={key} className="flex items-start gap-3.5">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue shadow-(--shadow-card)">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${chipTones[index % chipTones.length]}`}>
                   <Icon className="size-5" aria-hidden="true" />
                 </span>
                 <div>
@@ -227,11 +249,11 @@ export function HomeSafety() {
           <h2 id="home-safety-title" className="mt-4 text-[2rem] font-bold leading-[1.1] text-navy md:text-[2.75rem]">{t("title")}</h2>
           <p className="mt-5 text-lg leading-8 text-text-secondary">{t("description")}</p>
           <div className="mt-8 flex flex-col gap-3">
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-canvas p-4">
+            <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
               <LockKeyhole className="mt-0.5 size-5 shrink-0 text-blue" aria-hidden="true" />
               <p className="text-sm leading-6 text-text-secondary">{t("payment")}</p>
             </div>
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-canvas p-4">
+            <div className="flex items-start gap-3 rounded-2xl border border-coral-100 bg-coral-50 p-4">
               <ShieldAlert className="mt-0.5 size-5 shrink-0 text-red-600" aria-hidden="true" />
               <p className="text-sm leading-6 text-text-secondary">
                 {t("report")}{" "}
@@ -247,7 +269,7 @@ export function HomeSafety() {
         <ol className="relative grid gap-3">
           {steps.map((step) => (
             <li key={step} className="flex items-start gap-4 rounded-2xl border border-border bg-white p-5 shadow-(--shadow-card)">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{step + 1}</span>
+              <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${chipTones[step % chipTones.length]}`}>{step + 1}</span>
               <div>
                 <p className="font-bold text-navy">{t(`steps.${step}.title`)}</p>
                 <p className="mt-1 text-sm leading-6 text-text-secondary">{t(`steps.${step}.text`)}</p>
@@ -271,11 +293,11 @@ export function HomePricing() {
   const factors = [0, 1, 2] as const;
   const promises = [0, 1, 2] as const;
   return (
-    <Section className="bg-canvas" ariaLabelledby="home-pricing-title">
+    <Section className="bg-sky-50" ariaLabelledby="home-pricing-title">
       <SectionIntro eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <div className="reveal-stagger mt-12 grid gap-5 md:grid-cols-3">
         {factors.map((factor) => (
-          <div key={factor} className="rounded-3xl border border-border bg-white p-7 shadow-(--shadow-card)">
+          <div key={factor} className={`rounded-3xl border-t-[6px] bg-white p-7 shadow-(--shadow-card) ${["border-blue", "border-coral", "border-mint"][factor]}`}>
             <p className="text-sm font-bold text-blue">{t("factorLabel", { number: factor + 1 })}</p>
             <p className="mt-2 text-xl font-bold text-navy">{t(`factors.${factor}.title`)}</p>
             <p className="mt-2 leading-7 text-text-secondary">{t(`factors.${factor}.text`)}</p>
@@ -323,13 +345,13 @@ export function HomeResources() {
         </Link>
       </div>
       <ul className="reveal-stagger mt-10 grid gap-5 md:grid-cols-3">
-        {articles.map((article) => (
+        {articles.map((article, index) => (
           <li key={article.slug}>
             <Link
               href={`/resources/${article.slug}`}
               className="group flex h-full flex-col rounded-3xl border border-border bg-white p-7 transition-all hover:-translate-y-0.5 hover:shadow-(--shadow-card-hover)"
             >
-              <span className="flex size-11 items-center justify-center rounded-xl bg-blue/10 text-blue">
+              <span className={`flex size-11 items-center justify-center rounded-xl ${softTones[index % softTones.length]}`}>
                 <BookOpen className="size-5" aria-hidden="true" />
               </span>
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{tCategories(article.category)}</p>

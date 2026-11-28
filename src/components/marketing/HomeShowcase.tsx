@@ -11,6 +11,7 @@ import {
   Video,
 } from "lucide-react";
 import { Section } from "@/components/ui/Section";
+import { DotCluster, HalfCircles, Sparkle } from "@/components/marketing/Decor";
 import { Link } from "@/i18n/navigation";
 import { TrackedCtaButton } from "@/components/marketing/TrackedCtaButton";
 import { db } from "@/lib/db";
@@ -28,6 +29,15 @@ import { founderNote, founderTutorSlugs, marketResearchTestimonials } from "@/co
 const eyebrowClass = "text-[13px] font-bold uppercase tracking-[0.12em] text-blue";
 const h2Class = "mt-3 text-[clamp(2rem,3.6vw,3rem)] font-extrabold leading-[1.06] tracking-[-0.03em] text-navy";
 const tileTitle = "text-2xl font-extrabold tracking-[-0.02em] text-navy";
+
+/** Rotating accent tones for avatars and icon chips. */
+const avatarTones = [
+  "from-blue-100 to-sky-50 text-blue",
+  "from-coral-100 to-coral-50 text-[#c2410c]",
+  "from-mint-100 to-mint-50 text-emerald-700",
+  "from-sun-100 to-sun-50 text-amber-700",
+  "from-lilac-100 to-lilac-50 text-[#6d5bd0]",
+];
 
 /* ------------------------------------------------------------------ */
 /* Tutors (real approved profiles)                                     */
@@ -64,7 +74,7 @@ export async function HomeFounders({ locale }: { locale: string }) {
     .slice(0, 8);
 
   return (
-    <Section id="featured-tutors" ariaLabelledby="home-tutors-heading" className="border-y border-border bg-canvas">
+    <Section id="featured-tutors" ariaLabelledby="home-tutors-heading" className="bg-lilac-50">
       <div className="reveal flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div className="max-w-2xl">
           <p className={eyebrowClass}>{t("eyebrow")}</p>
@@ -76,17 +86,17 @@ export async function HomeFounders({ locale }: { locale: string }) {
         </TrackedCtaButton>
       </div>
       <ul className="reveal -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-        {cards.map((tutor) => {
+        {cards.map((tutor, index) => {
           const name = tutor.user.name?.trim() || "";
           const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
           const subjects = tutor.subjects.slice(0, 3).map((s) => tSubjects(s.subject.slug));
           return (
             <li key={tutor.id} className="flex w-[78%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl sm:w-auto border border-border bg-white motion-lift hover:shadow-(--shadow-pop)">
-              <div className="relative h-56 bg-gradient-to-br from-blue-100 to-blue-50">
+              <div className={`relative h-56 bg-gradient-to-br ${avatarTones[index % avatarTones.length]}`}>
                 {tutor.user.image ? (
                   <Image src={tutor.user.image} alt={t("photoAlt", { name })} fill sizes="(min-width: 1024px) 280px, (min-width: 640px) 45vw, 100vw" className="object-cover object-[50%_30%]" />
                 ) : (
-                  <span aria-hidden="true" className="flex h-full items-center justify-center text-5xl font-extrabold text-blue/70">{initials}</span>
+                  <span aria-hidden="true" className="flex h-full items-center justify-center text-5xl font-extrabold opacity-80">{initials}</span>
                 )}
                 <div className="absolute inset-x-3 top-3 flex flex-wrap justify-between gap-2">
                   {founders.has(tutor.slug) ? (
@@ -155,7 +165,7 @@ export async function HomePlatform({ locale }: { locale: string }) {
 
       <div className="reveal-stagger mt-12 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Booking */}
-        <article className={`${tile} border-border bg-canvas`}>
+        <article className={`${tile} border-sun-100 bg-sun-50`}>
           <div>
             <h3 className={tileTitle}>{t("booking.title")}</h3>
             <p className="mt-2 leading-7 text-text-secondary">{t("booking.text")}</p>
@@ -163,9 +173,9 @@ export async function HomePlatform({ locale }: { locale: string }) {
           <div aria-hidden="true" className={`${mock} border border-border`}>
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-text-muted">{t("booking.day")}</p>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm font-semibold">
-              <span className="rounded-lg border border-border py-2.5">15:00</span>
+              <span className="rounded-lg border border-sun-100 py-2.5">15:00</span>
               <span className="motion-ring rounded-lg bg-blue py-2.5 text-white">16:00</span>
-              <span className="rounded-lg border border-border py-2.5">17:30</span>
+              <span className="rounded-lg border border-sun-100 py-2.5">17:30</span>
             </div>
             <div className="mt-4 flex justify-between border-t border-dashed border-neutral-300 pt-3.5 text-sm">
               <span className="text-text-secondary">{t("booking.total")}</span>
@@ -227,14 +237,14 @@ export async function HomePlatform({ locale }: { locale: string }) {
         </article>
 
         {/* Quick Match */}
-        <article className={`${tile} border-border bg-canvas`}>
+        <article className={`${tile} border-coral-100 bg-coral-50`}>
           <div>
             <h3 className={tileTitle}>{t("quickMatch.title")}</h3>
             <p className="mt-2 leading-7 text-text-secondary">{t("quickMatch.text")}</p>
           </div>
           <div aria-hidden="true" className="mt-auto flex flex-col gap-2.5">
             <p className="max-w-[88%] self-start rounded-2xl rounded-bl-sm border border-border bg-white px-4 py-3 text-sm leading-6 text-navy">{t("quickMatch.request")}</p>
-            <p className="reveal self-end rounded-2xl rounded-br-sm bg-blue px-4 py-2.5 text-sm font-semibold text-white">{t("quickMatch.accepted")}</p>
+            <p className="reveal self-end rounded-2xl rounded-br-sm bg-coral px-4 py-2.5 text-sm font-semibold text-navy">{t("quickMatch.accepted")}</p>
           </div>
         </article>
 
@@ -266,8 +276,12 @@ export async function HomeClassroom({ locale }: { locale: string }) {
   const features = t.raw("features") as { title: string; text: string }[];
 
   return (
-    <section aria-labelledby="home-classroom-heading" className="bg-navy bg-[radial-gradient(900px_500px_at_15%_0%,rgba(37,99,235,0.35)_0%,transparent_60%)] py-20 text-white md:py-28">
-      <div className="mx-auto w-full max-w-(--container-page) px-5 md:px-10">
+    <section aria-labelledby="home-classroom-heading" className="relative overflow-hidden bg-navy bg-[radial-gradient(900px_500px_at_15%_0%,rgba(37,99,235,0.35)_0%,transparent_60%)] py-20 text-white md:py-28">
+      <Sparkle className="left-[8%] top-24 hidden w-10 text-sun md:block" />
+      <Sparkle delay={1400} className="right-[10%] top-40 hidden w-6 text-mint md:block" />
+      <DotCluster delay={700} className="-right-6 bottom-[38%] hidden w-24 text-coral/90 lg:block" />
+      <HalfCircles delay={300} className="bottom-24 left-[6%] hidden w-28 text-lilac lg:block" />
+      <div className="relative mx-auto w-full max-w-(--container-page) px-5 md:px-10">
         <div className="reveal mx-auto max-w-3xl text-center">
           <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-emerald-300">{t("eyebrow")}</p>
           <h2 id="home-classroom-heading" className="mt-3 text-[clamp(2.1rem,4vw,3.4rem)] font-extrabold leading-[1.05] tracking-[-0.03em]">{t("title")}</h2>
@@ -393,22 +407,24 @@ export async function HomeVoices({ locale }: { locale: string }) {
 export async function HomeRoles({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: "homeV2.roles" });
   const roles = [
-    { key: "student", href: "/find-tutors", className: "bg-blue hover:bg-blue-hover" },
-    { key: "parent", href: "/signup?role=parent", className: "bg-[#13263d] hover:bg-[#1a3150]" },
-    { key: "tutor", href: "/become-a-tutor", className: "bg-[#13263d] hover:bg-[#1a3150]" },
+    { key: "student", href: "/find-tutors", card: "bg-blue text-white hover:bg-blue-hover", muted: "text-white/75", kicker: "text-white/80" },
+    { key: "parent", href: "/signup?role=parent", card: "bg-coral text-navy hover:bg-[#ff6a45]", muted: "text-navy/80", kicker: "text-navy/70" },
+    { key: "tutor", href: "/become-a-tutor", card: "bg-sun text-navy hover:bg-[#ffbe1f]", muted: "text-navy/80", kicker: "text-navy/70" },
   ] as const;
 
   return (
-    <section aria-labelledby="home-roles-heading" className="bg-navy py-20 text-white md:py-28">
-      <div className="mx-auto w-full max-w-(--container-page) px-5 md:px-10">
+    <section aria-labelledby="home-roles-heading" className="relative overflow-hidden bg-navy py-20 text-white md:py-28">
+      <Sparkle className="left-[7%] top-16 hidden w-9 text-sun md:block" />
+      <Sparkle delay={1100} className="right-[9%] top-24 hidden w-6 text-mint md:block" />
+      <div className="relative mx-auto w-full max-w-(--container-page) px-5 md:px-10">
         <h2 id="home-roles-heading" className="reveal text-center text-[clamp(2.1rem,4vw,3.2rem)] font-extrabold leading-[1.06] tracking-[-0.03em]">{t("title")}</h2>
         <ul className="reveal-stagger mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
           {roles.map((role) => (
             <li key={role.key}>
-              <Link href={role.href} className={`flex h-full min-h-52 flex-col gap-2.5 rounded-3xl border border-white/12 p-8 motion-lift ${role.className}`}>
-                <span className="text-sm font-bold text-white/70">{t(`${role.key}.kicker`)}</span>
+              <Link href={role.href} className={`motion-lift flex h-full min-h-52 flex-col gap-2.5 rounded-3xl p-8 ${role.card}`}>
+                <span className={`text-sm font-bold ${role.kicker}`}>{t(`${role.key}.kicker`)}</span>
                 <span className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{t(`${role.key}.title`)}</span>
-                <span className="leading-7 text-white/75">{t(`${role.key}.text`)}</span>
+                <span className={`leading-7 ${role.muted}`}>{t(`${role.key}.text`)}</span>
                 <span className="mt-auto inline-flex items-center gap-2 pt-3 font-bold">{t(`${role.key}.cta`)} <ArrowRight className="size-4" aria-hidden="true" /></span>
               </Link>
             </li>

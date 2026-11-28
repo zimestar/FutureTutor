@@ -11,7 +11,7 @@ for (const locale of ["en", "fr"] as const) {
     );
     const emphasis = page.getByRole("heading", { level: 1 }).locator("span").first();
     await expect(emphasis).toHaveText(locale === "en" ? "The right person" : "La bonne personne");
-    await expect(emphasis).toHaveClass(/text-blue/);
+    await expect(emphasis).toHaveClass(/text-sun-ink/);
     await expect(page.locator('img[src*="home-tutoring-session"]')).toBeVisible();
     await expect(page.locator('label[for="search-subject"]')).toBeVisible();
     await expect(page.locator('label[for="search-level"]')).toBeVisible();

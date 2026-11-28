@@ -1,3 +1,4 @@
+import { MotionObserver } from "@/components/marketing/MotionObserver";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
@@ -125,6 +126,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <SessionProvider>{children}</SessionProvider>
           <ConsentBanner />
+          <MotionObserver />
         </NextIntlClientProvider>
       </body>
     </html>

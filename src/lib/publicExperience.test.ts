@@ -102,8 +102,9 @@ describe("public experience regression boundary", () => {
     const hero = readFileSync("src/components/marketing/Hero.tsx", "utf8");
     const search = readFileSync("src/components/marketing/TutorSearch.tsx", "utf8");
 
-    // HOME-V2 — bright white backdrop with a soft blue glow, display face from the theme (no serif).
-    expect(hero).toContain("bg-white bg-[radial-gradient(");
+    // HOME-COLOR — solid brand-blue field with playful decorations, display face from the theme (no serif).
+    expect(hero).toContain("relative overflow-hidden bg-blue text-white");
+    expect(hero).toContain("@/components/marketing/Decor");
     expect(hero).not.toContain("font-serif");
     expect(hero).toContain('<TutorSearch presentation="panel"');
     expect(hero).toContain("home-tutoring-session-v2.webp");
