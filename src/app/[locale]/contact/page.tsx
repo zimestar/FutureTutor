@@ -26,7 +26,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
   const t = await getTranslations({ locale, namespace: "publicExperience.contact" });
   return (
     <MarketingShell>
-      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/how-it-works" }} secondary={{ label: t("hero.secondary"), href: "/login" }} />
+      <MarketingPageHero tone="lilac" eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/how-it-works" }} secondary={{ label: t("hero.secondary"), href: "/login" }} />
       <Section className="bg-off-white">
         <div className="grid gap-5 md:grid-cols-3">
           {routes.map(({ icon: Icon, href }, index) => <article key={href} className="flex flex-col rounded-2xl border border-border bg-white p-7 shadow-card"><Icon className="size-7 text-blue" aria-hidden="true" /><h2 className="mt-6 text-xl font-extrabold text-navy">{t(`routes.${index}.title`)}</h2><p className="mt-3 flex-1 leading-7 text-text-secondary">{t(`routes.${index}.description`)}</p><Link href={href} className="mt-6 inline-flex min-h-11 items-center gap-2 font-bold text-blue hover:text-blue-hover">{t(`routes.${index}.cta`)}<ArrowRight className="size-4" aria-hidden="true" /></Link></article>)}

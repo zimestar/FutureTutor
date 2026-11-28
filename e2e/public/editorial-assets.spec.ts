@@ -16,7 +16,7 @@ async function expectImageReady(page: import("@playwright/test").Page, pattern: 
 for (const locale of ["en", "fr"] as const) {
   test(`${locale} approved editorial assets render without broken images`, async ({ page }) => {
     await page.goto(`/${locale}`);
-    for (const asset of ["home-tutoring-session", "parent-homework-help"]) {
+    for (const asset of ["home-hero-cutout", "parent-homework-help"]) {
       await expectImageReady(page, asset);
     }
 

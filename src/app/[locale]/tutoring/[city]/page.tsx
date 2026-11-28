@@ -68,7 +68,7 @@ export default async function LocalMarketPage({ params }: { params: Promise<Para
       <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs items={[{ label: t("breadcrumbHome"), href: "/" }, { label: tItem("breadcrumbLabel") }]} />
       </Section>
-      <MarketingPageHero
+      <MarketingPageHero tone="blue"
         eyebrow={tItem("hero.eyebrow")}
         title={tItem("hero.title")}
         description={tItem("hero.description")}

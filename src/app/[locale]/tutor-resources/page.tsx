@@ -31,7 +31,7 @@ export default async function TutorResourcesPage({ params }: { params: Promise<{
   const t = await getTranslations({ locale, namespace: "publicExperience.resources" });
   return (
     <MarketingShell>
-      <MarketingPageHero eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/become-a-tutor" }} secondary={{ label: t("hero.secondary"), href: "/signup" }} />
+      <MarketingPageHero tone="sun" eyebrow={t("hero.eyebrow")} title={t("hero.title")} description={t("hero.description")} primary={{ label: t("hero.primary"), href: "/become-a-tutor" }} secondary={{ label: t("hero.secondary"), href: "/signup" }} />
       <Section className="bg-white">
         <SectionIntro eyebrow={t("universityStudents.eyebrow")} title={t("universityStudents.title")} description={t("universityStudents.description")} />
         <div className="mt-8 flex justify-center">

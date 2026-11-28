@@ -26,7 +26,7 @@ export default async function OnlineClassroomPage({ params }: { params: Promise<
       <Section className="border-b border-border bg-white py-3.5 md:py-3.5">
         <Breadcrumbs items={[{ label: tCommon("breadcrumbHome"), href: "/" }, { label: t("breadcrumb") }]} />
       </Section>
-      <MarketingPageHero
+      <MarketingPageHero tone="blue"
         eyebrow={t("hero.eyebrow")}
         title={t("hero.title")}
         description={t("hero.description")}
