@@ -9,7 +9,7 @@ import { subjects } from "@/content/subjects";
 import { getFavoritedTutorIds } from "@/lib/favorites";
 import { tutorProfileToCardData } from "@/lib/tutorCard";
 import { displayModeToDb } from "@/lib/tutorMode";
-import { calculateCustomerPrice, PricingRuleNotFoundError } from "@/services/customerPricing";
+import { calculateCustomerPrice, PricingRuleNotFoundError, tierPremiumCents } from "@/services/customerPricing";
 import type { GradeLevelKey, LearningMode } from "@/types/tutor";
 import { BOOKABLE_TUTOR_WHERE } from "@/lib/tutorBookability";
 
@@ -79,7 +79,16 @@ export async function TutorDirectory({ locale, searchParams, authenticated = fal
     }
   }
 
-  const results = tutorProfiles.map((tutor) => tutorProfileToCardData(tutor, tSubjects, favoritedIds, previewPriceCents));
+  // TIER-PREMIUM — each card's "from" price includes that tutor's tier supplement.
+  const pricingSettings = previewPriceCents != null ? await db.marketplacePricingSettings.findFirst() : null;
+  const results = tutorProfiles.map((tutor) =>
+    tutorProfileToCardData(
+      tutor,
+      tSubjects,
+      favoritedIds,
+      previewPriceCents != null && pricingSettings ? previewPriceCents + tierPremiumCents(pricingSettings, tutor.payoutTier, 60) : previewPriceCents
+    )
+  );
   const hasFilters = Boolean(subject || level || mode);
 
   return (

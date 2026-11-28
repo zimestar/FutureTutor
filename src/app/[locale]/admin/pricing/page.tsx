@@ -152,6 +152,9 @@ export default async function AdminPricingPage({
               lowSupplyAmountCents: settings.lowSupplyAmountCents,
               tutorUrgencyBonusCents: settings.tutorUrgencyBonusCents,
               minimumGrossSpreadCents: settings.minimumGrossSpreadCents,
+              tierPremiumVerifiedCents: settings.tierPremiumVerifiedCents,
+              tierPremiumSeniorCents: settings.tierPremiumSeniorCents,
+              tierPremiumEliteCents: settings.tierPremiumEliteCents,
               configVersion: settings.configVersion,
             }}
           />

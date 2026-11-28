@@ -16,10 +16,13 @@ export interface MarketplacePricingSettingsValues {
   lowSupplyAmountCents: number;
   tutorUrgencyBonusCents: number;
   minimumGrossSpreadCents: number;
+  tierPremiumVerifiedCents: number;
+  tierPremiumSeniorCents: number;
+  tierPremiumEliteCents: number;
   configVersion: string;
 }
 
-const FIELDS: (keyof MarketplacePricingSettingsValues)[] = ["quoteTtlMinutes", "urgencyShortNoticeThresholdHours", "urgencyShortNoticeAmountCents", "urgencyUrgentThresholdHours", "urgencyUrgentAmountCents", "lowSupplyThresholdCount", "lowSupplyAmountCents", "tutorUrgencyBonusCents", "minimumGrossSpreadCents"];
+const FIELDS: (keyof MarketplacePricingSettingsValues)[] = ["quoteTtlMinutes", "urgencyShortNoticeThresholdHours", "urgencyShortNoticeAmountCents", "urgencyUrgentThresholdHours", "urgencyUrgentAmountCents", "lowSupplyThresholdCount", "lowSupplyAmountCents", "tutorUrgencyBonusCents", "minimumGrossSpreadCents", "tierPremiumVerifiedCents", "tierPremiumSeniorCents", "tierPremiumEliteCents"];
 
 export function MarketplacePricingSettingsForm({ values }: { values: MarketplacePricingSettingsValues }) {
   const t = useTranslations("admin.pricing");

@@ -2401,7 +2401,10 @@
         "lowSupplyThresholdCount": "Seuil de faible disponibilité des tuteurs",
         "lowSupplyAmountCents": "Supplément de faible disponibilité (cents)",
         "tutorUrgencyBonusCents": "Prime d’urgence du tuteur (cents)",
-        "minimumGrossSpreadCents": "Marge brute minimale (cents)"
+        "minimumGrossSpreadCents": "Marge brute minimale (cents)",
+        "tierPremiumVerifiedCents": "Supplément tuteur VERIFIED, par heure (cents)",
+        "tierPremiumSeniorCents": "Supplément tuteur SENIOR, par heure (cents)",
+        "tierPremiumEliteCents": "Supplément tuteur ELITE, par heure (cents)"
       }
     },
     "operations": {
@@ -2812,7 +2815,11 @@
       "lowSupply": "Forte demande pour cette matière",
       "travel": "Déplacement",
       "tutorUrgencyBonus": "Prime pour séance urgente",
-      "travelCompensation": "Compensation de déplacement"
+      "travelCompensation": "Compensation de déplacement",
+      "tutorTierNew": "Tuteur NEW",
+      "tutorTierVerified": "Tuteur vérifié (VERIFIED)",
+      "tutorTierSenior": "Tuteur expérimenté (SENIOR)",
+      "tutorTierElite": "Tuteur ELITE"
     },
     "status": {
       "DRAFT": "Brouillon",

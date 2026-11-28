@@ -128,6 +128,9 @@ export async function createPriceQuoteAction(input: {
       tutoringMode: effectiveMode,
       durationMinutes: SESSION_DURATION_MINUTES,
       requestedStartAt: parsed.data.startAt,
+      // TIER-PREMIUM — the parent pays the supplement of the chosen tutor's
+      // tier; the payout quote below is bound to this same tutor.
+      tutorTier: tutorProfile.payoutTier,
     });
 
     const payoutQuote = await createTutorPayoutQuote(

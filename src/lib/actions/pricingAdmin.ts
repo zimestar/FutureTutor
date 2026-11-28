@@ -132,6 +132,9 @@ export async function saveMarketplacePricingSettingsAction(
     lowSupplyAmountCents: formData.get("lowSupplyAmountCents"),
     tutorUrgencyBonusCents: formData.get("tutorUrgencyBonusCents"),
     minimumGrossSpreadCents: formData.get("minimumGrossSpreadCents"),
+    tierPremiumVerifiedCents: formData.get("tierPremiumVerifiedCents"),
+    tierPremiumSeniorCents: formData.get("tierPremiumSeniorCents"),
+    tierPremiumEliteCents: formData.get("tierPremiumEliteCents"),
     configVersion: formData.get("configVersion") || "MARKETPLACE_SETTINGS_V1",
   });
   if (!parsed.success) return { error: t("errorDescription") };

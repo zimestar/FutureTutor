@@ -47,6 +47,9 @@ export const marketplacePricingSettingsSchema = z.object({
   lowSupplyAmountCents: z.coerce.number().int().nonnegative(),
   tutorUrgencyBonusCents: z.coerce.number().int().nonnegative(),
   minimumGrossSpreadCents: z.coerce.number().int(),
+  tierPremiumVerifiedCents: z.coerce.number().int().nonnegative(),
+  tierPremiumSeniorCents: z.coerce.number().int().nonnegative(),
+  tierPremiumEliteCents: z.coerce.number().int().nonnegative(),
   configVersion: z.string().min(1),
 });
 

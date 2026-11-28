@@ -1340,6 +1340,14 @@ model MarketplacePricingSettings {
   lowSupplyAmountCents             Int      @default(400)
   tutorUrgencyBonusCents           Int      @default(400)
   minimumGrossSpreadCents          Int      @default(0)
+  /// TIER-PREMIUM — what the parent pays on top of the base price for a
+  /// direct booking with a tutor of this payout tier, per 60 minutes
+  /// (pro-rated). NEW tutors carry no premium. Quick Match stays at the
+  /// base price (the tutor is unknown when it is priced; the minimum gross
+  /// spread guard decides who can be offered the request).
+  tierPremiumVerifiedCents         Int      @default(0)
+  tierPremiumSeniorCents           Int      @default(600)
+  tierPremiumEliteCents            Int      @default(1000)
   configVersion                    String   @default("MARKETPLACE_SETTINGS_V1")
   updatedAt                        DateTime @updatedAt
   updatedByUserId                  String?

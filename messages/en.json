@@ -2401,7 +2401,10 @@
         "lowSupplyThresholdCount": "Low-supply Tutor count threshold",
         "lowSupplyAmountCents": "Low-supply surcharge (cents)",
         "tutorUrgencyBonusCents": "Tutor urgency bonus (cents)",
-        "minimumGrossSpreadCents": "Minimum gross spread (cents)"
+        "minimumGrossSpreadCents": "Minimum gross spread (cents)",
+        "tierPremiumVerifiedCents": "VERIFIED tutor supplement, per hour (cents)",
+        "tierPremiumSeniorCents": "SENIOR tutor supplement, per hour (cents)",
+        "tierPremiumEliteCents": "ELITE tutor supplement, per hour (cents)"
       }
     },
     "operations": {
@@ -2812,7 +2815,11 @@
       "lowSupply": "High demand for this subject",
       "travel": "Travel",
       "tutorUrgencyBonus": "Urgent session bonus",
-      "travelCompensation": "Travel compensation"
+      "travelCompensation": "Travel compensation",
+      "tutorTierNew": "NEW tutor",
+      "tutorTierVerified": "Verified tutor (VERIFIED)",
+      "tutorTierSenior": "Experienced tutor (SENIOR)",
+      "tutorTierElite": "ELITE tutor"
     },
     "status": {
       "DRAFT": "Draft",

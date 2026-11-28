@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { TutoringMode } from "@/generated/prisma/enums";
+import type { TutoringMode, TutorTier } from "@/generated/prisma/enums";
 import { roundMinorUnits, proRateCents, sumCents } from "@/lib/money";
 import { pickHighestPriorityRule } from "@/lib/ruleResolution";
 import { getUrgencyBand } from "@/lib/urgency";
@@ -14,6 +14,28 @@ import { assertActualTutoringMode, type EffectiveTutoringMode } from "@/lib/tuto
 export const CUSTOMER_PRICING_VERSION = "CUSTOMER_PRICING_V1";
 
 export class PricingRuleNotFoundError extends Error {}
+
+const TIER_REASON_KEYS: Record<TutorTier, string> = {
+  NEW: "tutorTierNew",
+  VERIFIED: "tutorTierVerified",
+  SENIOR: "tutorTierSenior",
+  ELITE: "tutorTierElite",
+};
+
+/**
+ * TIER-PREMIUM — the parent-side supplement for a tutor's payout tier, per
+ * 60 minutes in the settings, pro-rated to the session length. NEW (or an
+ * unknown tutor) carries none.
+ */
+export function tierPremiumCents(
+  settings: { tierPremiumVerifiedCents: number; tierPremiumSeniorCents: number; tierPremiumEliteCents: number },
+  tier: TutorTier | null | undefined,
+  durationMinutes: number
+): number {
+  const perHour =
+    tier === "VERIFIED" ? settings.tierPremiumVerifiedCents : tier === "SENIOR" ? settings.tierPremiumSeniorCents : tier === "ELITE" ? settings.tierPremiumEliteCents : 0;
+  return perHour > 0 ? proRateCents(perHour, 60, durationMinutes) : 0;
+}
 export class QuoteNotFoundError extends Error {}
 export class QuoteNotOwnedError extends Error {}
 export class QuoteExpiredError extends Error {}
@@ -32,6 +54,9 @@ export interface CustomerPriceCalculationInput {
   durationMinutes: number;
   requestedStartAt: Date;
   distanceKm?: number | null;
+  /** TIER-PREMIUM — set for a direct booking (the tutor is known); absent
+   *  for Quick Match and generic previews, which stay at the base price. */
+  tutorTier?: TutorTier | null;
 }
 
 /** Adds the quote-ownership fields required only when persisting a real quote. */
@@ -44,7 +69,7 @@ export interface CustomerPricingContext extends CustomerPriceCalculationInput {
 }
 
 export interface PriceAdjustment {
-  type: "URGENCY" | "LOW_SUPPLY" | "TRAVEL";
+  type: "URGENCY" | "LOW_SUPPLY" | "TRAVEL" | "TUTOR_TIER";
   amountCents: number;
   reasonKey: string;
   ruleVersion: string;
@@ -152,6 +177,17 @@ async function calculateWithinSnapshot(tx: Prisma.TransactionClient, context: Cu
       reasonKey: "lowSupply",
       ruleVersion: settings.configVersion,
       metadata: { qualifiedTutorCount: supply.qualifiedTutorCount },
+    });
+  }
+
+  const premiumCents = tierPremiumCents(settings, context.tutorTier, context.durationMinutes);
+  if (context.tutorTier && premiumCents > 0) {
+    adjustments.push({
+      type: "TUTOR_TIER",
+      amountCents: premiumCents,
+      reasonKey: TIER_REASON_KEYS[context.tutorTier],
+      ruleVersion: settings.configVersion,
+      metadata: { tutorTier: context.tutorTier },
     });
   }
 
