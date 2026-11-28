@@ -20,7 +20,11 @@ const MAX_CHARS = 2000;
 /** Renders plain-text answers: paragraphs, **bold**, and library/tutor links. */
 function renderAnswer(text: string, locale: string): ReactNode {
   const linkPattern = new RegExp(`(/${locale}/(?:resources/library|find-tutors)[a-z0-9/-]*)`, "g");
-  return text.split(/\n{2,}/).map((paragraph, pIndex) => (
+  // The model sometimes wraps a path in [..], (..) or a Markdown link: keep only the path.
+  const cleaned = text
+    .replace(new RegExp(`\\[([^\\]\\n]*)\\]\\((/${locale}/[a-z0-9/-]+)\\)`, "g"), (_m, label: string, path: string) => (label.trim() && label.trim() !== path ? `${label.trim()} — ${path}` : path))
+    .replace(new RegExp(`[\\[(](/${locale}/(?:resources/library|find-tutors)[a-z0-9/-]*)[\\])]`, "g"), "$1");
+  return cleaned.split(/\n{2,}/).map((paragraph, pIndex) => (
     <p key={pIndex} className="whitespace-pre-wrap">
       {paragraph.split(linkPattern).map((part, index) => {
         if (index % 2 === 1) {
