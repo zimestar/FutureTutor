@@ -144,6 +144,7 @@ model User {
   adminPermissions                AdminPermissionAssignment[] @relation("AdminPermissionUser")
   safetyConcernReportsFiled       SafetyConcernReport[]       @relation("SafetyConcernReporter")
   safetyConcernReportsResolved    SafetyConcernReport[]       @relation("SafetyConcernResolvedBy")
+  assistantUsages                 AssistantUsage[]
   adminPermissionsGranted         AdminPermissionAssignment[] @relation("AdminPermissionGrantedBy")
   lifecycleReminders              LifecycleReminder[]
 
@@ -2701,4 +2702,30 @@ model RateLimitBucket {
 
   @@unique([key, windowStart])
   @@index([windowStart])
+}
+
+// ASSISTANT-1 — one row per question a parent asks the AI assistant, used to
+// enforce the monthly free quota and to follow token costs. The question and
+// the answer themselves are never stored.
+model AssistantUsage {
+  id              String               @id @default(cuid())
+  userId          String
+  status          AssistantUsageStatus @default(PENDING)
+  model           String
+  inputTokens     Int                  @default(0)
+  outputTokens    Int                  @default(0)
+  cacheReadTokens Int                  @default(0)
+  createdAt       DateTime             @default(now())
+  completedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+enum AssistantUsageStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUSED
 }

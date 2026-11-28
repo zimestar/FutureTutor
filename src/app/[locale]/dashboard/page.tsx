@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, BookOpenCheck, CalendarDays, Heart, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, BookOpen, BookOpenCheck, Bot, CalendarDays, Heart, Sparkles, UsersRound } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { redirect } from "@/i18n/navigation";
@@ -189,7 +189,7 @@ export default async function StudentDashboardPage({ params }: { params: Promise
         <DashboardTile tone="mint" icon={<UsersRound className="size-5" aria-hidden="true" />} value={children.length} label={t("tiles.learners")} href="/dashboard/family" />
         <DashboardTile tone="blue" icon={<CalendarDays className="size-5" aria-hidden="true" />} value={upcomingBookings.length} label={t("tiles.upcoming")} href="/dashboard/bookings" />
         <DashboardTile tone="coral" icon={<Sparkles className="size-5" aria-hidden="true" />} label={t("tiles.quickMatch")} href="/dashboard/quick-match" />
-        <DashboardTile tone="sun" icon={<BookOpen className="size-5" aria-hidden="true" />} label={t("tiles.resources")} href="/resources" />
+        <DashboardTile tone="lilac" icon={<Bot className="size-5" aria-hidden="true" />} label={t("tiles.assistant")} href="/dashboard/assistant" />
       </div>
 
       {profilesNeedingAttention.length > 0 && (

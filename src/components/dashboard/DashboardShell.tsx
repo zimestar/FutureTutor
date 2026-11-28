@@ -5,7 +5,7 @@ import {
   BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, FileText, FileSearch,
   GraduationCap, Heart, LayoutDashboard, Mail, Menu, MessageCircle, MessageSquareWarning,
   Search, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, UserRound,
-  UsersRound, Video, WalletCards, Receipt, ScrollText, Baby,
+  UsersRound, Video, WalletCards, Receipt, ScrollText, Baby, Bot,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -42,6 +42,7 @@ const navIcons: Record<string, typeof LayoutDashboard> = {
   "/dashboard/find-tutors": Search,
   "/dashboard/favorites": Heart,
   "/dashboard/quick-match": Sparkles,
+  "/dashboard/assistant": Bot,
   "/dashboard/bookings": CalendarDays,
   "/messages": MessageCircle,
   "/dashboard/payments": CreditCard,

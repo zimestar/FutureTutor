@@ -21,6 +21,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0",
     "@auth/prisma-adapter": "^2.11.3",
     "@daily-co/daily-js": "^0.92.2",
     "@prisma/adapter-pg": "^7.9.1",

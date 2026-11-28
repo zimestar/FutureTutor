@@ -22,6 +22,8 @@ export function getStudentDashboardNavItems(
     { label: tNav("favorites"), href: "/dashboard/favorites", group: tNav("learningGroup") },
   ];
   if (role === "PARENT") {
+    // ASSISTANT-1 — the AI assistant is offered to parents only.
+    items.splice(1, 0, { label: tNav("assistant"), href: "/dashboard/assistant", group: tNav("learningGroup") });
     items.push({ label: tNav("family"), href: "/dashboard/family", group: tNav("accountGroup") });
   }
   // DESIGN-SYSTEM2 — "payments" is the admin label (customer payments); learners see their own.

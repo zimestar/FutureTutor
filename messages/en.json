@@ -1482,6 +1482,7 @@
     },
     "nav": {
       "overview": "Overview",
+      "assistant": "AI assistant",
       "safetyReports": "Safety reports",
       "peopleGroup": "Tutors & families",
       "activityGroup": "Activity",
@@ -1584,7 +1585,8 @@
         "learners": "Learners",
         "upcoming": "Upcoming sessions",
         "quickMatch": "Get help quickly",
-        "resources": "Guides for parents"
+        "resources": "Guides for parents",
+        "assistant": "Ask the assistant"
       },
       "welcome": "Welcome, {name}",
       "description": "A clear view of your learners and the next steps for their tutoring.",
@@ -4692,5 +4694,39 @@
       "text": "Province, grade, subject: find this year's chapters and sheets to help your child.",
       "cta": "Open the library"
     }
+  },
+  "assistant": {
+    "metaTitle": "FutureTutor assistant",
+    "title": "FutureTutor assistant",
+    "description": "Ask about homework and the curriculum: the assistant explains step by step so you can support your child.",
+    "badge": "AI · Beta",
+    "remaining": "{count, plural, =0 {No free questions left this month} one {# free question left this month} other {# free questions left this month}}",
+    "placeholder": "E.g. How do I explain subtracting integers to my child?",
+    "inputLabel": "Your question",
+    "send": "Send",
+    "sending": "Answering…",
+    "newChat": "New conversation",
+    "you": "You",
+    "assistant": "Assistant",
+    "disclaimer": "AI-generated answers based on the FutureTutor library: they may contain mistakes. Don't share personal information about your child. The conversation is not saved.",
+    "examplesTitle": "Get started",
+    "examples": [
+      "How can I help my Grade 7 child with fractions?",
+      "Explain how to solve 3x + 2 = 14, step by step.",
+      "My teen has a Math 10C exam coming up: where should we start?"
+    ],
+    "quotaTitle": "You've used this month's free questions",
+    "quotaText": "They renew on the 1st of the month. For personal support right now, a tutor can help your child.",
+    "quotaCta": "Find a tutor",
+    "errors": {
+      "BUSY": "The assistant is very busy. Try again in a moment: your question wasn't counted.",
+      "FAILED": "Something went wrong. Your question wasn't counted.",
+      "REFUSED": "The assistant can't answer this question. It wasn't counted.",
+      "QUOTA": "You've used this month's free questions.",
+      "TOO_LONG": "Your question is too long (2,000 characters maximum)."
+    },
+    "notConfiguredTitle": "The assistant is coming soon",
+    "notConfiguredText": "We're finishing setting it up. Meanwhile, the FutureTutor library explains every chapter of the curriculum.",
+    "libraryCta": "Open the library"
   }
 }
