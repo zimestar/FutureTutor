@@ -3,6 +3,7 @@ import { site } from "@/content/site";
 import { subjects } from "@/content/subjects";
 import { localMarkets } from "@/content/localMarkets";
 import { listPublishedResourceArticles } from "@/content/resources";
+import { libraryProvinces } from "@/content/library";
 import { routing } from "@/i18n/routing";
 
 // SEO-1 — legal/utility pages that are real, public, indexable,
@@ -21,6 +22,19 @@ const LOCAL_MARKET_PATHS = localMarkets.map((m) => `/tutoring/${m.slug}`);
 // article's route resolves for review but stays out of the sitemap and
 // carries `robots: {index:false}` (see resources/[slug]/page.tsx).
 const RESOURCE_ARTICLE_PATHS = listPublishedResourceArticles().map((a) => `/resources/${a.slug}`);
+// LIBRARY-1 — the library index, province and course pages are listed; a
+// chapter page is listed only once its sheet has been reviewed by a tutor
+// (draft sheets carry robots noindex).
+const LIBRARY_PATHS = [
+  "/resources/library",
+  ...libraryProvinces.filter((p) => p.available).flatMap((p) => [
+    `/resources/library/${p.slug}`,
+    ...p.courses.flatMap((c) => [
+      `/resources/library/${p.slug}/${c.slug}`,
+      ...c.strands.flatMap((s) => s.chapters.filter((ch) => ch.sheet?.reviewStatus === "reviewed").map((ch) => `/resources/library/${p.slug}/${c.slug}/${ch.slug}`)),
+    ]),
+  ]),
+];
 
 function priorityFor(path: string): number {
   if (path === "") return 1;
@@ -46,7 +60,7 @@ function changeFrequencyFor(path: string): NonNullable<MetadataRoute.Sitemap[num
  * cross-referenced.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const allPaths = [...STATIC_PATHS, ...SUBJECT_PATHS, ...LOCAL_MARKET_PATHS, ...RESOURCE_ARTICLE_PATHS, ...LEGAL_PATHS];
+  const allPaths = [...STATIC_PATHS, ...SUBJECT_PATHS, ...LOCAL_MARKET_PATHS, ...RESOURCE_ARTICLE_PATHS, ...LIBRARY_PATHS, ...LEGAL_PATHS];
 
   const languageAlternatesFor = (path: string) =>
     Object.fromEntries(routing.locales.map((locale) => [locale, `${site.url}/${locale}${path}`]));

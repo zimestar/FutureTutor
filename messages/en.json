@@ -4610,5 +4610,87 @@
         "imageAlt": "An online tutoring session"
       }
     }
+  },
+  "library": {
+    "metaTitle": "Curriculum library | FutureTutor",
+    "metaDescription": "Your province's curriculum chapters, explained simply, with sheets to help your child at home.",
+    "breadcrumbResources": "Resources",
+    "breadcrumbLibrary": "Library",
+    "hero": {
+      "eyebrow": "FutureTutor library",
+      "title": "Your child's curriculum, chapter by chapter",
+      "description": "Choose the province, grade and subject: see what is taught this year, with clear sheets to support your child at home.",
+      "primary": "Start with Alberta",
+      "secondary": "Find a tutor"
+    },
+    "provinces": {
+      "eyebrow": "Step 1",
+      "title": "Choose your province",
+      "available": "Available",
+      "soon": "Coming soon",
+      "courses": "{count, plural, one {# course} other {# courses}}"
+    },
+    "how": {
+      "eyebrow": "Our method",
+      "title": "Reliable sheets, linked to the official curriculum",
+      "items": [
+        {
+          "title": "Built on the official curriculum",
+          "text": "Each chapter matches a learning outcome published by the province, with a link to the source."
+        },
+        {
+          "title": "Written by FutureTutor",
+          "text": "We explain in our own words, with worked examples and practice with answers."
+        },
+        {
+          "title": "Reviewed by a tutor",
+          "text": "A sheet stays marked “preliminary version” until a qualified tutor has reviewed it."
+        }
+      ]
+    },
+    "province": {
+      "eyebrow": "Step 2",
+      "title": "Choose the course",
+      "chapters": "{count, plural, one {# chapter} other {# chapters}}",
+      "sheets": "{count, plural, =0 {Sheets in preparation} one {# sheet available} other {# sheets available}}",
+      "official": "See the official programs"
+    },
+    "course": {
+      "officialTitle": "Official program",
+      "officialCta": "View the program on LearnAlberta",
+      "chaptersTitle": "This year's chapters",
+      "sheetAvailable": "Sheet available",
+      "sheetSoon": "Sheet in preparation",
+      "open": "Open"
+    },
+    "sheet": {
+      "draftTitle": "Preliminary version",
+      "draftText": "This sheet was written by FutureTutor and is being reviewed by a tutor. Please tell us about any error.",
+      "goal": "What the student should be able to do",
+      "summary": "In short",
+      "mustKnow": "Key points",
+      "explanation": "How it works",
+      "examples": "Worked examples",
+      "example": "Example {number}",
+      "answer": "Answer",
+      "mistakes": "Common mistakes",
+      "practice": "Your turn",
+      "showAnswer": "Show answer",
+      "parentTips": "Helping your child at home",
+      "officialSource": "Official source",
+      "officialText": "This chapter follows the province's official curriculum. For the exact wording of the learning outcomes:",
+      "notReadyTitle": "This sheet is in preparation",
+      "notReadyText": "In the meantime, see the official program or get support from a tutor.",
+      "helpTitle": "Is your child stuck on this chapter?",
+      "helpText": "A verified tutor can explain it differently, online or in person.",
+      "helpCta": "Find a math tutor",
+      "back": "All chapters"
+    },
+    "homeCard": {
+      "eyebrow": "New",
+      "title": "Curriculum library",
+      "text": "Province, grade, subject: find this year's chapters and sheets to help your child.",
+      "cta": "Open the library"
+    }
   }
 }

@@ -5,6 +5,7 @@ import { routing } from "@/i18n/routing";
 import { subjects } from "@/content/subjects";
 import { localMarkets } from "@/content/localMarkets";
 import { listPublishedResourceArticles } from "@/content/resources";
+import { libraryProvinces } from "@/content/library";
 
 // ANALYTICS-SEO1 — regression coverage for the production-breaking
 // hostname defect this mission found and fixed (every sitemap URL was
@@ -35,9 +36,25 @@ describe("sitemap()", () => {
     const knownSubjectPaths = subjects.map((s) => `/subjects/${s.slug}`);
     const knownLocalMarketPaths = localMarkets.map((m) => `/tutoring/${m.slug}`);
     const knownResourceArticlePaths = listPublishedResourceArticles().map((a) => `/resources/${a.slug}`);
+    // LIBRARY-1 — library index + available provinces + their courses; chapter
+    // pages only once their sheet is tutor-reviewed.
+    const available = libraryProvinces.filter((p) => p.available);
+    const knownLibraryCount =
+      1 +
+      available.length +
+      available.reduce((n, p) => n + p.courses.length, 0) +
+      available.reduce((n, p) => n + p.courses.reduce((m, c) => m + c.strands.reduce((k, s) => k + s.chapters.filter((ch) => ch.sheet?.reviewStatus === "reviewed").length, 0), 0), 0);
     const expectedPathCount =
-      knownStaticPaths.length + knownSubjectPaths.length + knownLocalMarketPaths.length + knownResourceArticlePaths.length + knownLegalPaths.length;
+      knownStaticPaths.length + knownSubjectPaths.length + knownLocalMarketPaths.length + knownResourceArticlePaths.length + knownLibraryCount + knownLegalPaths.length;
     expect(entries).toHaveLength(expectedPathCount * routing.locales.length);
+  });
+
+  it("LIBRARY-1 — lists the library and its courses but never a draft chapter sheet", () => {
+    for (const locale of routing.locales) {
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/resources/library`)).toBe(true);
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/resources/library/alberta/math-7`)).toBe(true);
+      expect(entries.some((e) => e.url === `${site.url}/${locale}/resources/library/alberta/math-7/integers`)).toBe(false);
+    }
   });
 
   it("SEO-3 — includes the Edmonton local-market page and the published resource article, gated by their static registries", () => {

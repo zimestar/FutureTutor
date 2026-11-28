@@ -4610,5 +4610,87 @@
         "imageAlt": "Une séance de tutorat en ligne"
       }
     }
+  },
+  "library": {
+    "metaTitle": "Bibliothèque par programme scolaire | FutureTutor",
+    "metaDescription": "Les chapitres du programme de votre province, expliqués simplement, avec des fiches pour aider votre enfant à la maison.",
+    "breadcrumbResources": "Ressources",
+    "breadcrumbLibrary": "Bibliothèque",
+    "hero": {
+      "eyebrow": "Bibliothèque FutureTutor",
+      "title": "Le programme de votre enfant, chapitre par chapitre",
+      "description": "Choisissez la province, le niveau et la matière : vous voyez ce qui est enseigné cette année, avec des fiches claires pour accompagner votre enfant à la maison.",
+      "primary": "Commencer par l'Alberta",
+      "secondary": "Trouver un tuteur"
+    },
+    "provinces": {
+      "eyebrow": "Étape 1",
+      "title": "Choisissez votre province",
+      "available": "Disponible",
+      "soon": "Bientôt",
+      "courses": "{count, plural, one {# cours} other {# cours}}"
+    },
+    "how": {
+      "eyebrow": "Notre méthode",
+      "title": "Des fiches fiables, reliées au programme officiel",
+      "items": [
+        {
+          "title": "Le programme officiel comme base",
+          "text": "Chaque chapitre correspond à un résultat d'apprentissage publié par la province, avec un lien vers la source."
+        },
+        {
+          "title": "Rédigées par FutureTutor",
+          "text": "Nous expliquons avec nos propres mots, avec des exemples résolus et des exercices corrigés."
+        },
+        {
+          "title": "Relues par un tuteur",
+          "text": "Une fiche reste marquée « version préliminaire » tant qu'un tuteur qualifié ne l'a pas validée."
+        }
+      ]
+    },
+    "province": {
+      "eyebrow": "Étape 2",
+      "title": "Choisissez le cours",
+      "chapters": "{count, plural, one {# chapitre} other {# chapitres}}",
+      "sheets": "{count, plural, =0 {Fiches en préparation} one {# fiche disponible} other {# fiches disponibles}}",
+      "official": "Voir les programmes officiels"
+    },
+    "course": {
+      "officialTitle": "Programme officiel",
+      "officialCta": "Consulter le programme sur LearnAlberta",
+      "chaptersTitle": "Les chapitres de l'année",
+      "sheetAvailable": "Fiche disponible",
+      "sheetSoon": "Fiche en préparation",
+      "open": "Ouvrir"
+    },
+    "sheet": {
+      "draftTitle": "Version préliminaire",
+      "draftText": "Cette fiche a été rédigée par FutureTutor et est en cours de validation par un tuteur. Signalez-nous toute erreur.",
+      "goal": "Ce que l'élève doit savoir faire",
+      "summary": "En bref",
+      "mustKnow": "L'essentiel à retenir",
+      "explanation": "Comment ça marche",
+      "examples": "Exemples résolus",
+      "example": "Exemple {number}",
+      "answer": "Réponse",
+      "mistakes": "Erreurs fréquentes",
+      "practice": "À vous de jouer",
+      "showAnswer": "Voir la réponse",
+      "parentTips": "Pour aider votre enfant à la maison",
+      "officialSource": "Source officielle",
+      "officialText": "Ce chapitre correspond au programme officiel de la province. Pour le texte exact des résultats d'apprentissage :",
+      "notReadyTitle": "Cette fiche est en préparation",
+      "notReadyText": "En attendant, consultez le programme officiel ou faites-vous accompagner par un tuteur.",
+      "helpTitle": "Votre enfant bloque sur ce chapitre?",
+      "helpText": "Un tuteur vérifié peut l'expliquer autrement, en ligne ou en personne.",
+      "helpCta": "Trouver un tuteur en mathématiques",
+      "back": "Tous les chapitres"
+    },
+    "homeCard": {
+      "eyebrow": "Nouveau",
+      "title": "Bibliothèque par programme scolaire",
+      "text": "Province, niveau, matière : retrouvez les chapitres de l'année et des fiches pour aider votre enfant.",
+      "cta": "Ouvrir la bibliothèque"
+    }
   }
 }
