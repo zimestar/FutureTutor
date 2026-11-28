@@ -93,7 +93,7 @@ export function Hero() {
                   className="object-contain object-bottom"
                 />
               </div>
-              <div style={delay(600)} className="motion-pop absolute -right-2 top-[44%] z-20 hidden items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-(--shadow-pop) sm:flex lg:-right-6">
+              <div style={delay(600)} className="motion-pop absolute -right-2 top-[62%] z-20 hidden items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-(--shadow-pop) sm:flex lg:-right-6">
                 <ShieldCheck className="size-4 text-emerald-300" aria-hidden="true" />
                 {tv("verified")}
               </div>
