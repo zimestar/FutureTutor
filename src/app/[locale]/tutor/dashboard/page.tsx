@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Feedback";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Surface } from "@/components/ui/Surface";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { tutorNavItems } from "@/lib/tutorNav";
 import { formatBookingTime } from "@/lib/utils";
 import { getTutorExperience, TUTOR_JOURNEY_STEPS } from "@/lib/tutorExperience";
@@ -122,8 +123,8 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
             )}
           </div>
 
-          <Surface className="h-fit" aria-labelledby="what-happens-next-title">
-            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-blue">
+          <Surface className="h-fit border-sun-100 bg-sun-50" aria-labelledby="what-happens-next-title">
+            <p className="inline-flex rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-[0.12em] text-navy">
               {t(`experience.responsible.${experience.responsibleParty}`)}
             </p>
             <h2 id="what-happens-next-title" className="mt-2 text-lg font-extrabold text-text-primary">
@@ -174,11 +175,23 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
 
   return (
     <DashboardShell navItems={tutorNavItems(tNav, status)} userName={user.name ?? ""} userImage={userImage}>
-      <PageHeader
-        eyebrow={t("experience.modeTutoring")}
+      <DashboardHero
+        tone="coral"
+        headingId="tutor-home-heading"
         title={t("approved.title", { name: user.name?.split(" ")[0] ?? "" })}
         description={t("approved.description")}
-        status={<Badge variant="mint">{t("applicationStatus.APPROVED")}</Badge>}
+        badge={
+          <span className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="border-navy/15 bg-white text-navy">{t("experience.modeTutoring")}</Badge>
+            <Badge variant="mint" className="bg-white">{t("applicationStatus.APPROVED")}</Badge>
+          </span>
+        }
+        actions={
+          <>
+            <Button href="/tutor/bookings" size="lg">{t("approved.viewBookings")}</Button>
+            <Button href="/tutor/availability" size="lg" variant="ghost" className="border border-navy/25 hover:bg-navy/5">{t("approved.manageAvailability")}</Button>
+          </>
+        }
       />
 
       {!tutorProfile?.tutorAgreementAcceptedAt && (
@@ -187,10 +200,10 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
         </div>
       )}
 
-      <div className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-        <Surface className="xl:row-span-2" aria-labelledby="next-booking-title">
+      <div className="reveal-stagger mt-8 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <Surface className="border-blue-100 bg-blue-50 xl:row-span-2" aria-labelledby="next-booking-title">
           <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-blue/10 text-blue">
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-blue text-white">
               <CalendarDays className="size-5" aria-hidden="true" />
             </span>
             <h2 id="next-booking-title" className="text-lg font-extrabold text-text-primary">
@@ -210,7 +223,7 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
                   {tBookingStatus(nextBooking.status)}
                 </Badge>
               </div>
-              <dl className="mt-5 grid gap-4 rounded-lg bg-surface-subtle p-4 sm:grid-cols-2">
+              <dl className="mt-5 grid gap-4 rounded-2xl bg-white p-4 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs font-bold uppercase tracking-wide text-text-muted">{t("approved.when")}</dt>
                   <dd className="mt-1 text-sm font-semibold text-text-primary">
@@ -222,47 +235,47 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
                   <dd className="mt-1 text-sm font-semibold text-text-primary">{tMode(nextBooking.mode)}</dd>
                 </div>
               </dl>
-              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-5">
+              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-5 bg-white">
                 {t("approved.viewBookings")}
               </Button>
             </div>
           ) : (
-            <div className="mt-5 rounded-lg border border-dashed border-border-strong p-6">
+            <div className="mt-5 rounded-2xl border-2 border-dashed border-blue-100 bg-white p-6">
               <p className="font-bold text-text-primary">{t("approved.noBookingTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-text-secondary">{t("approved.noBookingDescription")}</p>
-              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-4">
+              <Button href="/tutor/bookings" variant="outline" size="sm" className="mt-4 bg-white">
                 {t("approved.viewBookings")}
               </Button>
             </div>
           )}
         </Surface>
 
-        <Surface aria-labelledby="quick-match-summary-title">
+        <Surface className="border-coral-100 bg-coral-50" aria-labelledby="quick-match-summary-title">
           <div className="flex items-center gap-3">
-            <Sparkles className="size-5 text-blue" aria-hidden="true" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-coral text-navy"><Sparkles className="size-5" aria-hidden="true" /></span>
             <h2 id="quick-match-summary-title" className="font-extrabold text-text-primary">{t("approved.quickMatchTitle")}</h2>
           </div>
           <p className="mt-3 text-3xl font-extrabold text-text-primary">{pendingOpportunityCount}</p>
           <p className="mt-1 text-sm text-text-secondary">{t("approved.quickMatchCount", { count: pendingOpportunityCount })}</p>
-          <Button href="/tutor/quick-match" variant="outline" size="sm" className="mt-4">{t("approved.openQuickMatch")}</Button>
+          <Button href="/tutor/quick-match" variant="outline" size="sm" className="mt-4 bg-white">{t("approved.openQuickMatch")}</Button>
         </Surface>
 
-        <Surface aria-labelledby="availability-summary-title">
+        <Surface className="border-mint-100 bg-mint-50" aria-labelledby="availability-summary-title">
           <div className="flex items-center gap-3">
-            <Clock3 className="size-5 text-blue" aria-hidden="true" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-mint text-navy"><Clock3 className="size-5" aria-hidden="true" /></span>
             <h2 id="availability-summary-title" className="font-extrabold text-text-primary">{t("approved.availabilityTitle")}</h2>
           </div>
           <p className="mt-3 font-bold text-text-primary">
             {availabilityDays > 0 ? t("approved.availabilityConfigured", { count: availabilityDays }) : t("approved.availabilityEmpty")}
           </p>
-          <Button href="/tutor/availability" variant="outline" size="sm" className="mt-4">{t("approved.manageAvailability")}</Button>
+          <Button href="/tutor/availability" variant="outline" size="sm" className="mt-4 bg-white">{t("approved.manageAvailability")}</Button>
         </Surface>
       </div>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-2">
-        <Surface aria-labelledby="earnings-summary-title">
+      <div className="reveal-stagger mt-5 grid gap-5 md:grid-cols-2">
+        <Surface className="border-sun-100 bg-sun-50" aria-labelledby="earnings-summary-title">
           <div className="flex items-center gap-3">
-            <WalletCards className="size-5 text-blue" aria-hidden="true" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-sun text-navy"><WalletCards className="size-5" aria-hidden="true" /></span>
             <h2 id="earnings-summary-title" className="font-extrabold text-text-primary">{t("approved.earningsTitle")}</h2>
           </div>
           {latestEarning ? (
@@ -279,16 +292,16 @@ export default async function TutorDashboardPage({ params }: { params: Promise<{
               </Badge>
             </div>
           ) : <p className="mt-3 text-sm leading-6 text-text-secondary">{t("approved.noEarnings")}</p>}
-          <Button href="/tutor/payouts" variant="outline" size="sm" className="mt-4">{t("approved.viewPayouts")}</Button>
+          <Button href="/tutor/payouts" variant="outline" size="sm" className="mt-4 bg-white">{t("approved.viewPayouts")}</Button>
         </Surface>
 
-        <Surface aria-labelledby="profile-summary-title">
+        <Surface className="border-lilac-100 bg-lilac-50" aria-labelledby="profile-summary-title">
           <div className="flex items-center gap-3">
-            <UserRound className="size-5 text-blue" aria-hidden="true" />
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-lilac text-white"><UserRound className="size-5" aria-hidden="true" /></span>
             <h2 id="profile-summary-title" className="font-extrabold text-text-primary">{t("approved.profileTitle")}</h2>
           </div>
           <p className="mt-3 text-sm leading-6 text-text-secondary">{t("approved.profileDescription")}</p>
-          <Button href="/tutor/profile" variant="outline" size="sm" className="mt-4">{t("approved.manageProfile")}</Button>
+          <Button href="/tutor/profile" variant="outline" size="sm" className="mt-4 bg-white">{t("approved.manageProfile")}</Button>
         </Surface>
       </div>
     </DashboardShell>
